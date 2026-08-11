@@ -6,26 +6,45 @@
   const OPEN = [40, 45, 50, 55, 59, 64];        // E2 A2 D3 G3 B3 E4
   const OPEN_NAMES = ["E", "A", "D", "G", "B", "E"];
   const N_FRETS = 15;
-  const STRING_SETS = [[0, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 5]];
+  // Every ascending choice of n strings out of 6. Contiguous sets are preferred by
+  // the scorer, but string-skipping is genuinely idiomatic for drop voicings — and
+  // some voicings (e.g. a close-position dom7 with the 5th in the bass) are simply
+  // unplayable without it.
+  function stringSets(n) {
+    const out = [];
+    (function pick(start, acc) {
+      if (acc.length === n) { out.push(acc.slice()); return; }
+      for (let s = start; s < 6; s++) { acc.push(s); pick(s + 1, acc); acc.pop(); }
+    })(0, []);
+    return out;
+  }
+
+  function skipPenalty(set) {
+    let gaps = 0;
+    for (let i = 1; i < set.length; i++) gaps += set[i] - set[i - 1] - 1;
+    return gaps;
+  }
   const MARKERS = [3, 5, 7, 9, 15];
   const DOUBLE_MARKERS = [12];
 
   // Find a compact, playable grip for a voicing.
   // voicing: array of note objects (low->high) each with {pc, role, ...}.
   // Returns { placements: [{stringIndex, fret, note}], span } or null.
-  function findGrip(voicing, preferredPos) {
+  function search(voicing, preferredPos, maxSpan) {
     const pcs = voicing.map((n) => n.pc);
+    const n = voicing.length;
     let best = null;
 
-    STRING_SETS.forEach((set) => {
-      for (let basePos = 0; basePos <= N_FRETS - 4; basePos++) {
+    stringSets(n).forEach((set) => {
+      const skips = skipPenalty(set);
+      for (let basePos = 0; basePos <= N_FRETS - maxSpan; basePos++) {
         const frets = [];
         let prevPitch = -Infinity;
         let ok = true;
-        for (let k = 0; k < 4; k++) {
+        for (let k = 0; k < n; k++) {
           const s = set[k];
           let chosen = null;
-          for (let f = basePos; f <= basePos + 4; f++) {
+          for (let f = basePos; f <= basePos + maxSpan; f++) {
             if (((OPEN[s] + f) % 12 + 12) % 12 === pcs[k]) {
               const pitch = OPEN[s] + f;
               if (pitch > prevPitch) { chosen = f; break; }
@@ -39,10 +58,11 @@
         const span = Math.max(...frets) - Math.min(...frets);
         const lowFret = Math.min(...frets);
         const posDist = preferredPos == null ? 0 : Math.abs(lowFret - preferredPos);
-        const score = span * 3 + posDist + lowFret * 0.05;
+        // compact first, then contiguous, then near the preferred position
+        const score = span * 3 + skips * 2 + posDist + lowFret * 0.05;
         if (!best || score < best.score) {
           best = {
-            score, span, lowFret,
+            score, span, lowFret, skips,
             placements: set.map((s, k) => ({
               stringIndex: s, fret: frets[k], note: voicing[k]
             }))
@@ -51,6 +71,14 @@
       }
     });
     return best;
+  }
+
+  // Widen the stretch until something is playable. A close-position dom7 with the
+  // 5th in the bass needs 5 frets; nothing should ever render an empty neck.
+  function findGrip(voicing, preferredPos) {
+    return search(voicing, preferredPos, 4)
+        || search(voicing, preferredPos, 5)
+        || search(voicing, preferredPos, 7);
   }
 
   // All fret positions (0..N_FRETS) whose pitch-class is in the chord — for ghosts.
@@ -149,20 +177,27 @@
     }
 
     // helper to place a dot
+    const flavourSet = opts.flavourPcs ? new Set(opts.flavourPcs) : null;
     function dot(p, kind) {
       const sIdx = p.stringIndex;
       const rowFromTop = 5 - sIdx;
       const cx = p.fret === 0 ? GEO.padL - 0 : xForFret(p.fret);
       const cy = yForString(rowFromTop);
-      const gg = el("g", { class: "fb-dot " + kind, "data-group": p.note.colorGroup });
+      const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
+      const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "");
+      const gg = el("g", { class: cls, "data-group": p.note.colorGroup });
       if (opts.lefty) {
         // counter-flip text so labels read normally
         gg.setAttribute("transform", `translate(${2 * cx},0) scale(-1,1)`);
       }
-      gg.appendChild(el("circle", { cx, cy, r: kind === "ghost" ? 9 : 14, class: "dot-bg" }));
-      let label = p.note.roleLabel;
+      const r = kind === "ghost" ? 9 : kind === "scale" ? 11 : 14;
+      if (isFlavour && kind !== "ghost") {
+        gg.appendChild(el("circle", { cx, cy, r: r + 4, class: "dot-flavour-ring" }));
+      }
+      gg.appendChild(el("circle", { cx, cy, r, class: "dot-bg" }));
+      let label = p.note.roleLabel || p.note.degree;
       if (opts.labelMode === "note") label = p.note.name;
-      else if (opts.labelMode === "degree") label = p.note.roleLabel;
+      else if (kind === "scale") label = p.note.degree || p.note.name;
       const t = el("text", { x: cx, y: cy + 4, "text-anchor": "middle", class: "dot-label" }, label);
       gg.appendChild(t);
       // downward arrow badge on moved notes
@@ -170,6 +205,28 @@
         gg.appendChild(el("text", { x: cx + 17, y: cy - 9, "text-anchor": "middle", class: "moved-arrow" }, "↓"));
       }
       return gg;
+    }
+
+    // scale / mode overlay: every occurrence of each mode degree on the neck
+    if (opts.scaleNotes && opts.scaleNotes.length) {
+      const byPc = {};
+      opts.scaleNotes.forEach((n) => { byPc[n.pc] = n; });
+      const active = new Set(
+        (opts.grip ? opts.grip.placements : []).map((p) => p.stringIndex + ":" + p.fret)
+      );
+      for (let s = 0; s < 6; s++) {
+        for (let f = 0; f <= N_FRETS; f++) {
+          const pc = (((OPEN[s] + f) % 12) + 12) % 12;
+          const sn = byPc[pc];
+          if (!sn) continue;
+          if (active.has(s + ":" + f)) continue;
+          const group = sn.isTonic ? "tonic" : sn.isFlavour ? "flavourdeg" : "scaledeg";
+          g.appendChild(dot(
+            { stringIndex: s, fret: f, note: { pc, degree: sn.degree, name: sn.name, colorGroup: group, isFlavour: sn.isFlavour } },
+            "scale"
+          ));
+        }
+      }
     }
 
     if (opts.ghosts && opts.allPositions) {
@@ -188,5 +245,5 @@
     }
   }
 
-  window.Fretboard = { OPEN, OPEN_NAMES, N_FRETS, findGrip, allTonePositions, render };
+  window.Fretboard = { OPEN, OPEN_NAMES, N_FRETS, stringSets, findGrip, allTonePositions, render };
 })();
