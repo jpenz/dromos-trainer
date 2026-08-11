@@ -85,6 +85,31 @@
     playSequence(runNotes, spb * 0.6, t);
   }
 
+  // Play a path/cell note-by-note with UI sync. `silentFrom` leaves a gap where
+  // the target note would sound — that silence is the audiation drill (FR-23).
+  let pathTimers = [];
+  function playPath(notes, spacing, opts) {
+    ensure();
+    stopPath();
+    const o = opts || {};
+    const sp = spacing == null ? 0.3 : spacing;
+    const t0 = ctx.currentTime + 0.06;
+    notes.forEach((n, i) => {
+      const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
+      const when = t0 + i * sp;
+      if (!silent) playNoteAt(n.freq, when, Math.max(0.9, sp * 2.4), 0.5);
+      if (o.onStep) {
+        pathTimers.push(setTimeout(() => o.onStep(i, silent), Math.max(0, (when - ctx.currentTime) * 1000)));
+      }
+    });
+    if (o.onDone) {
+      pathTimers.push(setTimeout(o.onDone, Math.max(0, (t0 + notes.length * sp - ctx.currentTime) * 1000)));
+    }
+    return t0 + notes.length * sp;
+  }
+
+  function stopPath() { pathTimers.forEach(clearTimeout); pathTimers = []; }
+
   function click(when, accent) {
     const t = when == null ? ctx.currentTime : when;
     const o = ctx.createOscillator();
@@ -145,7 +170,7 @@
   function isPlaying() { return !!transport; }
 
   window.AudioEngine = {
-    ensure, playChord, playSequence, playPrompt, click,
+    ensure, playChord, playSequence, playPrompt, playPath, stopPath, click,
     startTransport, stopTransport, isPlaying,
     setBpm: (v) => transport && transport.setBpm(v),
     setMetronome: (v) => transport && transport.setMetronome(v)

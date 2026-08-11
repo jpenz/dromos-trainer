@@ -2,19 +2,22 @@
 (function () {
   "use strict";
 
-  // standard tuning, low -> high string; open-string midi
-  const OPEN = [40, 45, 50, 55, 59, 64];        // E2 A2 D3 G3 B3 E4
-  const OPEN_NAMES = ["E", "A", "D", "G", "B", "E"];
+  // Neck geometry comes from window.Tuning (MI-12) — never hardcode 6 strings.
+  const open = () => window.Tuning.open();
+  const openNames = () => window.Tuning.names();
+  const nStrings = () => window.Tuning.count();
   const N_FRETS = 15;
   // Every ascending choice of n strings out of 6. Contiguous sets are preferred by
   // the scorer, but string-skipping is genuinely idiomatic for drop voicings — and
   // some voicings (e.g. a close-position dom7 with the 5th in the bass) are simply
   // unplayable without it.
-  function stringSets(n) {
+  function stringSets(n, total) {
+    const N = total == null ? nStrings() : total;
     const out = [];
+    if (n > N) return out;
     (function pick(start, acc) {
       if (acc.length === n) { out.push(acc.slice()); return; }
-      for (let s = start; s < 6; s++) { acc.push(s); pick(s + 1, acc); acc.pop(); }
+      for (let s = start; s < N; s++) { acc.push(s); pick(s + 1, acc); acc.pop(); }
     })(0, []);
     return out;
   }
@@ -31,6 +34,7 @@
   // voicing: array of note objects (low->high) each with {pc, role, ...}.
   // Returns { placements: [{stringIndex, fret, note}], span } or null.
   function search(voicing, preferredPos, maxSpan) {
+    const OPEN = open();
     const pcs = voicing.map((n) => n.pc);
     const n = voicing.length;
     let best = null;
@@ -75,18 +79,44 @@
 
   // Widen the stretch until something is playable. A close-position dom7 with the
   // 5th in the bass needs 5 frets; nothing should ever render an empty neck.
+  // Drop the least essential voice: the 5th first, then the root. The guide
+  // tones (3rd and 7th) are what carry the harmony, so they go last.
+  function dropOne(v) {
+    const order = ["5", "b5", "#5", "R"];
+    let idx = -1;
+    for (const role of order) {
+      idx = v.findIndex((n) => n.role === role);
+      if (idx >= 0) break;
+    }
+    if (idx < 0) idx = 0;
+    return v.slice(0, idx).concat(v.slice(idx + 1));
+  }
+
+  // Widen the stretch, then thin the voicing, until something is playable.
+  // A close-position dom7 with the 5th in the bass needs 5 frets on a guitar and
+  // does not fit a 4-course bouzouki at all — but nothing may render an empty
+  // neck (MI-10), so we always degrade rather than fail.
   function findGrip(voicing, preferredPos) {
-    return search(voicing, preferredPos, 4)
-        || search(voicing, preferredPos, 5)
-        || search(voicing, preferredPos, 7);
+    let v = voicing.slice();
+    for (;;) {
+      if (v.length <= nStrings()) {
+        for (const span of [4, 5, 7, 10]) {
+          const g = search(v, preferredPos, span);
+          if (g) return g;
+        }
+      }
+      if (v.length <= 2) return null;
+      v = dropOne(v);
+    }
   }
 
   // All fret positions (0..N_FRETS) whose pitch-class is in the chord — for ghosts.
   function allTonePositions(voicing) {
+    const OPEN = open();
     const byPc = {};
     voicing.forEach((n) => { byPc[n.pc] = n; });
     const out = [];
-    for (let s = 0; s < 6; s++) {
+    for (let s = 0; s < OPEN.length; s++) {
       for (let f = 0; f <= N_FRETS; f++) {
         const pc = ((OPEN[s] + f) % 12 + 12) % 12;
         if (byPc[pc]) out.push({ stringIndex: s, fret: f, note: byPc[pc] });
@@ -115,9 +145,13 @@
 
   // render into svg element. opts: { grip, ghosts, labelMode, keyAcc, lefty }
   function render(svg, opts) {
+    const OPEN = open();
+    const OPEN_NAMES = openNames();
+    const NSTR = OPEN.length;    // MI-12: string count is dynamic
+    const LAST = NSTR - 1;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     const width = GEO.padL + GEO.nutW + N_FRETS * GEO.fretW + GEO.padR;
-    const height = GEO.padT + 5 * GEO.stringGap + GEO.padB;
+    const height = GEO.padT + LAST * GEO.stringGap + GEO.padB;
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
@@ -128,38 +162,38 @@
     // fretboard face
     g.appendChild(el("rect", {
       x: GEO.padL + GEO.nutW, y: GEO.padT - 6,
-      width: N_FRETS * GEO.fretW, height: 5 * GEO.stringGap + 12,
+      width: N_FRETS * GEO.fretW, height: LAST * GEO.stringGap + 12,
       rx: 4, class: "fb-face"
     }));
 
     // inlays
     MARKERS.forEach((f) => {
-      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(2), r: 6, class: "fb-inlay" }));
+      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString((NSTR - 1) / 2), r: 6, class: "fb-inlay" }));
     });
     DOUBLE_MARKERS.forEach((f) => {
-      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(1), r: 6, class: "fb-inlay" }));
-      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(3), r: 6, class: "fb-inlay" }));
+      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.max(0,(NSTR-1)/2 - 1)), r: 6, class: "fb-inlay" }));
+      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.min(LAST,(NSTR-1)/2 + 1)), r: 6, class: "fb-inlay" }));
     });
 
     // nut
     g.appendChild(el("rect", {
       x: GEO.padL, y: GEO.padT - 6, width: GEO.nutW,
-      height: 5 * GEO.stringGap + 12, class: "fb-nut"
+      height: LAST * GEO.stringGap + 12, class: "fb-nut"
     }));
 
     // frets
     for (let f = 1; f <= N_FRETS; f++) {
       g.appendChild(el("line", {
-        x1: xForLine(f), y1: GEO.padT - 6, x2: xForLine(f), y2: GEO.padT + 5 * GEO.stringGap + 6, class: "fb-fret"
+        x1: xForLine(f), y1: GEO.padT - 6, x2: xForLine(f), y2: GEO.padT + LAST * GEO.stringGap + 6, class: "fb-fret"
       }));
     }
 
     // strings (draw high E at top for a player's-eye view)
-    for (let i = 0; i < 6; i++) {
-      const sIdx = 5 - i; // top row = high E (index5)
+    for (let i = 0; i < NSTR; i++) {
+      const sIdx = LAST - i; // top row = high E (index5)
       g.appendChild(el("line", {
         x1: GEO.padL, y1: yForString(i), x2: xForLine(N_FRETS), y2: yForString(i),
-        class: "fb-string", "stroke-width": 1 + (5 - sIdx) * 0.25
+        class: "fb-string", "stroke-width": 1 + (LAST - sIdx) * 0.25
       }));
     }
 
@@ -170,8 +204,8 @@
       const cx = opts.lefty ? width - xForFret(f) : xForFret(f);
       overlay.appendChild(el("text", { x: cx, y: height - 8, class: "fb-fretnum", "text-anchor": "middle" }, String(f)));
     });
-    for (let i = 0; i < 6; i++) {
-      const sIdx = 5 - i;
+    for (let i = 0; i < NSTR; i++) {
+      const sIdx = LAST - i;
       const lx = opts.lefty ? width - (GEO.padL - 14) : GEO.padL - 14;
       overlay.appendChild(el("text", { x: lx, y: yForString(i) + 4, class: "fb-openname", "text-anchor": "middle" }, OPEN_NAMES[sIdx]));
     }
@@ -180,7 +214,7 @@
     const flavourSet = opts.flavourPcs ? new Set(opts.flavourPcs) : null;
     function dot(p, kind) {
       const sIdx = p.stringIndex;
-      const rowFromTop = 5 - sIdx;
+      const rowFromTop = LAST - sIdx;
       const cx = p.fret === 0 ? GEO.padL - 0 : xForFret(p.fret);
       const cy = yForString(rowFromTop);
       const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
@@ -207,6 +241,42 @@
       return gg;
     }
 
+    // ---- practice path: connectors, stroke marks, order numbers ----------
+    if (opts.path && opts.path.length) {
+      const cx = (n) => (n.fret === 0 ? GEO.padL : xForFret(n.fret));
+      const cy = (n) => yForString(LAST - n.stringIndex);
+      const upto = opts.pathIndex == null ? opts.path.length - 1 : opts.pathIndex;
+
+      // connectors first so dots sit on top
+      for (let i = 1; i < opts.path.length; i++) {
+        const a = opts.path[i - 1], b = opts.path[i];
+        const cls = "path-link" + (b.crossing ? " x-" + b.crossing : "") +
+                    (i <= upto ? " done" : "");
+        g.appendChild(el("line", { x1: cx(a), y1: cy(a), x2: cx(b), y2: cy(b), class: cls }));
+      }
+
+      opts.path.forEach((n, i) => {
+        const isCur = i === upto;
+        const gg = el("g", {
+          class: "fb-dot path" + (isCur ? " current" : "") + (i < upto ? " played" : "") +
+                 (n.note.isFlavour ? " flavour" : ""),
+          "data-group": n.note.colorGroup
+        });
+        if (opts.lefty) gg.setAttribute("transform", `translate(${2 * cx(n)},0) scale(-1,1)`);
+        if (n.note.isFlavour) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: 16, class: "dot-flavour-ring" }));
+        gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 15 : 12, class: "dot-bg" }));
+        const label = opts.labelMode === "note" ? n.note.name : n.note.degree;
+        gg.appendChild(el("text", { x: cx(n), y: cy(n) + 4, "text-anchor": "middle", class: "dot-label" }, label));
+        if (opts.showStrokes !== false) {
+          gg.appendChild(el("text", {
+            x: cx(n), y: cy(n) - 18, "text-anchor": "middle",
+            class: "stroke-mark s-" + n.stroke
+          }, n.stroke === "down" ? "⊓" : "V"));
+        }
+        g.appendChild(gg);
+      });
+    }
+
     // scale / mode overlay: every occurrence of each mode degree on the neck
     if (opts.scaleNotes && opts.scaleNotes.length) {
       const byPc = {};
@@ -214,7 +284,7 @@
       const active = new Set(
         (opts.grip ? opts.grip.placements : []).map((p) => p.stringIndex + ":" + p.fret)
       );
-      for (let s = 0; s < 6; s++) {
+      for (let s = 0; s < NSTR; s++) {
         for (let f = 0; f <= N_FRETS; f++) {
           const pc = (((OPEN[s] + f) % 12) + 12) % 12;
           const sn = byPc[pc];
@@ -245,5 +315,5 @@
     }
   }
 
-  window.Fretboard = { OPEN, OPEN_NAMES, N_FRETS, stringSets, findGrip, allTonePositions, render };
+  window.Fretboard = { N_FRETS, stringSets, findGrip, allTonePositions, render };
 })();
