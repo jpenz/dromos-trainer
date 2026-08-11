@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ii–V–I Pivot Cycle · Guitar Trainer</title>
+  <title>Dromos Trainer · ii–V–I, Minor, Ousak &amp; Hijaz</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -11,43 +11,92 @@
     <div class="brand">
       <span class="logo">↻</span>
       <div>
-        <h1>ii–V–I Pivot Cycle</h1>
-        <p class="tagline">Each I becomes the next ii · spiraling down by whole step</p>
+        <h1>Dromos Trainer</h1>
+        <p class="tagline">ii–V–I pivot cycle · Major / Minor / Ousak / Hijaz progressions · ear training</p>
       </div>
     </div>
-    <div id="testBadge" class="test-badge"></div>
+    <div class="top-right">
+      <nav class="viewtabs">
+        <button data-view="cycle" class="active">Pivot Cycle</button>
+        <button data-view="prog">Progressions</button>
+        <button data-view="ear">Ear Trainer</button>
+      </nav>
+      <div id="testBadge" class="test-badge"></div>
+    </div>
   </header>
 
-  <nav class="keymap-wrap">
-    <div id="keymap" class="keymap"></div>
-  </nav>
+  <div id="keymapWrap" class="keymap-wrap"><div id="keymap" class="keymap"></div></div>
+  <div id="progStrip" class="prog-strip hidden"></div>
 
   <main>
-    <section class="stage">
+    <section id="stage" class="stage">
       <div id="pivotBanner" class="pivot-banner"></div>
       <div class="fretboard-wrap">
         <svg id="fretboard" role="img" aria-label="guitar fretboard"></svg>
       </div>
-
       <div class="legend">
         <span class="legend-item" data-group="root"><i></i>Root</span>
-        <span class="legend-item" data-group="third"><i></i>3rd (♭3 / 3)</span>
+        <span class="legend-item" data-group="third"><i></i>3rd</span>
         <span class="legend-item" data-group="fifth"><i></i>5th</span>
-        <span class="legend-item" data-group="seventh"><i></i>7th (♭7 / 7)</span>
+        <span class="legend-item" data-group="seventh"><i></i>7th</span>
+        <span class="legend-item flavour-key"><i></i>flavour note (♭2 / 3)</span>
         <span class="legend-note">moved voices glow &amp; carry a ↓</span>
       </div>
+      <div id="scaleStrip" class="scale-strip hidden"></div>
     </section>
 
     <aside class="side">
       <div id="readout" class="readout"></div>
 
-      <div class="modes">
-        <span class="modes-label">Practice mode</span>
+      <!-- ---- cycle panel ---- -->
+      <div id="panelCycle" class="panel">
+        <span class="panel-label">Cycle drill</span>
         <div class="seg">
           <button data-mode="full" class="active">Full cycle</button>
           <button data-mode="iiVI">Single ii–V–I</button>
           <button data-mode="pivot">Pivot drill</button>
         </div>
+      </div>
+
+      <!-- ---- progression panel ---- -->
+      <div id="panelProg" class="panel hidden">
+        <div class="row">
+          <div class="grow">
+            <span class="panel-label">Dromos</span>
+            <div class="seg seg-4">
+              <button data-modeid="major" class="active">Major</button>
+              <button data-modeid="minor">Minor</button>
+              <button data-modeid="ousak">Ousak</button>
+              <button data-modeid="hijaz">Hijaz</button>
+            </div>
+          </div>
+        </div>
+        <div class="row tonic-row">
+          <label for="tonicSel">Tonic</label>
+          <select id="tonicSel"></select>
+        </div>
+        <span class="panel-label">Progressions</span>
+        <div id="progList" class="prog-list"></div>
+      </div>
+
+      <!-- ---- ear trainer panel ---- -->
+      <div id="panelEar" class="panel hidden">
+        <span class="panel-label">Name that dromos</span>
+        <p class="ear-hint">You hear the mode's signature cadence, then a descending run.
+          The run matters: <b>Ousak and Minor use the same chords</b> — only the melody
+          separates them.</p>
+        <div id="earFeedback" class="ear-feedback">Press <b>New question</b> to begin.</div>
+        <div class="guess-grid">
+          <button class="guess-btn" data-guess="major">Major</button>
+          <button class="guess-btn" data-guess="minor">Minor</button>
+          <button class="guess-btn" data-guess="ousak">Ousak</button>
+          <button class="guess-btn" data-guess="hijaz">Hijaz</button>
+        </div>
+        <div class="row">
+          <button id="btnEarReplay" class="mini grow">↻ Replay (Space)</button>
+          <button id="btnEarNew" class="mini grow primary-mini">New question</button>
+        </div>
+        <div id="earScore" class="ear-score"></div>
       </div>
 
       <div class="transport">
@@ -69,6 +118,7 @@
 
       <div class="toggles">
         <label><input type="checkbox" id="tglLabel" /> Note names</label>
+        <label><input type="checkbox" id="tglScale" /> Scale overlay</label>
         <label><input type="checkbox" id="tglGhost" /> Ghost tones</label>
         <label><input type="checkbox" id="tglLoop" checked /> Loop</label>
         <label><input type="checkbox" id="tglMetro" /> Metronome</label>
@@ -76,11 +126,12 @@
         <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
       </div>
 
-      <div class="hint">Space play/pause · ← → step · L loop</div>
+      <div class="hint">Space play/pause · ← → step · 1/2/3 switch view</div>
     </aside>
   </main>
 
   <script src="js/theory.js"></script>
+  <script src="js/modes.js"></script>
   <script src="js/fretboard.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/app.js"></script>
