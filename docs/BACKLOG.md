@@ -13,7 +13,23 @@ Ordered roughly by value. Promote an item into the table in
 
 ## Proposed (no ID yet)
 
-**Musical**
+**Musical — these serve [SOLOING.md](SOLOING.md) directly, in priority order**
+
+- **Loop / backing player.** You cannot practise soloing without the changes playing
+  underneath. The transport already schedules chords; this is mostly UI. *Highest
+  value remaining.*
+- **Pentatonic overlay + flavour targets.** Show the mode's pentatonic skeleton on
+  the neck, with the flavour notes as separate "arrival" targets (SOLOING §1–2).
+  Note Hijaz needs the DOMINANT pentatonic, not the minor one.
+- **Tetrachord view.** Split the mode into its two four-note cells and drill inside
+  one at a time (SOLOING §3). The most Greek-specific feature not yet built.
+- **Meter.** 9/8 zeibekiko, 7/8 kalamatianos, 2/4 syrtos. Everything is 4/4 today,
+  which makes idiomatic phrasing impossible (SOLOING §8).
+- **Guide-tone line display** through a progression — the 3rds and 7ths as a
+  connected line, the way the cycle view shows voice leading.
+- **Drone mode** for nisiotika practice.
+
+**Musical — other**
 
 - **More dromoi.** Niavent, Sabah, Kartzigar, Rast, Houzam, Piraeotikos. See the
   "add a mode" recipe in [CONTRIBUTING.md](../CONTRIBUTING.md). Watch MI-05.

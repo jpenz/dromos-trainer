@@ -224,7 +224,7 @@
         // counter-flip text so labels read normally
         gg.setAttribute("transform", `translate(${2 * cx},0) scale(-1,1)`);
       }
-      const r = kind === "ghost" ? 9 : kind === "scale" ? 11 : 14;
+      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : 14;
       if (isFlavour && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 4, class: "dot-flavour-ring" }));
       }
@@ -239,6 +239,19 @@
         gg.appendChild(el("text", { x: cx + 17, y: cy - 9, "text-anchor": "middle", class: "moved-arrow" }, "↓"));
       }
       return gg;
+    }
+
+    // ---- other triad shapes drawn faintly behind the highlighted one -----
+    if (opts.otherShapes && opts.otherShapes.length) {
+      const active = new Set((opts.grip ? opts.grip.placements : [])
+        .map((p) => p.stringIndex + ":" + p.fret));
+      const drawn = new Set();
+      opts.otherShapes.forEach((s) => s.placements.forEach((p) => {
+        const k = p.stringIndex + ":" + p.fret;
+        if (active.has(k) || drawn.has(k)) return;
+        drawn.add(k);
+        g.appendChild(dot(p, "shape"));
+      }));
     }
 
     // ---- practice path: connectors, stroke marks, order numbers ----------

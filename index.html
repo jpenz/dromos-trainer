@@ -19,6 +19,7 @@
       <nav class="viewtabs">
         <button data-view="cycle" class="active">Pivot Cycle</button>
         <button data-view="prog">Progressions</button>
+        <button data-view="triads">Triads</button>
         <button data-view="lab">Scale Lab</button>
         <button data-view="ear">Ear Trainer</button>
       </nav>
@@ -28,6 +29,7 @@
 
   <div id="keymapWrap" class="keymap-wrap"><div id="keymap" class="keymap"></div></div>
   <div id="progStrip" class="prog-strip hidden"></div>
+  <div id="triadStrip" class="prog-strip hidden"></div>
 
   <main>
     <section id="stage" class="stage">
@@ -78,6 +80,24 @@
         </div>
         <span class="panel-label">Progressions</span>
         <div id="progList" class="prog-list"></div>
+      </div>
+
+      <!-- ---- triads panel ---- -->
+      <div id="panelTriads" class="panel hidden">
+        <span class="panel-label">Triads through the changes</span>
+        <p class="ear-hint">Every triad shape of the current chord, all over the neck.
+          The highlighted one is the <b>least-movement</b> choice from the previous
+          chord — that is what hitting the changes looks like under the hand.</p>
+        <div class="row tonic-row">
+          <label for="setSel">Strings</label>
+          <select id="setSel"></select>
+        </div>
+        <label class="inline-tgl"><input type="checkbox" id="tglAllShapes" checked />
+          show every other shape faintly</label>
+        <div class="row">
+          <button id="btnTriadPrev" class="mini grow">◀ prev chord</button>
+          <button id="btnTriadNext" class="mini grow primary-mini">next chord ▶</button>
+        </div>
       </div>
 
       <!-- ---- scale lab panel ---- -->
@@ -191,6 +211,7 @@
   <script src="js/theory.js"></script>
   <script src="js/modes.js"></script>
   <script src="js/practice.js"></script>
+  <script src="js/triads.js"></script>
   <script src="js/fretboard.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/app.js"></script>

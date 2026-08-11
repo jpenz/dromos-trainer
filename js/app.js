@@ -21,6 +21,8 @@
     scaleOverlay: false,
     // --- ear trainer ---
     ear: { answer: null, score: 0, total: 0, streak: 0, best: 0, locked: false },
+    // --- triads ---
+    triads: { step: 0, stringSet: null, showAll: true },
     // --- scale lab ---
     lab: {
       drill: "path",           // path | cell
@@ -402,6 +404,103 @@
     if (L.drill === "path") playLabPath();
   }
 
+  // ============================= TRIADS ==================================
+  const TR = window.Triads;
+
+  function spellPc(pc) {
+    const scale = M.scaleOf(state.tonic, state.modeId);
+    const hit = scale.find((n) => n.pc === pc);
+    return hit ? hit.name : M.simplify(M.nameFor(0, pc));
+  }
+
+  function renderTriads() {
+    const { chords } = currentProgression();
+    const t = state.triads;
+    t.step = Math.min(t.step, chords.length - 1);
+    const path = TR.pathThrough(chords, {
+      stringSet: t.stringSet, startFret: 5, nameFor: spellPc
+    });
+    const cur = path[t.step];
+    if (!cur) return;
+
+    let others = TR.allShapes(chords[t.step].rootPc, cur.triadId, spellPc);
+    if (t.stringSet != null) others = others.filter((s) => s.stringSet[0] === t.stringSet);
+
+    FB.render(svg(), {
+      grip: { placements: cur.placements },
+      otherShapes: t.showAll ? others : [],
+      labelMode: state.labelMode, lefty: state.lefty,
+      flavourPcs: M.flavourPcs(state.tonic, state.modeId)
+    });
+
+    // movement from the previous shape
+    let move = "";
+    if (t.step > 0 && path[t.step - 1]) {
+      const prev = path[t.step - 1];
+      const moved = cur.placements.filter((p, i) => p.fret !== prev.placements[i].fret).length;
+      const travel = cur.placements.reduce((a, p, i) => a + Math.abs(p.fret - prev.placements[i].fret), 0);
+      move = `<div class="tri-move"><b>${moved}</b> of 3 fingers move · <b>${travel}</b> fret${travel === 1 ? "" : "s"} of travel from ${prev.chord.symbol}</div>`;
+    }
+
+    $("readout").innerHTML = `
+      <div class="ro-head">
+        <span class="fn-badge fn-deg">${cur.chord.degreeLabel}</span>
+        <span class="ro-symbol">${cur.chord.symbol}</span>
+        <span class="ro-key">${cur.triadName} triad</span>
+      </div>
+      <div class="tri-tags">
+        <span class="tri-inv i-${cur.inversion}">${cur.inversionName}</span>
+        <span class="tri-set">${cur.setLabel} strings</span>
+        <span class="tri-fret">fret ${cur.lowFret}</span>
+      </div>
+      ${move}
+      <div class="ro-notes">
+        ${cur.placements.slice().reverse().map((p) => `
+          <div class="note-chip held" data-group="${p.note.colorGroup}">
+            <span class="chip-role">${p.note.roleLabel}</span>
+            <span class="chip-name">${p.note.name}</span>
+            <span class="chip-tag">fret ${p.fret}</span>
+          </div>`).join("")}
+      </div>
+      <div class="ro-foot">${others.length} shapes of this triad on the neck.
+      Sevenths are colour on top of a triad — over <b>${cur.chord.symbol}</b> the
+      target notes are these three.</div>`;
+
+    $("triadStrip").innerHTML = path.map((p, i) => p ? `
+      <button class="pchip${i === t.step ? " active" : ""}" data-tstep="${i}">
+        <span class="pchip-deg">${p.inversionShort} · f${p.lowFret}</span>
+        <span class="pchip-sym">${p.chord.symbol}</span></button>` : "").join('<span class="pchip-arrow">→</span>');
+    $("triadStrip").querySelectorAll("[data-tstep]").forEach((b) => {
+      b.onclick = () => { t.step = +b.getAttribute("data-tstep"); renderTriads(); auditionTriad(); };
+    });
+  }
+
+  function auditionTriad() {
+    const { chords } = currentProgression();
+    const path = TR.pathThrough(chords, { stringSet: state.triads.stringSet, nameFor: spellPc });
+    const cur = path[Math.min(state.triads.step, path.length - 1)];
+    if (!cur) return;
+    AU.ensure();
+    AU.playChord(cur.placements.map((p) => ({ freq: 440 * Math.pow(2, (p.midi - 69) / 12) })), "strum");
+  }
+
+  function stepTriad(d) {
+    const { chords } = currentProgression();
+    state.triads.step = (state.triads.step + d + chords.length) % chords.length;
+    renderTriads(); auditionTriad();
+  }
+
+  function syncTriadControls() {
+    const sets = TR.stringSets3();
+    const names = window.Tuning.names();
+    $("setSel").innerHTML = `<option value="">All string sets</option>` +
+      sets.map((s) => `<option value="${s[0]}"${state.triads.stringSet === s[0] ? " selected" : ""}>${
+        names.slice(s[0], s[0] + 3).join("-")} strings</option>`).join("");
+    if (state.triads.stringSet != null && !sets.some((s) => s[0] === state.triads.stringSet)) {
+      state.triads.stringSet = null;   // tuning changed under us
+    }
+  }
+
   // ======================= shared chord readout ==========================
   function renderChordReadout(symbol, badge, sub, notes, moveClass, foot) {
     const fnClass = { ii: "fn-ii", V: "fn-v", I: "fn-i" }[badge] || "fn-deg";
@@ -492,14 +591,16 @@
     document.body.setAttribute("data-view", v);
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
-    ["panelCycle", "panelProg", "panelEar", "panelLab"].forEach((id) => $(id).classList.add("hidden"));
+    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads"].forEach((id) => $(id).classList.add("hidden"));
     $("stage").classList.toggle("hidden", v === "ear");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
+    $("triadStrip").classList.toggle("hidden", v !== "triads");
     if (v === "cycle") { $("panelCycle").classList.remove("hidden"); renderCycle(); }
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
     else if (v === "lab") { $("panelLab").classList.remove("hidden"); renderLab(); }
+    else if (v === "triads") { $("panelTriads").classList.remove("hidden"); syncTriadControls(); renderTriads(); }
     else { $("panelEar").classList.remove("hidden"); renderEarScore(); }
   }
 
@@ -566,6 +667,15 @@
       state.bpm = +e.target.value; $("bpmVal").textContent = state.bpm; AU.setBpm(state.bpm);
     };
 
+    // --- triads ---
+    $("setSel").onchange = (e) => {
+      state.triads.stringSet = e.target.value === "" ? null : +e.target.value;
+      renderTriads();
+    };
+    $("tglAllShapes").onchange = (e) => { state.triads.showAll = e.target.checked; renderTriads(); };
+    $("btnTriadPrev").onclick = () => stepTriad(-1);
+    $("btnTriadNext").onclick = () => stepTriad(1);
+
     // --- scale lab ---
     document.querySelectorAll("[data-drill]").forEach((b) => b.onclick = () => {
       state.lab.drill = b.getAttribute("data-drill"); state.lab.revealed = false; renderLab();
@@ -612,12 +722,15 @@
         else if (state.view === "lab") $("btnLabPlay").click();
         else togglePlay();
       }
+      else if (e.code === "ArrowRight" && state.view === "triads") { e.preventDefault(); stepTriad(1); }
+      else if (e.code === "ArrowLeft" && state.view === "triads") { e.preventDefault(); stepTriad(-1); }
       else if (e.code === "ArrowRight") { e.preventDefault(); state.view === "lab" ? (state.lab.drill === "cell" ? stepCell(1) : shiftPosition(1)) : $("btnNext").click(); }
       else if (e.code === "ArrowLeft") { e.preventDefault(); state.view === "lab" ? (state.lab.drill === "cell" ? stepCell(-1) : shiftPosition(-1)) : $("btnPrev").click(); }
       else if (e.key === "1") setView("cycle");
       else if (e.key === "2") setView("prog");
-      else if (e.key === "3") setView("lab");
-      else if (e.key === "4") setView("ear");
+      else if (e.key === "3") setView("triads");
+      else if (e.key === "4") setView("lab");
+      else if (e.key === "5") setView("ear");
       else if (e.key.toLowerCase() === "r" && state.view === "lab") $("btnReveal").click();
     });
   }
@@ -626,10 +739,11 @@
     if (state.view === "cycle") renderCycle();
     else if (state.view === "prog") renderProg();
     else if (state.view === "lab") renderLab();
+    else if (state.view === "triads") { syncTriadControls(); renderTriads(); }
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), P.selfTest()];
+    const suites = [T.selfTest(), M.selfTest(), P.selfTest(), TR.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

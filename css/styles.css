@@ -287,6 +287,19 @@ main {
 
 .tuning-sub { font-size: 11.5px; color: var(--muted); margin-top: -4px; padding-left: 2px; }
 
+/* ---------- triads ---------- */
+.fb-dot.shape .dot-bg { opacity: .3; }
+.fb-dot.shape .dot-label { font-size: 10px; opacity: .75; }
+.tri-tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 6px; }
+.tri-inv, .tri-set, .tri-fret { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; }
+.tri-inv.i-0 { background: rgba(239,77,90,.18); color: #ff9ea6; }
+.tri-inv.i-1 { background: rgba(77,156,255,.18); color: #93c2ff; }
+.tri-inv.i-2 { background: rgba(53,201,138,.18); color: #6ee7b7; }
+.tri-set, .tri-fret { background: var(--panel2); color: var(--muted); }
+.tri-move { font-size: 12px; color: var(--muted); background: var(--panel2);
+  border-left: 3px solid var(--accent); border-radius: 8px; padding: 8px 11px; margin-bottom: 8px; }
+.tri-move b { color: var(--text); }
+
 /* ---------- scale lab ---------- */
 .sub { display: flex; flex-direction: column; gap: 10px; }
 .pos-label { flex: 1; text-align: center; font-size: 13px; font-weight: 800; color: var(--text);

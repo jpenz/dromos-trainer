@@ -34,6 +34,8 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-22** | Expanding/contracting cells | DONE | — | `js/practice.js` | 3→8 notes then 8→3; target is always the last note |
 | **FR-23** | Audiation (sing the target) | DONE | — | `js/audio.js`, `js/app.js` | Playback leaves a silent beat where the target belongs; reveal plays it back for self-checking |
 | **FR-24** | Instrument tunings | DONE | — | `js/tuning.js` | Guitar, drop D, bouzouki tetrachordo (C F A D), bouzouki trichordo (D A D). Switching redraws everything; chords thin gracefully when strings < notes |
+| **FR-25** | Triad map | DONE | — | `js/triads.js` | Every triad shape on the neck, grouped by string set and inversion; works on all tunings |
+| **FR-26** | Voice-led triads through changes | DONE | — | `js/triads.js` | For each chord in a progression, the shape with least finger travel from the previous one; reports fingers moved and frets travelled |
 | **FR-17** | Headless test runner | TODO | — | — | Tests runnable from CLI without a browser (needs Node — not installed on the build machine) |
 | **FR-18** | Persist session state | TODO | — | — | Tonic/mode/progression/score survive reload via `localStorage` |
 | **FR-19** | Printable one-page chart | TODO | — | — | Print stylesheet producing a music-stand sheet of the current mode |
@@ -59,6 +61,8 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-08** | In Hijaz the **♭VII is minor** (`Cm` in D Hijaz, `Gm` in A Hijaz). A major ♭VII would be a different mode. This is the most commonly mis-transcribed chord in the app. | ✅ |
 | **MI-11** | **Inside vs outside picking.** With strict alternate picking: *ascending* a string, `up→down` is **outside** and `down→up` is **inside**; *descending*, `down→up` is **outside** and `up→down` is **inside**. Verified against known pedagogy — 2 notes/string ascending from a downstroke is all-outside; 3 notes/string alternates. Both are asserted. | ✅ |
 | **MI-12** | **Nothing may hardcode six strings.** String count, open pitches and names come from `window.Tuning`. A bouzouki has four courses (three for a trichordo), and every layout, grip and overlay must work on all of them. | ✅ |
+| **MI-13** | **Inversion is named by the bass note**, not by fingering: 0 = root position, 1 = 3rd in bass, 2 = 5th in bass. Asserted for every generated shape. | ✅ |
+| **MI-14** | Sevenths sit on top of a triad: `maj7`/`7` → major, `m7`/`m` → minor, `m7♭5` → diminished. This mapping is what the Triads view teaches — see [SOLOING.md](SOLOING.md) §5. | — |
 | **MI-09** | Hijaz on the 5th of a minor key is the *Piraeotikos* relationship: **A Hijaz = D harmonic minor from A**. The Andalusian cadence `Dm–C–B♭–A` lands on that Hijaz tonic — this is the intended teaching bridge between the Minor and Hijaz banks. | — |
 
 ### The reference tables
@@ -116,6 +120,7 @@ choice.** Each is asserted by a self-test where marked.
 | `js/fretboard.js` | FR-02, FR-03, FR-10, FR-11, FR-16 | MI-10, MI-12 | via `Modes.selfTest()` |
 | `js/practice.js` | FR-20, FR-21, FR-22, FR-23 | MI-11, MI-12 | `Practice.selfTest()` |
 | `js/tuning.js` | FR-24 | MI-12 | via the other suites |
+| `js/triads.js` | FR-25, FR-26 | MI-12, MI-13, MI-14 | `Triads.selfTest()` |
 | `js/audio.js` | FR-05, FR-06, FR-23 | MI-06 (`playPrompt`) | audible |
 | `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15 | — | visual |
 
