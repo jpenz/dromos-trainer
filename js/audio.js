@@ -65,6 +65,26 @@
     });
   }
 
+  // Play a melodic line. The ear trainer NEEDS this: Ousak and Minor share the
+  // same chords, so only the melody exposes the flavour degrees (MI-06).
+  function playSequence(notes, spacing, when) {
+    ensure();
+    const sp = spacing == null ? 0.26 : spacing;
+    const t0 = when == null ? ctx.currentTime + 0.02 : when;
+    notes.forEach((n, i) => playNoteAt(n.freq, t0 + i * sp, 1.4, 0.45));
+    return t0 + notes.length * sp;
+  }
+
+  // Chord progression then a descending run — the full ear-training prompt.
+  function playPrompt(chords, runNotes, bpm) {
+    ensure();
+    const spb = 60 / (bpm || 84);
+    let t = ctx.currentTime + 0.08;
+    chords.forEach((c) => { playChord(c.notes, "strum", t); t += spb * 2; });
+    t += spb * 0.5;
+    playSequence(runNotes, spb * 0.6, t);
+  }
+
   function click(when, accent) {
     const t = when == null ? ctx.currentTime : when;
     const o = ctx.createOscillator();
@@ -125,7 +145,7 @@
   function isPlaying() { return !!transport; }
 
   window.AudioEngine = {
-    ensure, playChord, click,
+    ensure, playChord, playSequence, playPrompt, click,
     startTransport, stopTransport, isPlaying,
     setBpm: (v) => transport && transport.setBpm(v),
     setMetronome: (v) => transport && transport.setMetronome(v)
