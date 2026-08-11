@@ -19,6 +19,7 @@
       <nav class="viewtabs">
         <button data-view="cycle" class="active">Pivot Cycle</button>
         <button data-view="prog">Progressions</button>
+        <button data-view="lab">Scale Lab</button>
         <button data-view="ear">Ear Trainer</button>
       </nav>
       <div id="testBadge" class="test-badge"></div>
@@ -79,6 +80,56 @@
         <div id="progList" class="prog-list"></div>
       </div>
 
+      <!-- ---- scale lab panel ---- -->
+      <div id="panelLab" class="panel hidden">
+        <div class="seg">
+          <button data-drill="path" class="active">Picking path</button>
+          <button data-drill="cell">Audiation cells</button>
+        </div>
+
+        <div id="labPath" class="sub">
+          <span class="panel-label">Layout — changes where the strings break</span>
+          <div class="seg seg-4">
+            <button data-layout="3nps" class="active">3/str</button>
+            <button data-layout="2nps">2/str</button>
+            <button data-layout="box">Box</button>
+            <button data-layout="horizontal">Horiz</button>
+          </div>
+          <div class="row">
+            <button id="btnPosDown" class="mini">◀ below</button>
+            <span id="posLabel" class="pos-label">Pos 5</span>
+            <button id="btnPosUp" class="mini">above ▶</button>
+          </div>
+          <div class="row">
+            <button id="btnStroke" class="mini grow">Start: ⊓ down</button>
+            <label class="inline-tgl"><input type="checkbox" id="tglUpDown" checked /> up &amp; down</label>
+          </div>
+        </div>
+
+        <div id="labCell" class="sub hidden">
+          <div id="cellProgress" class="cell-progress"></div>
+          <div id="cellBody" class="cell-body"></div>
+          <div class="row">
+            <button id="btnCellPrev" class="mini">◀ fewer</button>
+            <button id="btnReveal" class="mini grow primary-mini">Reveal target</button>
+            <button id="btnCellNext" class="mini">more ▶</button>
+          </div>
+          <label class="inline-tgl"><input type="checkbox" id="tglAudiate" checked />
+            leave the target silent (sing it)</label>
+        </div>
+
+        <div class="row tonic-row">
+          <label for="startDeg">Start on degree</label>
+          <select id="startDeg">
+            <option value="1">1</option><option value="2">2</option>
+            <option value="3">3</option><option value="4">4</option>
+            <option value="5">5</option><option value="6">6</option>
+            <option value="7">7</option>
+          </select>
+        </div>
+        <button id="btnLabPlay" class="tbtn primary">▶ Play (Space)</button>
+      </div>
+
       <!-- ---- ear trainer panel ---- -->
       <div id="panelEar" class="panel hidden">
         <span class="panel-label">Name that dromos</span>
@@ -111,6 +162,12 @@
         <button id="btnShift" class="mini">Position: auto</button>
       </div>
 
+      <div class="row tonic-row">
+        <label for="tuningSel">Instrument</label>
+        <select id="tuningSel"></select>
+      </div>
+      <div id="tuningSub" class="tuning-sub"></div>
+
       <div class="tempo">
         <label for="bpm">Tempo <b id="bpmVal">84</b> BPM</label>
         <input id="bpm" type="range" min="40" max="200" value="84" />
@@ -130,8 +187,10 @@
     </aside>
   </main>
 
+  <script src="js/tuning.js"></script>
   <script src="js/theory.js"></script>
   <script src="js/modes.js"></script>
+  <script src="js/practice.js"></script>
   <script src="js/fretboard.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/app.js"></script>

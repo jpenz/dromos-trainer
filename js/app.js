@@ -21,6 +21,13 @@
     scaleOverlay: false,
     // --- ear trainer ---
     ear: { answer: null, score: 0, total: 0, streak: 0, best: 0, locked: false },
+    // --- scale lab ---
+    lab: {
+      drill: "path",           // path | cell
+      layout: "3nps", position: 5, startDegree: 1, startString: 0,
+      firstStroke: "down", updown: true, pathIndex: null,
+      cellIdx: 0, audiate: true, revealed: false
+    },
     // --- shared ---
     labelMode: "interval",
     ghosts: false,
@@ -255,6 +262,146 @@
        <span>streak <b>${e.streak}</b></span><span>best <b>${e.best}</b></span>`;
   }
 
+  // ============================ SCALE LAB ================================
+  const P = window.Practice;
+
+  function labPathOpts() {
+    const L = state.lab;
+    return {
+      layout: L.layout, position: L.position, startDegree: L.startDegree,
+      startString: L.startString, firstStroke: L.firstStroke, updown: L.updown
+    };
+  }
+
+  function renderLab() {
+    const L = state.lab;
+    $("labPath").classList.toggle("hidden", L.drill !== "path");
+    $("labCell").classList.toggle("hidden", L.drill !== "cell");
+    document.querySelectorAll("[data-drill]").forEach((b) =>
+      b.classList.toggle("active", b.getAttribute("data-drill") === L.drill));
+    L.drill === "path" ? renderLabPath() : renderLabCell();
+  }
+
+  function renderLabPath() {
+    const L = state.lab;
+    const path = P.buildPath(state.tonic, state.modeId, labPathOpts());
+    if (!path) {
+      $("readout").innerHTML = `<div class="ro-foot">No playable path here — try another position or layout.</div>`;
+      return;
+    }
+    FB.render(svg(), {
+      path: path.nodes, pathIndex: L.pathIndex,
+      labelMode: state.labelMode, lefty: state.lefty,
+      flavourPcs: M.flavourPcs(state.tonic, state.modeId),
+      showStrokes: true
+    });
+
+    const m = path.meta;
+    const mode = M.MODES[state.modeId];
+    $("readout").innerHTML = `
+      <div class="ro-head">
+        <span class="fn-badge fn-deg">${m.layout}</span>
+        <span class="ro-symbol" style="font-size:22px">${mode.name} on ${state.tonic}</span>
+      </div>
+      <div class="lab-stats">
+        <span><b>${m.length}</b> notes</span>
+        <span>frets <b>${m.lowFret}–${m.highFret}</b></span>
+        <span class="x-out"><b>${m.outside}</b> outside</span>
+        <span class="x-in"><b>${m.inside}</b> inside</span>
+      </div>
+      <div class="ro-foot">
+        Strict alternate picking from a <b>${m.firstStroke}</b>stroke.
+        <b class="x-out">Outside</b> crossings sweep around the pair;
+        <b class="x-in">inside</b> ones trap the pick between the strings — those are
+        the ones that break down first. Loose wrist, pick barely clearing the string,
+        and drop the tempo until every crossing is clean.
+      </div>`;
+    $("posLabel").textContent = "Pos " + L.position;
+  }
+
+  function renderLabCell() {
+    const L = state.lab;
+    const cells = P.buildCells(state.tonic, state.modeId, { startDegree: L.startDegree });
+    L.cellIdx = Math.min(L.cellIdx, cells.length - 1);
+    const cell = cells[L.cellIdx];
+    const laid = P.layCell(cell, L.position);
+
+    FB.render(svg(), {
+      path: laid.map((n, i) => Object.assign({ stroke: i % 2 === 0 ? "down" : "up" }, n)),
+      pathIndex: L.revealed || !L.audiate ? laid.length - 1 : laid.length - 2,
+      labelMode: state.labelMode, lefty: state.lefty, showStrokes: false
+    });
+
+    const hidden = L.audiate && !L.revealed;
+    $("cellProgress").innerHTML = cells.map((c, i) =>
+      `<span class="cellpip${i === L.cellIdx ? " on" : ""}${c.phase === "contract" ? " down" : ""}">${c.size}</span>`
+    ).join("");
+
+    $("cellBody").innerHTML = `
+      <div class="cell-head">
+        <span class="cell-size">${cell.size} notes</span>
+        <span class="cell-phase ${cell.phase}">${cell.phase === "expand" ? "adding ↑" : "removing ↓"}</span>
+        ${cell.isOctave ? '<span class="cell-oct">octave</span>' : ""}
+      </div>
+      <div class="cell-notes">
+        ${cell.notes.map((n, i) => {
+          const isT = i === cell.targetIdx;
+          return `<span class="cnote${isT ? " target" : ""}${n.isTonic ? " tonic" : ""}${n.isFlavour ? " flavour" : ""}">
+            <b>${isT && hidden ? "?" : n.name}</b><i>${isT && hidden ? "•" : n.degree}</i></span>`;
+        }).join("")}
+      </div>
+      <div class="cell-target">
+        ${hidden
+          ? `Target is the <b>last</b> note. Hear it before you play it — the app leaves a
+             silent beat where it belongs. <b>Sing it internally</b>, then reveal.`
+          : `Target: <b>${cell.target.name}</b> — degree <b>${cell.target.degree}</b>${
+             cell.isOctave ? " (the octave)" : ""}.`}
+      </div>`;
+    $("btnReveal").textContent = hidden ? "Reveal target" : "Hide target";
+    $("readout").innerHTML = `
+      <div class="ro-head"><span class="fn-badge fn-deg">${cell.size}</span>
+      <span class="ro-symbol" style="font-size:22px">Audiation cell</span></div>
+      <div class="ro-foot">Play the cell, leave the last note silent, sing it internally,
+      then check yourself. Add a note each pass to the octave, then take one away.</div>`;
+    $("posLabel").textContent = "Pos " + L.position;
+  }
+
+  function playLabPath() {
+    const L = state.lab;
+    const path = P.buildPath(state.tonic, state.modeId, labPathOpts());
+    if (!path) return;
+    AU.ensure();
+    AU.playPath(path.nodes, 60 / state.bpm / 2, {
+      onStep: (i) => { L.pathIndex = i; renderLabPath(); },
+      onDone: () => { L.pathIndex = null; renderLabPath(); }
+    });
+  }
+
+  function playLabCell() {
+    const L = state.lab;
+    const cells = P.buildCells(state.tonic, state.modeId, { startDegree: L.startDegree });
+    const cell = cells[L.cellIdx];
+    AU.ensure();
+    const silent = (L.audiate && !L.revealed) ? [cell.targetIdx] : [];
+    AU.playPath(cell.notes, 60 / state.bpm / 2, { silentIndices: silent });
+  }
+
+  function stepCell(delta) {
+    const L = state.lab;
+    const cells = P.buildCells(state.tonic, state.modeId, { startDegree: L.startDegree });
+    L.cellIdx = (L.cellIdx + delta + cells.length) % cells.length;
+    L.revealed = false;
+    renderLabCell();
+    playLabCell();
+  }
+
+  function shiftPosition(delta) {
+    const L = state.lab;
+    L.position = Math.max(0, Math.min(12, L.position + delta));
+    renderLab();
+    if (L.drill === "path") playLabPath();
+  }
+
   // ======================= shared chord readout ==========================
   function renderChordReadout(symbol, badge, sub, notes, moveClass, foot) {
     const fnClass = { ii: "fn-ii", V: "fn-v", I: "fn-i" }[badge] || "fn-deg";
@@ -345,13 +492,14 @@
     document.body.setAttribute("data-view", v);
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
-    ["panelCycle", "panelProg", "panelEar"].forEach((id) => $(id).classList.add("hidden"));
+    ["panelCycle", "panelProg", "panelEar", "panelLab"].forEach((id) => $(id).classList.add("hidden"));
     $("stage").classList.toggle("hidden", v === "ear");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
     if (v === "cycle") { $("panelCycle").classList.remove("hidden"); renderCycle(); }
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
+    else if (v === "lab") { $("panelLab").classList.remove("hidden"); renderLab(); }
     else { $("panelEar").classList.remove("hidden"); renderEarScore(); }
   }
 
@@ -391,6 +539,21 @@
       state.view === "prog" ? renderProg() : null;
     };
 
+    const tuneSel = $("tuningSel");
+    tuneSel.innerHTML = window.Tuning.TUNINGS.map((t) =>
+      `<option value="${t.id}"${t.id === window.Tuning.currentId() ? " selected" : ""}>${t.name}</option>`).join("");
+    const showTuningSub = () => { $("tuningSub").textContent = window.Tuning.current().sub; };
+    tuneSel.onchange = (e) => {
+      stopPlay();
+      window.Tuning.set(e.target.value);
+      showTuningSub();
+      state.position = null;
+      $("btnShift").textContent = "Position: auto";
+      rerender();
+      if (state.view === "ear") renderEarScore();
+    };
+    showTuningSub();
+
     $("tglLabel").onchange = (e) => { state.labelMode = e.target.checked ? "note" : "interval"; rerender(); };
     $("tglGhost").onchange = (e) => { state.ghosts = e.target.checked; rerender(); };
     $("tglLefty").onchange = (e) => { state.lefty = e.target.checked; rerender(); };
@@ -403,6 +566,39 @@
       state.bpm = +e.target.value; $("bpmVal").textContent = state.bpm; AU.setBpm(state.bpm);
     };
 
+    // --- scale lab ---
+    document.querySelectorAll("[data-drill]").forEach((b) => b.onclick = () => {
+      state.lab.drill = b.getAttribute("data-drill"); state.lab.revealed = false; renderLab();
+    });
+    document.querySelectorAll("[data-layout]").forEach((b) => b.onclick = () => {
+      document.querySelectorAll("[data-layout]").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active");
+      state.lab.layout = b.getAttribute("data-layout");
+      state.lab.pathIndex = null; renderLab();
+    });
+    $("btnPosUp").onclick = () => shiftPosition(1);
+    $("btnPosDown").onclick = () => shiftPosition(-1);
+    $("startDeg").onchange = (e) => {
+      state.lab.startDegree = +e.target.value; state.lab.cellIdx = 0;
+      state.lab.revealed = false; renderLab();
+    };
+    $("btnStroke").onclick = () => {
+      state.lab.firstStroke = state.lab.firstStroke === "down" ? "up" : "down";
+      $("btnStroke").textContent = "Start: " + (state.lab.firstStroke === "down" ? "⊓ down" : "V up");
+      renderLab();
+    };
+    $("tglUpDown").onchange = (e) => { state.lab.updown = e.target.checked; renderLab(); };
+    $("btnLabPlay").onclick = () => state.lab.drill === "path" ? playLabPath() : playLabCell();
+    $("btnCellPrev").onclick = () => stepCell(-1);
+    $("btnCellNext").onclick = () => stepCell(1);
+    $("btnReveal").onclick = () => {
+      state.lab.revealed = !state.lab.revealed;
+      renderLabCell();
+      if (state.lab.revealed) AU.playPath([P.buildCells(state.tonic, state.modeId,
+        { startDegree: state.lab.startDegree })[state.lab.cellIdx].target], 0.3, {});
+    };
+    $("tglAudiate").onchange = (e) => { state.lab.audiate = e.target.checked; state.lab.revealed = false; renderLabCell(); };
+
     $("btnEarNew").onclick = newEarQuestion;
     $("btnEarReplay").onclick = () => { if (state.ear.answer) playEarPrompt(); else newEarQuestion(); };
     document.querySelectorAll("[data-guess]").forEach((b) =>
@@ -410,26 +606,37 @@
 
     document.addEventListener("keydown", (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
-      if (e.code === "Space") { e.preventDefault(); state.view === "ear" ? playEarPrompt() : togglePlay(); }
-      else if (e.code === "ArrowRight") { e.preventDefault(); $("btnNext").click(); }
-      else if (e.code === "ArrowLeft") { e.preventDefault(); $("btnPrev").click(); }
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (state.view === "ear") playEarPrompt();
+        else if (state.view === "lab") $("btnLabPlay").click();
+        else togglePlay();
+      }
+      else if (e.code === "ArrowRight") { e.preventDefault(); state.view === "lab" ? (state.lab.drill === "cell" ? stepCell(1) : shiftPosition(1)) : $("btnNext").click(); }
+      else if (e.code === "ArrowLeft") { e.preventDefault(); state.view === "lab" ? (state.lab.drill === "cell" ? stepCell(-1) : shiftPosition(-1)) : $("btnPrev").click(); }
       else if (e.key === "1") setView("cycle");
       else if (e.key === "2") setView("prog");
-      else if (e.key === "3") setView("ear");
+      else if (e.key === "3") setView("lab");
+      else if (e.key === "4") setView("ear");
+      else if (e.key.toLowerCase() === "r" && state.view === "lab") $("btnReveal").click();
     });
   }
 
-  function rerender() { state.view === "cycle" ? renderCycle() : state.view === "prog" ? renderProg() : null; }
+  function rerender() {
+    if (state.view === "cycle") renderCycle();
+    else if (state.view === "prog") renderProg();
+    else if (state.view === "lab") renderLab();
+  }
 
   function showTestBadge() {
-    const a = T.selfTest(), b = M.selfTest();
-    const ok = a.ok && b.ok;
+    const suites = [T.selfTest(), M.selfTest(), P.selfTest()];
+    const all = suites.reduce((a, s) => a.concat(s.results), []);
+    const ok = suites.every((s) => s.ok);
+    const nPass = all.filter((x) => x.pass).length;
     const el = $("testBadge");
-    const nPass = a.results.filter(x => x.pass).length + b.results.filter(x => x.pass).length;
-    const nAll = a.results.length + b.results.length;
-    el.textContent = ok ? `✓ ${nPass}/${nAll} theory tests passing` : `✗ theory tests FAILED (${nPass}/${nAll})`;
+    el.textContent = ok ? `✓ ${nPass}/${all.length} theory tests passing` : `✗ theory tests FAILED (${nPass}/${all.length})`;
     el.className = "test-badge " + (ok ? "ok" : "fail");
-    if (!ok) console.error("Failures:", a.results.concat(b.results).filter((x) => !x.pass));
+    if (!ok) console.error("Failures:", all.filter((x) => !x.pass));
   }
 
   document.addEventListener("DOMContentLoaded", () => {

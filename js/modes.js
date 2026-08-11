@@ -316,21 +316,26 @@
 
     // MI-10: every chord the app can display must produce a playable grip.
     // (A silent "no grip" once hid every V7 in the cycle behind an empty neck.)
-    if (window.Fretboard) {
+    if (window.Fretboard && window.Tuning) {
       const misses = [];
       let checked = 0;
-      if (window.Theory) {
-        window.Theory.buildCycle().forEach((c) => {
-          checked++;
-          if (!window.Fretboard.findGrip(c.notes, null)) misses.push("cycle:" + c.symbol);
-        });
-      }
-      TONICS.forEach((t) => MODE_ORDER.forEach((m) => {
-        PROGRESSIONS[m].forEach((p) => buildProgression(t, m, p.id).chords.forEach((c) => {
-          checked++;
-          if (!window.Fretboard.findGrip(c.notes, null)) misses.push(t + "/" + m + ":" + c.symbol);
+      const restore = window.Tuning.currentId();
+      window.Tuning.TUNINGS.forEach((tun) => {
+        window.Tuning.set(tun.id);
+        if (window.Theory) {
+          window.Theory.buildCycle().forEach((c) => {
+            checked++;
+            if (!window.Fretboard.findGrip(c.notes, null)) misses.push(tun.id + " cycle:" + c.symbol);
+          });
+        }
+        TONICS.forEach((t) => MODE_ORDER.forEach((m) => {
+          PROGRESSIONS[m].forEach((p) => buildProgression(t, m, p.id).chords.forEach((c) => {
+            checked++;
+            if (!window.Fretboard.findGrip(c.notes, null)) misses.push(tun.id + " " + t + "/" + m + ":" + c.symbol);
+          }));
         }));
-      }));
+      });
+      window.Tuning.set(restore);
       const pass = misses.length === 0;
       if (!pass) ok = false;
       results.push({
