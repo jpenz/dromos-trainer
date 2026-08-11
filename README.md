@@ -52,7 +52,26 @@ Turn on **Scale overlay** and the ♭2 and 3rd of the current mode get an orange
 everywhere they appear on the neck. Switching Major → Minor → Ousak → Hijaz then shows
 you, physically, that only two dots move.
 
-### 3. Ear Trainer
+### 3. Scale Lab
+The core practice routine — technique and ear in one loop.
+
+**Picking path.** Runs the mode as a path across the neck with **strict alternate
+picking** marked on every note (⊓ down, V up), and every string change classified:
+
+- **Green solid** = *outside* picking — the pick sweeps around the string pair
+- **Red dashed** = *inside* picking — the pick is trapped between the strings, and
+  these are the crossings that break down first when you push the tempo
+
+Switch between **3/str, 2/str, box and horizontal** to move where the strings break —
+that is what changes the crossing pattern. `◀ below` / `above ▶` walk the same shape
+to the core positions above and below. Loose wrist, pick barely clearing the string,
+and drop the tempo until every crossing is clean.
+
+**Audiation cells.** Start with 3 notes, add one each pass to the octave, then take
+one away back down to 3. The **last note is the target**: playback leaves a *silent
+beat* where it belongs so you sing it internally first, then reveal to check yourself.
+
+### 4. Ear Trainer
 Plays a mode's signature cadence followed by a descending run, and you name the
 dromos. The run is not decoration — since Ousak and Minor are chord-identical, the
 melody is the only thing that can distinguish them.
@@ -81,8 +100,23 @@ already contains a Hijaz section.
 | Key | Action |
 |---|---|
 | `Space` | Play / pause (replay prompt in Ear Trainer) |
-| `←` `→` | Step through chords |
-| `1` `2` `3` | Switch view |
+| `←` `→` | Step through chords / positions / cells |
+| `R` | Reveal the audiation target |
+| `1` `2` `3` `4` | Switch view |
+
+## Instruments
+
+Everything — grips, scale paths, overlays — redraws for the selected instrument:
+
+| Tuning | Strings |
+|---|---|
+| Guitar | `E A D G B E` |
+| Guitar (drop D) | `D A D G B E` |
+| **Bouzouki tetrachordo** | `C F A D` — the guitar's top four strings, each down a whole step |
+| Bouzouki trichordo | `D A D` |
+
+When a chord has more notes than the instrument has strings, it thins automatically —
+the 5th goes first, then the root, so the guide tones survive.
 
 Also: tempo 40–200 BPM, metronome, loop, note-names vs intervals, ghost tones,
 neck-position cycling, and a left-handed neck.

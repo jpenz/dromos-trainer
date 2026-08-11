@@ -85,6 +85,28 @@ and will go red.
 with Minor), that is fine — but the ear trainer must keep playing the melodic run.
 Do not "optimise" `playPrompt` down to chords only.
 
+## Recipe: add a tuning
+
+```js
+// js/tuning.js
+TUNINGS.push({
+  id: "bouzouki4Alt", name: "Bouzouki (alt)", sub: "what a player would call it",
+  open:  [48, 53, 57, 62],        // low -> high, MIDI
+  names: ["C", "F", "A", "D"],
+  frets: 15
+});
+```
+
+That is the whole change — no other file needs editing.
+
+⚠️ **MI-12:** never write `6` for the string count. Read `Tuning.count()`,
+`Tuning.open()`, `Tuning.names()`. The self-tests sweep every registered tuning
+through every layout, mode and tonic, so a hardcoded 6 goes red immediately.
+
+Chords with more notes than the instrument has strings are thinned automatically
+(5th dropped first, then the root — guide tones last). Paths shrink their string
+count and, if needed, start on a higher string.
+
 ## Recipe: add a colour
 
 Colours are CSS variables consumed via `data-group`. Add the variable in

@@ -29,6 +29,11 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-14** | Theory self-test badge | DONE | — | `js/app.js` | Header shows `n/n theory tests passing`; failures logged to console |
 | **FR-15** | Keyboard shortcuts | DONE | — | `js/app.js` | Space, ← →, 1/2/3 view switch |
 | **FR-16** | Responsive + left-handed | DONE | — | `css/styles.css` | Single column < 900px; lefty mirrors the neck but keeps labels upright |
+| **FR-20** | Scale paths | DONE | — | `js/practice.js` | 3/str, 2/str, in-position box, and horizontal single-string layouts; every combination fits the neck on every tuning |
+| **FR-21** | Picking strokes & crossings | DONE | — | `js/practice.js` | Strict alternate strokes marked ⊓/V; each string change classified inside/outside per MI-11 and colour-coded on the path |
+| **FR-22** | Expanding/contracting cells | DONE | — | `js/practice.js` | 3→8 notes then 8→3; target is always the last note |
+| **FR-23** | Audiation (sing the target) | DONE | — | `js/audio.js`, `js/app.js` | Playback leaves a silent beat where the target belongs; reveal plays it back for self-checking |
+| **FR-24** | Instrument tunings | DONE | — | `js/tuning.js` | Guitar, drop D, bouzouki tetrachordo (C F A D), bouzouki trichordo (D A D). Switching redraws everything; chords thin gracefully when strings < notes |
 | **FR-17** | Headless test runner | TODO | — | — | Tests runnable from CLI without a browser (needs Node — not installed on the build machine) |
 | **FR-18** | Persist session state | TODO | — | — | Tonic/mode/progression/score survive reload via `localStorage` |
 | **FR-19** | Printable one-page chart | TODO | — | — | Print stylesheet producing a music-stand sheet of the current mode |
@@ -52,6 +57,8 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-07a** | Cycle ground-truth chord table — see `GROUND_TRUTH` in `js/theory.js`. | ✅ |
 | **MI-07b** | Progression ground-truth table — see `EXPECTED` in `js/modes.js`. | ✅ |
 | **MI-08** | In Hijaz the **♭VII is minor** (`Cm` in D Hijaz, `Gm` in A Hijaz). A major ♭VII would be a different mode. This is the most commonly mis-transcribed chord in the app. | ✅ |
+| **MI-11** | **Inside vs outside picking.** With strict alternate picking: *ascending* a string, `up→down` is **outside** and `down→up` is **inside**; *descending*, `down→up` is **outside** and `up→down` is **inside**. Verified against known pedagogy — 2 notes/string ascending from a downstroke is all-outside; 3 notes/string alternates. Both are asserted. | ✅ |
+| **MI-12** | **Nothing may hardcode six strings.** String count, open pitches and names come from `window.Tuning`. A bouzouki has four courses (three for a trichordo), and every layout, grip and overlay must work on all of them. | ✅ |
 | **MI-09** | Hijaz on the 5th of a minor key is the *Piraeotikos* relationship: **A Hijaz = D harmonic minor from A**. The Andalusian cadence `Dm–C–B♭–A` lands on that Hijaz tonic — this is the intended teaching bridge between the Minor and Hijaz banks. | — |
 
 ### The reference tables
@@ -106,6 +113,21 @@ choice.** Each is asserted by a self-test where marked.
 |---|---|---|---|
 | `js/theory.js` | FR-01 | MI-01, MI-02, MI-03, MI-07a | `Theory.selfTest()` |
 | `js/modes.js` | FR-08, FR-09, FR-10, FR-13 | MI-04, MI-05, MI-06, MI-07b, MI-08 | `Modes.selfTest()` |
-| `js/fretboard.js` | FR-02, FR-03, FR-10, FR-11, FR-16 | — | visual |
-| `js/audio.js` | FR-05, FR-06 | MI-06 (`playPrompt`) | audible |
+| `js/fretboard.js` | FR-02, FR-03, FR-10, FR-11, FR-16 | MI-10, MI-12 | via `Modes.selfTest()` |
+| `js/practice.js` | FR-20, FR-21, FR-22, FR-23 | MI-11, MI-12 | `Practice.selfTest()` |
+| `js/tuning.js` | FR-24 | MI-12 | via the other suites |
+| `js/audio.js` | FR-05, FR-06, FR-23 | MI-06 (`playPrompt`) | audible |
 | `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15 | — | visual |
+
+### The core practice routine (FR-20…FR-23)
+
+The Scale Lab implements one combined technique + audiation routine:
+
+1. **Alternate pick with a loose wrist**, starting from a core position, then the
+   positions **above and below** it, then **horizontally** along one string.
+2. **Vary where the strings break** (3/str, 2/str, box) — this is what changes the
+   inside/outside crossing pattern, which is the actual technical content.
+3. **Pick a target note and pre-hear it.** Start with 3 notes, add one each pass to
+   the octave, then take one away back down to 3.
+4. **Pause and sing the target internally** before it sounds — that is what the
+   silent beat in playback is for. Reveal to check yourself.
