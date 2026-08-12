@@ -1,4 +1,4 @@
-const CACHE = "dromos-trainer-v6";
+const CACHE = "dromos-trainer-v7";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./css/styles.css",
   "./js/tuning.js", "./js/theory.js", "./js/modes.js", "./js/styles.js", "./js/analysis.js", "./js/studies.js", "./js/musicxml.js", "./js/resources.js", "./js/coach.js", "./js/practice.js",
