@@ -483,9 +483,10 @@
 
     renderKeymap(cur.chord);
     renderChangeGuide(journey, cur, nextShape);
-    const pivot = T.isPivot(cycle[prevIndex(state.index)], cur.chord);
-    $("pivotBanner").classList.toggle("show", pivot);
-    if (pivot) $("pivotBanner").textContent = `PIVOT · ${previous.chord.symbol} becomes ${cur.chord.symbol} — lower only the defining 3rd to turn the old I into the next ii`;
+    // The shared guide describes the forward transition. Do not add a second
+    // banner about the chord we just left; past/future messages compete at the
+    // exact moment a learner needs one clear destination.
+    $("pivotBanner").classList.remove("show");
     pulseMoved();
   }
 
