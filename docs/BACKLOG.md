@@ -17,6 +17,8 @@ Ordered roughly by value. Promote an item into the table in
 | FR-35 | Rhythm & comping lab | Instrument-specific right-hand patterns and sparse accompaniment in real Greek meters; mainland laouto is treated as rhythmic as well as melodic. |
 | FR-36 | User song-map studio | User enters/transcribes functions by ear, then reveals triads, targets and positions; avoids a copyrighted-song database. |
 | FR-37 | Foundation and Greek-style pulse explorer | DONE — modern improvisation foundation plus Zeibekiko, Kalamatianos, Hasapiko, Tsifteteli, and Roumba pulse maps; backing/count-in remains FR-32. |
+| FR-38 | Transparent song/part analyzer | DONE — analyzes user-entered chord maps and chord-aligned note fragments, including conditional modal-mixture and secondary-function explanations; raw audio transcription remains a separate future decision. |
+| FR-39 | MECE concept pyramid | DONE — answer-first concept library with Time/Form, Modal-Harmonic Map, Melodic Route, and Touch/Instrument Role. |
 
 ## Proposed (no ID yet)
 

@@ -41,6 +41,8 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-29** | Mainland laouto tuning | DONE | — | `js/tuning.js` | `A D G C` tuning produces playable grips, triads, and scale paths without guitar-only assumptions |
 | **FR-30** | Installable offline browser shell | DONE | — | `manifest.webmanifest`, `sw.js` | Browser can cache the static app for repeat offline use; still opens directly from `file://` without requiring service workers |
 | **FR-37** | Foundation and Greek-style pulse explorer | DONE | — | `js/styles.js`, `js/app.js` | Separates transferable improvisation foundation from selectable Greek pulse/style maps; each meter displays a complete grouping and explicitly sends harmonic choice back to Song Map |
+| **FR-38** | Transparent song/part analyzer | DONE | — | `js/analysis.js`, `js/app.js` | Player-entered progression or chord-aligned notes yield a visible functional map, strong-note plan, concept explanations, and a practice decision—without pretending to transcribe or conclusively identify an audio recording |
+| **FR-39** | MECE concept pyramid | DONE | — | `js/analysis.js`, `js/app.js` | Answer-first concept library separates Time/Form, Modal-Harmonic Map, Melodic Route, and Touch/Instrument Role; every layer includes a Greek/Balkan lens and one drill |
 | **FR-17** | Headless test runner | DONE | — | `package.json`, `test/` | `npm test` runs theory, dromos pentatonic, laouto, and app-shell regressions without a browser |
 | **FR-18** | Persist session state | TODO | — | — | Tonic/mode/progression/score survive reload via `localStorage` |
 | **FR-19** | Printable one-page chart | TODO | — | — | Print stylesheet producing a music-stand sheet of the current mode |
@@ -70,6 +72,7 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-14** | Sevenths sit on top of a triad: `maj7`/`7` → major, `m7`/`m` → minor, `m7♭5` → diminished. This mapping is what the Triads view teaches — see [SOLOING.md](SOLOING.md) §5. | — |
 | **MI-15** | Pentatonic is mode-specific: Major = major pentatonic; Minor/Ousak = minor pentatonic; Hijaz = dominant pentatonic. Hijaz must include its major 3rd, never ♭3. | ✅ |
 | **MI-16** | A Greek style is not a dromos. Its displayed beat groups must total the meter numerator, and every style map must direct the player back to a separate dromos/song map. | ✅ |
+| **MI-17** | Analyzer output is explanatory, not falsely certain: a context-dependent reading must be labelled `possible`, `may`, or `often`; no chord sequence alone is declared a definitive style, key change, or transcription. | ✅ |
 | **MI-09** | Hijaz on the 5th of a minor key is the *Piraeotikos* relationship: **A Hijaz = D harmonic minor from A**. The Andalusian cadence `Dm–C–B♭–A` lands on that Hijaz tonic — this is the intended teaching bridge between the Minor and Hijaz banks. | — |
 
 ### The reference tables
@@ -126,6 +129,7 @@ choice.** Each is asserted by a self-test where marked.
 | `js/theory.js` | FR-01 | MI-01, MI-02, MI-03, MI-07a | `Theory.selfTest()` |
 | `js/modes.js` | FR-08, FR-09, FR-10, FR-13, FR-28 | MI-04, MI-05, MI-06, MI-07b, MI-08, MI-15 | `Modes.selfTest()` + `npm test` |
 | `js/styles.js` | FR-37 | MI-16 | `StyleLibrary.selfTest()` + `npm test` |
+| `js/analysis.js` | FR-38, FR-39 | MI-17 | `AnalysisEngine.selfTest()` + `npm test` |
 | `js/fretboard.js` | FR-02, FR-03, FR-10, FR-11, FR-16 | MI-10, MI-12 | via `Modes.selfTest()` |
 | `js/practice.js` | FR-20, FR-21, FR-22, FR-23 | MI-11, MI-12 | `Practice.selfTest()` |
 | `js/tuning.js` | FR-24, FR-29 | MI-12 | via the other suites |

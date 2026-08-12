@@ -26,6 +26,8 @@
         <button data-view="solo">Solo Lab</button>
         <button data-view="ear">Ear</button>
         <button data-view="styles">Styles</button>
+        <button data-view="analyze">Analyze</button>
+        <button data-view="concepts">Concepts</button>
       </nav>
       <div id="testBadge" class="test-badge"></div>
     </div>
@@ -201,6 +203,38 @@
         <div id="styleExplorer" class="style-explorer hidden"></div>
       </div>
 
+      <!-- ---- transparent song / part analyzer ---- -->
+      <div id="panelAnalyze" class="panel hidden">
+        <span class="panel-label">Study analyzer</span>
+        <p class="analysis-intro">Enter a chord progression or a chord-aligned line. The result explains the map, strong notes, and a specific next drill. It does not claim to transcribe audio or replace listening.</p>
+        <div class="row tonic-row">
+          <label for="analysisTonic">Home</label>
+          <select id="analysisTonic"></select>
+        </div>
+        <div class="seg seg-4" aria-label="Analysis dromos">
+          <button data-analysis-mode="major">Major</button>
+          <button data-analysis-mode="minor" class="active">Minor</button>
+          <button data-analysis-mode="ousak">Ousak</button>
+          <button data-analysis-mode="hijaz">Hijaz</button>
+        </div>
+        <label class="analysis-label" for="analysisChords">Chord map</label>
+        <textarea id="analysisChords" rows="2" spellcheck="false" placeholder="Dm Gm A7 Dm"></textarea>
+        <div class="row">
+          <button id="btnAnalyze" class="mini primary-mini grow">Analyze chord map</button>
+          <button id="btnUseSongMap" class="mini grow">Use current Song Map</button>
+        </div>
+        <label class="analysis-label" for="analysisLine">Optional line / solo fragment</label>
+        <textarea id="analysisLine" rows="3" spellcheck="false" placeholder="Dm: A C D | Gm: B♭ A G | A7: C♯ E G | Dm: F E D"></textarea>
+        <p class="analysis-help">Write one chord per bar or phrase, then its notes after a colon. This labels chord tones, dromos tones, and outside/approach notes—it does not judge them as automatically right or wrong.</p>
+        <div id="analysisResult" class="analysis-result" aria-live="polite"></div>
+      </div>
+
+      <!-- ---- concept pyramid ---- -->
+      <div id="panelConcepts" class="panel hidden">
+        <span class="panel-label">Concept pyramid</span>
+        <div id="conceptPyramid" class="concept-pyramid"></div>
+      </div>
+
       <div class="transport">
         <button id="btnPrev" class="tbtn" title="Previous (←)" aria-label="Previous chord">◀</button>
         <button id="btnPlay" class="tbtn primary" title="Play / Pause (Space)">▶ Play</button>
@@ -234,7 +268,7 @@
         <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
       </div>
 
-      <div class="hint">Space play/pause · ← → step · 1–6 switch practice area</div>
+      <div class="hint">Space play/pause · ← → step · 1–8 switch practice area</div>
     </aside>
   </main>
 
@@ -242,6 +276,7 @@
   <script src="js/theory.js"></script>
   <script src="js/modes.js"></script>
   <script src="js/styles.js"></script>
+  <script src="js/analysis.js"></script>
   <script src="js/practice.js"></script>
   <script src="js/triads.js"></script>
   <script src="js/fretboard.js"></script>

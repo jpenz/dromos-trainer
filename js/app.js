@@ -3,7 +3,7 @@
  */
 (function () {
   "use strict";
-  const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary;
+  const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -27,6 +27,8 @@
     solo: { section: "targets", focus: "third" },
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
+    // --- transparent analysis ---
+    analysis: { tonic: "D", modeId: "minor" },
     // --- scale lab ---
     lab: {
       drill: "path",           // path | cell
@@ -288,6 +290,59 @@
   function setStyleSection(section) {
     state.styles.section = section;
     renderStyles();
+  }
+
+  // ============================ ANALYZER ================================
+  function syncAnalysisControls() {
+    $("analysisTonic").value = state.analysis.tonic;
+    document.querySelectorAll("[data-analysis-mode]").forEach((button) =>
+      button.classList.toggle("active", button.getAttribute("data-analysis-mode") === state.analysis.modeId));
+  }
+
+  function analysisContext() {
+    return { tonic: state.analysis.tonic, modeId: state.analysis.modeId };
+  }
+
+  function renderAnalyzer() {
+    const result = A.analyzeProgression($("analysisChords").value, analysisContext());
+    const concepts = result.concepts.length
+      ? `<div class="analysis-concepts">${result.concepts.map((concept) =>
+        `<article class="analysis-concept"><span>${concept.chord}</span><div><b>${concept.title}</b><p>${concept.detail}</p></div></article>`
+      ).join("")}</div>`
+      : "";
+    const map = result.records.length
+      ? `<div class="analysis-map">${result.records.map((record) =>
+        `<article class="analysis-chord"><span class="analysis-function">${record.label}</span><b>${record.chord.raw}</b>
+          <p>${record.strong.map((tone) => `${tone.name} (${tone.role})`).join(" · ")}</p></article>`
+      ).join("")}</div>`
+      : "";
+    const linePlan = result.linePlan.length
+      ? `<div class="analysis-plan">${result.linePlan.map((step) =>
+        `<article><b>Over ${step.chord}</b><span>Land now: ${step.now}</span><span>Hear next: ${step.arriving}</span></article>`
+      ).join("")}</div>`
+      : "";
+    const lineText = $("analysisLine").value.trim();
+    const line = lineText ? A.analyzeLine(lineText, analysisContext()) : null;
+    const lineResult = line && line.segments.length
+      ? `<section class="analysis-line"><h3>Line annotation</h3><p>${line.summary}</p>${line.segments.map((segment) =>
+        `<div class="line-segment"><b>${segment.chord}</b>${segment.notes.map((note) =>
+          `<span class="line-note ${note.kind}">${note.name}<i>${note.role}</i></span>`
+        ).join("")}</div>`
+      ).join("")}</section>`
+      : lineText ? `<section class="analysis-line"><h3>Line annotation</h3><p>Use the form <b>Chord: notes | Chord: notes</b> so the app can explain each note against the harmony.</p></section>` : "";
+
+    $("analysisResult").innerHTML = `
+      <section class="analysis-answer"><span>Answer first</span><h3>${result.summary}</h3><p>Strong notes are not the only valid notes. They are the reliable arrivals that let you use dromos tones, approaches, motifs, and ornaments intentionally.</p></section>
+      ${map}${concepts ? `<section class="analysis-section"><h3>What is happening</h3>${concepts}</section>` : ""}
+      ${linePlan ? `<section class="analysis-section"><h3>Solo plan</h3>${linePlan}</section>` : ""}
+      ${lineResult}`;
+  }
+
+  function renderConcepts() {
+    $("conceptPyramid").innerHTML = `
+      <section class="concept-apex"><span>Pyramid answer</span><h2>Make a phrase that reveals the song, sits in the pulse, and sounds like you.</h2><p>Work top-down: first the musical conclusion, then four non-overlapping causes. Do not solve a rhythm problem with a new scale, or a target-note problem with more speed.</p></section>
+      <div class="concept-layers">${A.PYRAMID.map((item) => `
+        <article class="concept-layer concept-${item.id}"><div><span>${item.title}</span><h3>${item.question}</h3></div><p>${item.why}</p><p class="concept-greek"><b>Greek/Balkan lens:</b> ${item.id === "time" ? "Feel the additive group first—9/4, 7/8, 5/8, or the song’s actual dance pulse—not a generic click." : item.id === "map" ? "Treat dromos as directional melodic behaviour plus harmony; a scale name by itself is not the whole map." : item.id === "line" ? "Use local triads and tetrachord/seira ideas to connect arrivals, rather than importing unrelated licks." : "Let bouzouki, guitar, or laouto articulation serve the vocal line and accompaniment role; ornament follows function."}</p><p class="concept-drill"><b>One drill:</b> ${item.drill}</p></article>`).join("")}</div>`;
   }
 
   // =========================== EAR TRAINER ===============================
@@ -783,8 +838,8 @@
     document.body.setAttribute("data-solo-section", state.solo.section);
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
-    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelStyles"].forEach((id) => $(id).classList.add("hidden"));
-    $("stage").classList.toggle("hidden", v === "ear" || v === "styles");
+    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelStyles", "panelAnalyze", "panelConcepts"].forEach((id) => $(id).classList.add("hidden"));
+    $("stage").classList.toggle("hidden", v === "ear" || v === "styles" || v === "analyze" || v === "concepts");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
@@ -794,6 +849,8 @@
     else if (v === "triads") { $("panelTriads").classList.remove("hidden"); syncTriadControls(); renderTriads(); }
     else if (v === "solo") { $("panelSolo").classList.remove("hidden"); setSoloSection(state.solo.section); }
     else if (v === "styles") { $("panelStyles").classList.remove("hidden"); renderStyles(); }
+    else if (v === "analyze") { $("panelAnalyze").classList.remove("hidden"); syncAnalysisControls(); renderAnalyzer(); }
+    else if (v === "concepts") { $("panelConcepts").classList.remove("hidden"); renderConcepts(); }
     else { $("panelEar").classList.remove("hidden"); renderEarScore(); }
     // renderCycle rightfully decides whether the pivot explanation is visible;
     // no other practice area should inherit that explanation from a prior view.
@@ -856,6 +913,23 @@
 
     document.querySelectorAll("[data-style-section]").forEach((button) =>
       button.onclick = () => setStyleSection(button.getAttribute("data-style-section")));
+
+    $("analysisTonic").innerHTML = M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}</option>`).join("");
+    $("analysisTonic").onchange = (event) => { state.analysis.tonic = event.target.value; renderAnalyzer(); };
+    document.querySelectorAll("[data-analysis-mode]").forEach((button) => {
+      button.onclick = () => {
+        state.analysis.modeId = button.getAttribute("data-analysis-mode");
+        syncAnalysisControls(); renderAnalyzer();
+      };
+    });
+    $("btnAnalyze").onclick = renderAnalyzer;
+    $("btnUseSongMap").onclick = () => {
+      const { chords } = currentProgression();
+      state.analysis.tonic = state.tonic;
+      state.analysis.modeId = state.modeId;
+      $("analysisChords").value = chords.map((chord) => chord.symbol).join(" ");
+      syncAnalysisControls(); renderAnalyzer();
+    };
 
     const tonicSel = $("tonicSel");
     tonicSel.innerHTML = M.TONICS.map((t) =>
@@ -945,7 +1019,7 @@
         e.preventDefault();
         if (state.view === "ear") playEarPrompt();
         else if (state.view === "solo" && state.solo.section !== "targets") $("btnLabPlay").click();
-        else if (state.view !== "styles") togglePlay();
+        else if (state.view !== "styles" && state.view !== "analyze" && state.view !== "concepts") togglePlay();
       }
       else if (e.code === "ArrowRight" && state.view === "triads") { e.preventDefault(); stepTriad(1); }
       else if (e.code === "ArrowLeft" && state.view === "triads") { e.preventDefault(); stepTriad(-1); }
@@ -957,6 +1031,8 @@
       else if (e.key === "4") setView("solo");
       else if (e.key === "5") setView("ear");
       else if (e.key === "6") setView("styles");
+      else if (e.key === "7") setView("analyze");
+      else if (e.key === "8") setView("concepts");
       else if (e.key.toLowerCase() === "r" && state.view === "solo" && state.solo.section === "cell") $("btnReveal").click();
     });
   }
@@ -967,10 +1043,12 @@
     else if (state.view === "solo") state.solo.section === "targets" ? renderSolo() : renderLab();
     else if (state.view === "triads") { syncTriadControls(); renderTriads(); }
     else if (state.view === "styles") renderStyles();
+    else if (state.view === "analyze") renderAnalyzer();
+    else if (state.view === "concepts") renderConcepts();
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), P.selfTest(), TR.selfTest()];
+    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), A.selfTest(), P.selfTest(), TR.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

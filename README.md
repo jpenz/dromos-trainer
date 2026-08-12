@@ -111,6 +111,27 @@ map. The current maps are **Zeibekiko** `9/4` (`2+2+2+3`), **Kalamatianos** `7/8
 an accompaniment belong in time; it never pretends to choose the song’s dromos for
 you. Use **Open Song Map** from a style to choose the actual harmony.
 
+### 7. Study Analyzer
+
+Enter a progression such as `Dm Gm A7 Dm` with its home and dromos. The analyzer
+shows function, strong landing notes, modal/harmonic events, and a one-target-per-
+chord solo plan. It recognises that a major V in minor introduces a leading-tone
+pull, and that a major IV in minor may be Dorian/modal mixture or a temporary
+dominant—context decides. Add a line as `Chord: notes | Chord: notes` to label chord
+tones, dromos tones, and outside/approach notes.
+
+It is deliberately transparent: this version analyzes material you enter. It does
+not claim to transcribe a recording, infer a dromos from one chord, or pronounce an
+outside note wrong without hearing its resolution.
+
+### 8. Concept Pyramid
+
+Every analysis ends in four separate causes of a good phrase: **Time & Form**,
+**Modal-Harmonic Map**, **Melodic Route**, and **Touch & Instrument Role**. This is an
+answer-first, MECE teaching structure: each layer has a Greek/Balkan lens and one
+concrete drill, so the player can fix the actual problem instead of learning another
+unrelated lick.
+
 ---
 
 ## The bridge worth knowing
@@ -129,7 +150,7 @@ already contains a Hijaz section.
 | `Space` | Play / pause (replay prompt in Ear Trainer) |
 | `←` `→` | Step through chords / positions / cells |
 | `R` | Reveal the audiation target |
-| `1` `2` `3` `4` `5` `6` | Switch practice area |
+| `1`–`8` | Switch practice area |
 
 ## Instruments
 

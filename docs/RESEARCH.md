@@ -109,6 +109,21 @@ landmark → pentatonic or tetrachord route → motif → pulse` before a player
 Greek Style map. The style map does not teach a “John Mayer in Hijaz” imitation; it
 asks the player to apply the same decision skills to an idiomatic pulse.
 
+### 6. Explain analysis answer-first, then teach the next decision
+
+The analyzer must start with a short, provisional musical answer—not a dump of Roman
+numerals—then show four complete, non-overlapping reasons: **time/form**,
+**modal-harmonic map**, **melodic route**, and **touch/instrument role**. This is the
+Pyramid Principle/MECE used as information architecture, not an attempt to make
+music itself mechanically divisible. It prevents common category errors: using a
+new scale to solve a pulse problem, describing a dromos from chord symbols alone, or
+calling a chromatic approach note objectively wrong without hearing where it goes.
+
+The target-note sequence also has an evidence base: chord-tone hearing comes before
+scale fluency, then approach notes and chord-scale material become meaningful.
+That ordering is especially important for intermediate players with gaps in their
+fretboard map.
+
 ## Books and methods worth using alongside the app
 
 | Resource | Why it belongs beside Dromos Trainer |
@@ -149,6 +164,16 @@ asks the player to apply the same decision skills to an idiomatic pulse.
 - The Donut Doctor’s [Pentatonic Triad System](https://www.youtube.com/watch?v=1Ds6iayj2bE)
   explicitly connects pentatonic positions, triads, chord-tone targets, and phrasing;
   this is the modern-guitar bridge behind Solo Lab, not a replacement for dromos.
+- Berklee professor Hal Crook’s [chord-tone versus chord-scale overview](https://college.berklee.edu/bt/121/chord.html)
+  supports this sequencing: hear/outline chord tones first, then add approaches and
+  scale material rather than letting a pattern substitute for harmonic hearing.
+- The [target-note research overview](https://so04.tci-thaijo.org/index.php/mmj/article/view/270580)
+  likewise connects targets with chord tones, modes/scales, chromatic approaches,
+  and enclosures; the app exposes those as separate line choices.
+- Barbara Minto’s [MECE account](https://www.mckinsey.com/alumni/news-and-events/global-news/alumni-news/barbara-minto-mece-i-invented-it-so-i-get-to-say-how-to-pronounce-it.)
+  supports using mutually exclusive, collectively exhaustive groups to communicate
+  a complex analysis clearly. The musical categories remain a pedagogical model,
+  not a claim that lived music has only one interpretation.
 
 ## Design commitments now
 
@@ -162,3 +187,6 @@ asks the player to apply the same decision skills to an idiomatic pulse.
 5. Use local, private practice history only; no account is required to benefit.
 6. Keep **Foundation → Styles → Song Map** distinct: transferable musicianship,
    dance pulse, and a song’s modal/harmonic language are separate but connected maps.
+7. Keep analysis **transparent and conditional**: player-entered data, visible rules,
+   explicit uncertainty, and an immediate drill come before any future audio-analysis
+   feature.

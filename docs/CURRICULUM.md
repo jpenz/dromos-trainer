@@ -59,6 +59,11 @@ principles behind these decisions.
 - Foundation & Styles: a modern improvisation foundation, then selectable Zeibekiko,
   Kalamatianos, Hasapiko, Tsifteteli, and Roumba pulse maps. A style controls
   phrase placement and accompaniment role; Song Map still controls dromos and harmony.
+- Study Analyzer: user-entered chord maps and chord-aligned solo fragments explain
+  function, modal colour, target notes, and a next drill. It is transparent and
+  conditional by design; it does not claim to transcribe or conclusively classify audio.
+- Concept Pyramid: time/form, harmonic/modal map, melodic route, and touch/instrument
+  role are taught as separate, complete causes of an intentional phrase.
 - Installable, offline-capable browser app with no runtime dependency or build step.
 
 ### Next curriculum milestones
