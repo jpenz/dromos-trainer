@@ -46,6 +46,7 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-40** | Authorised Greek study starters | DONE | — | `js/studies.js`, `js/app.js` | Three source-labelled, user-authorised excerpts load directly into the Analyzer; no lyrics, audio, full score, or complete arrangement is stored |
 | **FR-41** | Score-to-study analysis and instrument map | DONE | — | `js/musicxml.js`, `js/app.js`, `js/fretboard.js` | An uncompressed, partwise MusicXML score with chord symbols loads locally into the Analyzer; every selected harmony has a compact tuning-aware chart, target rings, and readable tab |
 | **FR-42** | Research-backed bouzouki reference shelf | DONE | — | `js/resources.js`, `js/app.js` | Concepts includes linked, source-labelled Trigas method/material families and complementary published methods, each tied to an original app practice use |
+| **FR-43** | AI Practice Coach | TODO | — | planned: server endpoint + `js/coach.js` | Answers theory/practice questions in context and may return one validated, user-visible action that opens the relevant exercise, song map, study, or Analyzer state |
 | **FR-17** | Headless test runner | DONE | — | `package.json`, `test/` | `npm test` runs theory, dromos pentatonic, laouto, and app-shell regressions without a browser |
 | **FR-18** | Persist session state | TODO | — | — | Tonic/mode/progression/score survive reload via `localStorage` |
 | **FR-19** | Printable one-page chart | TODO | — | — | Print stylesheet producing a music-stand sheet of the current mode |
@@ -77,6 +78,7 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-16** | A Greek style is not a dromos. Its displayed beat groups must total the meter numerator, and every style map must direct the player back to a separate dromos/song map. | ✅ |
 | **MI-17** | Analyzer output is explanatory, not falsely certain: a context-dependent reading must be labelled `possible`, `may`, or `often`; no chord sequence alone is declared a definitive style, key change, or transcription. | ✅ |
 | **MI-18** | Imported and starter studies are bounded: only user-authorised excerpts or user-selected local MusicXML are analyzed. The app does not OCR PDFs, transcribe audio, cache a repertoire database, or reproduce commercial notation. | ✅ |
+| **MI-19** | The AI coach is advisory and action-bounded: the browser never holds an API secret; it may navigate or prefill a user-visible exercise only after a schema-validated action. It must not invent score content, change data externally, or present a theoretical reading as certain when context is incomplete. | — |
 | **MI-09** | Hijaz on the 5th of a minor key is the *Piraeotikos* relationship: **A Hijaz = D harmonic minor from A**. The Andalusian cadence `Dm–C–B♭–A` lands on that Hijaz tonic — this is the intended teaching bridge between the Minor and Hijaz banks. | — |
 
 ### The reference tables

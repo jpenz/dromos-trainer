@@ -22,6 +22,7 @@ Ordered roughly by value. Promote an item into the table in
 | FR-40 | Authorised Greek study starters | DONE — three source-labelled excerpts from the user-approved library load into the Analyzer without copying a complete arrangement. |
 | FR-41 | Score-to-study analysis and instrument map | DONE — local uncompressed MusicXML chord symbols and notes populate analysis; each change gets tuning-aware chart/tab. PDF OCR, .mxl decompression and audio transcription are intentionally separate decisions. |
 | FR-42 | Research-backed bouzouki reference shelf | DONE — Trigas course/material families and selected complementary methods are linked and tied to original drills. |
+| FR-43 | AI Practice Coach | TODO — secure server-side Responses API integration with a visible, schema-validated exercise-routing action. Requires a hosting/runtime decision and an API secret stored only in that host. |
 
 ## Proposed (no ID yet)
 
