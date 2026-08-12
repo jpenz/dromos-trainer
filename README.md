@@ -53,7 +53,10 @@ B♭:  Cm7  →  F7  →  B♭maj7┘
 ```
 
 At every change **exactly two voices hold and two step down** — the app animates the
-moving pair so you can see the guide-tone line that steers the whole spiral.
+moving pair so you can see the guide-tone line that steers the whole spiral. A shared
+**Now → Next** guide previews the next playable shape as an outline. Full Cycle uses
+all 18 chords, Single ii–V–I stays inside one key, and Pivot trains only the honest
+adjacent `I of the old key → ii of the next key` pair; use Pair controls to change keys.
 
 ### 2. Progressions
 Five modal/harmonic maps, each with a ranked bank of the progressions that actually earn their
@@ -234,11 +237,11 @@ style, selected study, and recent practice history. It ends with at most one saf
 one-tap route into an exercise—such as the exact Song Map, Triads, Solo Lab, Style,
 study starter, or Analyzer state that answers the question.
 
-It uses anonymous device profiles: the browser stores only a signed opaque session
-token, while conversation and practice events are stored in the configured Neon
-database. This lets recommendations evolve from real events—missed targets route
-back to target practice; ear misses route back to hearing—without an account or a
-browser-held API key. Cross-device sign-in is deliberately a later choice.
+The visible **Player profiles · this device** menu keeps each learner's instrument,
+stable practice settings, and ear scores separate in local storage. Dre starts on
+four-course bouzouki (`C F A D`). Each local player also receives a separate signed,
+opaque anonymous Coach session; conversation and practice events live in configured
+Neon. These are local profiles, not password-protected or cross-device accounts.
 
 The Coach is inactive when opening `index.html` directly. To activate it, deploy to
 Vercel, connect Neon through Vercel Marketplace, and add the server secrets in

@@ -94,8 +94,8 @@
     return buf;
   }
 
-  function playNoteAt(freq, when, dur, gain) {
-    const voice = instrumentVoice();
+  function playNoteAt(freq, when, dur, gain, referenceVoice) {
+    const voice = referenceVoice || instrumentVoice();
     const b = pluckBuffer(freq, dur, voice);
     const src = ctx.createBufferSource();
     src.buffer = b;
@@ -134,19 +134,19 @@
   }
 
   // Strum a chord (array of {freq}). style: "strum" | "arp" | "block"
-  function playChord(notes, style, when) {
+  function playChord(notes, style, when, referenceVoice) {
     ensure();
     const t0 = when == null ? ctx.currentTime + 0.01 : when;
     const dur = 2.2;
     const spread = style === "arp" ? 0.14 : style === "block" ? 0 : 0.035;
     const level = voiceGain(notes.length, "chord");
     notes.forEach((n, i) => {
-      playNoteAt(n.freq, t0 + i * spread, dur, Math.max(0.14, level - i * 0.008));
+      playNoteAt(n.freq, t0 + i * spread, dur, Math.max(0.14, level - i * 0.008), referenceVoice);
     });
   }
 
-  // Play the map's melodic line. The Recall drill uses it alongside a coherent
-  // cadence so the learner can hear both harmonic function and modal colour.
+  // Play a melodic path for scale/cell drills. Ear-map prompts deliberately
+  // use chords only so the answer is never leaked by a diagnostic scale run.
   function playSequence(notes, spacing, when) {
     ensure();
     const sp = spacing == null ? 0.26 : spacing;
@@ -155,7 +155,7 @@
     return t0 + notes.length * sp;
   }
 
-  // Chord progression then a descending run — the full ear-training prompt.
+  // Legacy chord + run prompt retained for internal scale study, not Recall.
   function playPrompt(chords, runNotes, bpm) {
     ensure();
     const spb = 60 / (bpm || 84);
@@ -173,7 +173,7 @@
     const spb = 60 / (bpm || 84);
     let t = ctx.currentTime + 0.08;
     for (let pass = 0; pass < 2; pass++) {
-      chords.forEach((chord) => { playChord(chord.notes, "strum", t); t += spb * 1.5; });
+      chords.forEach((chord) => { playChord(chord.notes, "strum", t, "guitar"); t += spb * 1.5; });
       t += spb * 0.45;
     }
   }
@@ -326,7 +326,7 @@
           if (!chord) { stopTransport(); cfg.onStop && cfg.onStop(); return; }
           if (!chord.hold) activeEvent = chord;
           if (chord.notes && chord.notes.length && cfg.strumStyle) {
-            playChord(chord.notes, cfg.strumStyle, nextTime);
+            playChord(chord.notes, cfg.strumStyle, nextTime, chord.referenceVoice);
           }
         }
         const pulseBeat = pulse[beatInBar] || { beat: beatInBar + 1, first: beatInBar === 0, group: 1, size: beatsPerBar };

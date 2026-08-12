@@ -15,7 +15,9 @@ Modules attach one global each (`window.Theory`, `window.Modes`, `window.Fretboa
 ```
 index.html
   └─ css/styles.css        all styling; interval colours are CSS vars
+  └─ js/profiles.js ──►  PlayerProfiles validated local learner state only
   └─ js/theory.js   ──►  Theory     pure. the ii–V–I pivot CYCLE only
+  └─ js/harmony-journey.js ► HarmonyJourney shared current/next sequence model
   └─ js/modes.js    ──►  Modes      pure. dromoi, spelling, progression banks
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
@@ -96,6 +98,21 @@ jump later in the route.
 Redraw is wholesale rather than diffed. At this node count it is well under a frame,
 and it removes a whole class of stale-state bugs.
 
+`HarmonyJourney` sits before rendering and playback. Full Cycle, one ii–V–I, Pivot,
+and Song Map all ask it for the same `now`, `next`, and transition. A pivot is a
+two-item adjacent `I → ii` pair; it never manufactures a route by deleting V chords.
+The fretboard draws `nextGrip` as a static outline behind the active grip. CSS opacity
+may cue the destination, but notes never slide between strings or frets.
+
+## Player identity boundary
+
+`PlayerProfiles` stores only validated, stable preferences and compact progress on
+this device. It never persists an unanswered ear question, analyzer input, imported
+score, timer, or audio state. The first profile is Dre on tetrachordo bouzouki. Each
+local profile namespaces the opaque Coach token and therefore has separate anonymous
+Neon history. This is not authentication or cloud sync; a future account system must
+validate provider identity server-side and explicitly claim anonymous history.
+
 ## Audio
 
 `AudioEngine` renders a normalized **hybrid plucked string**: a Karplus–Strong
@@ -104,6 +121,10 @@ fundamental pitch support on small tablet speakers. Per-voice gain falls as poly
 increases. High-pass cleanup, instrument-specific filtering, a dynamics compressor,
 and a conservative output stage protect against summed clipping. No samples, library,
 or network are required.
+
+Ear checks use a single warm guitar reference voice and chord cadences only, twice.
+The selected instrument still controls the visual/playable map; it does not change
+the Recall reference. Bass, percussion, and scale runs are off for ear questions.
 
 The first real pointer/touch release primes a silent one-sample buffer so iPadOS can
 resume the `AudioContext` inside a user gesture. Do not move audio initialization to a

@@ -304,9 +304,12 @@
 
   function buildProgression(tonicName, modeId, progId) {
     const prog = PROGRESSIONS[modeId].find((p) => p.id === progId) || PROGRESSIONS[modeId][0];
+    const functionLabels = prog.label.split(/\s+–\s+/);
     let prevBottom = null;
-    const chords = prog.chords.map(([deg, q]) => {
+    const chords = prog.chords.map(([deg, q], index) => {
       const c = buildChord(tonicName, modeId, deg, q, prevBottom);
+      c.scaleDegree = c.degreeLabel;
+      c.degreeLabel = functionLabels[index] || c.degreeLabel;
       prevBottom = c.bottomMidi;
       return c;
     });

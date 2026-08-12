@@ -45,8 +45,8 @@ the browser. The code reads it only inside Vercel Functions.
 ## 4. Verify a preview before production
 
 1. Deploy this branch as a Preview.
-2. Open **Coach**. It should say it is connecting, then show an anonymous progress
-   profile rather than a setup warning.
+2. Confirm the top bar shows the local player and instrument. Open **Coach**; it
+   should connect to that player's anonymous history rather than show setup warning.
 3. Ask: “Why does A7 pull to D minor?” You should receive an explanation plus an
    action that opens the D-minor Song Map.
 4. Mark a drill complete, reload, and confirm the conversation/progress remains.
@@ -54,9 +54,10 @@ the browser. The code reads it only inside Vercel Functions.
 
 ## Operating boundaries
 
-- The profile is anonymous and tied to one browser/device. It is deliberately
-  zero-friction. Add account sign-in only when cross-device identity is a confirmed
-  product requirement.
+- Named player profiles and settings are local to one browser/device. Each maps to a
+  separate signed anonymous Coach session, but is not a login and cannot be recovered
+  on another device. Add server-validated account sign-in only as a separately
+  provisioned migration with explicit anonymous-history claiming.
 - The model sees the submitted question, current practice context, the recent coach
   conversation and compact progress counters. MusicXML/PDF data is not uploaded by
   default.

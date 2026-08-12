@@ -42,6 +42,10 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /js\/coach\.js/);
   assert.match(html, /id="coachApp"/);
   assert.match(html, /id="pageGuide"/);
+  assert.match(html, /id="profileApp"/);
+  assert.match(html, /id="tuningSel"/);
+  assert.match(html, /id="changeGuide"/);
+  assert.match(html, /id="journeyAnnouncement"/);
   assert.match(html, /id="earMap"/);
   assert.match(html, /id="earFamilyChoices"/);
   assert.match(html, /id="earMapHomeSel"/);
@@ -49,6 +53,9 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="btnEarCheck"/);
   assert.match(html, /id="videoStudy"/);
   assert.match(read("js/coach.js"), /coachFreeTierConsent/);
+  assert.match(read("api/release.js"), /VERCEL_GIT_COMMIT_SHA/);
+  assert.match(html, /js\/profiles\.js/);
+  assert.match(html, /js\/harmony-journey\.js/);
   assert.match(html, /id="scoreFile"/);
   assert.match(html, /id="analysisInstrument"/);
   assert.match(read("js/tuning.js"), /Laouto \(mainland\)/);
@@ -61,6 +68,11 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/practice.js"), /MELODIC_ROUTES/);
   assert.match(read("js/app.js"), /function renderSoloTimingMatrix/);
   assert.match(read("js/audio.js"), /function playGrooveBeat/);
+  assert.match(read("js/audio.js"), /playChord\(chord\.notes, "strum", t, "guitar"\)/,
+    "ear checks must use the same warm chord reference independent of the visual instrument");
+  assert.doesNotMatch(read("js/app.js"), /filter\(\(i\) => cycle\[i\]\.fn !== "V"\)/,
+    "the pivot drill must never create misleading ii-to-I jumps by deleting dominants");
+  assert.match(read("css/styles.css"), /prefers-reduced-motion: reduce/);
   assert.match(read("js/audio.js"), /beatsPerBar/);
   assert.match(read("js/guitar-voicings.js"), /function fullVoicings/);
   assert.match(read("js/app.js"), /function newEarMap/);

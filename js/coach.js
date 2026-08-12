@@ -4,7 +4,8 @@
 (function () {
   "use strict";
 
-  const TOKEN_KEY = "dromos-trainer-coach-session-v1";
+  const LEGACY_TOKEN_KEY = "dromos-trainer-coach-session-v1";
+  const TOKEN_PREFIX = "dromos-trainer-coach-session-v2:";
   const FREE_TIER_ACK_KEY = "dromos-trainer-coach-free-tier-ack-v1";
   const VIEWS = ["cycle", "prog", "triads", "solo", "ear", "styles", "video", "analyze", "concepts"];
   const MODES = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
@@ -12,7 +13,7 @@
   const STUDIES = ["paliatzis", "apopse", "tsigaro"];
   const STYLES = ["zeibekiko", "kalamatianos", "hasapiko", "tsifteteli", "roumba"];
   const SECTIONS = ["road", "path", "phrase", "targets", "cell"];
-  const state = { token: "", status: "idle", messages: [], summary: null, recommendation: null, lastViewKey: "", lastViewAt: 0, freeTierAcknowledged: false };
+  const state = { profileId: "default", generation: 0, token: "", status: "idle", messages: [], summary: null, recommendation: null, lastViewKey: "", lastViewAt: 0, freeTierAcknowledged: false };
   let config = { context: () => ({}), onAction: () => {} };
   let sessionPromise = null;
 
@@ -65,10 +66,11 @@
   }
 
   function isLocalFile() { return typeof location !== "undefined" && location.protocol === "file:"; }
+  function tokenKey() { return TOKEN_PREFIX + state.profileId; }
 
   function forgetSession() {
     state.token = "";
-    try { localStorage.removeItem(TOKEN_KEY); } catch { /* session-only storage may be unavailable */ }
+    try { localStorage.removeItem(tokenKey()); } catch { /* session-only storage may be unavailable */ }
   }
 
   async function ensureSession() {
@@ -79,14 +81,26 @@
     }
     if (state.token) return true;
     if (sessionPromise) return sessionPromise;
+    const generation = state.generation;
+    const storageKey = tokenKey();
     sessionPromise = (async () => {
-      try { state.token = localStorage.getItem(TOKEN_KEY) || ""; } catch { state.token = ""; }
+      try {
+        state.token = localStorage.getItem(storageKey) || "";
+        if (!state.token && state.profileId) {
+          state.token = localStorage.getItem(LEGACY_TOKEN_KEY) || "";
+          if (state.token) {
+            localStorage.setItem(storageKey, state.token);
+            localStorage.removeItem(LEGACY_TOKEN_KEY);
+          }
+        }
+      } catch { state.token = ""; }
       if (!state.token) {
         const created = await callApi("/api/session", "POST", { context: config.context() });
+        if (generation !== state.generation) return false;
         state.token = created.token;
-        try { localStorage.setItem(TOKEN_KEY, state.token); } catch { /* private mode still works for this visit */ }
+        try { localStorage.setItem(storageKey, state.token); } catch { /* private mode still works for this visit */ }
       }
-      return true;
+      return generation === state.generation;
     })();
     try { return await sessionPromise; }
     finally { sessionPromise = null; }
@@ -106,10 +120,13 @@
   async function start() {
     if (state.status === "ready" || state.status === "loading" || isLocalFile()) return;
     state.status = "loading";
+    const generation = state.generation;
     render();
     try {
       if (await ensureSession()) {
-        hydrate(await callApi("/api/progress", "GET"));
+        const progress = await callApi("/api/progress", "GET");
+        if (generation !== state.generation) return;
+        hydrate(progress);
         state.status = "ready";
       }
     } catch (error) {
@@ -117,7 +134,9 @@
         forgetSession();
         try {
           await ensureSession();
-          hydrate(await callApi("/api/progress", "GET"));
+          const progress = await callApi("/api/progress", "GET");
+          if (generation !== state.generation) return;
+          hydrate(progress);
           state.status = "ready";
         } catch (retryError) {
           state.status = retryError.code === "coach_not_configured" ? "setup" : "unavailable";
@@ -145,7 +164,7 @@
     const recommendation = state.recommendation ? `<section class="coach-recommendation"><span>Next recommendation</span><h3>${escapeHtml(state.recommendation.title)}</h3><p>${escapeHtml(state.recommendation.reason)}</p>${state.recommendation.action ? `<button class="coach-action" data-recommendation-action="true">${escapeHtml(state.recommendation.actionLabel || defaultActionLabel(state.recommendation.action))}</button>` : ""}</section>` : "";
     const progress = state.summary ? `<span class="coach-progress">${state.summary.completed} completed · ${state.summary.targetMisses} target misses · ${state.summary.earAttempts ? state.summary.earCorrect + "/" + state.summary.earAttempts + " ear" : "ear not started"}</span>` : "";
     const canAsk = state.status === "ready" && state.freeTierAcknowledged;
-    root.innerHTML = `<section class="coach-shell"><div class="coach-head"><div><span>Adaptive practice coach</span><h2>Ask what matters. Then go straight to the drill.</h2><p>${escapeHtml(status)}</p></div>${progress}</div>${recommendation}<div class="coach-quick" aria-label="Suggested questions"><button data-coach-prompt="I cannot hear the next chord change. Give me one ear exercise for my current map.">I can’t hear the change</button><button data-coach-prompt="Explain the strongest notes for my current chord and show me the next drill.">What should I land on?</button><button data-coach-prompt="How should I phrase this in the current Greek style without overplaying?">How should I phrase it?</button></div><div id="coachMessages" class="coach-messages" aria-live="polite">${messages.map(messageHtml).join("")}</div><form id="coachForm" class="coach-form"><label for="coachQuestion">Ask the coach</label><textarea id="coachQuestion" rows="3" maxlength="1800" placeholder="For example: Why does A7 pull so strongly back to D minor?"></textarea><label class="coach-free-tier"><input id="coachFreeTierConsent" type="checkbox" ${state.freeTierAcknowledged ? "checked" : ""} /> I understand this free Gemini tier may use submitted questions and practice context to improve Google products. I will not include sensitive or private material.</label><div><button type="button" id="coachComplete" class="mini">Mark current drill complete</button><button type="submit" class="mini primary-mini" ${canAsk ? "" : "disabled"}>Ask coach</button></div></form><p class="coach-privacy">The coach saves this device’s conversation and practice events to personalize future drills. It never receives your API key; score content is sent only when you choose to include it in a question.</p></section>`;
+    root.innerHTML = `<section class="coach-shell"><div class="coach-head"><div><span>Adaptive practice coach</span><h2>Ask what matters. Then go straight to the drill.</h2><p>${escapeHtml(status)}</p></div>${progress}</div>${recommendation}<div class="coach-quick" aria-label="Suggested questions"><button data-coach-prompt="I cannot hear the next chord change. Give me one ear exercise for my current map.">I can’t hear the change</button><button data-coach-prompt="Explain the strongest notes for my current chord and show me the next drill.">What should I land on?</button><button data-coach-prompt="How should I phrase this in the current Greek style without overplaying?">How should I phrase it?</button></div><div id="coachMessages" class="coach-messages" aria-live="polite">${messages.map(messageHtml).join("")}</div><form id="coachForm" class="coach-form"><label for="coachQuestion">Ask the coach</label><textarea id="coachQuestion" rows="3" maxlength="1800" placeholder="For example: Why does A7 pull so strongly back to D minor?"></textarea><label class="coach-free-tier"><input id="coachFreeTierConsent" type="checkbox" ${state.freeTierAcknowledged ? "checked" : ""} /> I understand this free Gemini tier may use submitted questions and practice context to improve Google products. I will not include sensitive or private material.</label><div><button type="button" id="coachComplete" class="mini">Mark current drill complete</button><button type="submit" class="mini primary-mini" ${canAsk ? "" : "disabled"}>Ask coach</button></div></form><p class="coach-privacy">The coach saves this player profile’s conversation and practice events separately on this device. It never receives your API key; score content is sent only when you choose to include it in a question.</p></section>`;
     root.querySelectorAll("[data-coach-prompt]").forEach((button) => { button.onclick = () => { root.querySelector("#coachQuestion").value = button.getAttribute("data-coach-prompt"); root.querySelector("#coachQuestion").focus(); }; });
     root.querySelector("#coachForm").onsubmit = (event) => { event.preventDefault(); send(root.querySelector("#coachQuestion").value); };
     root.querySelector("#coachFreeTierConsent").onchange = (event) => {
@@ -153,7 +172,10 @@
       try { localStorage.setItem(FREE_TIER_ACK_KEY, state.freeTierAcknowledged ? "yes" : "no"); } catch { /* acknowledgement lasts for this visit */ }
       render();
     };
-    root.querySelector("#coachComplete").onclick = () => track("exercise_completed", { exercise: context.view }, context, true);
+    root.querySelector("#coachComplete").onclick = () => {
+      if (window.PlayerProfiles) window.PlayerProfiles.recordProgress({ kind: "complete", exercise: context.view });
+      track("exercise_completed", { exercise: context.view }, context, true);
+    };
     root.querySelectorAll("[data-coach-action]").forEach((button) => { button.onclick = () => runAction(messages[+button.getAttribute("data-coach-action")].action); });
     const recommendationButton = root.querySelector("[data-recommendation-action]");
     if (recommendationButton) recommendationButton.onclick = () => runAction(state.recommendation.action);
@@ -164,9 +186,11 @@
     if (!question || state.status !== "ready" || !state.freeTierAcknowledged) return;
     state.messages.push({ role: "user", content: question });
     state.status = "sending";
+    const generation = state.generation;
     render();
     try {
       const result = await callApi("/api/coach", "POST", { question, context: config.context() });
+      if (generation !== state.generation) return;
       state.messages.push({ role: "assistant", content: result.answer, action: normaliseAction(result.action), actionLabel: result.actionLabel });
       if (result.summary) state.summary = result.summary;
       if (result.recommendation) state.recommendation = Object.assign({}, result.recommendation, { action: normaliseAction(result.recommendation.action) });
@@ -179,9 +203,11 @@
   }
 
   async function track(eventType, payload, context, showResult) {
+    const generation = state.generation;
     try {
       if (!(await ensureSession())) return;
       const result = await callApi("/api/progress", "POST", { eventType, payload, context: context || config.context() });
+      if (generation !== state.generation) return;
       hydrate(result);
       state.status = "ready";
       if (showResult) render();
@@ -217,8 +243,17 @@
   window.PracticeCoach = {
     mount(options) {
       config = Object.assign(config, options || {});
+      state.profileId = text(config.profileId, 80) || "default";
       try { state.freeTierAcknowledged = localStorage.getItem(FREE_TIER_ACK_KEY) === "yes"; } catch { state.freeTierAcknowledged = false; }
       render(); start();
+    },
+    switchProfile(profileId) {
+      const next = text(profileId, 80) || "default";
+      if (next === state.profileId) return;
+      state.generation += 1;
+      state.profileId = next; state.token = ""; state.status = "idle"; state.messages = [];
+      state.summary = null; state.recommendation = null; state.lastViewKey = ""; state.lastViewAt = 0;
+      sessionPromise = null; render(); start();
     },
     render, trackView, track, selfTest
   };

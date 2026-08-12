@@ -228,7 +228,7 @@
         // counter-flip text so labels read normally
         gg.setAttribute("transform", `translate(${2 * cx},0) scale(-1,1)`);
       }
-      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : kind === "road" ? 12 : 14;
+      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : kind === "road" ? 12 : kind === "next-shape" ? 16 : 14;
       if (isFlavour && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 4, class: "dot-flavour-ring" }));
       }
@@ -342,6 +342,21 @@
       opts.allPositions.forEach((p) => {
         if (active.has(p.stringIndex + ":" + p.fret)) return;
         g.appendChild(dot(p, "ghost"));
+      });
+    }
+
+    // The destination grip is a static outline behind the current notes. It
+    // previews a real playable shape without animating dots across strings,
+    // which would imply a fingering or glissando that the player never makes.
+    if (opts.nextGrip && opts.nextGrip.placements) {
+      const currentPlacements = opts.grip && opts.grip.placements ? opts.grip.placements : [];
+      const currentPcs = new Set(currentPlacements.map((placement) => placement.note.pc));
+      const currentPositions = new Set(currentPlacements.map((placement) => `${placement.stringIndex}:${placement.fret}`));
+      opts.nextGrip.placements.forEach((placement) => {
+        const node = dot(placement, "next-shape");
+        if (currentPcs.has(placement.note.pc)) node.classList.add("held-next");
+        if (currentPositions.has(`${placement.stringIndex}:${placement.fret}`)) node.classList.add("overlap");
+        g.appendChild(node);
       });
     }
 

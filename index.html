@@ -7,7 +7,7 @@
   <meta name="description" content="A serious ear-training and fretboard curriculum for Greek modal harmony on guitar, bouzouki, and laouto." />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
-  <link rel="stylesheet" href="css/styles.css?v=12" />
+  <link rel="stylesheet" href="css/styles.css?v=13" />
 </head>
 <body>
   <header class="topbar">
@@ -19,6 +19,12 @@
       </div>
     </div>
     <div class="top-right">
+      <div class="top-instrument">
+        <label for="tuningSel">Instrument map</label>
+        <select id="tuningSel" aria-describedby="tuningSub"></select>
+        <span id="tuningSub" class="tuning-sub"></span>
+      </div>
+      <div id="profileApp"></div>
       <div id="testBadge" class="test-badge"></div>
     </div>
   </header>
@@ -50,6 +56,8 @@
     </aside>
     <section id="stage" class="stage">
       <div id="coachCue" class="coach-cue" aria-live="polite"></div>
+      <section id="changeGuide" class="change-guide" aria-label="Current and next chord" aria-live="off"></section>
+      <div id="journeyAnnouncement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
       <div id="pivotBanner" class="pivot-banner"></div>
       <div class="fretboard-wrap">
         <svg id="fretboard" role="img" aria-label="instrument fretboard"></svg>
@@ -60,6 +68,7 @@
         <span class="legend-item" data-group="fifth"><i></i>5th</span>
         <span class="legend-item" data-group="seventh"><i></i>7th</span>
         <span class="legend-item flavour-key"><i></i>flavour note (♭2 / 3)</span>
+        <span class="legend-item next-shape-key"><i></i>next shape</span>
         <span class="legend-note">moved voices glow &amp; carry a ↓</span>
       </div>
       <div id="scaleStrip" class="scale-strip hidden"></div>
@@ -76,6 +85,11 @@
           <button data-mode="full" class="active">Full cycle</button>
           <button data-mode="iiVI">Single ii–V–I</button>
           <button data-mode="pivot">Pivot drill</button>
+        </div>
+        <div id="pivotPairNav" class="pivot-pair-nav hidden">
+          <button id="btnPivotPairPrev" class="mini" aria-label="Previous pivot pair">◀ pair</button>
+          <span id="pivotPairLabel"></span>
+          <button id="btnPivotPairNext" class="mini" aria-label="Next pivot pair">pair ▶</button>
         </div>
         <div class="cycle-workbench">
           <span class="panel-label">What do you want to practise?</span>
@@ -236,8 +250,9 @@
           <button id="btnEarTonic" class="mini">♪ Hear D</button>
         </div>
         <section id="earColour" class="sub">
-          <p class="ear-hint">You hear a coherent cadence and descending run in the chosen reference tonic.
-            <b>Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers:</b> the chord map and the run must agree.</p>
+          <p class="ear-hint">You hear only a coherent chord cadence in the chosen reference tonic, twice, through one consistent warm-guitar reference.
+            <b>Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers:</b> identify the chord qualities and their pull toward home.</p>
+          <div class="ear-voice-note"><span>Reference voice</span><b>Warm guitar chords · no scale run, bass, or drums</b></div>
           <div id="earFeedback" class="ear-feedback">Press <b>New question</b> to begin.</div>
           <div class="guess-grid">
             <button class="guess-btn" data-guess="major">Major</button>
@@ -339,16 +354,10 @@
       </div>
 
       <section class="session-bar" aria-label="Practice setup">
-        <div class="row tonic-row session-instrument">
-          <label for="tuningSel">Instrument</label>
-          <select id="tuningSel"></select>
-          <div id="tuningSub" class="tuning-sub"></div>
-        </div>
         <div class="tempo">
           <label for="bpm">Tempo <b id="bpmVal">84</b> BPM</label>
           <input id="bpm" type="range" min="40" max="200" value="84" />
         </div>
-        <label class="session-groove" for="grooveStyle">Greek pulse<select id="grooveStyle"></select></label>
         <div class="audition">
           <button id="btnStrum" class="mini">Strum</button>
           <button id="btnArp" class="mini">Arpeggiate</button>
@@ -359,10 +368,11 @@
       <details class="display-settings">
         <summary>Sound &amp; display options</summary>
         <section class="groove-controls" aria-labelledby="grooveTitle">
-          <div><span id="grooveTitle" class="panel-label">Practice ensemble</span><b>Pulse, bass, then your line</b></div>
+          <div><span id="grooveTitle" class="panel-label">Optional practice ensemble</span><b>Chord-only is the default</b></div>
+          <label class="session-groove" for="grooveStyle">Greek pulse<select id="grooveStyle"></select></label>
           <div class="groove-toggles">
-            <label><input type="checkbox" id="tglBass" checked /> moving bass</label>
-            <label><input type="checkbox" id="tglDrums" checked /> grouped percussion</label>
+            <label><input type="checkbox" id="tglBass" /> moving bass</label>
+            <label><input type="checkbox" id="tglDrums" /> grouped percussion</label>
           </div>
           <p id="grooveHint">A practice pulse, not a full arrangement.</p>
         </section>
@@ -381,23 +391,25 @@
     </aside>
   </main>
 
-  <script src="js/tuning.js?v=12"></script>
-  <script src="js/theory.js?v=12"></script>
-  <script src="js/modes.js?v=12"></script>
-  <script src="js/ear-drills.js?v=12"></script>
-  <script src="js/styles.js?v=12"></script>
-  <script src="js/analysis.js?v=12"></script>
-  <script src="js/studies.js?v=12"></script>
-  <script src="js/musicxml.js?v=12"></script>
-  <script src="js/resources.js?v=12"></script>
-  <script src="js/video.js?v=12"></script>
-  <script src="js/coach.js?v=12"></script>
-  <script src="js/practice.js?v=12"></script>
-  <script src="js/triads.js?v=12"></script>
-  <script src="js/fretboard.js?v=12"></script>
-  <script src="js/guitar-voicings.js?v=12"></script>
-  <script src="js/audio.js?v=12"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/tuning.js?v=13"></script>
+  <script src="js/profiles.js?v=13"></script>
+  <script src="js/theory.js?v=13"></script>
+  <script src="js/harmony-journey.js?v=13"></script>
+  <script src="js/modes.js?v=13"></script>
+  <script src="js/ear-drills.js?v=13"></script>
+  <script src="js/styles.js?v=13"></script>
+  <script src="js/analysis.js?v=13"></script>
+  <script src="js/studies.js?v=13"></script>
+  <script src="js/musicxml.js?v=13"></script>
+  <script src="js/resources.js?v=13"></script>
+  <script src="js/video.js?v=13"></script>
+  <script src="js/coach.js?v=13"></script>
+  <script src="js/practice.js?v=13"></script>
+  <script src="js/triads.js?v=13"></script>
+  <script src="js/fretboard.js?v=13"></script>
+  <script src="js/guitar-voicings.js?v=13"></script>
+  <script src="js/audio.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

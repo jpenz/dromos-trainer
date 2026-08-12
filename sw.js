@@ -1,8 +1,8 @@
-const CACHE = "dromos-trainer-v12";
+const CACHE = "dromos-trainer-v13";
 const APP_SHELL = [
-  "./", "./index.html", "./manifest.webmanifest", "./css/styles.css?v=12",
-  "./js/tuning.js?v=12", "./js/theory.js?v=12", "./js/modes.js?v=12", "./js/ear-drills.js?v=12", "./js/styles.js?v=12", "./js/analysis.js?v=12", "./js/studies.js?v=12", "./js/musicxml.js?v=12", "./js/resources.js?v=12", "./js/video.js?v=12", "./js/coach.js?v=12", "./js/practice.js?v=12",
-  "./js/triads.js?v=12", "./js/fretboard.js?v=12", "./js/guitar-voicings.js?v=12", "./js/audio.js?v=12", "./js/app.js?v=12",
+  "./", "./index.html", "./manifest.webmanifest", "./css/styles.css?v=13",
+  "./js/tuning.js?v=13", "./js/profiles.js?v=13", "./js/theory.js?v=13", "./js/harmony-journey.js?v=13", "./js/modes.js?v=13", "./js/ear-drills.js?v=13", "./js/styles.js?v=13", "./js/analysis.js?v=13", "./js/studies.js?v=13", "./js/musicxml.js?v=13", "./js/resources.js?v=13", "./js/video.js?v=13", "./js/coach.js?v=13", "./js/practice.js?v=13",
+  "./js/triads.js?v=13", "./js/fretboard.js?v=13", "./js/guitar-voicings.js?v=13", "./js/audio.js?v=13", "./js/app.js?v=13",
   "./assets/dromos-mark.svg"
 ];
 

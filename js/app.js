@@ -4,7 +4,8 @@
 (function () {
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
-    U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills;
+    U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
+    PP = window.PlayerProfiles, HJ = window.HarmonyJourney;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -54,7 +55,7 @@
     // The pulse is deliberately a practice ensemble: grouped timing and
     // functional roots, not a substitute for a real rhythm section or a
     // claim that one generic pattern represents a whole Greek style.
-    groove: { styleId: "hasapiko", bass: true, drums: true }
+    groove: { styleId: "hasapiko", bass: false, drums: false }
   };
 
   const $ = (id) => document.getElementById(id);
@@ -62,6 +63,107 @@
   const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   }[character]));
+
+  function stablePreferences() {
+    return {
+      tuningId: window.Tuning.currentId(), view: state.view, tonic: state.tonic,
+      modeId: state.modeId, progressionId: state.progId, bpm: state.bpm,
+      cycleMode: state.cycleMode, cycleZone: state.cycleComping.zone,
+      triadZone: state.triads.zone, labelMode: state.labelMode,
+      lefty: state.lefty, loop: state.loop
+    };
+  }
+
+  function persistPreferences(patch) {
+    if (PP) PP.updatePreferences(Object.assign(stablePreferences(), patch || {}));
+  }
+
+  function applyPlayerProfile(profile) {
+    if (!profile) return;
+    const preferences = profile.preferences;
+    window.Tuning.set(preferences.tuningId);
+    state.tonic = preferences.tonic;
+    state.modeId = preferences.modeId;
+    state.progId = (M.PROGRESSIONS[state.modeId] || []).some((item) => item.id === preferences.progressionId)
+      ? preferences.progressionId : M.PROGRESSIONS[state.modeId][0].id;
+    state.bpm = preferences.bpm;
+    state.cycleMode = preferences.cycleMode;
+    state.index = state.cycleMode === "pivot" ? HJ.sequenceForCycle("pivot", 0, cycle)[0] : 0;
+    state.cycleComping.zone = preferences.cycleZone;
+    state.triads.zone = preferences.triadZone;
+    state.labelMode = preferences.labelMode;
+    state.lefty = preferences.lefty;
+    state.loop = preferences.loop;
+    state.ear.tonic = preferences.tonic;
+    state.ear.score = profile.progress.earColour.correct;
+    state.ear.total = profile.progress.earColour.attempts;
+    state.ear.streak = profile.progress.earColour.streak;
+    state.ear.best = profile.progress.earColour.best;
+    state.ear.map.score = profile.progress.earMap.correct;
+    state.ear.map.total = profile.progress.earMap.attempts;
+    state.ear.map.streak = profile.progress.earMap.streak;
+    state.ear.map.best = profile.progress.earMap.best;
+    state.ear.answer = null; state.ear.guess = null; state.ear.locked = false;
+    state.ear.map.answer = null; state.ear.map.keyGuess = null; state.ear.map.familyGuess = null; state.ear.map.progressionGuess = null; state.ear.map.locked = false;
+  }
+
+  function instrumentShortName(tuningId) {
+    return ({ guitar: "Guitar", guitarDropD: "Guitar drop D", bouzouki4: "Bouzouki 4", bouzouki3: "Bouzouki 3", laouto4: "Laouto 4" })[tuningId] || "Instrument";
+  }
+
+  function renderPlayerProfiles(keepOpen) {
+    const root = $("profileApp");
+    if (!root || !PP) return;
+    const profiles = PP.list();
+    const active = PP.active();
+    root.innerHTML = `<details class="player-menu"${keepOpen ? " open" : ""}><summary aria-label="Player profile ${escapeHtml(active.displayName)}">
+      <span class="player-avatar">${escapeHtml(active.displayName.slice(0, 1).toUpperCase())}</span><span class="player-summary"><b>${escapeHtml(active.displayName)}</b><span>${escapeHtml(instrumentShortName(active.preferences.tuningId))} · this device</span></span><span class="player-chevron">▾</span></summary>
+      <div class="player-panel"><div class="player-panel-head"><b>Player profiles · this device</b><span>Separate instrument settings, ear scores, and coach history. These are local profiles, not password-protected accounts.</span></div>
+      <div class="player-list">${profiles.map((profile) => `<button class="player-choice${profile.id === active.id ? " active" : ""}" data-player-id="${profile.id}"><b>${escapeHtml(profile.displayName)}</b><span>${escapeHtml(instrumentShortName(profile.preferences.tuningId))} · ${profile.progress.earColour.correct + profile.progress.earMap.correct}/${profile.progress.earColour.attempts + profile.progress.earMap.attempts} ear checks</span><i>${profile.id === active.id ? "Active" : "Switch"}</i></button>`).join("")}</div>
+      <form id="renamePlayerForm" class="player-form"><input id="renamePlayerName" maxlength="32" value="${escapeHtml(active.displayName)}" aria-label="Rename active player" /><button>Rename</button></form>
+      <form id="addPlayerForm" class="player-form"><input id="newPlayerName" maxlength="32" placeholder="New player name" aria-label="New player name" /><button>Add player</button></form>
+      <div class="player-manage"><span class="player-privacy">Stored only in this browser.</span>${profiles.length > 1 ? '<button id="removePlayer" type="button">Remove active</button>' : ""}</div></div></details>`;
+    root.querySelectorAll("[data-player-id]").forEach((button) => {
+      button.onclick = () => switchPlayer(button.getAttribute("data-player-id"));
+    });
+    root.querySelector("#renamePlayerForm").onsubmit = (event) => {
+      event.preventDefault(); PP.rename(active.id, root.querySelector("#renamePlayerName").value); renderPlayerProfiles(true);
+    };
+    root.querySelector("#addPlayerForm").onsubmit = (event) => {
+      event.preventDefault();
+      const created = PP.create(root.querySelector("#newPlayerName").value);
+      if (created) switchPlayer(created.id);
+    };
+    const remove = root.querySelector("#removePlayer");
+    if (remove) remove.onclick = () => {
+      if (window.confirm(`Remove ${active.displayName}'s local practice profile and scores from this browser?`)) {
+        const next = PP.remove(active.id); switchPlayer(next.id);
+      }
+    };
+  }
+
+  function syncPersistentControls() {
+    const tuning = $("tuningSel");
+    if (tuning) tuning.value = window.Tuning.currentId();
+    if ($("tuningSub")) $("tuningSub").textContent = window.Tuning.current().sub;
+    if ($("bpm")) { $("bpm").value = state.bpm; $("bpmVal").textContent = state.bpm; }
+    if ($("tonicSel")) $("tonicSel").value = state.tonic;
+    if ($("tglLabel")) $("tglLabel").checked = state.labelMode === "note";
+    if ($("tglLefty")) $("tglLefty").checked = state.lefty;
+    if ($("tglLoop")) $("tglLoop").checked = state.loop;
+    document.querySelectorAll("[data-mode]").forEach((button) => button.classList.toggle("active", button.getAttribute("data-mode") === state.cycleMode));
+  }
+
+  function switchPlayer(profileId) {
+    stopPlay();
+    const profile = PP.switchTo(profileId);
+    if (!profile) return;
+    applyPlayerProfile(profile);
+    state.position = null; state.progStep = 0; state.cycleComping.step = 0;
+    syncPersistentControls(); renderPlayerProfiles(false);
+    if (C && C.switchProfile) C.switchProfile(profile.id);
+    setView(profile.preferences.view);
+  }
 
   const PRACTICE_STEPS = [
     { view: "cycle", label: "1 · Hear", detail: "Follow the ii–V–I pivot until the next key feels inevitable." },
@@ -178,11 +280,48 @@
     });
   }
 
+  function animateChangeGuide() {
+    const guide = $("changeGuide");
+    if (!guide || guide.classList.contains("hidden")) return;
+    guide.classList.remove("is-cued");
+    void guide.offsetWidth;
+    guide.style.setProperty("--bar-ms", `${Math.round((60 / state.bpm) * currentPulse().beats.length * 1000)}ms`);
+    guide.classList.add("is-cued");
+  }
+
+  function renderChangeGuide(journey, currentShape, nextShape) {
+    const guide = $("changeGuide");
+    if (!guide || !journey || !journey.now) return;
+    const now = journey.now;
+    const next = journey.next;
+    const span = (shape) => shape && shape.placements && shape.placements.length
+      ? `frets ${Math.min(...shape.placements.map((placement) => placement.fret))}–${Math.max(...shape.placements.map((placement) => placement.fret))}` : "hear the chord";
+    const nowDetail = currentShape && (currentShape.inversionName || currentShape.label) || span(currentShape);
+    const nextDetail = nextShape && (nextShape.inversionName || nextShape.label) || span(nextShape);
+    const transition = journey.transition;
+    const movement = !transition ? "End" : transition.kind === "pivot" ? "role pivot" : transition.kind === "resolution" ? "resolve" : transition.kind === "loop" ? "loop home" : "voice lead";
+    const held = transition ? `${transition.heldPcs.length} tone${transition.heldPcs.length === 1 ? "" : "s"} stay` : "stop and recall";
+    guide.innerHTML = `<article class="change-card now"><span>Now · ${escapeHtml(journey.label)} · ${journey.cursor + 1}/${journey.items.length}</span><strong>${escapeHtml(now.functionLabel)}</strong><b>${escapeHtml(now.symbol)}${now.keyLabel ? ` · ${escapeHtml(now.keyLabel)}` : ""}</b><small>${escapeHtml(nowDetail)}</small></article>
+      <div class="change-motion"><b>${escapeHtml(movement)}</b><span>→</span><small>${escapeHtml(held)}</small></div>
+      <article class="change-card next"><span>Next${next && journey.transition && journey.transition.kind === "pivot" ? " · new role" : ""}</span><strong>${next ? escapeHtml(next.functionLabel) : "End"}</strong><b>${next ? `${escapeHtml(next.symbol)}${next.keyLabel ? ` · ${escapeHtml(next.keyLabel)}` : ""}` : "Loop is off"}</b><small>${next ? escapeHtml(nextDetail) : "Let the home settle"}</small></article>
+      <p class="change-ear-cue"><span>Hear / think</span>${escapeHtml(transition ? transition.cue : `Let ${now.symbol} finish before you move.`)}</p>`;
+    $("journeyAnnouncement").textContent = next
+      ? `Now ${now.functionLabel}, ${now.symbol}${now.keyLabel ? ` in ${now.keyLabel}` : ""}. Next ${next.functionLabel}, ${next.symbol}${next.keyLabel ? ` in ${next.keyLabel}` : ""}.`
+      : `Now ${now.functionLabel}, ${now.symbol}. Next, end.`;
+    animateChangeGuide();
+  }
+
+  function cycleJourney() {
+    return HJ.buildJourney({ kind: "cycle", cycle, mode: state.cycleMode, index: state.index, loop: state.cycleMode === "pivot" ? false : state.loop, holdI: state.holdI });
+  }
+
+  function songJourney(chords, step) {
+    return HJ.buildJourney({ kind: "song", chords, step, loop: state.loop, holdI: state.holdI });
+  }
+
   // ============================ CYCLE VIEW ===============================
   function sequenceFor(mode, idx) {
-    if (mode === "iiVI") { const g = Math.floor(idx / 3) * 3; return [g, g + 1, g + 2]; }
-    if (mode === "pivot") return cycle.map((c, i) => i).filter((i) => cycle[i].fn !== "V");
-    return cycle.map((_, i) => i);
+    return HJ.sequenceForCycle(mode, idx, cycle);
   }
   const prevIndex = (i) => (i - 1 + N) % N;
 
@@ -280,7 +419,7 @@
       stopPlay(); c.stringSet = event.target.value === "" ? null : +event.target.value; renderCycle();
     };
     $("cycleZoneSel").onchange = (event) => {
-      stopPlay(); c.zone = event.target.value; renderCycle();
+      stopPlay(); c.zone = event.target.value; persistPreferences(); renderCycle();
     };
   }
 
@@ -304,11 +443,14 @@
     const path = cycleTriadPath();
     const cur = path[state.index];
     const previous = path[prevIndex(state.index)];
+    const journey = cycleJourney();
+    const nextShape = journey.next ? path[journey.next.sourceIndex] : null;
     if (!cur || !previous) return;
     const moveClass = cur.placements.map((placement, index) =>
       placement.midi === previous.placements[index].midi ? "held" : "moved");
     FB.render(svg(), {
       grip: { placements: cur.placements },
+      nextGrip: nextShape ? { placements: nextShape.placements } : null,
       labelMode: state.labelMode,
       lefty: state.lefty,
       moveClass
@@ -340,6 +482,7 @@
     <div class="ro-foot"><b>Think the full chord ${cur.chord.symbol}; play its triad skeleton.</b>${chordColour ? ` Hear ${chordColour.name} (${chordColour.roleLabel}) as the omitted colour tone.` : ""} Keep the top line singable; the next shape was chosen for the whole cycle, not just this one change.</div>`;
 
     renderKeymap(cur.chord);
+    renderChangeGuide(journey, cur, nextShape);
     const pivot = T.isPivot(cycle[prevIndex(state.index)], cur.chord);
     $("pivotBanner").classList.toggle("show", pivot);
     if (pivot) $("pivotBanner").textContent = `PIVOT · ${previous.chord.symbol} becomes ${cur.chord.symbol} — lower only the defining 3rd to turn the old I into the next ii`;
@@ -350,20 +493,30 @@
     const { chords } = currentProgression();
     const c = state.cycleComping;
     const chord = chords[Math.min(c.step, chords.length - 1)];
+    const journey = songJourney(chords, c.step);
     const voicings = cycleChordVoicings(chord);
     const voicing = voicings[c.voicingIndex];
+    const nextVoicings = journey.next ? cycleChordVoicings(journey.next.chord) : [];
+    const nextVoicing = nextVoicings.length ? nextVoicings[Math.min(c.voicingIndex, nextVoicings.length - 1)] : null;
     if (!voicing) {
       FB.render(svg(), { labelMode: state.labelMode, lefty: state.lefty });
       $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span></div><div class="ro-foot">Full/open forms are a guitar-specific vocabulary. Switch to guitar for six-string forms, or choose Compact 4 for a playable chord-tone set on this tuning.</div>`;
+      renderChangeGuide(journey, null, nextVoicing);
       return;
     }
-    FB.render(svg(), { grip: { placements: voicing.placements }, labelMode: state.labelMode, lefty: state.lefty, flavourPcs: M.flavourPcs(state.tonic, state.modeId) });
+    FB.render(svg(), { grip: { placements: voicing.placements }, nextGrip: nextVoicing ? { placements: nextVoicing.placements } : null, labelMode: state.labelMode, lefty: state.lefty, flavourPcs: M.flavourPcs(state.tonic, state.modeId) });
     svg().setAttribute("aria-label", `guitar ${voicing.label} for ${chord.symbol}`);
     const tones = voicing.placements.slice().reverse().map((placement) => `<div class="note-chip held" data-group="${placement.note.colorGroup}"><span class="chip-role">${placement.note.roleLabel}</span><span class="chip-name">${placement.note.name}</span><span class="chip-tag">fret ${placement.fret}</span></div>`).join("");
     $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span><span class="ro-key">${voicing.label}</span></div><div class="tri-tags"><span class="tri-set">${voicing.family}</span><span class="tri-fret">frets ${voicing.lowFret}–${voicing.highFret || Math.max(...voicing.placements.map((placement) => placement.fret))}</span></div><div class="ro-notes">${tones}</div><div class="ro-foot">Play the lowest note as a bass cue, then listen for the 3rd${chord.notes.some((note) => note.role === "7" || note.role === "b7") ? " and 7th" : ""}. On the next chord, keep common tones and move the remaining voice by the shortest musical distance.</div>`;
+    renderChangeGuide(journey, voicing, nextVoicing);
   }
 
   function renderCycle() {
+    const pivotPair = sequenceFor("pivot", state.index);
+    $("pivotPairNav").classList.toggle("hidden", state.cycleMode !== "pivot");
+    if (state.cycleMode === "pivot") $("pivotPairLabel").innerHTML = `<b>${cycle[pivotPair[0]].symbol}</b> I <span>→</span> <b>${cycle[pivotPair[1]].symbol}</b> ii`;
+    $("btnPrev").disabled = state.cycleMode === "pivot" && state.index === pivotPair[0];
+    $("btnNext").disabled = state.cycleMode === "pivot" && state.index === pivotPair[1];
     $("keymapWrap").classList.toggle("hidden", state.cycleComping.focus === "chords");
     document.querySelectorAll("[data-cycle-focus]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-cycle-focus") === state.cycleComping.focus));
@@ -383,6 +536,11 @@
   function stepCycle(delta) {
     const seq = sequenceFor(state.cycleMode, state.index);
     let pos = seq.indexOf(state.index); if (pos < 0) pos = 0;
+    if (state.cycleMode === "pivot") {
+      const next = pos + delta;
+      if (next < 0 || next >= seq.length) return;
+      setCycleIndex(seq[next]); return;
+    }
     setCycleIndex(seq[(pos + delta + seq.length) % seq.length]);
   }
   function stepCycleComping(delta) {
@@ -394,6 +552,12 @@
   }
   function setCycleIndex(i) { state.index = ((i % N) + N) % N; renderCycle(); }
 
+  function stepPivotPair(delta) {
+    const pair = sequenceFor("pivot", state.index);
+    state.index = (pair[0] + delta * 3 + N) % N;
+    renderCycle();
+  }
+
   // ========================= PROGRESSION VIEW ============================
   function currentProgression() {
     return M.buildProgression(state.tonic, state.modeId, state.progId);
@@ -404,11 +568,15 @@
     const idx = Math.min(state.progStep, chords.length - 1);
     const cur = chords[idx];
     const prev = chords[(idx - 1 + chords.length) % chords.length];
+    const journey = songJourney(chords, idx);
+    const nextChord = journey.next ? journey.next.chord : null;
+    const nextGrip = nextChord ? FB.findGrip(nextChord.notes, state.position) : null;
     const moveClass = cur.notes.map((n) =>
       prev.notes.some((p) => p.pc === n.pc) ? "held" : "moved");
 
     const scale = M.scaleOf(state.tonic, state.modeId);
     drawChord(cur.notes, moveClass, {
+      nextGrip,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       scaleNotes: state.scaleOverlay ? scale : null
     });
@@ -418,8 +586,9 @@
       cur.notes, moveClass, prog.why);
 
     // progression strip
+    const nextIndex = journey.next ? journey.next.sourceIndex : -1;
     $("progStrip").innerHTML = chords.map((c, i) =>
-      `<button class="pchip${i === idx ? " active" : ""}" data-step="${i}">
+      `<button class="pchip${i < idx ? " played" : ""}${i === idx ? " active" : ""}${i === nextIndex ? " is-next" : ""}" data-step="${i}">
          <span class="pchip-deg">${c.degreeLabel}</span>
          <span class="pchip-sym">${c.symbol}</span></button>`
     ).join('<span class="pchip-arrow">→</span>');
@@ -428,6 +597,7 @@
     });
 
     renderScaleStrip(scale, mode);
+    renderChangeGuide(journey, FB.findGrip(cur.notes, state.position), nextGrip);
     pulseMoved();
     $("pivotBanner").classList.remove("show");
   }
@@ -463,6 +633,7 @@
     state.modeId = id;
     state.progId = M.PROGRESSIONS[id][0].id;
     state.progStep = 0;
+    persistPreferences();
     syncProgControls();
     if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
     else renderProg();
@@ -493,6 +664,7 @@
       b.onclick = () => {
         stopPlay();
         state.progId = b.getAttribute("data-prog"); state.progStep = 0;
+        persistPreferences();
         syncProgControls(); renderProg(); auditionProg();
       };
     });
@@ -755,7 +927,7 @@
 
   function playEarTonic() {
     stopPlay();
-    AU.playChord([earTonicNote()], "block");
+    AU.playChord([earTonicNote()], "block", undefined, "guitar");
   }
 
   function renderEarReference() {
@@ -788,7 +960,7 @@
     state.ear.hintLevel = 0;
     state.ear.locked = false;
     $("earFeedback").className = "ear-feedback";
-    $("earFeedback").textContent = `Reference tonic: ${state.ear.tonic}. Listen — chords, then a descending run. Choose a map, ask for a hint if needed, then check.`;
+    $("earFeedback").textContent = `Reference tonic: ${state.ear.tonic}. Listen to the chord cadence twice. Choose a map, ask for a hint if needed, then check.`;
     renderColourChoices();
     renderEarReference();
     playEarPrompt();
@@ -800,8 +972,7 @@
     const id = state.ear.answer;
     const prog = M.PROGRESSIONS[id][0];
     const { chords } = M.buildProgression(state.ear.tonic, id, prog.id);
-    const run = M.descendingRun(state.ear.tonic, id);
-    AU.playPrompt(chords, run, state.bpm);
+    AU.playProgressionPrompt(chords, state.bpm);
   }
 
   function selectColourGuess(guess) {
@@ -832,6 +1003,10 @@
       state.ear.score++; state.ear.streak++;
       state.ear.best = Math.max(state.ear.best, state.ear.streak);
     } else { state.ear.streak = 0; }
+
+    if (PP) PP.recordProgress({ kind: "ear", drill: "colour", correct });
+    if (C) C.track("ear_answered", { result: correct ? "correct" : "incorrect" }, coachContext(), false);
+    renderPlayerProfiles(false);
 
     renderColourChoices();
     const answer = { tonic: state.ear.tonic, modeId: state.ear.answer, progressionId: M.PROGRESSIONS[state.ear.answer][0].id };
@@ -891,7 +1066,7 @@
     const answer = state.ear.map.answer;
     if (!answer || state.ear.map.homePreset === "random") return;
     const chord = E ? E.homeChord(answer) : M.buildProgression(answer.tonic, answer.modeId, answer.progressionId).chords.slice(-1)[0];
-    AU.playChord(chord.notes, "block");
+    AU.playChord(chord.notes, "block", undefined, "guitar");
   }
 
   function renderEarMap() {
@@ -949,6 +1124,9 @@
     const correct = rightKey && rightFamily && rightProgression;
     if (correct) { map.score++; map.streak++; map.best = Math.max(map.best, map.streak); }
     else map.streak = 0;
+    if (PP) PP.recordProgress({ kind: "ear", drill: "map", correct });
+    if (C) C.track("ear_answered", { result: correct ? "correct" : "incorrect" }, coachContext(), false);
+    renderPlayerProfiles(false);
     const detail = E ? E.explanation(map.answer) : null;
     const progression = E ? E.progression(map.answer.modeId, map.answer.progressionId) : M.PROGRESSIONS[map.answer.modeId].find((item) => item.id === map.answer.progressionId);
     const chords = E ? detail.chords.map((symbol) => ({ symbol })) : M.buildProgression(map.answer.tonic, map.answer.modeId, map.answer.progressionId).chords;
@@ -1683,13 +1861,13 @@
     const pulse = currentPulse();
     if (state.view === "cycle" && state.cycleComping.focus === "chords") {
       const { chords } = currentProgression();
-      pb = { kind: "comping", len: chords.length, pos: state.cycleComping.step, started: false };
+      pb = { kind: "comping", len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
     } else if (state.view === "cycle") {
       const seq = sequenceFor(state.cycleMode, state.index);
       pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
     } else if (state.view === "prog" || state.view === "solo") {
       const { chords } = currentProgression();
-      pb = { kind: "prog", len: chords.length, pos: state.progStep, started: false };
+      pb = { kind: "prog", len: chords.length, pos: state.progStep, barsLeft: 0, started: false };
     } else {
       return;
     }
@@ -1701,10 +1879,14 @@
       onBar: (bar, when, now) => {
         const delay = Math.max(0, (when - now) * 1000);
         if (pb.kind === "cycle") {
-          if (pb.barsLeft > 0) { pb.barsLeft--; return { hold: true }; }
+          if (pb.barsLeft > 0) {
+            pb.barsLeft--;
+            setTimeout(animateChangeGuide, delay);
+            return { hold: true };
+          }
           if (pb.started) {
             const next = pb.pos + 1;
-            if (next >= pb.seq.length && !state.loop) return null;
+            if (next >= pb.seq.length && (!state.loop || state.cycleMode === "pivot")) return null;
             pb.pos = next % pb.seq.length;
           }
           pb.started = true;
@@ -1715,9 +1897,14 @@
           setTimeout(() => setCycleIndex(idx), delay);
           const nextIndex = pb.seq[(pb.pos + 1) % pb.seq.length];
           const nextChord = cycle[nextIndex] || chord;
-          return { notes: routeShape ? shapeAudioNotes(routeShape) : chord.notes, bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
+          return { notes: chord.notes, referenceVoice: "guitar", bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
         }
         // progression playback
+        if (pb.barsLeft > 0) {
+          pb.barsLeft--;
+          setTimeout(animateChangeGuide, delay);
+          return { hold: true };
+        }
         if (pb.started) {
           const next = pb.pos + 1;
           if (next >= pb.len && !state.loop) return null;
@@ -1738,7 +1925,8 @@
             state.view === "solo" ? renderSoloSection() : renderProg();
           }
         }, delay);
-        return { notes: c.notes, bass: { rootPc: rootPcOf(c), nextRootPc: rootPcOf(nextChord) } };
+        pb.barsLeft = barsFor(c) - 1;
+        return { notes: c.notes, referenceVoice: "guitar", bass: { rootPc: rootPcOf(c), nextRootPc: rootPcOf(nextChord) } };
       },
       onBeat: (bar, beatInBar, pulseBeat, event, when, now) => {
         if (state.view !== "solo" || state.solo.section !== "targets") return;
@@ -1780,8 +1968,10 @@
     if (state.view === "video" && v !== "video" && V) V.destroy();
     stopPlay();
     state.view = v;
+    persistPreferences();
     document.body.setAttribute("data-view", v);
     document.body.setAttribute("data-solo-section", state.solo.section);
+    $("btnPrev").disabled = false; $("btnNext").disabled = false;
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
     ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelAnalyze", "panelConcepts", "panelCoach"].forEach((id) => $(id).classList.add("hidden"));
@@ -1790,6 +1980,7 @@
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
     $("triadStrip").classList.toggle("hidden", v !== "triads");
+    $("changeGuide").classList.toggle("hidden", v !== "cycle" && v !== "prog");
     if (v === "cycle") { $("panelCycle").classList.remove("hidden"); renderCycle(); }
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
     else if (v === "triads") { $("panelTriads").classList.remove("hidden"); syncTriadControls(); renderTriads(); }
@@ -1831,6 +2022,8 @@
       auditionCurrent();
     };
     $("btnPlay").onclick = togglePlay;
+    $("btnPivotPairPrev").onclick = () => { stopPlay(); stepPivotPair(-1); };
+    $("btnPivotPairNext").onclick = () => { stopPlay(); stepPivotPair(1); };
     $("btnStrum").onclick = () => auditionCurrent("strum");
     $("btnArp").onclick = () => auditionCurrent("arp");
     $("btnShift").onclick = () => {
@@ -1844,6 +2037,8 @@
       document.querySelectorAll("[data-mode]").forEach((x) => x.classList.remove("active"));
       el.classList.add("active");
       state.cycleMode = el.getAttribute("data-mode");
+      if (state.cycleMode === "pivot") state.index = sequenceFor("pivot", state.index)[0];
+      persistPreferences();
       if (AU.isPlaying()) { stopPlay(); startPlay(); }
       renderCycle();
     });
@@ -1918,6 +2113,7 @@
       `<option value="${t}"${t === state.tonic ? " selected" : ""}>${t}</option>`).join("");
     tonicSel.onchange = (e) => {
       state.tonic = e.target.value;
+      persistPreferences();
       if (state.view === "prog") renderProg();
       else if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
       else if (state.view === "triads") renderTriads();
@@ -1931,6 +2127,7 @@
       stopPlay();
       window.Tuning.set(e.target.value);
       showTuningSub();
+      persistPreferences(); renderPlayerProfiles(false);
       state.position = null;
       $("btnShift").textContent = "Position: auto";
       rerender();
@@ -1948,16 +2145,16 @@
       renderGrooveControls();
     };
 
-    $("tglLabel").onchange = (e) => { state.labelMode = e.target.checked ? "note" : "interval"; rerender(); };
+    $("tglLabel").onchange = (e) => { state.labelMode = e.target.checked ? "note" : "interval"; persistPreferences(); rerender(); };
     $("tglGhost").onchange = (e) => { state.ghosts = e.target.checked; rerender(); };
-    $("tglLefty").onchange = (e) => { state.lefty = e.target.checked; rerender(); };
+    $("tglLefty").onchange = (e) => { state.lefty = e.target.checked; persistPreferences(); rerender(); };
     $("tglScale").onchange = (e) => { state.scaleOverlay = e.target.checked; rerender(); };
     $("tglMetro").onchange = (e) => { state.metronome = e.target.checked; AU.setMetronome(state.metronome); };
-    $("tglLoop").onchange = (e) => { state.loop = e.target.checked; };
+    $("tglLoop").onchange = (e) => { state.loop = e.target.checked; persistPreferences(); rerender(); };
     $("tglHoldI").onchange = (e) => { state.holdI = e.target.checked; };
 
     $("bpm").oninput = (e) => {
-      state.bpm = +e.target.value; $("bpmVal").textContent = state.bpm; AU.setBpm(state.bpm);
+      state.bpm = +e.target.value; $("bpmVal").textContent = state.bpm; AU.setBpm(state.bpm); persistPreferences();
     };
 
     // --- triads ---
@@ -1966,7 +2163,7 @@
       renderTriads();
     };
     $("triadZoneSel").onchange = (event) => {
-      state.triads.zone = event.target.value;
+      state.triads.zone = event.target.value; persistPreferences();
       renderTriads();
     };
     $("tglAllShapes").onchange = (e) => { state.triads.showAll = e.target.checked; renderTriads(); };
@@ -2073,7 +2270,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;
@@ -2083,11 +2280,27 @@
     if (!ok) console.error("Failures:", all.filter((x) => !x.pass));
   }
 
+  async function showReleaseIdentity() {
+    try {
+      const response = await fetch("/api/release", { cache: "no-store" });
+      if (!response.ok) return;
+      const release = await response.json();
+      const identity = [release.environment, release.branch, release.commit ? release.commit.slice(0, 8) : null].filter(Boolean).join(" · ");
+      $("testBadge").title = `App v${release.appVersion}${identity ? ` · ${identity}` : ""}`;
+      $("testBadge").setAttribute("data-release", release.appVersion);
+    } catch { /* static/offline use has no release endpoint */ }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    const player = PP.bootstrap();
+    applyPlayerProfile(player);
     wire();
+    syncPersistentControls();
+    renderPlayerProfiles(false);
     showTestBadge();
+    showReleaseIdentity();
     $("bpm").value = state.bpm; $("bpmVal").textContent = state.bpm;
-    C.mount({ context: coachContext, onAction: useCoachAction });
-    setView("cycle");
+    C.mount({ context: coachContext, onAction: useCoachAction, profileId: player.id });
+    setView(player.preferences.view);
   });
 })();
