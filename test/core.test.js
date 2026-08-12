@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js"]
+  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest()];
+  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -28,6 +28,14 @@ test("authorised study starters and referenced methods remain clearly bounded", 
   assert.ok(StudyLibrary.STUDIES.every((study) => /User-authorised/.test(study.source)));
   assert.equal(ResourceLibrary.TRIGAS.length, 5);
   assert.ok(ResourceLibrary.TRIGAS.every((item) => /trigas\.gr/.test(item.href)));
+  assert.equal(ResourceLibrary.COMMUNITY.length, 3);
+  assert.ok(ResourceLibrary.COMMUNITY.every((item) => /mpouzouki\.weebly\.com/.test(item.href)));
+});
+
+test("video study catalog keeps videos hosted at their original public source", () => {
+  const { VideoStudy } = loadCore();
+  assert.equal(VideoStudy.LESSONS.length, 5);
+  assert.ok(VideoStudy.LESSONS.every((lesson) => /^[\w-]{11}$/.test(lesson.videoId)));
 });
 
 test("imported score harmony has a playable chart on every supported tuning", () => {
@@ -80,6 +88,45 @@ test("the pentatonic frame preserves each dromos identity", () => {
     Array.from(Modes.pentatonicOf("D", "ousak"), (note) => note.name),
     ["D", "F", "G", "A", "C"]
   );
+});
+
+test("Solo Road keeps the tetrachord split and number patterns playable", () => {
+  const { Modes, Practice, Tuning, Triads } = loadCore();
+  const road = Modes.tetrachordsOf("D", "hijaz");
+  assert.deepEqual(Array.from(road.lower, (note) => note.name), ["D", "E♭", "F♯", "G"]);
+  assert.deepEqual(Array.from(road.upper, (note) => note.name), ["A", "B♭", "C", "D"]);
+  assert.equal(Tuning.frets(), 24, "the selected practice map exposes a full 24-fret road");
+  Tuning.TUNINGS.forEach((tuning) => {
+    Tuning.set(tuning.id);
+    Practice.PHRASE_PATTERNS.forEach((pattern) => {
+      const phrase = Practice.buildPhrase("D", "hijaz", pattern.id, { position: 5 });
+      assert.equal(phrase.nodes.length, pattern.degrees.length, `${pattern.id} fits ${tuning.name}`);
+      assert.ok(phrase.nodes.every((node) => node.fret >= 0 && node.fret <= Tuning.frets()));
+    });
+    const triads = Triads.allShapes(2, "maj", null);
+    assert.ok(triads.some((shape) => shape.lowFret > 15), `${tuning.name} exposes upper-neck triad inversions`);
+  });
+  assert.equal(Practice.MELODIC_ROUTES.length, 5);
+  assert.equal(new Set(Practice.MELODIC_ROUTES.map((route) => route.id)).size, Practice.MELODIC_ROUTES.length);
+  assert.ok(Practice.MELODIC_ROUTES.every((route) => route.budget && route.path && route.hear && route.think));
+});
+
+test("practical guitar vocabulary keeps full forms at fret 15 or below", () => {
+  const { Tuning, Modes, GuitarVoicings } = loadCore();
+  Tuning.set("guitar");
+  ["major", "minor", "ousak", "hijaz"].forEach((modeId) => {
+    const first = Modes.PROGRESSIONS[modeId][0];
+    const { chords } = Modes.buildProgression("D", modeId, first.id);
+    chords.filter((chord) => ["maj", "min", "dom7", "maj7", "m7"].includes(chord.quality)).forEach((chord) => {
+      const forms = GuitarVoicings.fullVoicings(chord);
+      assert.ok(forms.length, `${chord.symbol} has a practical full guitar form`);
+      forms.forEach((form) => {
+        assert.ok(form.placements.length >= 4);
+        assert.ok(form.placements.every((placement) => placement.fret <= 15));
+        assert.ok(form.placements.every((placement) => chord.notes.some((tone) => tone.pc === placement.note.pc)));
+      });
+    });
+  });
 });
 
 test("mainland laouto supports grips, triads, and scale paths", () => {

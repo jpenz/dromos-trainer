@@ -71,11 +71,36 @@
     }
   ];
 
+  // This older community index is useful for finding public lesson channels,
+  // backing-track references and discussion links. The app deliberately does
+  // not surface its unverified scans, downloads, or recordings as curriculum
+  // material; users must confirm rights for anything outside public embeds.
+  const COMMUNITY = [
+    {
+      title: "The Bouzouki Learning Website · public lesson index",
+      focus: "A community directory that groups RIALAS, Tomer Avizov, Thanos Corner, Savvas Chrysanthou and Ramazouki lesson pages.",
+      use: "Source for Video Study’s linked public YouTube lessons. Loop a short passage, then return here to name its key, targets and technique.",
+      href: "https://mpouzouki.weebly.com/bouzouki-lessons.html"
+    },
+    {
+      title: "The Bouzouki Learning Website · backing-track index",
+      focus: "A directory of external rhythm/backing-track providers.",
+      use: "Use only a legally accessible track. First map its harmony in Song Map, then practise a single target-note line in the correct pulse.",
+      href: "https://mpouzouki.weebly.com/backing-tracks.html"
+    },
+    {
+      title: "The Bouzouki Learning Website · useful links",
+      focus: "Community links to forums, teachers and learning sites.",
+      use: "A discovery index, not an endorsement. Check the original publisher and rights before following any score, tab, recording or download.",
+      href: "https://mpouzouki.weebly.com/links.html"
+    }
+  ];
+
   function selfTest() {
-    const all = TRIGAS.concat(OTHER);
+    const all = TRIGAS.concat(OTHER, COMMUNITY);
     const results = all.map((item) => ({ name: item.title + " has a source and curriculum use", pass: /^https:\/\//.test(item.href) && !!item.focus && !!item.use, detail: item.href }));
     return { ok: results.every((result) => result.pass), results };
   }
 
-  window.ResourceLibrary = { TRIGAS, OTHER, selfTest };
+  window.ResourceLibrary = { TRIGAS, OTHER, COMMUNITY, selfTest };
 })();

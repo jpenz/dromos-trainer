@@ -6,12 +6,12 @@
 
   const TOKEN_KEY = "dromos-trainer-coach-session-v1";
   const FREE_TIER_ACK_KEY = "dromos-trainer-coach-free-tier-ack-v1";
-  const VIEWS = ["cycle", "prog", "triads", "solo", "ear", "styles", "analyze", "concepts"];
+  const VIEWS = ["cycle", "prog", "triads", "solo", "ear", "styles", "video", "analyze", "concepts"];
   const MODES = ["major", "minor", "ousak", "hijaz"];
   const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
   const STUDIES = ["paliatzis", "apopse", "tsigaro"];
   const STYLES = ["zeibekiko", "kalamatianos", "hasapiko", "tsifteteli", "roumba"];
-  const SECTIONS = ["targets", "path", "cell"];
+  const SECTIONS = ["road", "path", "phrase", "targets", "cell"];
   const state = { token: "", status: "idle", messages: [], summary: null, recommendation: null, lastViewKey: "", lastViewAt: 0, freeTierAcknowledged: false };
   let config = { context: () => ({}), onAction: () => {} };
   let sessionPromise = null;

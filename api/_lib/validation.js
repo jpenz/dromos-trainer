@@ -1,7 +1,7 @@
 export const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 export const MODES = ["major", "minor", "ousak", "hijaz"];
 export const TUNINGS = ["guitar", "bouzouki4", "laouto4", "bouzouki3", "guitarDropD"];
-export const VIEWS = ["cycle", "prog", "triads", "solo", "ear", "styles", "analyze", "concepts", "coach"];
+export const VIEWS = ["cycle", "prog", "triads", "solo", "ear", "styles", "video", "analyze", "concepts", "coach"];
 export const STUDIES = ["paliatzis", "apopse", "tsigaro"];
 export const STYLES = ["zeibekiko", "kalamatianos", "hasapiko", "tsifteteli", "roumba"];
 export const PROGRESSIONS = {
@@ -12,7 +12,7 @@ export const PROGRESSIONS = {
 };
 
 const EVENT_TYPES = ["view_opened", "exercise_completed", "target_missed", "ear_answered", "coach_action_opened", "song_imported"];
-const SOLO_SECTIONS = ["targets", "path", "cell"];
+const SOLO_SECTIONS = ["road", "path", "phrase", "targets", "cell"];
 
 function member(value, values, fallback) { return values.includes(value) ? value : fallback; }
 function text(value, limit) { return typeof value === "string" ? value.trim().slice(0, limit) : ""; }
@@ -67,7 +67,7 @@ export function action(value) {
 
 export function labelForAction(value) {
   if (!value) return "";
-  if (value.kind === "navigate") return "Open " + ({ prog: "Song Map", triads: "Triads", solo: "Solo Lab", ear: "Ear Trainer", styles: "Styles", analyze: "Analyzer", concepts: "Concept Pyramid", cycle: "Cycle" }[value.view] || "practice area");
+  if (value.kind === "navigate") return "Open " + ({ prog: "Song Map", triads: "Triads", solo: "Solo Lab", ear: "Ear Trainer", styles: "Styles", video: "Video Study", analyze: "Analyzer", concepts: "Concept Pyramid", cycle: "Cycle" }[value.view] || "practice area");
   if (value.kind === "song_map") return "Open " + value.tonic + " " + value.modeId + " · " + value.progressionId;
   if (value.kind === "study") return "Open authorised study";
   if (value.kind === "style") return value.section === "foundation" ? "Open Foundation" : "Open Greek style";

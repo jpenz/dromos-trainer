@@ -97,6 +97,73 @@ and drop the tempo until every crossing is clean.
 one away back down to 3. The **last note is the target**: playback leaves a *silent
 beat* where it belongs so you sing it internally first, then reveal to check yourself.
 
+### 3a. Solo Road — map before patterns
+
+Solo Road turns the Solo Lab into a deliberate sequence: **Road → Shape → Numbers →
+Changes → Ear**. Choose the dromos, home key and progression in one place; the active
+chord appears with its Roman-numeral function (for example `iv · Gm → V · A7 → i · Dm`).
+
+The 24-fret map is split into a colour-coded lower `1–4` and upper `5–8` road. This is
+a practical fretboard-learning lens, not a claim that every dromos has one fixed
+historical tetrachord analysis. Work one colour lane in one position, then connect
+lanes. The Number step supplies original, singable contours such as `1–3–5–3` and
+`1–2–3–5`; it does not imitate a living player’s phrase.
+
+### 3b. Triad landscape and melodic routes
+
+**Changes** shows four different jobs at once, deliberately separated by visual
+weight: the solid three-note shape is the nearest voice-led triad; faint shapes are
+the other inversions across the full neck; quiet dots are the pentatonic connector
+frame; rings are the target notes for the current and next chord. Select **Colour
+3rd**, **Triad tones**, or **Guide tones** to choose what the rings mean.
+
+The Shape page then applies the same target lens to a technique road. Choose one
+route before playing fast: **Triad first**, **3 + landing**, **Nearest link**,
+**Approach → resolve**, or **Motif + space**. Each names a small note budget, its
+target path, what to hear, and what to think about. An approach note is optional,
+comes on a weak pulse, and resolves immediately; it is never silently treated as a
+new dromos tone. This keeps “scale practice” subordinate to making the next chord
+audible.
+
+### 3c. Ear checks — colour and harmonic map
+
+Ear checks has two distinct jobs. **Dromos colour** asks for the mode after a cadence
+and melodic run. **Key & changes** plays a harmonic cadence twice and asks for both
+the tonal home and the progression box labels. After the reveal, the app displays the
+actual chord symbols so the player can transfer the answer directly into Song Map.
+
+### 3d. Video Study
+
+Video Study links a small, source-labelled set of publicly available lessons found via
+the Bouzouki Learning Website’s lesson index. Videos remain at YouTube. Set an A–B
+range, slow it down, watch one technical detail, then return to Song Map to explain the
+home, targets and chord function. The app does not download, extract, or reproduce
+third-party video.
+
+### 3e. Pulse-aware timing and practice ensemble
+
+Choose a Greek pulse in **Practice Ensemble**—Zeibekiko `2+2+2+3`,
+Kalamatianos `3+2+2`, Hasapiko/Tsifteteli/Roumba `2+2`—then turn on a simple
+moving root-and-fifth bass or light grouped percussion. The pulse changes the
+transport's bar length and accents; the selected Song Map still supplies the
+actual dromos and chords. It is a timing aid, not a claim to recreate a full
+traditional rhythm-section arrangement.
+
+In Solo Changes, the **Timing matrix** follows that same pulse. It animates
+the chosen route from anchor through connector (and an optional approach) to
+the next target, while the matching note class lights on the full-neck map.
+The matrix describes note jobs and timing—players make the actual phrase.
+
+### 3f. Practical guitar chord cycle
+
+The Cycle page includes **Practical chords**, a dedicated guitar lens that uses
+the selected Major, Minor, Ousak, or Hijaz progression. Choose **Full 6** for
+validated common open forms and movable E/A-family shapes, **Triad 3** for
+compact inversions, or **Compact 4** for clear root/colour/guide-tone comping.
+All displayed full forms are chord-tone checked and stop at fret 15. When a
+quality has no clean full six-string form (for example some half-diminished
+contexts), the app directs you to a compact voicing rather than faking a barre.
+
 ### 4. Solo Lab
 
 The missing bridge between scale practice and real playing. It gives you the correct

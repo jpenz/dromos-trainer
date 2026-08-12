@@ -13,7 +13,7 @@ Ordered roughly by value. Promote an item into the table in
 | FR-31 | Song-change ear drills | Prompt an isolated progression; player names functions before revealing the chord/neck map. |
 | FR-32 | Meter, count-in and backing loop | 2/4, 4/4, 7/8, 9/8; supports the actual rhythmic context of rebetiko, laïko and nisiotika. |
 | FR-33 | Local practice history | Persist sessions, weak targets and spaced review on-device with no account requirement. |
-| FR-34 | Phrase Lab | Dromos-specific `seira`, lower/upper tetrachord cells, resolution targets, and hear–sing–play call/response; original exercises only. |
+| FR-34 | Phrase Lab | Partial: original full-neck lower/upper road, number contours and resolution targets are now done in FR-45. Remaining work is stylistically reviewed dromos-specific `seira` and call/response material. |
 | FR-35 | Rhythm & comping lab | Instrument-specific right-hand patterns and sparse accompaniment in real Greek meters; mainland laouto is treated as rhythmic as well as melodic. |
 | FR-36 | User song-map studio | User enters/transcribes functions by ear, then reveals triads, targets and positions; avoids a copyrighted-song database. |
 | FR-37 | Foundation and Greek-style pulse explorer | DONE — modern improvisation foundation plus Zeibekiko, Kalamatianos, Hasapiko, Tsifteteli, and Roumba pulse maps; backing/count-in remains FR-32. |

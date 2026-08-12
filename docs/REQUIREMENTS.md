@@ -17,7 +17,7 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-02** | SVG fretboard rendering | DONE | — | `js/fretboard.js` | Generated from the selected tuning, with frets, inlays, nut, upright labels, and an internally scrollable neck |
 | **FR-03** | Interval colour system | DONE | — | `css/styles.css`, `js/modes.js` | Root/3rd/5th/7th each a fixed colour, identical on fretboard, readout chips and legend |
 | **FR-04** | Voice-leading animation | DONE | — | `js/app.js` | Moved voices get a white ring, a `↓` badge and a pop animation; held voices stay flat |
-| **FR-05** | Guitar audio | DONE | — | `js/audio.js` | Karplus–Strong pluck, no external libs, no network. Strum / arpeggio / block |
+| **FR-05** | Fretted-string audio | DONE | — | `js/audio.js` | Voiced Karplus–Strong pluck with pick-shaped excitation and body/tone filtering; adapts guitar, bouzouki and laouto timbre without external samples |
 | **FR-06** | Bar transport | DONE | — | `js/audio.js` | Lookahead scheduler, 40–200 BPM, metronome, loop, optional 2-bar I |
 | **FR-07** | Cycle drills | DONE | — | `js/app.js` | Full cycle / single ii–V–I / pivot-only |
 | **FR-08** | Dromos (mode) system | DONE | — | `js/modes.js` | Major, Minor, Ousak, Hijaz with scale, Greek name, blurb, flavour degrees |
@@ -48,6 +48,13 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-42** | Research-backed bouzouki reference shelf | DONE | — | `js/resources.js`, `js/app.js` | Concepts includes linked, source-labelled Trigas method/material families and complementary published methods, each tied to an original app practice use |
 | **FR-43** | AI Practice Coach | WIP | — | `api/coach.js`, `js/coach.js` | Answers theory/practice questions in context and may return one validated, user-visible action that opens the relevant exercise, song map, study, or Analyzer state; becomes live once Vercel/Neon secrets are configured |
 | **FR-44** | Private practice history and adaptive recommendations | WIP | — | `api/progress.js`, `api/_lib/recommendations.js`, `js/coach.js` | A signed anonymous-device profile records coach messages and practice events, returns a progress summary, and recommends the next drill; cross-device sign-in is intentionally deferred |
+| **FR-45** | Full-neck Solo Road | DONE | — | `js/modes.js`, `js/practice.js`, `js/fretboard.js`, `js/app.js` | Player chooses tonic, dromos and progression; sees a 24-fret lower/upper road, active Roman-numeral chord box, selectable technique shape, number pattern and target map on every supported tuning |
+| **FR-46** | Functional-map ear checks | DONE | — | `js/app.js`, `js/audio.js` | A second ear drill plays a cadence twice, then requires the player to identify both its tonal home and its written Roman-numeral progression before revealing the chord symbols |
+| **FR-47** | Guided curriculum navigation | DONE | — | `index.html`, `js/app.js`, `css/styles.css` | Persistent left-side curriculum makes the learning order explicit; every page presents purpose, 3-step use instructions and relevant context |
+| **FR-48** | Public video study lab | DONE | — | `js/video.js`, `js/resources.js`, `js/app.js` | Public lesson embeds stay hosted by YouTube; a player can choose a source lesson, set A/B markers, loop, slow down and route the observation back to Song Map without extracting third-party media |
+| **FR-49** | Melodic routes and triad landscape | DONE | — | `js/practice.js`, `js/triads.js`, `js/fretboard.js`, `js/app.js` | Shape shows target rings for this/next chord and five constrained melodic routes; Changes shows solid nearest triad, faint all-position inversions, quiet pentatonic connectors, and the current/next landing notes on every supported instrument |
+| **FR-50** | Pulse-aware practice ensemble | DONE | — | `js/styles.js`, `js/audio.js`, `js/app.js` | The chosen Greek pulse sets transport length/accent grouping; optional root-and-fifth bass and light grouped percussion support the selected harmonic map and animate the Solo timing matrix |
+| **FR-51** | Practical guitar chord cycle | DONE | — | `js/guitar-voicings.js`, `js/triads.js`, `js/fretboard.js`, `js/app.js` | Cycle has a Practical Chords lens for every app dromos/progression: validated common open/E/A-family six-string forms through fret 15, triad inversions, and compact four-note choices |
 | **FR-17** | Headless test runner | DONE | — | `package.json`, `test/` | `npm test` runs theory, dromos pentatonic, laouto, and app-shell regressions without a browser |
 | **FR-18** | Persist session state | TODO | — | — | Tonic/mode/progression/score survive reload via `localStorage` |
 | **FR-19** | Printable one-page chart | TODO | — | — | Print stylesheet producing a music-stand sheet of the current mode |
@@ -80,6 +87,10 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-17** | Analyzer output is explanatory, not falsely certain: a context-dependent reading must be labelled `possible`, `may`, or `often`; no chord sequence alone is declared a definitive style, key change, or transcription. | ✅ |
 | **MI-18** | Imported and starter studies are bounded: only user-authorised excerpts or user-selected local MusicXML are analyzed. The app does not OCR PDFs, transcribe audio, cache a repertoire database, or reproduce commercial notation. | ✅ |
 | **MI-19** | The AI coach is advisory and action-bounded: the browser never holds an API secret; it may navigate or prefill a user-visible exercise only after a schema-validated action. It must not invent score content, change data externally, or present a theoretical reading as certain when context is incomplete. While configured for Gemini Free Tier, the browser must show and require acknowledgement of the provider's data-use disclosure before sending a question. | ✅ |
+| **MI-20** | Video Study is a hosted-reference tool, not a media library: it links only to public original-host embeds, keeps A/B/speed state in the browser, and never downloads, extracts, transcribes or republishes third-party video. | ✅ |
+| **MI-21** | A melodic route must distinguish **target**, **connector**, and optional **approach** roles. A non-dromos approach is never presented as a default scale tone: it belongs on a weak pulse and resolves immediately by step, only where the song language supports it. | ✅ |
+| **MI-22** | The practice ensemble is a timing aid, not an assertion of a complete traditional arrangement: it may state chord roots/fifths and group accents, but it must not prescribe repertoire-specific bass or drum parts. The chosen style controls grouped pulse, while the Song Map remains responsible for dromos and harmony. | ✅ |
+| **MI-23** | A displayed full guitar form must be a validated six-string open or movable E/A-family form, consist only of chord tones, and remain at fret 15 or lower. Complex qualities with no clean full form must offer compact chord-tone voicings rather than an invented barre. | ✅ |
 | **MI-09** | Hijaz on the 5th of a minor key is the *Piraeotikos* relationship: **A Hijaz = D harmonic minor from A**. The Andalusian cadence `Dm–C–B♭–A` lands on that Hijaz tonic — this is the intended teaching bridge between the Minor and Hijaz banks. | — |
 
 ### The reference tables
@@ -143,12 +154,14 @@ choice.** Each is asserted by a self-test where marked.
 | `api/coach.js`, `js/coach.js` | FR-43 | MI-19 | `test/coach-server.test.js` + client self-test |
 | `api/progress.js`, `api/session.js`, `api/_lib/recommendations.js` | FR-44 | MI-19 | `test/coach-server.test.js` |
 | `js/fretboard.js` | FR-02, FR-03, FR-10, FR-11, FR-16 | MI-10, MI-12 | via `Modes.selfTest()` |
-| `js/practice.js` | FR-20, FR-21, FR-22, FR-23 | MI-11, MI-12 | `Practice.selfTest()` |
+| `js/practice.js` | FR-20, FR-21, FR-22, FR-23, FR-49 | MI-11, MI-12, MI-21 | `Practice.selfTest()` |
+| `js/guitar-voicings.js` | FR-51 | MI-23 | `GuitarVoicings.selfTest()` + `npm test` |
 | `js/tuning.js` | FR-24, FR-29 | MI-12 | via the other suites |
-| `js/triads.js` | FR-25, FR-26 | MI-12, MI-13, MI-14 | `Triads.selfTest()` |
-| `js/audio.js` | FR-05, FR-06, FR-23 | MI-06 (`playPrompt`) | audible |
-| `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15 | — | visual |
-| `index.html`, `sw.js` | FR-27, FR-30 | — | `npm test` + browser verification |
+| `js/triads.js` | FR-25, FR-26, FR-49 | MI-12, MI-13, MI-14 | `Triads.selfTest()` |
+| `js/audio.js` | FR-05, FR-06, FR-23, FR-50 | MI-06 (`playPrompt`), MI-22 | audible + app-shell regression |
+| `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15, FR-45…47, FR-49…51 | MI-22 | visual + `npm test` |
+| `js/video.js` | FR-48 | MI-20 | catalog self-test + host-controlled embed |
+| `index.html`, `sw.js` | FR-27, FR-30, FR-47…48 | — | `npm test` + browser verification |
 
 ### The core practice routine (FR-20…FR-23)
 

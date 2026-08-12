@@ -19,17 +19,6 @@
       </div>
     </div>
     <div class="top-right">
-      <nav class="viewtabs" aria-label="Practice areas">
-        <button data-view="cycle" class="active">Cycle</button>
-        <button data-view="prog">Song Map</button>
-        <button data-view="triads">Triads</button>
-        <button data-view="solo">Solo Lab</button>
-        <button data-view="ear">Ear</button>
-        <button data-view="styles">Styles</button>
-        <button data-view="analyze">Analyze</button>
-        <button data-view="concepts">Concepts</button>
-        <button data-view="coach">Coach</button>
-      </nav>
       <div id="testBadge" class="test-badge"></div>
     </div>
   </header>
@@ -40,6 +29,25 @@
   <div id="practicePath" class="practice-path" aria-label="Practice path"></div>
 
   <main>
+    <aside class="rail" aria-label="Learning curriculum">
+      <div class="rail-heading"><span>Curriculum</span><b>Hear it. See it. Play it.</b></div>
+      <nav class="viewtabs" aria-label="Practice areas">
+        <span class="rail-label">Foundation</span>
+        <button data-view="cycle" class="active"><i>01</i>Hear movement</button>
+        <button data-view="prog"><i>02</i>Song map</button>
+        <button data-view="ear"><i>03</i>Ear checks</button>
+        <span class="rail-label">Instrument</span>
+        <button data-view="triads"><i>04</i>Triads &amp; comp</button>
+        <button data-view="solo"><i>05</i>Solo road</button>
+        <button data-view="styles"><i>06</i>Greek pulse</button>
+        <span class="rail-label">Study</span>
+        <button data-view="video"><i>07</i>Video study</button>
+        <button data-view="analyze"><i>08</i>Analyze</button>
+        <button data-view="concepts"><i>09</i>Concepts</button>
+        <button data-view="coach"><i>✦</i>Practice coach</button>
+      </nav>
+      <p class="rail-note">Always work in order when a map feels unclear: hear the change, name it, then find it.</p>
+    </aside>
     <section id="stage" class="stage">
       <div id="coachCue" class="coach-cue" aria-live="polite"></div>
       <div id="pivotBanner" class="pivot-banner"></div>
@@ -59,6 +67,7 @@
 
     <aside class="side">
       <div id="readout" class="readout"></div>
+      <div id="pageGuide" class="page-guide" aria-live="polite"></div>
 
       <!-- ---- cycle panel ---- -->
       <div id="panelCycle" class="panel">
@@ -67,6 +76,14 @@
           <button data-mode="full" class="active">Full cycle</button>
           <button data-mode="iiVI">Single ii–V–I</button>
           <button data-mode="pivot">Pivot drill</button>
+        </div>
+        <div class="cycle-workbench">
+          <span class="panel-label">Cycle lens</span>
+          <div class="seg">
+            <button data-cycle-focus="hear" class="active">Hear movement</button>
+            <button data-cycle-focus="chords">Practical chords</button>
+          </div>
+          <div id="cycleCompingControls" class="cycle-comping-controls hidden"></div>
         </div>
       </div>
 
@@ -111,17 +128,22 @@
 
       <!-- ---- solo lab panel ---- -->
       <div id="panelSolo" class="panel hidden">
-        <span class="panel-label">Solo Lab</span>
-        <div class="seg seg-3" aria-label="Solo lab activity">
-          <button data-solo-section="targets" class="active">Target map</button>
-          <button data-solo-section="path">Picking path</button>
-          <button data-solo-section="cell">Audiation</button>
+        <div class="solo-title"><span class="panel-label">Solo Road</span><span>map → phrase → change</span></div>
+        <div id="soloMapControls" class="solo-map-controls"></div>
+        <div class="solo-section-nav" aria-label="Solo lab activity">
+          <button data-solo-section="road" class="active">1 Road</button>
+          <button data-solo-section="path">2 Shape</button>
+          <button data-solo-section="phrase">3 Numbers</button>
+          <button data-solo-section="targets">4 Changes</button>
+          <button data-solo-section="cell">5 Ear</button>
         </div>
-        <div id="soloTargets" class="sub">
+        <div id="soloRoad" class="sub"></div>
+        <div id="soloTargets" class="sub hidden">
           <p class="ear-hint">Start in the five-note frame, then make the harmony audible by landing on a chord tone when the change arrives.</p>
           <span class="panel-label">Landing strategy</span>
           <div class="seg">
-            <button data-solo-focus="third" class="active">Land on 3rds</button>
+            <button data-solo-focus="third" class="active">Colour 3rd</button>
+            <button data-solo-focus="triad">Triad tones</button>
             <button data-solo-focus="guide">Guide tones</button>
           </div>
           <div id="soloRecipe" class="solo-recipe"></div>
@@ -147,6 +169,20 @@
             <button id="btnStroke" class="mini grow">Start: ⊓ down</button>
             <label class="inline-tgl"><input type="checkbox" id="tglUpDown" checked /> up &amp; down</label>
           </div>
+          <div class="target-route-block">
+            <span class="panel-label">Landing lens — rings mark the notes to aim for</span>
+            <div id="pathTargetFocus" class="path-target-focus"></div>
+            <span class="panel-label">Melodic route — choose the job before speed</span>
+            <div id="targetRouteGrid" class="target-route-grid"></div>
+            <div id="targetRouteHint" class="target-route-hint"></div>
+          </div>
+        </div>
+
+        <div id="labPhrase" class="sub hidden">
+          <span class="panel-label">Number path — say it, sing it, then place it</span>
+          <p class="ear-hint">These are neutral contours, not copied licks. Keep one rhythm, leave space, and make the chord change audible with the last note.</p>
+          <div id="phrasePatternGrid" class="phrase-pattern-grid"></div>
+          <div id="phrasePlan" class="phrase-plan"></div>
         </div>
 
         <div id="labCell" class="sub hidden">
@@ -161,7 +197,7 @@
             leave the target silent (sing it)</label>
         </div>
 
-        <div class="row tonic-row">
+        <div id="labSharedControls" class="row tonic-row">
           <label for="startDeg">Start on degree</label>
           <select id="startDeg">
             <option value="1">1</option><option value="2">2</option>
@@ -175,22 +211,43 @@
 
       <!-- ---- ear trainer panel ---- -->
       <div id="panelEar" class="panel hidden">
-        <span class="panel-label">Name that dromos</span>
-        <p class="ear-hint">You hear the mode's signature cadence, then a descending run.
-          The run matters: <b>Ousak and Minor use the same chords</b> — only the melody
-          separates them.</p>
-        <div id="earFeedback" class="ear-feedback">Press <b>New question</b> to begin.</div>
-        <div class="guess-grid">
-          <button class="guess-btn" data-guess="major">Major</button>
-          <button class="guess-btn" data-guess="minor">Minor</button>
-          <button class="guess-btn" data-guess="ousak">Ousak</button>
-          <button class="guess-btn" data-guess="hijaz">Hijaz</button>
+        <div class="solo-title"><span class="panel-label">Ear checks</span><span>listen → name → map</span></div>
+        <div class="seg" aria-label="Ear check type">
+          <button data-ear-drill="colour" class="active">Dromos colour</button>
+          <button data-ear-drill="map">Key &amp; changes</button>
         </div>
-        <div class="row">
-          <button id="btnEarReplay" class="mini grow">↻ Replay (Space)</button>
-          <button id="btnEarNew" class="mini grow primary-mini">New question</button>
-        </div>
+        <section id="earColour" class="sub">
+          <p class="ear-hint">You hear the mode's signature cadence, then a descending run.
+            The run matters: <b>Ousak and Minor use the same chords</b> — only the melody
+            separates them.</p>
+          <div id="earFeedback" class="ear-feedback">Press <b>New question</b> to begin.</div>
+          <div class="guess-grid">
+            <button class="guess-btn" data-guess="major">Major</button>
+            <button class="guess-btn" data-guess="minor">Minor</button>
+            <button class="guess-btn" data-guess="ousak">Ousak</button>
+            <button class="guess-btn" data-guess="hijaz">Hijaz</button>
+          </div>
+          <div class="row">
+            <button id="btnEarReplay" class="mini grow">↻ Replay (Space)</button>
+            <button id="btnEarNew" class="mini grow primary-mini">New question</button>
+          </div>
+        </section>
+        <section id="earMap" class="sub hidden">
+          <p class="ear-hint">Hear the change twice. First name the <b>home key</b>, then choose the <b>functional progression</b>—the number system that explains the boxes you hear.</p>
+          <div id="earMapFeedback" class="ear-feedback">Press <b>New map</b>, listen, then commit to both answers.</div>
+          <div class="ear-map-prompt"><span>1 · Home key</span><div id="earKeyChoices" class="ear-key-choices"></div></div>
+          <div class="ear-map-prompt"><span>2 · Change boxes</span><div id="earProgressionChoices" class="ear-progression-choices"></div></div>
+          <div class="row">
+            <button id="btnEarMapReplay" class="mini grow">↻ Replay changes</button>
+            <button id="btnEarMapNew" class="mini grow primary-mini">New map</button>
+          </div>
+        </section>
         <div id="earScore" class="ear-score"></div>
+      </div>
+
+      <!-- ---- video study lab ---- -->
+      <div id="panelVideo" class="panel hidden">
+        <div id="videoStudy" class="video-study"></div>
       </div>
 
       <!-- ---- foundation and Greek style panel ---- -->
@@ -271,6 +328,16 @@
         <input id="bpm" type="range" min="40" max="200" value="84" />
       </div>
 
+      <section class="groove-controls" aria-labelledby="grooveTitle">
+        <div><span id="grooveTitle" class="panel-label">Practice ensemble</span><b>Pulse, bass, then your line</b></div>
+        <label for="grooveStyle">Greek pulse<select id="grooveStyle"></select></label>
+        <div class="groove-toggles">
+          <label><input type="checkbox" id="tglBass" checked /> moving bass</label>
+          <label><input type="checkbox" id="tglDrums" checked /> grouped percussion</label>
+        </div>
+        <p id="grooveHint">A practice pulse, not a full arrangement.</p>
+      </section>
+
       <div class="toggles">
         <label><input type="checkbox" id="tglLabel" /> Note names</label>
         <label><input type="checkbox" id="tglScale" /> Scale overlay</label>
@@ -281,7 +348,7 @@
         <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
       </div>
 
-      <div class="hint">Space play/pause · ← → step · 1–9 switch practice area</div>
+      <div class="hint">Space plays the current drill · ← → steps a map/position · 1–9 follow the curriculum · 0 opens Coach</div>
     </aside>
   </main>
 
@@ -293,10 +360,12 @@
   <script src="js/studies.js"></script>
   <script src="js/musicxml.js"></script>
   <script src="js/resources.js"></script>
+  <script src="js/video.js"></script>
   <script src="js/coach.js"></script>
   <script src="js/practice.js"></script>
   <script src="js/triads.js"></script>
   <script src="js/fretboard.js"></script>
+  <script src="js/guitar-voicings.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/app.js"></script>
   <script>

@@ -16,21 +16,55 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-view="analyze"/);
   assert.match(html, /data-view="concepts"/);
   assert.match(html, /data-view="coach"/);
+  assert.match(html, /data-view="video"/);
+  assert.match(html, /data-solo-section="road"/);
+  assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
+  assert.match(html, /id="soloMapControls"/);
+  assert.match(html, /id="phrasePatternGrid"/);
+  assert.match(html, /id="pathTargetFocus"/);
+  assert.match(html, /id="targetRouteGrid"/);
+  assert.match(read("js/app.js"), /id="soloTimingMatrix"/);
+  assert.match(html, /data-solo-focus="triad"/);
+  assert.match(html, /id="grooveStyle"/);
+  assert.match(html, /id="tglBass"/);
+  assert.match(html, /id="tglDrums"/);
+  assert.match(html, /id="cycleCompingControls"/);
   assert.match(html, /data-style-section="foundation"/);
   assert.match(html, /js\/styles\.js/);
   assert.match(html, /js\/analysis\.js/);
   assert.match(html, /js\/studies\.js/);
   assert.match(html, /js\/musicxml\.js/);
   assert.match(html, /js\/resources\.js/);
+  assert.match(html, /js\/video\.js/);
+  assert.match(html, /js\/guitar-voicings\.js/);
   assert.match(html, /js\/coach\.js/);
   assert.match(html, /id="coachApp"/);
+  assert.match(html, /id="pageGuide"/);
+  assert.match(html, /id="earMap"/);
+  assert.match(html, /id="videoStudy"/);
   assert.match(read("js/coach.js"), /coachFreeTierConsent/);
   assert.match(html, /id="scoreFile"/);
   assert.match(html, /id="analysisInstrument"/);
   assert.match(read("js/tuning.js"), /Laouto \(mainland\)/);
   assert.match(read("js/app.js"), /seventh \|\| chordTone\(chord, "R"\)/,
     "triad lessons must use the root anchor instead of inventing a seventh");
+  assert.match(read("js/app.js"), /renderSoloRoad/);
+  assert.match(read("js/app.js"), /function renderPathTargetRoute/);
+  assert.match(read("js/app.js"), /otherShapes: state\.solo\.section === "targets" \? allTriads/,
+    "the Solo Changes map must expose all triad inversions behind the active shape");
+  assert.match(read("js/practice.js"), /MELODIC_ROUTES/);
+  assert.match(read("js/app.js"), /function renderSoloTimingMatrix/);
+  assert.match(read("js/audio.js"), /function playGrooveBeat/);
+  assert.match(read("js/audio.js"), /beatsPerBar/);
+  assert.match(read("js/guitar-voicings.js"), /function fullVoicings/);
+  assert.match(read("js/app.js"), /function newEarMap/);
+  assert.match(read("js/app.js"), /function renderPageGuide/);
+  assert.match(read("js/app.js"), /function stopPlay\(\) \{ AU\.stopAll\(\);/,
+    "changing a drill must clear path timers and ringing voices as well as transport");
+  assert.match(read("js/audio.js"), /function stopAll\(\)/);
+  assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
+    "the road must use the selected instrument's fret range");
 });
 
 test("phone layout contains wide fretboards instead of widening the page", () => {

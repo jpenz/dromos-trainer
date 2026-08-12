@@ -215,6 +215,21 @@
     });
   }
 
+  // A road map has two related jobs: show the complete seven-note material and
+  // make its directional chunks obvious. We use the practical 1–4 / 5–8 split
+  // here (the upper tonic completes the second tetrachord), rather than claiming
+  // that every named dromos has one universal historical tetrachord analysis.
+  // It is a fretboard-learning lens, not a replacement for listening to a seira.
+  function tetrachordsOf(tonicName, modeId) {
+    const scale = scaleOf(tonicName, modeId);
+    const upperTonic = Object.assign({}, scale[0], { degree: "8", octave: true });
+    return {
+      lower: scale.slice(0, 4).map((note) => Object.assign({}, note, { road: "lower" })),
+      upper: scale.slice(4).concat([upperTonic]).map((note) => Object.assign({}, note, { road: "upper" })),
+      scale
+    };
+  }
+
   // Build a chord from a scale degree (semitones above tonic) + quality.
   function buildChord(tonicName, modeId, degOff, qualityId, prevBottomMidi) {
     const t = parseName(tonicName);
@@ -344,6 +359,13 @@
       results.push({ i: k + " pentatonic", want: pentChecks[k], got, pass });
     });
 
+    const tetra = tetrachordsOf("D", "hijaz");
+    const tetraPass = tetra.lower.map((n) => n.name).join(" ") === "D E♭ F♯ G" &&
+      tetra.upper.map((n) => n.name).join(" ") === "A B♭ C D";
+    if (!tetraPass) ok = false;
+    results.push({ i: "Solo Road D Hijaz tetrachord split", want: "D E♭ F♯ G / A B♭ C D",
+      got: tetra.lower.map((n) => n.name).join(" ") + " / " + tetra.upper.map((n) => n.name).join(" "), pass: tetraPass });
+
     // MI-06: Ousak and Minor must produce identical chords for iv-bVII-i
     const a = buildProgression("D", "minor", "iv-bVII-i").chords.map((c) => c.symbol).join(" ");
     const b = buildProgression("D", "ousak", "iv-bVII-i").chords.map((c) => c.symbol).join(" ");
@@ -396,7 +418,7 @@
   window.Modes = {
     MODES, MODE_ORDER, PROGRESSIONS, TONICS, QUALITY, DEGREE_LABEL, PENTATONIC,
     parseName, nameFor, simplify,
-    scaleOf, flavourPcs, pentatonicOf, buildChord, buildProgression, descendingRun,
+    scaleOf, flavourPcs, pentatonicOf, tetrachordsOf, buildChord, buildProgression, descendingRun,
     selfTest
   };
 })();

@@ -13,6 +13,7 @@ test("server rejects unsafe coach actions and preserves only known routes", () =
     { kind: "song_map", tonic: "D", modeId: "minor", progressionId: "iv-V-i" }
   );
   assert.equal(action({ kind: "navigate", view: "https://not-a-practice-view.example" }), null);
+  assert.deepEqual(action({ kind: "solo_lab", section: "road" }), { kind: "solo_lab", section: "road" });
   assert.equal(coachReply({ answer: "A useful answer", action: { kind: "study", studyId: "not-known" } }).action, null);
   assert.equal(coachReply({ answer: "A useful answer", action: { kind: "none" } }).action, null);
 });

@@ -7,9 +7,9 @@
  */
 (function () {
   "use strict";
-  const MAX_FRET = 15;
   const MAX_SPAN = 5;
   const open = () => window.Tuning.open();
+  const maxFret = () => window.Tuning.frets();
 
   // triad qualities: semitone offsets + interval roles, root position
   const TRIADS = {
@@ -59,12 +59,12 @@
         const pcs = order.map((i) => (rootPc + q.offsets[i]) % 12);
         const roles = order.map((i) => q.roles[i]);
 
-        for (let f0 = 0; f0 <= MAX_FRET; f0++) {
+        for (let f0 = 0; f0 <= maxFret(); f0++) {
           if (pcOf(OPEN[set[0]] + f0) !== pcs[0]) continue;
-          for (let f1 = Math.max(0, f0 - MAX_SPAN); f1 <= f0 + MAX_SPAN && f1 <= MAX_FRET; f1++) {
+          for (let f1 = Math.max(0, f0 - MAX_SPAN); f1 <= f0 + MAX_SPAN && f1 <= maxFret(); f1++) {
             if (pcOf(OPEN[set[1]] + f1) !== pcs[1]) continue;
             if (OPEN[set[1]] + f1 <= OPEN[set[0]] + f0) continue;      // must ascend
-            for (let f2 = Math.max(0, f0 - MAX_SPAN); f2 <= f0 + MAX_SPAN && f2 <= MAX_FRET; f2++) {
+            for (let f2 = Math.max(0, f0 - MAX_SPAN); f2 <= f0 + MAX_SPAN && f2 <= maxFret(); f2++) {
               if (pcOf(OPEN[set[2]] + f2) !== pcs[2]) continue;
               if (OPEN[set[2]] + f2 <= OPEN[set[1]] + f1) continue;
               const frets = [f0, f1, f2];

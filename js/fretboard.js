@@ -6,7 +6,7 @@
   const open = () => window.Tuning.open();
   const openNames = () => window.Tuning.names();
   const nStrings = () => window.Tuning.count();
-  const N_FRETS = 15;
+  const nFrets = () => window.Tuning.frets();
   // Every ascending choice of n strings out of 6. Contiguous sets are preferred by
   // the scorer, but string-skipping is genuinely idiomatic for drop voicings — and
   // some voicings (e.g. a close-position dom7 with the 5th in the bass) are simply
@@ -27,8 +27,8 @@
     for (let i = 1; i < set.length; i++) gaps += set[i] - set[i - 1] - 1;
     return gaps;
   }
-  const MARKERS = [3, 5, 7, 9, 15];
-  const DOUBLE_MARKERS = [12];
+  const MARKERS = [3, 5, 7, 9, 15, 17, 19, 21];
+  const DOUBLE_MARKERS = [12, 24];
 
   // Find a compact, playable grip for a voicing.
   // voicing: array of note objects (low->high) each with {pc, role, ...}.
@@ -41,7 +41,7 @@
 
     stringSets(n).forEach((set) => {
       const skips = skipPenalty(set);
-      for (let basePos = 0; basePos <= N_FRETS - maxSpan; basePos++) {
+      for (let basePos = 0; basePos <= nFrets() - maxSpan; basePos++) {
         const frets = [];
         let prevPitch = -Infinity;
         let ok = true;
@@ -117,7 +117,7 @@
     voicing.forEach((n) => { byPc[n.pc] = n; });
     const out = [];
     for (let s = 0; s < OPEN.length; s++) {
-      for (let f = 0; f <= N_FRETS; f++) {
+      for (let f = 0; f <= nFrets(); f++) {
         const pc = ((OPEN[s] + f) % 12 + 12) % 12;
         if (byPc[pc]) out.push({ stringIndex: s, fret: f, note: byPc[pc] });
       }
@@ -150,6 +150,7 @@
     const NSTR = OPEN.length;    // MI-12: string count is dynamic
     const LAST = NSTR - 1;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const N_FRETS = nFrets();
     const width = GEO.padL + GEO.nutW + N_FRETS * GEO.fretW + GEO.padR;
     const height = GEO.padT + LAST * GEO.stringGap + GEO.padB;
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -167,10 +168,10 @@
     }));
 
     // inlays
-    MARKERS.forEach((f) => {
+    MARKERS.filter((f) => f <= N_FRETS).forEach((f) => {
       g.appendChild(el("circle", { cx: xForFret(f), cy: yForString((NSTR - 1) / 2), r: 6, class: "fb-inlay" }));
     });
-    DOUBLE_MARKERS.forEach((f) => {
+    DOUBLE_MARKERS.filter((f) => f <= N_FRETS).forEach((f) => {
       g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.max(0,(NSTR-1)/2 - 1)), r: 6, class: "fb-inlay" }));
       g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.min(LAST,(NSTR-1)/2 + 1)), r: 6, class: "fb-inlay" }));
     });
@@ -200,7 +201,7 @@
     // fret numbers + string labels (kept upright even when lefty)
     const overlay = el("g", {});
     svg.appendChild(overlay);
-    MARKERS.concat(DOUBLE_MARKERS).forEach((f) => {
+    MARKERS.concat(DOUBLE_MARKERS).filter((f) => f <= N_FRETS).forEach((f) => {
       const cx = opts.lefty ? width - xForFret(f) : xForFret(f);
       overlay.appendChild(el("text", { x: cx, y: height - 8, class: "fb-fretnum", "text-anchor": "middle" }, String(f)));
     });
@@ -220,13 +221,14 @@
       const cy = yForString(rowFromTop);
       const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
       const isTarget = targetSet ? targetSet.has(p.note.pc) : false;
-      const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "");
-      const gg = el("g", { class: cls, "data-group": p.note.colorGroup });
+      const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
+        (p.note.isTonic ? " tonic" : "");
+      const gg = el("g", { class: cls, "data-group": p.note.colorGroup, "data-pc": p.note.pc });
       if (opts.lefty) {
         // counter-flip text so labels read normally
         gg.setAttribute("transform", `translate(${2 * cx},0) scale(-1,1)`);
       }
-      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : 14;
+      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : kind === "road" ? 12 : 14;
       if (isFlavour && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 4, class: "dot-flavour-ring" }));
       }
@@ -275,13 +277,16 @@
 
       opts.path.forEach((n, i) => {
         const isCur = i === upto;
+        const isTarget = targetSet ? targetSet.has(n.note.pc) : false;
         const gg = el("g", {
           class: "fb-dot path" + (isCur ? " current" : "") + (i < upto ? " played" : "") +
-                 (n.note.isFlavour ? " flavour" : ""),
-          "data-group": n.note.colorGroup
+                 (n.note.isFlavour ? " flavour" : "") + (isTarget ? " target" : ""),
+          "data-group": n.note.colorGroup,
+          "data-pc": n.note.pc
         });
         if (opts.lefty) gg.setAttribute("transform", `translate(${2 * cx(n)},0) scale(-1,1)`);
         if (n.note.isFlavour) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: 16, class: "dot-flavour-ring" }));
+        if (isTarget) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-target-ring" }));
         gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 15 : 12, class: "dot-bg" }));
         const label = opts.labelMode === "note" ? n.note.name : n.note.degree;
         gg.appendChild(el("text", { x: cx(n), y: cy(n) + 4, "text-anchor": "middle", class: "dot-label" }, label));
@@ -314,11 +319,12 @@
           if (!sn) continue;
           if (active.has(s + ":" + f)) continue;
           const group = kind === "pentatonic" ? "pentatonic" : kind === "target" ? "target" :
-            (sn.isTonic ? "tonic" : sn.isFlavour ? "flavourdeg" : "scaledeg");
+            kind === "road" ? (sn.road === "upper" ? "upper-tetra" : "lower-tetra") :
+              (sn.isTonic ? "tonic" : sn.isFlavour ? "flavourdeg" : "scaledeg");
           g.appendChild(dot(
             { stringIndex: s, fret: f, note: {
               pc, degree: sn.degree, roleLabel: sn.roleLabel, name: sn.name,
-              colorGroup: group, isFlavour: sn.isFlavour
+              colorGroup: group, isFlavour: sn.isFlavour, isTonic: sn.isTonic
             } },
             kind
           ));
@@ -329,6 +335,7 @@
     if (opts.pentatonicNotes && opts.pentatonicNotes.length) renderOverlay(opts.pentatonicNotes, "pentatonic");
     if (opts.targetNotes && opts.targetNotes.length) renderOverlay(opts.targetNotes, "target");
     if (opts.scaleNotes && opts.scaleNotes.length) renderOverlay(opts.scaleNotes, "scale");
+    if (opts.roadNotes && opts.roadNotes.length) renderOverlay(opts.roadNotes, "road");
 
     if (opts.ghosts && opts.allPositions) {
       const active = new Set(opts.grip.placements.map((p) => p.stringIndex + ":" + p.fret));
@@ -346,5 +353,5 @@
     }
   }
 
-  window.Fretboard = { N_FRETS, stringSets, findGrip, allTonePositions, render };
+  window.Fretboard = { get N_FRETS() { return nFrets(); }, stringSets, findGrip, allTonePositions, render };
 })();
