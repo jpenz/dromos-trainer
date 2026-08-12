@@ -2,7 +2,8 @@
  * Pure logic, no DOM. Exposes window.Triads.
  *
  * Implements: FR-25 (triad map), FR-26 (voice-led triads through changes)
- * Invariants:  MI-12 (tuning-driven), MI-13 (inversion is named by the BASS note)
+ * Invariants:  MI-12 (tuning-driven), MI-13 (inversion is named by the BASS note),
+ *              MI-24 (one fixed string set; looping paths price their closure)
  * See docs/REQUIREMENTS.md and docs/SOLOING.md.
  */
 (function () {
@@ -34,6 +35,16 @@
 
   const ROLE_LABEL = { R: "R", 3: "3", b3: "♭3", 5: "5", b5: "♭5", "#5": "♯5", 4: "4", 2: "2" };
   const ROLE_GROUP = { R: "root", 3: "third", b3: "third", 5: "fifth", b5: "fifth", "#5": "fifth", 4: "fifth", 2: "third" };
+
+  // Position zones are intentionally overlapping. A player should be able to
+  // keep one visual neighbourhood while the harmony changes, without treating
+  // an arbitrary fret boundary as a musical rule.
+  const POSITION_ZONES = {
+    open:  { id: "open",  label: "Open · frets 0–5",  min: 0, max: 5,  centre: 2.5 },
+    mid:   { id: "mid",   label: "Middle · frets 3–10", min: 3, max: 10, centre: 6.5 },
+    upper: { id: "upper", label: "Upper · frets 8–15", min: 8, max: 15, centre: 11.5 },
+    whole: { id: "whole", label: "Whole neck · ≤ 15", min: 0, max: 15, centre: 7 }
+  };
 
   function stringSets3() {
     const N = window.Tuning.count();
@@ -106,36 +117,132 @@
     }).sort((a, b) => a.lowFret - b.lowFret || a.stringSet[0] - b.stringSet[0]);
   }
 
-  /* Walk a chord progression using triads, choosing at each step the shape that
-   * moves LEAST from the previous one. This is what "hitting the changes"
-   * actually looks like on the neck: a couple of fingers move, the rest stay. */
-  function pathThrough(chords, opts) {
-    const o = Object.assign({ stringSet: null, startFret: 5, nameFor: null }, opts || {});
-    let prev = null;
-    return chords.map((c) => {
-      const triadId = TRIAD_OF[c.quality] || "maj";
-      let shapes = allShapes(c.rootPc, triadId, o.nameFor);
-      if (o.stringSet != null) shapes = shapes.filter((s) => s.stringSet[0] === o.stringSet);
-      if (!shapes.length) return null;
+  function shapeCentre(shape) {
+    return shape.placements.reduce((total, placement) => total + placement.fret, 0) / shape.placements.length;
+  }
 
-      let best = null;
-      shapes.forEach((s) => {
-        const centre = s.placements.reduce((a, p) => a + p.fret, 0) / 3;
-        let cost;
-        if (!prev) {
-          cost = Math.abs(centre - o.startFret) + s.span * 0.5;
-        } else {
-          const pc0 = prev.placements.reduce((a, p) => a + p.fret, 0) / 3;
-          // total finger travel, plus a nudge toward compact shapes
-          const travel = s.placements.reduce((a, p, i) =>
-            a + Math.abs(p.fret - prev.placements[i].fret), 0);
-          cost = travel + Math.abs(centre - pc0) * 0.4 + s.span * 0.3;
+  function defaultStringSet() {
+    // Highest adjacent set: guitar G-B-E; bouzouki/laouto the top three
+    // courses. This is the clearest register for hearing a triad as a melodic
+    // object and prevents an "auto" route from jumping between string sets.
+    return Math.max(0, window.Tuning.count() - 3);
+  }
+
+  function transitionCost(from, to) {
+    let total = 0;
+    for (let i = 0; i < to.placements.length; i++) {
+      const distance = Math.abs(to.placements[i].midi - from.placements[i].midi);
+      total += distance;
+      if (distance > 4) total += (distance - 4) * 1.8;
+    }
+    // A common pitch class is heard as a held voice even when the hand has to
+    // respell it. Rewarding it lightly makes the generated route more musical.
+    const shared = to.placements.filter((placement) =>
+      from.placements.some((previous) => previous.note.pc === placement.note.pc)).length;
+    return total - shared * 0.7;
+  }
+
+  function shapeCost(shape, targetFret) {
+    return shape.span * 0.42 + Math.abs(shapeCentre(shape) - targetFret) * 0.22;
+  }
+
+  function candidatesFor(chord, options) {
+    const triadId = TRIAD_OF[chord.quality] || "maj";
+    const zone = POSITION_ZONES[options.zone] || POSITION_ZONES.mid;
+    const all = allShapes(chord.rootPc, triadId, options.nameFor)
+      .filter((shape) => shape.stringSet[0] === options.stringSet)
+      .filter((shape) => shape.placements.every((placement) => placement.fret <= 15));
+    const inside = all.filter((shape) => shape.lowFret >= zone.min &&
+      Math.max.apply(null, shape.placements.map((placement) => placement.fret)) <= zone.max);
+    // Some tunings do not contain every inversion inside every narrow zone.
+    // Fall back to the practical 0–15 neck, never to another string set.
+    return (inside.length ? inside : all).map((shape) => Object.assign({ triadId }, shape));
+  }
+
+  function solvePath(candidateSets, targetFret, closeLoop) {
+    if (!candidateSets.length || candidateSets.some((set) => !set.length)) return [];
+    let winner = null;
+    const starts = closeLoop ? candidateSets[0] : [null];
+
+    starts.forEach((forcedStart) => {
+      let costs = candidateSets[0].map((shape) => forcedStart && shape !== forcedStart
+        ? Infinity
+        : shapeCost(shape, targetFret));
+      const back = [];
+
+      for (let step = 1; step < candidateSets.length; step++) {
+        const previous = candidateSets[step - 1];
+        const current = candidateSets[step];
+        const nextCosts = current.map(() => Infinity);
+        const nextBack = current.map(() => -1);
+        current.forEach((shape, currentIndex) => {
+          previous.forEach((prior, priorIndex) => {
+            const cost = costs[priorIndex] + transitionCost(prior, shape) + shapeCost(shape, targetFret);
+            if (cost < nextCosts[currentIndex]) {
+              nextCosts[currentIndex] = cost;
+              nextBack[currentIndex] = priorIndex;
+            }
+          });
+        });
+        costs = nextCosts;
+        back.push(nextBack);
+      }
+
+      let end = 0;
+      let bestCost = Infinity;
+      candidateSets[candidateSets.length - 1].forEach((shape, index) => {
+        const loopCost = forcedStart ? transitionCost(shape, forcedStart) : 0;
+        if (costs[index] + loopCost < bestCost) {
+          bestCost = costs[index] + loopCost;
+          end = index;
         }
-        if (!best || cost < best.cost) best = { cost, shape: s };
       });
-      prev = best.shape;
-      return Object.assign({ chord: c, triadId, triadName: TRIADS[triadId].name }, best.shape);
+      const path = new Array(candidateSets.length);
+      path[path.length - 1] = candidateSets[path.length - 1][end];
+      for (let step = path.length - 1; step > 0; step--) {
+        end = back[step - 1][end];
+        path[step - 1] = candidateSets[step - 1][end];
+      }
+      if (!winner || bestCost < winner.cost) winner = { cost: bestCost, path };
     });
+    return winner ? winner.path : [];
+  }
+
+  /* Walk a complete progression using one fixed string set. A dynamic program
+   * evaluates the whole route instead of greedily choosing the next attractive
+   * grip. `closeLoop` also prices the final-to-first move for cycle practice. */
+  function pathThrough(chords, opts) {
+    const requested = Object.assign({ stringSet: null, startFret: null, zone: "mid", closeLoop: false, nameFor: null }, opts || {});
+    const stringSet = requested.stringSet == null ? defaultStringSet() : requested.stringSet;
+    const zone = POSITION_ZONES[requested.zone] || POSITION_ZONES.mid;
+    const targetFret = requested.startFret == null ? zone.centre : requested.startFret;
+    const options = Object.assign({}, requested, { stringSet });
+    const solved = solvePath(chords.map((chord) => candidatesFor(chord, options)), targetFret, requested.closeLoop);
+    return solved.map((shape, index) => Object.assign({
+      chord: chords[index],
+      triadId: shape.triadId,
+      triadName: TRIADS[shape.triadId].name
+    }, shape));
+  }
+
+  function pathMetrics(path, closeLoop) {
+    const moves = [];
+    const limit = path.length - (closeLoop ? 0 : 1);
+    for (let i = 0; i < limit; i++) {
+      const from = path[i];
+      const to = path[(i + 1) % path.length];
+      if (!from || !to) continue;
+      const voices = to.placements.map((placement, index) => Math.abs(placement.midi - from.placements[index].midi));
+      moves.push({ voices, total: voices.reduce((sum, distance) => sum + distance, 0), max: Math.max.apply(null, voices) });
+    }
+    const total = moves.reduce((sum, move) => sum + move.total, 0);
+    return {
+      moves,
+      total,
+      averagePerChange: moves.length ? total / moves.length : 0,
+      averagePerVoice: moves.length ? total / moves.length / 3 : 0,
+      maxVoice: moves.length ? Math.max.apply(null, moves.map((move) => move.max)) : 0
+    };
   }
 
   // ---- self-test ----------------------------------------------------------
@@ -201,17 +308,24 @@
     // voice leading actually reduces movement vs. always taking root position
     window.Tuning.set("guitar");
     const chords = window.Modes.buildProgression("D", "hijaz", "I-iv-bVII-I").chords;
-    const path = pathThrough(chords, { stringSet: 2 });
-    let travel = 0;
-    for (let i = 1; i < path.length; i++) {
-      travel += path[i].placements.reduce((a, p, k) =>
-        a + Math.abs(p.fret - path[i - 1].placements[k].fret), 0);
-    }
-    add("voice-led triad path is compact (< 4 frets avg travel)", true, travel / (path.length - 1) < 12);
+    const path = pathThrough(chords, { stringSet: 2, zone: "mid", closeLoop: true });
+    const metrics = pathMetrics(path, true);
+    add("voice-led triad path stays on one string set", true,
+      path.every((shape) => shape.stringSet[0] === 2));
+    add("voice-led triad path is compact (< 4 semitones per voice)", true,
+      metrics.averagePerVoice < 4);
+
+    const fullCycle = pathThrough(window.Theory.buildCycle(), { zone: "mid", closeLoop: true });
+    add("full cycle has one practical triad per chord", 18, fullCycle.length);
+    add("full cycle closes on the same fixed string set", 1,
+      new Set(fullCycle.map((shape) => shape.stringSet[0])).size);
 
     window.Tuning.set(restore);
     return { ok, results };
   }
 
-  window.Triads = { TRIADS, TRIAD_OF, INVERSION_NAME, INVERSION_SHORT, stringSets3, allShapes, pathThrough, selfTest };
+  window.Triads = {
+    TRIADS, TRIAD_OF, INVERSION_NAME, INVERSION_SHORT, POSITION_ZONES,
+    stringSets3, allShapes, pathThrough, pathMetrics, selfTest
+  };
 })();

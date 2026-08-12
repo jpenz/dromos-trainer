@@ -7,7 +7,7 @@
   <meta name="description" content="A serious ear-training and fretboard curriculum for Greek modal harmony on guitar, bouzouki, and laouto." />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=12" />
 </head>
 <body>
   <header class="topbar">
@@ -78,10 +78,18 @@
           <button data-mode="pivot">Pivot drill</button>
         </div>
         <div class="cycle-workbench">
-          <span class="panel-label">Cycle lens</span>
+          <span class="panel-label">What do you want to practise?</span>
           <div class="seg">
-            <button data-cycle-focus="hear" class="active">Hear movement</button>
-            <button data-cycle-focus="chords">Practical chords</button>
+            <button data-cycle-focus="hear" class="active">Voice-led triad route</button>
+            <button data-cycle-focus="chords">Chord library</button>
+          </div>
+          <div id="cyclePathControls" class="cycle-path-controls">
+            <p class="workbench-note"><b>One register, one string set, all 18 changes.</b> The route is optimized as a complete loop so every displayed shape is playable under one hand.</p>
+            <div class="control-pair">
+              <label for="cycleSetSel">String set<select id="cycleSetSel"></select></label>
+              <label for="cycleZoneSel">Neck area<select id="cycleZoneSel"></select></label>
+            </div>
+            <div id="cyclePathStats" class="path-stats"></div>
           </div>
           <div id="cycleCompingControls" class="cycle-comping-controls hidden"></div>
         </div>
@@ -105,7 +113,8 @@
           <label for="tonicSel">Tonic</label>
           <select id="tonicSel"></select>
         </div>
-        <span class="panel-label">Song changes</span>
+        <span class="panel-label">Common song maps</span>
+        <p class="workbench-note">Choose by musical job first—home loop, cadence, turnaround, or modal motion. Roman numerals stay constant while the chord names follow your selected home.</p>
         <div id="progList" class="prog-list"></div>
       </div>
 
@@ -118,6 +127,10 @@
         <div class="row tonic-row">
           <label for="setSel">Strings</label>
           <select id="setSel"></select>
+        </div>
+        <div class="row tonic-row">
+          <label for="triadZoneSel">Neck area</label>
+          <select id="triadZoneSel"></select>
         </div>
         <label class="inline-tgl"><input type="checkbox" id="tglAllShapes" checked />
           show every other shape faintly</label>
@@ -214,8 +227,8 @@
       <div id="panelEar" class="panel hidden">
         <div class="solo-title"><span class="panel-label">Ear checks</span><span>listen → name → map</span></div>
         <div class="seg" aria-label="Ear check type">
-          <button data-ear-drill="colour" class="active">Dromos colour</button>
-          <button data-ear-drill="map">Key &amp; changes</button>
+          <button data-ear-drill="colour" class="active">1 · Colour ID</button>
+          <button data-ear-drill="map">2 · Home + changes</button>
         </div>
         <div class="row tonic-row ear-reference">
           <label for="earTonicSel">Reference tonic</label>
@@ -243,6 +256,7 @@
         <section id="earMap" class="sub hidden">
           <p class="ear-hint">Train blind, or select a known home first. Then identify the <b>harmonic/dromos family</b> and the <b>functional boxes</b>. Choosing is reversible; only <b>Check map</b> scores it.</p>
           <div class="row tonic-row ear-map-home-control"><label for="earMapHomeSel">Home to train</label><select id="earMapHomeSel"></select></div>
+          <button id="btnEarMapHome" class="mini ear-home-button">♪ Hear the known home</button>
           <div id="earMapFeedback" class="ear-feedback">Press <b>New map</b>, listen, then commit to the map.</div>
           <div class="ear-map-prompt"><span>1 · Home key</span><div id="earKeyChoices" class="ear-key-choices"></div></div>
           <div class="ear-map-prompt"><span>2 · Harmonic / dromos family</span><div id="earFamilyChoices" class="ear-family-choices"></div></div>
@@ -324,64 +338,66 @@
         <button id="btnNext" class="tbtn" title="Next (→)" aria-label="Next chord">▶</button>
       </div>
 
-      <div class="audition">
-        <button id="btnStrum" class="mini">Strum</button>
-        <button id="btnArp" class="mini">Arpeggiate</button>
-        <button id="btnShift" class="mini">Position: auto</button>
-      </div>
-
-      <div class="row tonic-row">
-        <label for="tuningSel">Instrument</label>
-        <select id="tuningSel"></select>
-      </div>
-      <div id="tuningSub" class="tuning-sub"></div>
-
-      <div class="tempo">
-        <label for="bpm">Tempo <b id="bpmVal">84</b> BPM</label>
-        <input id="bpm" type="range" min="40" max="200" value="84" />
-      </div>
-
-      <section class="groove-controls" aria-labelledby="grooveTitle">
-        <div><span id="grooveTitle" class="panel-label">Practice ensemble</span><b>Pulse, bass, then your line</b></div>
-        <label for="grooveStyle">Greek pulse<select id="grooveStyle"></select></label>
-        <div class="groove-toggles">
-          <label><input type="checkbox" id="tglBass" checked /> moving bass</label>
-          <label><input type="checkbox" id="tglDrums" checked /> grouped percussion</label>
+      <section class="session-bar" aria-label="Practice setup">
+        <div class="row tonic-row session-instrument">
+          <label for="tuningSel">Instrument</label>
+          <select id="tuningSel"></select>
+          <div id="tuningSub" class="tuning-sub"></div>
         </div>
-        <p id="grooveHint">A practice pulse, not a full arrangement.</p>
+        <div class="tempo">
+          <label for="bpm">Tempo <b id="bpmVal">84</b> BPM</label>
+          <input id="bpm" type="range" min="40" max="200" value="84" />
+        </div>
+        <label class="session-groove" for="grooveStyle">Greek pulse<select id="grooveStyle"></select></label>
+        <div class="audition">
+          <button id="btnStrum" class="mini">Strum</button>
+          <button id="btnArp" class="mini">Arpeggiate</button>
+          <button id="btnShift" class="mini">Position: auto</button>
+        </div>
       </section>
 
-      <div class="toggles">
-        <label><input type="checkbox" id="tglLabel" /> Note names</label>
-        <label><input type="checkbox" id="tglScale" /> Scale overlay</label>
-        <label><input type="checkbox" id="tglGhost" /> Ghost tones</label>
-        <label><input type="checkbox" id="tglLoop" checked /> Loop</label>
-        <label><input type="checkbox" id="tglMetro" /> Metronome</label>
-        <label><input type="checkbox" id="tglHoldI" checked /> Hold I 2 bars</label>
-        <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
-      </div>
+      <details class="display-settings">
+        <summary>Sound &amp; display options</summary>
+        <section class="groove-controls" aria-labelledby="grooveTitle">
+          <div><span id="grooveTitle" class="panel-label">Practice ensemble</span><b>Pulse, bass, then your line</b></div>
+          <div class="groove-toggles">
+            <label><input type="checkbox" id="tglBass" checked /> moving bass</label>
+            <label><input type="checkbox" id="tglDrums" checked /> grouped percussion</label>
+          </div>
+          <p id="grooveHint">A practice pulse, not a full arrangement.</p>
+        </section>
+        <div class="toggles">
+          <label><input type="checkbox" id="tglLabel" /> Note names</label>
+          <label><input type="checkbox" id="tglScale" /> Scale overlay</label>
+          <label><input type="checkbox" id="tglGhost" /> Ghost tones</label>
+          <label><input type="checkbox" id="tglLoop" checked /> Loop</label>
+          <label><input type="checkbox" id="tglMetro" /> Metronome</label>
+          <label><input type="checkbox" id="tglHoldI" checked /> Hold I 2 bars</label>
+          <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
+        </div>
+      </details>
 
-      <div class="hint">Space plays the current drill · ← → steps a map/position · 1–9 follow the curriculum · 0 opens Coach</div>
+      <div class="hint">Space plays · ← → steps · number keys follow the curriculum</div>
     </aside>
   </main>
 
-  <script src="js/tuning.js"></script>
-  <script src="js/theory.js"></script>
-  <script src="js/modes.js"></script>
-  <script src="js/ear-drills.js"></script>
-  <script src="js/styles.js"></script>
-  <script src="js/analysis.js"></script>
-  <script src="js/studies.js"></script>
-  <script src="js/musicxml.js"></script>
-  <script src="js/resources.js"></script>
-  <script src="js/video.js"></script>
-  <script src="js/coach.js"></script>
-  <script src="js/practice.js"></script>
-  <script src="js/triads.js"></script>
-  <script src="js/fretboard.js"></script>
-  <script src="js/guitar-voicings.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/tuning.js?v=12"></script>
+  <script src="js/theory.js?v=12"></script>
+  <script src="js/modes.js?v=12"></script>
+  <script src="js/ear-drills.js?v=12"></script>
+  <script src="js/styles.js?v=12"></script>
+  <script src="js/analysis.js?v=12"></script>
+  <script src="js/studies.js?v=12"></script>
+  <script src="js/musicxml.js?v=12"></script>
+  <script src="js/resources.js?v=12"></script>
+  <script src="js/video.js?v=12"></script>
+  <script src="js/coach.js?v=12"></script>
+  <script src="js/practice.js?v=12"></script>
+  <script src="js/triads.js?v=12"></script>
+  <script src="js/fretboard.js?v=12"></script>
+  <script src="js/guitar-voicings.js?v=12"></script>
+  <script src="js/audio.js?v=12"></script>
+  <script src="js/app.js?v=12"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

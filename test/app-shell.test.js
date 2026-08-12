@@ -70,6 +70,8 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/app.js"), /function stopPlay\(\) \{ AU\.stopAll\(\);/,
     "changing a drill must clear path timers and ringing voices as well as transport");
   assert.match(read("js/audio.js"), /function stopAll\(\)/);
+  assert.match(read("sw.js"), /fetch\(event\.request\)[\s\S]*caches\.match\(event\.request\)/,
+    "online sessions must prefer the deployed app and use cache only as an offline fallback");
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
 });

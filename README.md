@@ -296,6 +296,8 @@ on every page load, asserting generated chords against a hand-verified ground tr
   music invariants (`MI-*`) that must not be broken
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — module map, data shapes, why there
   are two chord engines
+- [docs/REVIEW_2026-08-12.md](docs/REVIEW_2026-08-12.md) — deep audit, v12 workbench decisions,
+  verification record, deliberate limits, and the next-contributor handoff
 - [CONTRIBUTING.md](CONTRIBUTING.md) — recipes for adding a progression or a mode
 - [docs/BACKLOG.md](docs/BACKLOG.md) — what is next
 - [docs/CURRICULUM.md](docs/CURRICULUM.md) — product intent, practice loop and curriculum roadmap

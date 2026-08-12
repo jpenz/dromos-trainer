@@ -17,6 +17,7 @@ index.html
   └─ css/styles.css        all styling; interval colours are CSS vars
   └─ js/theory.js   ──►  Theory     pure. the ii–V–I pivot CYCLE only
   └─ js/modes.js    ──►  Modes      pure. dromoi, spelling, progression banks
+  └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
   └─ js/audio.js    ──►  AudioEngine Web Audio synth + bar transport
   └─ js/app.js      ──►  (controller) state, views, wiring. the only place
@@ -85,14 +86,28 @@ user action / transport tick
                  └─ full redraw (cheap: ~100 SVG nodes) then CSS animates
 ```
 
+Hear Movement and Triads & Comp take a different path: `Triads.pathThrough()` first
+builds candidates on one adjacent string set, then uses dynamic programming to price
+the **complete** progression. Its cost includes per-voice pitch movement, large-leap
+penalties, hand span, and register drift. Looping drills also price the final-to-first
+transition. This prevents a locally attractive inversion from causing an avoidable
+jump later in the route.
+
 Redraw is wholesale rather than diffed. At this node count it is well under a frame,
 and it removes a whole class of stale-state bugs.
 
 ## Audio
 
-`AudioEngine` renders a **Karplus–Strong** plucked string into an `AudioBuffer`
-(noise burst → averaging comb filter), cached per rounded frequency. No samples, no
-library, no network.
+`AudioEngine` renders a normalized **hybrid plucked string**: a Karplus–Strong
+`AudioBuffer` supplies the pick/string transient and a short, quiet oscillator supplies
+fundamental pitch support on small tablet speakers. Per-voice gain falls as polyphony
+increases. High-pass cleanup, instrument-specific filtering, a dynamics compressor,
+and a conservative output stage protect against summed clipping. No samples, library,
+or network are required.
+
+The first real pointer/touch release primes a silent one-sample buffer so iPadOS can
+resume the `AudioContext` inside a user gesture. Do not move audio initialization to a
+timer or page-load callback.
 
 The transport uses the standard **lookahead scheduler** pattern: a 25 ms `setInterval`
 schedules audio events up to 100 ms ahead on the sample-accurate `AudioContext` clock,
@@ -110,6 +125,8 @@ Theory.selfTest()   // cycle: ground truth + voice-leading invariants
 Modes.selfTest()    // progressions, scale spellings, MI-05, MI-06
 ```
 
-There is no headless runner yet (FR-17) because the build machine has no Node. If you
-add one, keep the in-browser badge — it is the fastest possible feedback while
-dialling music by ear.
+`npm run check` syntax-checks every browser and server module. `npm test` runs the
+pure music, app-shell, and coach-server regressions with Node's built-in test runner.
+Keep the in-browser badge as well: it is the fastest feedback while changing music
+data or listening by ear. Responsive releases also require explicit 1024 × 1366 and
+390 × 844 browser passes; see [REVIEW_2026-08-12.md](REVIEW_2026-08-12.md).

@@ -1,11 +1,14 @@
-/* audio.js — voiced Karplus-Strong pluck + simple bar transport.
+/* audio.js — speaker-safe hybrid string voice + simple bar transport.
  * No external libs. Exposes window.AudioEngine.
+ * Implements FR-05, FR-06, FR-23 and FR-50. See docs/REQUIREMENTS.md.
  */
 (function () {
   "use strict";
 
   let ctx = null;
   let master = null;
+  let compressor = null;
+  let output = null;
   const bufCache = new Map();
   let activeSources = [];
 
@@ -20,11 +23,36 @@
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain();
-      master.gain.value = 0.9;
-      master.connect(ctx.destination);
+      compressor = ctx.createDynamicsCompressor();
+      output = ctx.createGain();
+      master.gain.value = 0.76;
+      compressor.threshold.value = -20;
+      compressor.knee.value = 18;
+      compressor.ratio.value = 4.5;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.18;
+      output.gain.value = 0.68;
+      master.connect(compressor); compressor.connect(output); output.connect(ctx.destination);
     }
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     return ctx;
+  }
+
+  // A real user gesture is still the most dependable audio unlock on iPadOS.
+  // Starting and immediately stopping a silent one-sample buffer primes the
+  // graph without making a click or scheduling a mystery note.
+  function prime() {
+    const context = ensure();
+    const source = context.createBufferSource();
+    source.buffer = context.createBuffer(1, 1, context.sampleRate);
+    source.connect(master);
+    source.start();
+  }
+
+  function voiceGain(noteCount, role) {
+    const count = Math.max(1, Number(noteCount) || 1);
+    const base = role === "sequence" ? 0.30 : role === "path" ? 0.28 : 0.46 / Math.sqrt(count);
+    return Math.max(0.15, Math.min(0.31, base));
   }
 
   // Build a plucked-string buffer for a frequency (cached by rounded freq).
@@ -53,6 +81,12 @@
       if (i < N) { y[i] = noise[i]; }
       else { y[i] = decay * blend * (y[i - N] + y[i - N + 1]); }
     }
+    // The recurrence depends on pitch and sample rate. Normalize every cached
+    // buffer so a high bouzouki note cannot be much louder than a guitar root.
+    let peak = 0;
+    for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(y[i]));
+    const normalise = peak > 0 ? 0.72 / peak : 1;
+    for (let i = 0; i < len; i++) y[i] *= normalise;
     // gentle overall fade so tails don't click
     const fade = Math.floor(len * 0.15);
     for (let i = 0; i < fade; i++) y[len - 1 - i] *= i / fade;
@@ -67,20 +101,36 @@
     src.buffer = b;
     const g = ctx.createGain();
     const tone = ctx.createBiquadFilter();
+    const cleanup = ctx.createBiquadFilter();
     const body = ctx.createBiquadFilter();
+    const fundamental = ctx.createOscillator();
+    const fundamentalGain = ctx.createGain();
+    cleanup.type = "highpass";
+    cleanup.frequency.value = voice === "laouto" ? 62 : 74;
+    cleanup.Q.value = 0.5;
     tone.type = "lowpass";
-    tone.frequency.value = voice === "bouzouki" ? 4400 : voice === "laouto" ? 3600 : 3000;
+    tone.frequency.value = voice === "bouzouki" ? 4300 : voice === "laouto" ? 3300 : 3100;
     tone.Q.value = 0.55;
     body.type = "peaking";
-    body.frequency.value = voice === "bouzouki" ? 260 : voice === "laouto" ? 190 : 150;
-    body.Q.value = 0.9;
-    body.gain.value = voice === "bouzouki" ? 2.5 : 3.5;
-    g.gain.value = gain == null ? 0.5 : gain;
-    src.connect(tone); tone.connect(body); body.connect(g); g.connect(master);
-    activeSources.push(src);
-    src.onended = () => { activeSources = activeSources.filter((item) => item !== src); };
+    body.frequency.value = voice === "bouzouki" ? 330 : voice === "laouto" ? 220 : 185;
+    body.Q.value = 0.75;
+    body.gain.value = 1.2;
+    g.gain.value = gain == null ? 0.24 : gain;
+    fundamental.type = voice === "bouzouki" ? "sine" : "triangle";
+    fundamental.frequency.setValueAtTime(freq, when);
+    fundamentalGain.gain.setValueAtTime(0.0001, when);
+    fundamentalGain.gain.exponentialRampToValueAtTime(0.055, when + 0.008);
+    fundamentalGain.gain.exponentialRampToValueAtTime(0.0001, when + Math.min(dur, 0.75));
+    src.connect(cleanup); cleanup.connect(tone); tone.connect(body); body.connect(g);
+    fundamental.connect(fundamentalGain); fundamentalGain.connect(g); g.connect(master);
+    activeSources.push(src, fundamental);
+    const untrack = (item) => { activeSources = activeSources.filter((source) => source !== item); };
+    src.onended = () => untrack(src);
+    fundamental.onended = () => untrack(fundamental);
     src.start(when);
     src.stop(when + dur + 0.05);
+    fundamental.start(when);
+    fundamental.stop(when + Math.min(dur, 0.8));
   }
 
   // Strum a chord (array of {freq}). style: "strum" | "arp" | "block"
@@ -89,8 +139,9 @@
     const t0 = when == null ? ctx.currentTime + 0.01 : when;
     const dur = 2.2;
     const spread = style === "arp" ? 0.14 : style === "block" ? 0 : 0.035;
+    const level = voiceGain(notes.length, "chord");
     notes.forEach((n, i) => {
-      playNoteAt(n.freq, t0 + i * spread, dur, 0.5 - i * 0.03);
+      playNoteAt(n.freq, t0 + i * spread, dur, Math.max(0.14, level - i * 0.008));
     });
   }
 
@@ -100,7 +151,7 @@
     ensure();
     const sp = spacing == null ? 0.26 : spacing;
     const t0 = when == null ? ctx.currentTime + 0.02 : when;
-    notes.forEach((n, i) => playNoteAt(n.freq, t0 + i * sp, 1.4, 0.45));
+    notes.forEach((n, i) => playNoteAt(n.freq, t0 + i * sp, 1.4, voiceGain(1, "sequence")));
     return t0 + notes.length * sp;
   }
 
@@ -139,7 +190,7 @@
     notes.forEach((n, i) => {
       const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
       const when = t0 + i * sp;
-      if (!silent) playNoteAt(n.freq, when, Math.max(0.9, sp * 2.4), 0.5);
+      if (!silent) playNoteAt(n.freq, when, Math.max(0.9, sp * 2.4), voiceGain(1, "path"));
       if (o.onStep) {
         pathTimers.push(setTimeout(() => o.onStep(i, silent), Math.max(0, (when - ctx.currentTime) * 1000)));
       }
@@ -168,7 +219,7 @@
     const g = ctx.createGain();
     o.frequency.value = accent ? 2000 : 1400;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(accent ? 0.35 : 0.2, t + 0.001);
+    g.gain.exponentialRampToValueAtTime(accent ? 0.18 : 0.11, t + 0.001);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
     o.connect(g); g.connect(master);
     o.start(t); o.stop(t + 0.08);
@@ -197,7 +248,7 @@
     osc.frequency.setValueAtTime(440 * Math.pow(2, (bassMidi(pc) - 69) / 12), t);
     filter.type = "lowpass"; filter.frequency.setValueAtTime(460, t); filter.Q.value = 0.8;
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(accent ? 0.34 : 0.23, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(accent ? 0.18 : 0.12, t + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
     osc.connect(filter); filter.connect(gain); gain.connect(master);
     track(osc); osc.start(t); osc.stop(t + 0.46);
@@ -211,7 +262,7 @@
     osc.frequency.setValueAtTime(accent ? 122 : 92, t);
     osc.frequency.exponentialRampToValueAtTime(46, t + 0.09);
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(accent ? 0.28 : 0.18, t + 0.003);
+    gain.gain.exponentialRampToValueAtTime(accent ? 0.17 : 0.11, t + 0.003);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
     osc.connect(gain); gain.connect(master);
     track(osc); osc.start(t); osc.stop(t + 0.15);
@@ -224,7 +275,7 @@
     osc.type = accent ? "square" : "triangle";
     osc.frequency.value = accent ? 980 : 1700;
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(accent ? 0.09 : 0.045, t + 0.002);
+    gain.gain.exponentialRampToValueAtTime(accent ? 0.065 : 0.035, t + 0.002);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + (accent ? 0.07 : 0.035));
     osc.connect(gain); gain.connect(master);
     track(osc); osc.start(t); osc.stop(t + 0.09);
@@ -301,10 +352,30 @@
 
   function isPlaying() { return !!transport; }
 
+  function selfTest() {
+    const results = [];
+    let ok = true;
+    const add = (i, want, got) => {
+      const pass = String(want) === String(got);
+      if (!pass) ok = false;
+      results.push({ i, want, got, pass });
+    };
+    add("six-note chord is quieter per voice than triad", true, voiceGain(6, "chord") < voiceGain(3, "chord"));
+    add("single path note remains speaker-safe", true, voiceGain(1, "path") <= 0.3);
+    add("gain floor preserves quiet chord audibility", true, voiceGain(8, "chord") >= 0.15);
+    return { ok, results };
+  }
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("pointerup", prime, { once: true, capture: true });
+    document.addEventListener("touchend", prime, { once: true, capture: true });
+  }
+
   window.AudioEngine = {
-    ensure, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
+    ensure, prime, voiceGain, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
     startTransport, stopTransport, isPlaying,
     setBpm: (v) => transport && transport.setBpm(v),
-    setMetronome: (v) => transport && transport.setMetronome(v)
+    setMetronome: (v) => transport && transport.setMetronome(v),
+    selfTest
   };
 })();

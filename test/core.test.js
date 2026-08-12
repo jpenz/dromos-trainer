@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js"]
+  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest()];
+  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -139,6 +139,13 @@ test("practical guitar vocabulary keeps full forms at fret 15 or below", () => {
       });
     });
   });
+});
+
+test("audio mix reduces polyphonic gain before the master limiter", () => {
+  const { AudioEngine } = loadCore();
+  assert.ok(AudioEngine.voiceGain(6, "chord") < AudioEngine.voiceGain(3, "chord"));
+  assert.ok(AudioEngine.voiceGain(1, "path") <= 0.3);
+  assert.ok(AudioEngine.voiceGain(8, "chord") >= 0.15);
 });
 
 test("mainland laouto supports grips, triads, and scale paths", () => {

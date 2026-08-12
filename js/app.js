@@ -14,7 +14,7 @@
     // --- cycle view ---
     index: 0,
     cycleMode: "full",         // full | iiVI | pivot
-    cycleComping: { focus: "hear", step: 0, kind: "full", voicingIndex: 0 },
+    cycleComping: { focus: "hear", step: 0, kind: "full", voicingIndex: 0, stringSet: null, zone: "mid" },
     // --- progression view ---
     tonic: "D",
     modeId: "major",
@@ -27,7 +27,7 @@
       map: { answer: null, homePreset: "D", keyOptions: [], keyGuess: null, familyGuess: null, progressionGuess: null, hintLevel: 0, locked: false, score: 0, total: 0, streak: 0, best: 0 }
     },
     // --- triads ---
-    triads: { step: 0, stringSet: null, showAll: true },
+    triads: { step: 0, stringSet: null, zone: "mid", showAll: true },
     // --- solo lab ---
     solo: { section: "road", focus: "third", lens: "full", phraseId: "outline", routeId: "three-plus-target", matrixBeat: 0, matrixPlan: [] },
     // --- foundation and Greek styles ---
@@ -100,7 +100,7 @@
       ? { purpose: "Comp with usable shapes", title: "Choose the smallest chord shape that makes the function clear.", steps: ["Set dromos and progression before choosing a grip.", "Try Full 6 for open/barre vocabulary, then Triad 3 or Compact 4 for moving changes.", "Keep a common tone when possible; listen for the 3rd and 7th when the harmony changes."] }
       : PAGE_GUIDES[state.view] || PAGE_GUIDES.cycle;
     const current = state.view === "solo" ? `Current road: ${M.MODES[state.modeId].name} on ${state.tonic} · ${currentProgression().prog.label}.` : "";
-    $("pageGuide").innerHTML = `<details open><summary><span>${guide.purpose}</span><b>How this page works</b></summary>
+    $("pageGuide").innerHTML = `<details><summary><span>${guide.purpose}</span><b>Purpose &amp; three-step guide</b></summary>
       <h2>${guide.title}</h2><ol>${guide.steps.map((step) => `<li>${step}</li>`).join("")}</ol>${current ? `<p>${current}</p>` : ""}</details>`;
   }
 
@@ -263,6 +263,89 @@
     });
   }
 
+  function syncCyclePathControls() {
+    const c = state.cycleComping;
+    const root = $("cyclePathControls");
+    root.classList.toggle("hidden", c.focus !== "hear");
+    if (c.focus !== "hear") return;
+    const sets = TR.stringSets3();
+    const names = window.Tuning.names();
+    const automatic = Math.max(0, window.Tuning.count() - 3);
+    if (c.stringSet != null && !sets.some((set) => set[0] === c.stringSet)) c.stringSet = null;
+    $("cycleSetSel").innerHTML = `<option value="">Auto · ${names.slice(automatic, automatic + 3).join("–")}</option>` +
+      sets.slice().reverse().map((set) => `<option value="${set[0]}"${c.stringSet === set[0] ? " selected" : ""}>${names.slice(set[0], set[0] + 3).join("–")}</option>`).join("");
+    $("cycleZoneSel").innerHTML = Object.values(TR.POSITION_ZONES).map((zone) =>
+      `<option value="${zone.id}"${c.zone === zone.id ? " selected" : ""}>${zone.label}</option>`).join("");
+    $("cycleSetSel").onchange = (event) => {
+      stopPlay(); c.stringSet = event.target.value === "" ? null : +event.target.value; renderCycle();
+    };
+    $("cycleZoneSel").onchange = (event) => {
+      stopPlay(); c.zone = event.target.value; renderCycle();
+    };
+  }
+
+  function cycleTriadPath() {
+    return TR.pathThrough(cycle, {
+      stringSet: state.cycleComping.stringSet,
+      zone: state.cycleComping.zone,
+      closeLoop: true,
+      nameFor: (pc) => T.spell(pc, cycle[state.index].keyAcc)
+    });
+  }
+
+  function shapeAudioNotes(shape) {
+    return shape.placements.map((placement) => ({
+      midi: placement.midi,
+      freq: 440 * Math.pow(2, (placement.midi - 69) / 12)
+    }));
+  }
+
+  function renderCycleTriadRoute() {
+    const path = cycleTriadPath();
+    const cur = path[state.index];
+    const previous = path[prevIndex(state.index)];
+    if (!cur || !previous) return;
+    const moveClass = cur.placements.map((placement, index) =>
+      placement.midi === previous.placements[index].midi ? "held" : "moved");
+    FB.render(svg(), {
+      grip: { placements: cur.placements },
+      labelMode: state.labelMode,
+      lefty: state.lefty,
+      moveClass
+    });
+    svg().setAttribute("aria-label", `${window.Tuning.current().name} ${cur.setLabel} triad route for ${cur.chord.symbol}`);
+
+    const metrics = TR.pathMetrics(path, true);
+    const move = TR.pathMetrics([previous, cur], false).moves[0];
+    const chordColour = cur.chord.notes.find((note) => note.role === "7" || note.role === "b7");
+    const pathStats = $("cyclePathStats");
+    pathStats.innerHTML = `<span><b>${path.length}</b> shapes</span><span><b>${metrics.averagePerVoice.toFixed(1)}</b> semitones / voice</span><span><b>${cur.setLabel}</b> fixed strings</span>`;
+    const notes = cur.placements.slice().reverse().map((placement, reverseIndex) => {
+      const originalIndex = cur.placements.length - 1 - reverseIndex;
+      const cls = moveClass[originalIndex];
+      return `<div class="note-chip ${cls}" data-group="${placement.note.colorGroup}">
+        <span class="chip-role">${placement.note.roleLabel}</span>
+        <span class="chip-name">${placement.note.name}</span>
+        <span class="chip-tag">string ${window.Tuning.names()[placement.stringIndex]} · fret ${placement.fret}${cls === "held" ? " · hold" : ""}</span>
+      </div>`;
+    }).join("");
+    $("readout").innerHTML = `<div class="ro-head">
+      <span class="fn-badge ${cur.chord.fn === "ii" ? "fn-ii" : cur.chord.fn === "V" ? "fn-v" : "fn-i"}">${cur.chord.fn}</span>
+      <span class="ro-symbol">${cur.chord.symbol}</span>
+      <span class="ro-key">play ${cur.triadName} triad · ${cur.inversionName}</span>
+    </div>
+    <div class="tri-tags"><span class="tri-set">${cur.setLabel} strings</span><span class="tri-fret">frets ${cur.lowFret}–${Math.max(...cur.placements.map((placement) => placement.fret))}</span></div>
+    <div class="tri-move"><b>${move ? move.voices.filter((distance) => distance > 0).length : 0}</b> voices move · <b>${move ? move.total : 0}</b> semitones total from ${previous.chord.symbol}</div>
+    <div class="ro-notes">${notes}</div>
+    <div class="ro-foot"><b>Think the full chord ${cur.chord.symbol}; play its triad skeleton.</b>${chordColour ? ` Hear ${chordColour.name} (${chordColour.roleLabel}) as the omitted colour tone.` : ""} Keep the top line singable; the next shape was chosen for the whole cycle, not just this one change.</div>`;
+
+    renderKeymap(cur.chord);
+    const pivot = T.isPivot(cycle[prevIndex(state.index)], cur.chord);
+    $("pivotBanner").classList.toggle("show", pivot);
+    if (pivot) $("pivotBanner").textContent = `PIVOT · ${previous.chord.symbol} becomes ${cur.chord.symbol} — lower only the defining 3rd to turn the old I into the next ii`;
+    pulseMoved();
+  }
+
   function renderCycleComping() {
     const { chords } = currentProgression();
     const c = state.cycleComping;
@@ -284,21 +367,10 @@
     $("keymapWrap").classList.toggle("hidden", state.cycleComping.focus === "chords");
     document.querySelectorAll("[data-cycle-focus]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-cycle-focus") === state.cycleComping.focus));
+    syncCyclePathControls();
     renderCycleCompingControls();
     if (state.cycleComping.focus === "chords") { $("pivotBanner").classList.remove("show"); renderCycleComping(); return; }
-    const cur = cycle[state.index];
-    const prev = cycle[prevIndex(state.index)];
-    const moveClass = T.transition(prev, cur);
-    drawChord(cur.notes, moveClass);
-    renderChordReadout(cur.symbol, cur.fn, "key of " + cur.key, cur.notes, moveClass,
-      "Guide tones (3rd &amp; 7th) drive the motion · two voices hold, two step down");
-    renderKeymap(cur);
-    const pivot = T.isPivot(prev, cur);
-    const banner = $("pivotBanner");
-    banner.classList.toggle("show", pivot);
-    if (pivot) banner.textContent =
-      `PIVOT · ${prev.symbol} becomes ${cur.symbol} — the I of ${prev.key} is now the ii of ${cur.key}`;
-    pulseMoved();
+    renderCycleTriadRoute();
   }
 
   function renderKeymap(cur) {
@@ -400,12 +472,23 @@
     document.querySelectorAll("[data-modeid]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-modeid") === state.modeId));
     const list = M.PROGRESSIONS[state.modeId];
-    $("progList").innerHTML = list.map((p) =>
-      `<button class="prog-item${p.id === state.progId ? " active" : ""}" data-prog="${p.id}">
-        <span class="prog-label">${p.label}</span>
-        <span class="prog-tag t-${p.tag}">${p.tag}</span>
-        <span class="prog-why">${p.why}</span></button>`
-    ).join("");
+    const groups = [];
+    list.forEach((progression) => {
+      const name = progression.group || "Core maps";
+      let group = groups.find((item) => item.name === name);
+      if (!group) { group = { name, items: [] }; groups.push(group); }
+      group.items.push(progression);
+    });
+    $("progList").innerHTML = groups.map((group) => `<section class="progression-group">
+      <h3>${group.name}</h3>
+      ${group.items.map((progression) => {
+        const symbols = M.buildProgression(state.tonic, state.modeId, progression.id).chords.map((chord) => chord.symbol).join(" → ");
+        return `<button class="prog-item${progression.id === state.progId ? " active" : ""}" data-prog="${progression.id}">
+          <span class="prog-function"><b>${progression.label}</b><i>${progression.tag}</i></span>
+          <span class="prog-symbols">${symbols}</span>
+          <span class="prog-why">${progression.why}</span></button>`;
+      }).join("")}
+    </section>`).join("");
     $("progList").querySelectorAll("[data-prog]").forEach((b) => {
       b.onclick = () => {
         stopPlay();
@@ -803,12 +886,22 @@
     AU.playProgressionPrompt(chords, state.bpm);
   }
 
+  function playEarMapHome() {
+    stopPlay();
+    const answer = state.ear.map.answer;
+    if (!answer || state.ear.map.homePreset === "random") return;
+    const chord = E ? E.homeChord(answer) : M.buildProgression(answer.tonic, answer.modeId, answer.progressionId).chords.slice(-1)[0];
+    AU.playChord(chord.notes, "block");
+  }
+
   function renderEarMap() {
     const map = state.ear.map;
     if (!map.answer) return;
     const homeSelect = $("earMapHomeSel");
     homeSelect.innerHTML = `<option value="random">Random — test the home</option>` + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic} — known home</option>`).join("");
     homeSelect.value = map.homePreset;
+    $("btnEarMapHome").disabled = map.homePreset === "random";
+    $("btnEarMapHome").textContent = map.homePreset === "random" ? "Home hidden · train blind" : `♪ Hear ${map.answer.tonic} home chord`;
     $("earKeyChoices").innerHTML = map.homePreset === "random"
       ? map.keyOptions.map((tonic) => `<button data-ear-key="${tonic}"${map.keyGuess === tonic ? " class=\"selected\"" : ""}>${tonic}</button>`).join("")
       : `<div class="ear-home-anchor"><b>${map.answer.tonic}</b><span>Known training home. Use ♪ Hear ${map.answer.tonic} if you need to reset your ear.</span></div>`;
@@ -872,6 +965,7 @@
     $("earMap").classList.toggle("hidden", drill !== "map");
     document.querySelectorAll("[data-ear-drill]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-ear-drill") === drill));
+    document.querySelector(".ear-reference").classList.toggle("hidden", drill !== "colour");
     renderEarReference();
     if (drill === "map" && !state.ear.map.answer) newEarMap();
     renderEarScore();
@@ -1135,13 +1229,17 @@
     const t = state.triads;
     t.step = Math.min(t.step, chords.length - 1);
     const path = TR.pathThrough(chords, {
-      stringSet: t.stringSet, startFret: 5, nameFor: spellPc
+      stringSet: t.stringSet, zone: t.zone, closeLoop: state.loop, nameFor: spellPc
     });
     const cur = path[t.step];
     if (!cur) return;
 
     let others = TR.allShapes(chords[t.step].rootPc, cur.triadId, spellPc);
-    if (t.stringSet != null) others = others.filter((s) => s.stringSet[0] === t.stringSet);
+    others = others.filter((shape) => shape.stringSet[0] === cur.stringSet[0]);
+    const zone = TR.POSITION_ZONES[t.zone] || TR.POSITION_ZONES.mid;
+    const zoned = others.filter((shape) => shape.lowFret >= zone.min &&
+      Math.max(...shape.placements.map((placement) => placement.fret)) <= zone.max);
+    if (zoned.length) others = zoned;
 
     FB.render(svg(), {
       grip: { placements: cur.placements },
@@ -1180,9 +1278,7 @@
             <span class="chip-tag">fret ${p.fret}</span>
           </div>`).join("")}
       </div>
-      <div class="ro-foot">${others.length} shapes of this triad on the neck.
-      Sevenths are colour on top of a triad — over <b>${cur.chord.symbol}</b> the
-      target notes are these three.</div>`;
+      <div class="ro-foot"><b>This is a route, not a chord dictionary.</b> ${others.length} inversions fit the selected string set and neck area; the highlighted one keeps the complete progression compact. Sevenths are colour on top of the triad — over <b>${cur.chord.symbol}</b> these three notes are the skeleton.</div>`;
 
     $("triadStrip").innerHTML = path.map((p, i) => p ? `
       <button class="pchip${i === t.step ? " active" : ""}" data-tstep="${i}">
@@ -1195,7 +1291,7 @@
 
   function auditionTriad() {
     const { chords } = currentProgression();
-    const path = TR.pathThrough(chords, { stringSet: state.triads.stringSet, nameFor: spellPc });
+    const path = TR.pathThrough(chords, { stringSet: state.triads.stringSet, zone: state.triads.zone, closeLoop: state.loop, nameFor: spellPc });
     const cur = path[Math.min(state.triads.step, path.length - 1)];
     if (!cur) return;
     AU.ensure();
@@ -1211,12 +1307,15 @@
   function syncTriadControls() {
     const sets = TR.stringSets3();
     const names = window.Tuning.names();
-    $("setSel").innerHTML = `<option value="">All string sets</option>` +
+    const automatic = Math.max(0, window.Tuning.count() - 3);
+    $("setSel").innerHTML = `<option value="">Auto · ${names.slice(automatic, automatic + 3).join("–")}</option>` +
       sets.map((s) => `<option value="${s[0]}"${state.triads.stringSet === s[0] ? " selected" : ""}>${
         names.slice(s[0], s[0] + 3).join("-")} strings</option>`).join("");
     if (state.triads.stringSet != null && !sets.some((s) => s[0] === state.triads.stringSet)) {
       state.triads.stringSet = null;   // tuning changed under us
     }
+    $("triadZoneSel").innerHTML = Object.values(TR.POSITION_ZONES).map((zone) =>
+      `<option value="${zone.id}"${state.triads.zone === zone.id ? " selected" : ""}>${zone.label}</option>`).join("");
   }
 
   // ============================= SOLO LAB ================================
@@ -1587,7 +1686,7 @@
       pb = { kind: "comping", len: chords.length, pos: state.cycleComping.step, started: false };
     } else if (state.view === "cycle") {
       const seq = sequenceFor(state.cycleMode, state.index);
-      pb = { kind: "cycle", seq, pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
+      pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
     } else if (state.view === "prog" || state.view === "solo") {
       const { chords } = currentProgression();
       pb = { kind: "prog", len: chords.length, pos: state.progStep, started: false };
@@ -1611,11 +1710,12 @@
           pb.started = true;
           const idx = pb.seq[pb.pos];
           const chord = cycle[idx];
+          const routeShape = pb.route[idx];
           pb.barsLeft = barsFor(chord) - 1;
           setTimeout(() => setCycleIndex(idx), delay);
           const nextIndex = pb.seq[(pb.pos + 1) % pb.seq.length];
           const nextChord = cycle[nextIndex] || chord;
-          return { notes: chord.notes, bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
+          return { notes: routeShape ? shapeAudioNotes(routeShape) : chord.notes, bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
         }
         // progression playback
         if (pb.started) {
@@ -1662,10 +1762,13 @@
   function auditionCurrent(style) {
     AU.ensure();
     if (state.view === "cycle") {
-      const chord = state.cycleComping.focus === "chords"
-        ? currentProgression().chords[state.cycleComping.step]
-        : cycle[state.index];
-      AU.playChord(chord.notes, style || state.strumStyle);
+      if (state.cycleComping.focus === "chords") {
+        const chord = currentProgression().chords[state.cycleComping.step];
+        AU.playChord(chord.notes, style || state.strumStyle);
+      } else {
+        const shape = cycleTriadPath()[state.index];
+        if (shape) AU.playChord(shapeAudioNotes(shape), style || state.strumStyle);
+      }
     }
     else if (state.view === "prog" || state.view === "solo") auditionProg();
     else if (state.view === "triads") auditionTriad();
@@ -1862,6 +1965,10 @@
       state.triads.stringSet = e.target.value === "" ? null : +e.target.value;
       renderTriads();
     };
+    $("triadZoneSel").onchange = (event) => {
+      state.triads.zone = event.target.value;
+      renderTriads();
+    };
     $("tglAllShapes").onchange = (e) => { state.triads.showAll = e.target.checked; renderTriads(); };
     $("btnTriadPrev").onclick = () => { stopPlay(); stepTriad(-1); };
     $("btnTriadNext").onclick = () => { stopPlay(); stepTriad(1); };
@@ -1918,6 +2025,7 @@
       if (state.view === "ear" && state.ear.drill === "map") newEarMap();
     };
     $("btnEarMapNew").onclick = newEarMap;
+    $("btnEarMapHome").onclick = playEarMapHome;
     $("btnEarMapReplay").onclick = () => { if (state.ear.map.answer) playEarMapPrompt(); else newEarMap(); };
     $("btnEarMapHint").onclick = hintEarMap;
     $("btnEarMapCheck").onclick = checkEarMap;
@@ -1965,7 +2073,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest()];
+    const suites = [T.selfTest(), M.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;
