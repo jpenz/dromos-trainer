@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
-    U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings;
+    U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -23,8 +23,8 @@
     scaleOverlay: false,
     // --- ear trainer ---
     ear: {
-      drill: "colour", answer: null, score: 0, total: 0, streak: 0, best: 0, locked: false,
-      map: { answer: null, keyGuess: null, progressionGuess: null, locked: false, score: 0, total: 0, streak: 0, best: 0 }
+      drill: "colour", tonic: "D", answer: null, guess: null, hintLevel: 0, score: 0, total: 0, streak: 0, best: 0, locked: false,
+      map: { answer: null, homePreset: "D", keyOptions: [], keyGuess: null, familyGuess: null, progressionGuess: null, hintLevel: 0, locked: false, score: 0, total: 0, streak: 0, best: 0 }
     },
     // --- triads ---
     triads: { step: 0, stringSet: null, showAll: true },
@@ -368,14 +368,16 @@
       html += `<span class="snote ${cls}"><b>${n.name}</b><i>${n.degree}</i></span>`;
     });
     html += `</div>`;
-    // the two-note comparison drill
-    html += `<div class="compare"><span class="cmp-label">2nd &amp; 3rd tell you the mode:</span>`;
+    // Small signature sets are a comparison aid, not a claim that every
+    // modal/harmonic map is defined by its 2nd and 3rd alone. Harmonic minor
+    // must expose its leading tone (7) to stay distinct from natural minor.
+    html += `<div class="compare"><span class="cmp-label">signature tones separate these maps:</span>`;
     M.MODE_ORDER.forEach((id) => {
       const m = M.MODES[id];
       const s = M.scaleOf(state.tonic, id);
       const f = m.flavour.map((off) => s.find((x) => x.off === off));
       html += `<span class="cmp ${id === state.modeId ? "on" : ""}" data-jump="${id}">
-        <b>${m.name}</b> ${f.map((x) => x ? x.name : "?").join(" ")}</span>`;
+        <b>${m.name}</b> ${f.map((x) => x ? x.name : "?").join(" ")} <i>(${m.signature})</i></span>`;
     });
     html += `</div>`;
     $("scaleStrip").innerHTML = html;
@@ -662,20 +664,50 @@
   }
 
   // =========================== EAR TRAINER ===============================
+  function earTonicNote() {
+    const pc = M.parseName(state.ear.tonic).pc;
+    const midi = 50 + pc;
+    return { freq: 440 * Math.pow(2, (midi - 69) / 12) };
+  }
+
+  function playEarTonic() {
+    stopPlay();
+    AU.playChord([earTonicNote()], "block");
+  }
+
+  function renderEarReference() {
+    const select = $("earTonicSel");
+    if (!select) return;
+    select.innerHTML = M.TONICS.map((tonic) => `<option value="${tonic}"${tonic === state.ear.tonic ? " selected" : ""}>${tonic}</option>`).join("");
+    $("btnEarTonic").textContent = `♪ Hear ${state.ear.tonic}`;
+  }
+
+  function renderColourChoices() {
+    document.querySelectorAll("[data-guess]").forEach((button) => {
+      const id = button.getAttribute("data-guess");
+      button.className = "guess-btn";
+      button.disabled = state.ear.locked;
+      if (!state.ear.locked && id === state.ear.guess) button.classList.add("selected");
+      if (state.ear.locked && id === state.ear.answer) button.classList.add("right");
+      else if (state.ear.locked && id === state.ear.guess) button.classList.add("wrong");
+    });
+  }
+
   function newEarQuestion() {
     stopPlay();
-    const ids = M.MODE_ORDER;
+    const ids = E ? E.FAMILY_ORDER : M.MODE_ORDER;
     // avoid repeating the same answer twice running
     let pick;
     do { pick = ids[Math.floor(Math.random() * ids.length)]; }
     while (ids.length > 1 && pick === state.ear.answer);
     state.ear.answer = pick;
+    state.ear.guess = null;
+    state.ear.hintLevel = 0;
     state.ear.locked = false;
     $("earFeedback").className = "ear-feedback";
-    $("earFeedback").textContent = "Listen — chords, then a descending run. Name the mode.";
-    document.querySelectorAll("[data-guess]").forEach((b) => {
-      b.className = "guess-btn"; b.disabled = false;
-    });
+    $("earFeedback").textContent = `Reference tonic: ${state.ear.tonic}. Listen — chords, then a descending run. Choose a map, ask for a hint if needed, then check.`;
+    renderColourChoices();
+    renderEarReference();
     playEarPrompt();
     renderEarScore();
   }
@@ -684,39 +716,52 @@
     stopPlay();
     const id = state.ear.answer;
     const prog = M.PROGRESSIONS[id][0];
-    const { chords } = M.buildProgression(state.tonic, id, prog.id);
-    const run = M.descendingRun(state.tonic, id);
+    const { chords } = M.buildProgression(state.ear.tonic, id, prog.id);
+    const run = M.descendingRun(state.ear.tonic, id);
     AU.playPrompt(chords, run, state.bpm);
   }
 
-  function submitGuess(guess) {
+  function selectColourGuess(guess) {
     if (state.ear.locked) return;
+    state.ear.guess = guess;
+    const label = E ? E.choicePrompt(guess) : `Test ${M.MODES[guess].name} against the home.`;
+    $("earFeedback").className = "ear-feedback";
+    $("earFeedback").textContent = label + " When you are ready, use Check answer.";
+    renderColourChoices();
+  }
+
+  function hintColour() {
+    if (!state.ear.answer || state.ear.locked) return;
+    state.ear.hintLevel = Math.min(2, state.ear.hintLevel + 1);
+    $("earFeedback").className = "ear-feedback";
+    $("earFeedback").textContent = E ? E.hint({ tonic: state.ear.tonic, modeId: state.ear.answer, progressionId: M.PROGRESSIONS[state.ear.answer][0].id }, state.ear.hintLevel) : "Sing the home, then compare its characteristic degrees.";
+  }
+
+  function checkColourGuess() {
+    if (state.ear.locked || !state.ear.guess) {
+      if (!state.ear.locked) $("earFeedback").textContent = "Choose the map you hear first. Selection is reversible until you press Check answer.";
+      return;
+    }
     state.ear.locked = true;
-    const correct = guess === state.ear.answer;
+    const correct = state.ear.guess === state.ear.answer;
     state.ear.total++;
     if (correct) {
       state.ear.score++; state.ear.streak++;
       state.ear.best = Math.max(state.ear.best, state.ear.streak);
     } else { state.ear.streak = 0; }
 
-    document.querySelectorAll("[data-guess]").forEach((b) => {
-      const g = b.getAttribute("data-guess");
-      if (g === state.ear.answer) b.classList.add("right");
-      else if (g === guess) b.classList.add("wrong");
-      b.disabled = true;
-    });
-
-    const ansScale = M.scaleOf(state.tonic, state.ear.answer);
-    const f = M.MODES[state.ear.answer].flavour.map((o) => ansScale.find((x) => x.off === o).name);
+    renderColourChoices();
+    const answer = { tonic: state.ear.tonic, modeId: state.ear.answer, progressionId: M.PROGRESSIONS[state.ear.answer][0].id };
+    const detail = E ? E.explanation(answer) : { label: M.MODES[state.ear.answer].name, signature: "signature tones", scale: "" };
     const fb = $("earFeedback");
     fb.className = "ear-feedback " + (correct ? "ok" : "no");
     fb.innerHTML = (correct ? "✓ Correct — " : "✗ It was ") +
-      `<b>${M.MODES[state.ear.answer].name}</b>. Its 2nd &amp; 3rd: <b>${f.join(" ")}</b>.`;
+      `<b>${detail.label}</b> (${detail.category || "map"}). Signature: <b>${detail.signature}</b>. Scale: <b>${detail.scale}</b>.`;
     renderEarScore();
   }
 
   function earMapLabel(answer) {
-    return answer.tonic + " " + M.MODES[answer.modeId].name;
+    return E ? E.answerLabel(answer) : answer.tonic + " " + M.MODES[answer.modeId].name;
   }
 
   function selectEarMapChoices(answer) {
@@ -731,15 +776,21 @@
   function newEarMap() {
     stopPlay();
     const map = state.ear.map;
-    const modeId = M.MODE_ORDER[Math.floor(Math.random() * M.MODE_ORDER.length)];
-    const tonic = ["C", "D", "E♭", "F", "G", "A", "B♭"][Math.floor(Math.random() * 7)];
-    const bank = M.PROGRESSIONS[modeId];
+    const ids = E ? E.FAMILY_ORDER : M.MODE_ORDER;
+    const modeId = ids[Math.floor(Math.random() * ids.length)];
+    const tonic = map.homePreset === "random"
+      ? ["C", "D", "E♭", "F", "G", "A", "B♭"][Math.floor(Math.random() * 7)]
+      : map.homePreset;
+    const bank = E ? E.progressions(modeId) : M.PROGRESSIONS[modeId];
     const progression = bank[Math.floor(Math.random() * bank.length)];
     map.answer = { tonic, modeId, progressionId: progression.id };
-    map.keyOptions = selectEarMapChoices(map.answer);
-    map.keyGuess = null; map.progressionGuess = null; map.locked = false;
+    map.keyOptions = map.homePreset === "random" ? selectEarMapChoices(map.answer) : [tonic];
+    map.keyGuess = map.homePreset === "random" ? null : tonic;
+    map.familyGuess = null; map.progressionGuess = null; map.hintLevel = 0; map.locked = false;
     $("earMapFeedback").className = "ear-feedback";
-    $("earMapFeedback").textContent = "Listen twice. Choose the home key, then the function boxes you hear.";
+    $("earMapFeedback").textContent = map.homePreset === "random"
+      ? "Listen twice. Choose the home, then the harmonic/dromos family and its change boxes."
+      : `Training home: ${tonic}. Listen twice, then identify the harmonic/dromos family and its change boxes.`;
     renderEarMap();
     playEarMapPrompt();
   }
@@ -755,38 +806,63 @@
   function renderEarMap() {
     const map = state.ear.map;
     if (!map.answer) return;
-    const progressions = M.PROGRESSIONS[map.answer.modeId];
-    $("earKeyChoices").innerHTML = map.keyOptions.map((tonic) =>
-      `<button data-ear-key="${tonic}"${map.keyGuess === tonic ? " class=\"selected\"" : ""}>${tonic}</button>`
+    const homeSelect = $("earMapHomeSel");
+    homeSelect.innerHTML = `<option value="random">Random — test the home</option>` + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic} — known home</option>`).join("");
+    homeSelect.value = map.homePreset;
+    $("earKeyChoices").innerHTML = map.homePreset === "random"
+      ? map.keyOptions.map((tonic) => `<button data-ear-key="${tonic}"${map.keyGuess === tonic ? " class=\"selected\"" : ""}>${tonic}</button>`).join("")
+      : `<div class="ear-home-anchor"><b>${map.answer.tonic}</b><span>Known training home. Use ♪ Hear ${map.answer.tonic} if you need to reset your ear.</span></div>`;
+    $("earFamilyChoices").innerHTML = (E ? E.families() : M.MODE_ORDER.map((id) => ({ id, label: M.MODES[id].name, signature: "signature tones" }))).map((item) =>
+      `<button data-ear-family="${item.id}"${map.familyGuess === item.id ? " class=\"selected\"" : ""}${map.locked ? " disabled" : ""}><b>${item.label}</b><span>${item.signature}</span></button>`
     ).join("");
-    $("earProgressionChoices").innerHTML = progressions.map((progression) =>
-      `<button data-ear-prog="${progression.id}"${map.progressionGuess === progression.id ? " class=\"selected\"" : ""}><b>${progression.label}</b><span>${progression.chords.map((chord) => M.DEGREE_LABEL[chord[0]]).join(" → ")}</span></button>`
-    ).join("");
+    const progressions = map.familyGuess ? (E ? E.progressions(map.familyGuess) : M.PROGRESSIONS[map.familyGuess]) : [];
+    $("earProgressionChoices").innerHTML = progressions.length
+      ? progressions.map((progression) => `<button data-ear-prog="${progression.id}"${map.progressionGuess === progression.id ? " class=\"selected\"" : ""}${map.locked ? " disabled" : ""}><b>${progression.label}</b><span>${progression.chords.map((chord) => M.DEGREE_LABEL[chord[0]]).join(" → ")}</span></button>`).join("")
+      : `<p class="ear-choice-empty">Choose the map family first; the progression choices will then use its own Roman-numeral language.</p>`;
     $("earKeyChoices").querySelectorAll("[data-ear-key]").forEach((button) => button.onclick = () => {
       if (map.locked) return;
-      map.keyGuess = button.getAttribute("data-ear-key"); renderEarMap(); checkEarMap();
+      map.keyGuess = button.getAttribute("data-ear-key"); renderEarMap();
+    });
+    $("earFamilyChoices").querySelectorAll("[data-ear-family]").forEach((button) => button.onclick = () => {
+      if (map.locked) return;
+      map.familyGuess = button.getAttribute("data-ear-family"); map.progressionGuess = null; renderEarMap();
     });
     $("earProgressionChoices").querySelectorAll("[data-ear-prog]").forEach((button) => button.onclick = () => {
       if (map.locked) return;
-      map.progressionGuess = button.getAttribute("data-ear-prog"); renderEarMap(); checkEarMap();
+      map.progressionGuess = button.getAttribute("data-ear-prog"); renderEarMap();
     });
+  }
+
+  function hintEarMap() {
+    const map = state.ear.map;
+    if (!map.answer || map.locked) return;
+    map.hintLevel = Math.min(2, map.hintLevel + 1);
+    $("earMapFeedback").className = "ear-feedback";
+    $("earMapFeedback").textContent = E ? E.hint(map.answer, map.hintLevel) : "Find the chord that feels final, then listen for the colour note above it.";
   }
 
   function checkEarMap() {
     const map = state.ear.map;
-    if (!map.keyGuess || !map.progressionGuess || map.locked) return;
+    if (map.locked) return;
+    if (!map.keyGuess || !map.familyGuess || !map.progressionGuess) {
+      $("earMapFeedback").className = "ear-feedback";
+      $("earMapFeedback").textContent = "Complete the home, family, and change-box selections. You can change any selection before checking.";
+      return;
+    }
     map.locked = true; map.total++;
     const rightKey = map.keyGuess === map.answer.tonic;
+    const rightFamily = map.familyGuess === map.answer.modeId;
     const rightProgression = map.progressionGuess === map.answer.progressionId;
-    const correct = rightKey && rightProgression;
+    const correct = rightKey && rightFamily && rightProgression;
     if (correct) { map.score++; map.streak++; map.best = Math.max(map.best, map.streak); }
     else map.streak = 0;
-    const progression = M.PROGRESSIONS[map.answer.modeId].find((item) => item.id === map.answer.progressionId);
-    const { chords } = M.buildProgression(map.answer.tonic, map.answer.modeId, map.answer.progressionId);
+    const detail = E ? E.explanation(map.answer) : null;
+    const progression = E ? E.progression(map.answer.modeId, map.answer.progressionId) : M.PROGRESSIONS[map.answer.modeId].find((item) => item.id === map.answer.progressionId);
+    const chords = E ? detail.chords.map((symbol) => ({ symbol })) : M.buildProgression(map.answer.tonic, map.answer.modeId, map.answer.progressionId).chords;
     const feedback = $("earMapFeedback");
     feedback.className = "ear-feedback " + (correct ? "ok" : "no");
     feedback.innerHTML = (correct ? "✓ You heard the whole map. " : "✗ Check the map. ") +
-      `Home: <b>${earMapLabel(map.answer)}</b>. Boxes: <b>${progression.label}</b> · ${chords.map((chord) => `<b>${chord.symbol}</b>`).join(" → ")}.`;
+      `Home/map: <b>${earMapLabel(map.answer)}</b> (${detail ? detail.category : "map"}). Scale: <b>${detail ? detail.scale : ""}</b>. Boxes: <b>${progression.label}</b> · ${chords.map((chord) => `<b>${chord.symbol}</b>`).join(" → ")}. ${detail ? detail.why : ""}`;
     renderEarMap(); renderEarScore();
   }
 
@@ -796,6 +872,7 @@
     $("earMap").classList.toggle("hidden", drill !== "map");
     document.querySelectorAll("[data-ear-drill]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-ear-drill") === drill));
+    renderEarReference();
     if (drill === "map" && !state.ear.map.answer) newEarMap();
     renderEarScore();
   }
@@ -1826,14 +1903,28 @@
     };
     $("tglAudiate").onchange = (e) => { state.lab.audiate = e.target.checked; state.lab.revealed = false; renderLabCell(); };
 
+    $("earTonicSel").onchange = (event) => {
+      state.ear.tonic = event.target.value;
+      renderEarReference();
+      if (state.view === "ear" && state.ear.drill === "colour") newEarQuestion();
+    };
+    $("btnEarTonic").onclick = playEarTonic;
     $("btnEarNew").onclick = newEarQuestion;
     $("btnEarReplay").onclick = () => { if (state.ear.answer) playEarPrompt(); else newEarQuestion(); };
+    $("btnEarHint").onclick = hintColour;
+    $("btnEarCheck").onclick = checkColourGuess;
+    $("earMapHomeSel").onchange = (event) => {
+      state.ear.map.homePreset = event.target.value;
+      if (state.view === "ear" && state.ear.drill === "map") newEarMap();
+    };
     $("btnEarMapNew").onclick = newEarMap;
     $("btnEarMapReplay").onclick = () => { if (state.ear.map.answer) playEarMapPrompt(); else newEarMap(); };
+    $("btnEarMapHint").onclick = hintEarMap;
+    $("btnEarMapCheck").onclick = checkEarMap;
     document.querySelectorAll("[data-ear-drill]").forEach((button) =>
       button.onclick = () => setEarDrill(button.getAttribute("data-ear-drill")));
     document.querySelectorAll("[data-guess]").forEach((b) =>
-      b.onclick = () => submitGuess(b.getAttribute("data-guess")));
+      b.onclick = () => selectColourGuess(b.getAttribute("data-guess")));
 
     document.addEventListener("keydown", (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
@@ -1874,7 +1965,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest()];
+    const suites = [T.selfTest(), M.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

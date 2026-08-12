@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js"]
+  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest()];
+  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -90,6 +90,18 @@ test("the pentatonic frame preserves each dromos identity", () => {
   );
 });
 
+test("Recall separates natural minor, harmonic minor, and the strict Ousak map", () => {
+  const { EarDrills } = loadCore();
+  const harmonic = { tonic: "D", modeId: "harmonicMinor", progressionId: "iio-V-i" };
+  const natural = { tonic: "D", modeId: "minor", progressionId: "i-bVII-i" };
+  const ousak = { tonic: "D", modeId: "ousak", progressionId: "i-bVII-i" };
+  assert.ok(EarDrills.isCoherent(harmonic));
+  assert.equal(EarDrills.chordSymbols(harmonic).join(" "), "Em7♭5 A7 Dm");
+  assert.equal(EarDrills.chordSymbols(natural).join(" "), "Dm C Dm");
+  assert.equal(EarDrills.chordSymbols(ousak).join(" "), "Dm Cm Dm");
+  assert.match(EarDrills.hint(harmonic, 1), /raised 7/i);
+});
+
 test("Solo Road keeps the tetrachord split and number patterns playable", () => {
   const { Modes, Practice, Tuning, Triads } = loadCore();
   const road = Modes.tetrachordsOf("D", "hijaz");
@@ -114,7 +126,7 @@ test("Solo Road keeps the tetrachord split and number patterns playable", () => 
 test("practical guitar vocabulary keeps full forms at fret 15 or below", () => {
   const { Tuning, Modes, GuitarVoicings } = loadCore();
   Tuning.set("guitar");
-  ["major", "minor", "ousak", "hijaz"].forEach((modeId) => {
+  ["major", "minor", "harmonicMinor", "ousak", "hijaz"].forEach((modeId) => {
     const first = Modes.PROGRESSIONS[modeId][0];
     const { chords } = Modes.buildProgression("D", modeId, first.id);
     chords.filter((chord) => ["maj", "min", "dom7", "maj7", "m7"].includes(chord.quality)).forEach((chord) => {

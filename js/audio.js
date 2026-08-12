@@ -94,8 +94,8 @@
     });
   }
 
-  // Play a melodic line. The ear trainer NEEDS this: Ousak and Minor share the
-  // same chords, so only the melody exposes the flavour degrees (MI-06).
+  // Play the map's melodic line. The Recall drill uses it alongside a coherent
+  // cadence so the learner can hear both harmonic function and modal colour.
   function playSequence(notes, spacing, when) {
     ensure();
     const sp = spacing == null ? 0.26 : spacing;

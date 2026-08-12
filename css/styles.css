@@ -298,6 +298,8 @@ body[data-view="solo"] #fretboard { min-width: 940px; }
 .row { display: flex; gap: 10px; align-items: flex-end; }
 .grow { flex: 1; }
 .seg-4 button { padding: 9px 3px; font-size: 12px; }
+.seg-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.seg-5 button { padding: 9px 3px; font-size: 11px; }
 .seg-3 button { padding: 9px 4px; font-size: 12px; }
 .tonic-row { align-items: center; }
 .tonic-row label { font-size: 12.5px; color: var(--muted); }
@@ -327,11 +329,12 @@ body[data-view="solo"] #fretboard { min-width: 940px; }
   border: 1px solid var(--line); color: var(--muted); }
 .ear-feedback.ok { background: rgba(53,201,138,.12); border-color: #1f5641; color: #a7f3d0; }
 .ear-feedback.no { background: rgba(239,77,90,.12); border-color: #5a2020; color: #ffc9c9; }
-.guess-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.guess-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .guess-btn { padding: 15px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);
   color: var(--text); font-size: 14px; font-weight: 800; cursor: pointer; transition: all .18s; }
 .guess-btn:hover:not(:disabled) { background: var(--panel2); transform: translateY(-1px); }
 .guess-btn:disabled { cursor: default; opacity: .65; }
+.guess-btn.selected { border-color: var(--accent); background: rgba(255,207,92,.12); color: #ffe3a0; }
 .guess-btn.right { background: linear-gradient(135deg,#35c98a,#6ee7b7); color: #08120d; border-color: transparent; opacity: 1; }
 .guess-btn.wrong { background: linear-gradient(135deg,#ef4d5a,#ff8a8a); color: #1a0808; border-color: transparent; opacity: 1; }
 .primary-mini { background: var(--accent); color: #101418; border-color: transparent; font-weight: 800; }
@@ -341,9 +344,19 @@ body[data-view="solo"] #fretboard { min-width: 940px; }
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px; }
 .ear-score b { color: var(--text); font-size: 14px; }
 .ear-score i { font-style: normal; opacity: .7; }
+.ear-reference { margin: 0; }.ear-reference select { min-width: 0; }.ear-map-home-control { margin: 0; }
 .ear-map-prompt { display: grid; gap: 7px; }.ear-map-prompt > span { color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
-.ear-key-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }.ear-key-choices button, .ear-progression-choices button { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--text); cursor: pointer; transition: background .18s, transform .18s, border-color .18s; }.ear-key-choices button { padding: 10px 4px; font-weight: 850; }.ear-key-choices button:hover, .ear-progression-choices button:hover { background: var(--panel2); transform: translateY(-1px); border-color: #719cd1; }.ear-key-choices button.selected, .ear-progression-choices button.selected { border-color: var(--accent); background: rgba(255,207,92,.12); color: #ffe3a0; }
+.ear-key-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ear-family-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.ear-key-choices button, .ear-family-choices button, .ear-progression-choices button { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--text); cursor: pointer; transition: background .18s, transform .18s, border-color .18s; }
+.ear-key-choices button { padding: 10px 4px; font-weight: 850; }
+.ear-family-choices button { padding: 10px; text-align: left; display: grid; gap: 3px; }
+.ear-family-choices b { font-size: 12px; }.ear-family-choices span { color: var(--muted); font-size: 10px; }
+.ear-key-choices button:hover, .ear-family-choices button:hover, .ear-progression-choices button:hover { background: var(--panel2); transform: translateY(-1px); border-color: #719cd1; }
+.ear-key-choices button.selected, .ear-family-choices button.selected, .ear-progression-choices button.selected { border-color: var(--accent); background: rgba(255,207,92,.12); color: #ffe3a0; }
 .ear-progression-choices { display: grid; gap: 6px; }.ear-progression-choices button { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; text-align: left; }.ear-progression-choices button b { font-size: 12px; }.ear-progression-choices button span { color: var(--muted); font-size: 10px; }
+.ear-home-anchor, .ear-choice-empty { margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel2); color: var(--muted); font-size: 11px; line-height: 1.4; }
+.ear-home-anchor { display: flex; align-items: center; gap: 10px; }.ear-home-anchor b { color: var(--accent); font-size: 17px; }.ear-choice-empty { font-style: italic; }
 .fn-deg { background: var(--accent); }
 
 /* ---------- public video study ---------- */

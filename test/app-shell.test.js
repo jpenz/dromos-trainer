@@ -38,10 +38,15 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /js\/resources\.js/);
   assert.match(html, /js\/video\.js/);
   assert.match(html, /js\/guitar-voicings\.js/);
+  assert.match(html, /js\/ear-drills\.js/);
   assert.match(html, /js\/coach\.js/);
   assert.match(html, /id="coachApp"/);
   assert.match(html, /id="pageGuide"/);
   assert.match(html, /id="earMap"/);
+  assert.match(html, /id="earFamilyChoices"/);
+  assert.match(html, /id="earMapHomeSel"/);
+  assert.match(html, /id="btnEarMapCheck"/);
+  assert.match(html, /id="btnEarCheck"/);
   assert.match(html, /id="videoStudy"/);
   assert.match(read("js/coach.js"), /coachFreeTierConsent/);
   assert.match(html, /id="scoreFile"/);
@@ -59,6 +64,8 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/audio.js"), /beatsPerBar/);
   assert.match(read("js/guitar-voicings.js"), /function fullVoicings/);
   assert.match(read("js/app.js"), /function newEarMap/);
+  assert.match(read("js/app.js"), /function checkEarMap/);
+  assert.match(read("js/ear-drills.js"), /harmonicMinor/);
   assert.match(read("js/app.js"), /function renderPageGuide/);
   assert.match(read("js/app.js"), /function stopPlay\(\) \{ AU\.stopAll\(\);/,
     "changing a drill must clear path timers and ringing voices as well as transport");

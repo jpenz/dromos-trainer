@@ -34,7 +34,7 @@ musical questions:
 
 | | `theory.js` — Cycle | `modes.js` — Progressions |
 |---|---|---|
-| Purpose | The single ii–V–I pivot spiral | Four modes × ranked progression banks |
+| Purpose | The single ii–V–I pivot spiral | Five modal/harmonic maps × ranked progression banks |
 | Voicings | Strict 4-note, fixed inversion rules (MI-02) | Root position, 3 or 4 notes |
 | Voice leading | **Enforced**: exactly 2 held / 2 moved (MI-03) | Register continuity only, not asserted |
 | Spelling | Legacy per-key flat/sharp table | Diatonic letter-per-degree (MI-04) |

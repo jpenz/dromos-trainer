@@ -1,13 +1,14 @@
 export const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
-export const MODES = ["major", "minor", "ousak", "hijaz"];
+export const MODES = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
 export const TUNINGS = ["guitar", "bouzouki4", "laouto4", "bouzouki3", "guitarDropD"];
 export const VIEWS = ["cycle", "prog", "triads", "solo", "ear", "styles", "video", "analyze", "concepts", "coach"];
 export const STUDIES = ["paliatzis", "apopse", "tsigaro"];
 export const STYLES = ["zeibekiko", "kalamatianos", "hasapiko", "tsifteteli", "roumba"];
 export const PROGRESSIONS = {
   major: ["ii-V-I", "I-vi-ii-V", "IV-V-I", "bVII-I"],
-  minor: ["iio-V-i", "iv-V-i", "iv-bVII-i", "andalusian"],
-  ousak: ["i-bVII-i", "iv-bVII-i", "bVI-bVII-i"],
+  minor: ["i-bVII-i", "iv-bVII-i", "bVI-bVII-i"],
+  harmonicMinor: ["iio-V-i", "iv-V-i", "bVI-ii-V-i"],
+  ousak: ["i-bVII-i", "bII-i", "bII-bVII-i"],
   hijaz: ["I-bII-I", "I-iv-I", "I-iv-bVII-I", "bII-I"]
 };
 
@@ -98,7 +99,7 @@ export function progressEvent(value) {
 export function selfTest() {
   const tests = [];
   const check = (name, pass) => tests.push({ name, pass });
-  check("validated Song Map action accepts known progression", action({ kind: "song_map", tonic: "D", modeId: "minor", progressionId: "iv-V-i" })?.progressionId === "iv-V-i");
+  check("validated Song Map action accepts known harmonic-minor progression", action({ kind: "song_map", tonic: "D", modeId: "harmonicMinor", progressionId: "iv-V-i" })?.progressionId === "iv-V-i");
   check("unknown navigation is rejected", action({ kind: "navigate", view: "https://bad.example" }) === null);
   check("unknown study is rejected", action({ kind: "study", studyId: "whole-book-copy" }) === null);
   check("coach context cannot use unsupported tuning", coachContext({ tuningId: "anything" }).tuningId === "guitar");

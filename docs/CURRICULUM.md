@@ -36,9 +36,11 @@ instrument. The default 20-minute session is four minutes per step.
 4. **Pentatonic is a frame, not the answer.** It provides safe motion; a targeted
    chord tone makes the line reveal the change. Hijaz specifically uses dominant
    pentatonic (`1 3 4 5 ♭7`), never minor pentatonic.
-5. **Greek identity lives in melody and pulse.** Ousak and Minor share chord banks;
-   their melodic second distinguishes them. Future rhythm work must support the
-   repertoire's meter instead of forcing every practice loop into 4/4.
+5. **Greek identity lives in melody, harmony, and pulse.** A shared pentatonic or
+   a few common chord skeletons never proves a dromos. Recall uses strictly
+   coherent practice maps; the Analyzer treats repertoire-specific mixture as
+   context-dependent. Future rhythm work must support the repertoire's meter
+   instead of forcing every practice loop into 4/4.
 6. **Use landmarks, then phrase.** Start with a compact triad and the current/next
    target; connect them with a pentatonic frame or dromos-specific cell. A full-neck
    scale is context, not a soloing instruction.
@@ -51,7 +53,7 @@ principles behind these decisions.
 ### Current foundation
 
 - Infinite ii–V–I pivot ear/visual drill.
-- Major, Minor, Ousak, and Hijaz; progression banks and ear prompts.
+- Major, Natural minor, Harmonic minor, Ousak, and Hijaz; progression banks and ear prompts.
 - Generated grips, scale paths, triad maps, and low-travel triad paths.
 - Guitar, drop-D guitar, tetrachordo bouzouki, trichordo bouzouki, and mainland
   laouto.

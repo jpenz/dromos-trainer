@@ -92,9 +92,10 @@
         <div class="row">
           <div class="grow">
             <span class="panel-label">Dromos</span>
-            <div class="seg seg-4">
+            <div class="seg seg-5">
               <button data-modeid="major" class="active">Major</button>
-              <button data-modeid="minor">Minor</button>
+              <button data-modeid="minor">Natural minor</button>
+              <button data-modeid="harmonicMinor">Harmonic minor</button>
               <button data-modeid="ousak">Ousak</button>
               <button data-modeid="hijaz">Hijaz</button>
             </div>
@@ -216,30 +217,41 @@
           <button data-ear-drill="colour" class="active">Dromos colour</button>
           <button data-ear-drill="map">Key &amp; changes</button>
         </div>
+        <div class="row tonic-row ear-reference">
+          <label for="earTonicSel">Reference tonic</label>
+          <select id="earTonicSel"></select>
+          <button id="btnEarTonic" class="mini">♪ Hear D</button>
+        </div>
         <section id="earColour" class="sub">
-          <p class="ear-hint">You hear the mode's signature cadence, then a descending run.
-            The run matters: <b>Ousak and Minor use the same chords</b> — only the melody
-            separates them.</p>
+          <p class="ear-hint">You hear a coherent cadence and descending run in the chosen reference tonic.
+            <b>Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers:</b> the chord map and the run must agree.</p>
           <div id="earFeedback" class="ear-feedback">Press <b>New question</b> to begin.</div>
           <div class="guess-grid">
             <button class="guess-btn" data-guess="major">Major</button>
-            <button class="guess-btn" data-guess="minor">Minor</button>
+            <button class="guess-btn" data-guess="minor">Natural minor</button>
+            <button class="guess-btn" data-guess="harmonicMinor">Harmonic minor</button>
             <button class="guess-btn" data-guess="ousak">Ousak</button>
             <button class="guess-btn" data-guess="hijaz">Hijaz</button>
           </div>
           <div class="row">
             <button id="btnEarReplay" class="mini grow">↻ Replay (Space)</button>
-            <button id="btnEarNew" class="mini grow primary-mini">New question</button>
+            <button id="btnEarHint" class="mini">Hint</button>
+            <button id="btnEarCheck" class="mini primary-mini">Check answer</button>
+            <button id="btnEarNew" class="mini grow">New question</button>
           </div>
         </section>
         <section id="earMap" class="sub hidden">
-          <p class="ear-hint">Hear the change twice. First name the <b>home key</b>, then choose the <b>functional progression</b>—the number system that explains the boxes you hear.</p>
-          <div id="earMapFeedback" class="ear-feedback">Press <b>New map</b>, listen, then commit to both answers.</div>
+          <p class="ear-hint">Train blind, or select a known home first. Then identify the <b>harmonic/dromos family</b> and the <b>functional boxes</b>. Choosing is reversible; only <b>Check map</b> scores it.</p>
+          <div class="row tonic-row ear-map-home-control"><label for="earMapHomeSel">Home to train</label><select id="earMapHomeSel"></select></div>
+          <div id="earMapFeedback" class="ear-feedback">Press <b>New map</b>, listen, then commit to the map.</div>
           <div class="ear-map-prompt"><span>1 · Home key</span><div id="earKeyChoices" class="ear-key-choices"></div></div>
-          <div class="ear-map-prompt"><span>2 · Change boxes</span><div id="earProgressionChoices" class="ear-progression-choices"></div></div>
+          <div class="ear-map-prompt"><span>2 · Harmonic / dromos family</span><div id="earFamilyChoices" class="ear-family-choices"></div></div>
+          <div class="ear-map-prompt"><span>3 · Change boxes</span><div id="earProgressionChoices" class="ear-progression-choices"></div></div>
           <div class="row">
             <button id="btnEarMapReplay" class="mini grow">↻ Replay changes</button>
-            <button id="btnEarMapNew" class="mini grow primary-mini">New map</button>
+            <button id="btnEarMapHint" class="mini">Hint</button>
+            <button id="btnEarMapCheck" class="mini primary-mini">Check map</button>
+            <button id="btnEarMapNew" class="mini grow">New map</button>
           </div>
         </section>
         <div id="earScore" class="ear-score"></div>
@@ -275,9 +287,10 @@
           <label for="analysisTonic">Home</label>
           <select id="analysisTonic"></select>
         </div>
-        <div class="seg seg-4" aria-label="Analysis dromos">
+        <div class="seg seg-5" aria-label="Analysis dromos">
           <button data-analysis-mode="major">Major</button>
-          <button data-analysis-mode="minor" class="active">Minor</button>
+          <button data-analysis-mode="minor" class="active">Natural minor</button>
+          <button data-analysis-mode="harmonicMinor">Harmonic minor</button>
           <button data-analysis-mode="ousak">Ousak</button>
           <button data-analysis-mode="hijaz">Hijaz</button>
         </div>
@@ -355,6 +368,7 @@
   <script src="js/tuning.js"></script>
   <script src="js/theory.js"></script>
   <script src="js/modes.js"></script>
+  <script src="js/ear-drills.js"></script>
   <script src="js/styles.js"></script>
   <script src="js/analysis.js"></script>
   <script src="js/studies.js"></script>

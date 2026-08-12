@@ -9,8 +9,8 @@ import { requestTooLarge } from "../api/_lib/http.js";
 test("server rejects unsafe coach actions and preserves only known routes", () => {
   assert.equal(selfTest().ok, true);
   assert.deepEqual(
-    action({ kind: "song_map", tonic: "D", modeId: "minor", progressionId: "iv-V-i" }),
-    { kind: "song_map", tonic: "D", modeId: "minor", progressionId: "iv-V-i" }
+    action({ kind: "song_map", tonic: "D", modeId: "harmonicMinor", progressionId: "iv-V-i" }),
+    { kind: "song_map", tonic: "D", modeId: "harmonicMinor", progressionId: "iv-V-i" }
   );
   assert.equal(action({ kind: "navigate", view: "https://not-a-practice-view.example" }), null);
   assert.deepEqual(action({ kind: "solo_lab", section: "road" }), { kind: "solo_lab", section: "road" });
@@ -24,7 +24,7 @@ test("request limits apply even when a host has already parsed the JSON body", (
 });
 
 test("progress recommendations use learning events before generic navigation", () => {
-  const context = coachContext({ tonic: "D", modeId: "minor", progressionId: "iv-V-i", view: "prog" });
+  const context = coachContext({ tonic: "D", modeId: "harmonicMinor", progressionId: "iv-V-i", view: "prog" });
   const events = [{ event_type: "target_missed", payload: { reason: "missed-third" } }];
   const next = recommendation(context, events);
   assert.equal(next.action.kind, "solo_lab");
@@ -55,12 +55,12 @@ test("coach model request is structured, bounded, and uses the economical defaul
   let sentUrl;
   const reply = await answerCoach({
     question: "Why does A7 pull to D minor?",
-    context: coachContext({ tonic: "D", modeId: "minor", progressionId: "iv-V-i" }),
+    context: coachContext({ tonic: "D", modeId: "harmonicMinor", progressionId: "iv-V-i" }),
     history: [], progress: {},
     fetchImpl: async (_url, init) => {
       sentUrl = _url;
       sent = JSON.parse(init.body);
-      return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ answer: "A7 contains C♯, the raised 7th that resolves toward D.", action: { kind: "song_map", tonic: "D", modeId: "minor", progressionId: "iv-V-i", view: "", studyId: "", styleId: "", section: "", chords: "", line: "" } }) }] } }] }) };
+      return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ answer: "A7 contains C♯, the raised 7th that resolves toward D.", action: { kind: "song_map", tonic: "D", modeId: "harmonicMinor", progressionId: "iv-V-i", view: "", studyId: "", styleId: "", section: "", chords: "", line: "" } }) }] } }] }) };
     }
   });
   assert.equal(sent.generationConfig.responseMimeType, "application/json");

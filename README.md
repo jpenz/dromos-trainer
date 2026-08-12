@@ -2,7 +2,7 @@
 
 A serious self-teaching trainer for **hearing harmonic movement, mapping it on the
 neck, comping, and soloing** in the jazz ii–V–I pivot cycle and Greek *dromoi*
-(Major, Minor, Ousak, Hijaz). It turns the same progression into an ear drill, a
+(Major, Natural minor, Harmonic minor, Ousak, Hijaz). It turns the same progression into an ear drill, a
 fretboard map, a low-movement triad path, and a targeted soloing exercise.
 
 **No install. No build. No runtime dependencies.** Open `index.html`, or host the
@@ -56,21 +56,26 @@ At every change **exactly two voices hold and two step down** — the app animat
 moving pair so you can see the guide-tone line that steers the whole spiral.
 
 ### 2. Progressions
-Four modes, each with a ranked bank of the progressions that actually earn their
+Five modal/harmonic maps, each with a ranked bank of the progressions that actually earn their
 place, and a one-line reason for each.
 
 | Mode | On D | Signature move |
 |---|---|---|
 | **Major** | `D E F♯ G A B C♯` | `Em7 – A7 – Dmaj7` |
-| **Minor** | `D E F G A B♭ C` | `Gm – A7 – Dm` |
-| **Ousak** (Ουσάκ) | `D E♭ F G A B♭ C` | `Gm – C – Dm` |
+| **Natural minor** | `D E F G A B♭ C` | `Dm – C – Dm` |
+| **Harmonic minor** | `D E F G A B♭ C♯` | `Em7♭5 – A7 – Dm` |
+| **Ousak** (Ουσάκ) | `D E♭ F G A B♭ C` | `Dm – Cm – Dm` |
 | **Hijaz** (Χιτζάζ) | `D E♭ F♯ G A B♭ C` | `D – E♭ – D` |
 
 Two things the app is built to teach:
 
-- **Ousak and Minor use the same chords.** The only difference is `E♭` vs `E♮`, and it
-  lives in the melody. Ousak's ♭2 is a melodic inflection — in real makam practice it
-  is a *neutral* second, which is precisely why nobody builds a chord on it.
+- **Natural and Harmonic minor are different Recall answers.** Natural minor keeps
+  `♭7`; Harmonic minor raises it to `7` so the V7 has a leading tone into i. The
+  app no longer calls a iiø–V7–i prompt simply “Minor.”
+- **The strict Ousak Recall prompt is internally coherent.** On D it uses
+  `Dm – Cm – Dm`, so the descending Ousak collection and every displayed chord tone
+  agree. This is a practice model, not a claim that every recording has one fixed
+  harmonisation; analyze an actual score or recording in context.
 - **Hijaz has a major tonic but a minor ♭VII.** `D – Gm – Cm – D`. That friction is
   the sound.
 
@@ -127,10 +132,12 @@ audible.
 
 ### 3c. Ear checks — colour and harmonic map
 
-Ear checks has two distinct jobs. **Dromos colour** asks for the mode after a cadence
-and melodic run. **Key & changes** plays a harmonic cadence twice and asks for both
-the tonal home and the progression box labels. After the reveal, the app displays the
-actual chord symbols so the player can transfer the answer directly into Song Map.
+Ear checks has two distinct jobs. **Dromos colour** asks for Major, Natural minor,
+Harmonic minor, Ousak, or Hijaz after a coherent cadence and melodic run. **Key &
+changes** can train a known home key or test it blind, then asks for the
+harmonic/dromos family and its progression boxes. Answers are reversible until
+**Check** is pressed; progressive hints teach what to hear without quietly scoring a
+click. The reveal displays the scale and actual chord symbols for transfer to Song Map.
 
 ### 3d. Video Study
 
@@ -157,7 +164,7 @@ The matrix describes note jobs and timing—players make the actual phrase.
 ### 3f. Practical guitar chord cycle
 
 The Cycle page includes **Practical chords**, a dedicated guitar lens that uses
-the selected Major, Minor, Ousak, or Hijaz progression. Choose **Full 6** for
+the selected Major, Natural minor, Harmonic minor, Ousak, or Hijaz progression. Choose **Full 6** for
 validated common open forms and movable E/A-family shapes, **Triad 3** for
 compact inversions, or **Compact 4** for clear root/colour/guide-tone comping.
 All displayed full forms are chord-tone checked and stop at fret 15. When a
@@ -176,15 +183,17 @@ Hijaz uses **dominant pentatonic** (`1 3 4 5 ♭7`), never minor pentatonic—it
 3rd is essential.
 
 ### 5. Ear Trainer
-Plays a mode's signature cadence followed by a descending run, and you name the
-dromos. The run is not decoration — since Ousak and Minor are chord-identical, the
-melody is the only thing that can distinguish them.
+Plays a coherent map followed by a descending run, and you name the exact
+modal/harmonic family. The run is not decoration: it distinguishes Natural minor's
+`2` from Ousak's `♭2`, while the cadence distinguishes Natural minor's `♭7` from
+Harmonic minor's leading tone `7`.
 
 The whole skill in one table:
 
 | You hear | Mode |
 |---|---|
-| `E♮ F♮` | Minor |
+| `E♮ F♮ C♮` | Natural minor |
+| `E♮ F♮ C♯` | Harmonic minor |
 | `E♭ F♮` | Ousak |
 | `E♭ F♯` | Hijaz |
 

@@ -1,7 +1,7 @@
-const CACHE = "dromos-trainer-v10";
+const CACHE = "dromos-trainer-v11";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./css/styles.css",
-  "./js/tuning.js", "./js/theory.js", "./js/modes.js", "./js/styles.js", "./js/analysis.js", "./js/studies.js", "./js/musicxml.js", "./js/resources.js", "./js/video.js", "./js/coach.js", "./js/practice.js",
+  "./js/tuning.js", "./js/theory.js", "./js/modes.js", "./js/ear-drills.js", "./js/styles.js", "./js/analysis.js", "./js/studies.js", "./js/musicxml.js", "./js/resources.js", "./js/video.js", "./js/coach.js", "./js/practice.js",
   "./js/triads.js", "./js/fretboard.js", "./js/guitar-voicings.js", "./js/audio.js", "./js/app.js",
   "./assets/dromos-mark.svg"
 ];

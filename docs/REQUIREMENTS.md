@@ -20,11 +20,11 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-05** | Fretted-string audio | DONE | — | `js/audio.js` | Voiced Karplus–Strong pluck with pick-shaped excitation and body/tone filtering; adapts guitar, bouzouki and laouto timbre without external samples |
 | **FR-06** | Bar transport | DONE | — | `js/audio.js` | Lookahead scheduler, 40–200 BPM, metronome, loop, optional 2-bar I |
 | **FR-07** | Cycle drills | DONE | — | `js/app.js` | Full cycle / single ii–V–I / pivot-only |
-| **FR-08** | Dromos (mode) system | DONE | — | `js/modes.js` | Major, Minor, Ousak, Hijaz with scale, Greek name, blurb, flavour degrees |
+| **FR-08** | Modal + harmonic map system | DONE | — | `js/modes.js` | Major, Natural minor, Harmonic minor, Ousak, Hijaz with scale, Greek name, blurb, and signature degrees |
 | **FR-09** | Progression banks | DONE | — | `js/modes.js` | Ranked progressions per mode with a `why`; chords match MI-07b exactly |
 | **FR-10** | Flavour-note highlighting | DONE | — | `js/fretboard.js` | ♭2/2 and ♭3/3 of the current mode carry an orange ring everywhere they appear |
 | **FR-11** | Scale overlay | DONE | — | `js/fretboard.js` | Toggle shows every mode degree across the neck, labelled, tonic and flavour degrees distinct |
-| **FR-12** | Ear trainer | DONE | — | `js/app.js` | Plays cadence **+ descending run**, 4-way guess, score/streak/best, reveals flavour notes |
+| **FR-12** | Ear trainer | DONE | — | `js/app.js`, `js/ear-drills.js` | Plays a scale-and-harmony-coherent cadence **+ descending run**, 5-way reversible guess, progressive hints, explicit check, score/streak/best, and a reference tonic |
 | **FR-13** | Tonic transposition | DONE | — | `js/modes.js` | All 12 tonics; spelling stays diatomically legal (MI-04) |
 | **FR-14** | Theory self-test badge | DONE | — | `js/app.js` | Header shows `n/n theory tests passing`; failures logged to console |
 | **FR-15** | Keyboard shortcuts | DONE | — | `js/app.js` | Space, ← →, and 1–6 practice-area switching where appropriate |
@@ -49,7 +49,7 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-43** | AI Practice Coach | WIP | — | `api/coach.js`, `js/coach.js` | Answers theory/practice questions in context and may return one validated, user-visible action that opens the relevant exercise, song map, study, or Analyzer state; becomes live once Vercel/Neon secrets are configured |
 | **FR-44** | Private practice history and adaptive recommendations | WIP | — | `api/progress.js`, `api/_lib/recommendations.js`, `js/coach.js` | A signed anonymous-device profile records coach messages and practice events, returns a progress summary, and recommends the next drill; cross-device sign-in is intentionally deferred |
 | **FR-45** | Full-neck Solo Road | DONE | — | `js/modes.js`, `js/practice.js`, `js/fretboard.js`, `js/app.js` | Player chooses tonic, dromos and progression; sees a 24-fret lower/upper road, active Roman-numeral chord box, selectable technique shape, number pattern and target map on every supported tuning |
-| **FR-46** | Functional-map ear checks | DONE | — | `js/app.js`, `js/audio.js` | A second ear drill plays a cadence twice, then requires the player to identify both its tonal home and its written Roman-numeral progression before revealing the chord symbols |
+| **FR-46** | Functional-map ear checks | DONE | — | `js/app.js`, `js/ear-drills.js`, `js/audio.js` | A second ear drill can anchor a selected home or test it blind, then requires the player to identify the home, modal/harmonic family, and written Roman-numeral progression before an explicit reveal |
 | **FR-47** | Guided curriculum navigation | DONE | — | `index.html`, `js/app.js`, `css/styles.css` | Persistent left-side curriculum makes the learning order explicit; every page presents purpose, 3-step use instructions and relevant context |
 | **FR-48** | Public video study lab | DONE | — | `js/video.js`, `js/resources.js`, `js/app.js` | Public lesson embeds stay hosted by YouTube; a player can choose a source lesson, set A/B markers, loop, slow down and route the observation back to Song Map without extracting third-party media |
 | **FR-49** | Melodic routes and triad landscape | DONE | — | `js/practice.js`, `js/triads.js`, `js/fretboard.js`, `js/app.js` | Shape shows target rings for this/next chord and five constrained melodic routes; Changes shows solid nearest triad, faint all-position inversions, quiet pentatonic connectors, and the current/next landing notes on every supported instrument |
@@ -73,8 +73,8 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-03** | At every cycle transition **exactly two voices hold and two move down** by ≤ a whole step. Compared by *pitch class*, not MIDI — the cycle legitimately spirals down an octave, so absolute pitch would false-positive at the loop point. | ✅ |
 | **MI-04** | Scale and chord spelling is **diatonic**: one letter name per scale degree; chord tones spelled in thirds from the root letter. This is why `A Hijaz` = `A B♭ C♯ D E F G` and not an enharmonic mess. | ✅ |
 | **MI-04b** | Pragmatic exception: `C♭ F♭ E♯ B♯` are simplified to `B E F C`. Guitarists read `B`, not `C♭`. | — |
-| **MI-05** | A mode's **flavour degrees are its 2nd and 3rd**. These two notes alone distinguish all four modes, which is the whole pedagogy: Major `2,4` · Minor `2,3` · Ousak `1,3` · Hijaz `1,4` (semitones above tonic). All four pairs must stay distinct. | ✅ |
-| **MI-06** | **Ousak and Minor produce identical chords.** They differ only in the melodic 2nd degree. Therefore the ear trainer **must play a melodic run**, not only chords — chords alone make the question unanswerable. | ✅ |
+| **MI-05** | Every Recall map has a distinct **signature set**. Major `2,3` · Natural minor `2,♭3` · Harmonic minor `♭3,7` · Ousak `♭2,♭3` · Hijaz `♭2,3`. The leading tone is required to distinguish the two minor systems. | ✅ |
+| **MI-06** | Every scored Recall prompt is **scale-and-harmony coherent**: all chord tones belong to its declared collection. Therefore Harmonic minor `iiø–V7–i`, Natural minor `i–♭VII–i`, and strict Ousak `i–♭VIIm–i` cannot be silently conflated. The app may discuss repertoire-specific mixture only in the Analyzer, with uncertainty. | ✅ |
 | **MI-07a** | Cycle ground-truth chord table — see `GROUND_TRUTH` in `js/theory.js`. | ✅ |
 | **MI-07b** | Progression ground-truth table — see `EXPECTED` in `js/modes.js`. | ✅ |
 | **MI-08** | In Hijaz the **♭VII is minor** (`Cm` in D Hijaz, `Gm` in A Hijaz). A major ♭VII would be a different mode. This is the most commonly mis-transcribed chord in the app. | ✅ |
@@ -103,13 +103,15 @@ choice.** Each is asserted by a self-test where marked.
 | Major | I – vi – ii – V | `Dmaj7 Bm7 Em7 A7` |
 | Major | IV – V – I | `G A D` |
 | Major | ♭VII – I | `C D` |
-| Minor | iiø – V7 – i | `Em7♭5 A7 Dm7` |
-| Minor | iv – V – i | `Gm A7 Dm` |
-| Minor | iv – ♭VII – i | `Gm C Dm` |
-| Minor | i – ♭VII – ♭VI – V | `Dm C B♭ A` |
-| Ousak | i – ♭VII – i | `Dm C Dm` |
-| Ousak | iv – ♭VII – i | `Gm C Dm` |
-| Ousak | ♭VI – ♭VII – i | `B♭ C Dm` |
+| Natural minor | i – ♭VII – i | `Dm C Dm` |
+| Natural minor | iv – ♭VII – i | `Gm C Dm` |
+| Natural minor | ♭VI – ♭VII – i | `B♭ C Dm` |
+| Harmonic minor | iiø – V7 – i | `Em7♭5 A7 Dm` |
+| Harmonic minor | iv – V7 – i | `Gm A7 Dm` |
+| Harmonic minor | ♭VI – iiø – V7 – i | `B♭ Em7♭5 A7 Dm` |
+| Ousak (strict Recall) | i – ♭VIIm – i | `Dm Cm Dm` |
+| Ousak (strict Recall) | ♭II – i | `E♭ Dm` |
+| Ousak (strict Recall) | ♭II – ♭VIIm – i | `E♭ Cm Dm` |
 | Hijaz | I – ♭II – I | `D E♭ D` |
 | Hijaz | I – iv – I | `D Gm D` |
 | Hijaz | I – iv – ♭VII – I | `D Gm Cm D` |
@@ -121,7 +123,8 @@ choice.** Each is asserted by a self-test where marked.
 | Mode | Formula | On D |
 |---|---|---|
 | Major | 1 2 3 4 5 6 7 | `D E F♯ G A B C♯` |
-| Minor | 1 2 ♭3 4 5 ♭6 ♭7 | `D E F G A B♭ C` |
+| Natural minor | 1 2 ♭3 4 5 ♭6 ♭7 | `D E F G A B♭ C` |
+| Harmonic minor | 1 2 ♭3 4 5 ♭6 7 | `D E F G A B♭ C♯` |
 | Ousak | 1 ♭2 ♭3 4 5 ♭6 ♭7 | `D E♭ F G A B♭ C` |
 | Hijaz | 1 ♭2 3 4 5 ♭6 ♭7 | `D E♭ F♯ G A B♭ C` |
 
@@ -145,7 +148,7 @@ choice.** Each is asserted by a self-test where marked.
 | Module | Requirements | Invariants | Test entry point |
 |---|---|---|---|
 | `js/theory.js` | FR-01 | MI-01, MI-02, MI-03, MI-07a | `Theory.selfTest()` |
-| `js/modes.js` | FR-08, FR-09, FR-10, FR-13, FR-28 | MI-04, MI-05, MI-06, MI-07b, MI-08, MI-15 | `Modes.selfTest()` + `npm test` |
+| `js/modes.js`, `js/ear-drills.js` | FR-08, FR-09, FR-10, FR-12, FR-13, FR-28, FR-46 | MI-04, MI-05, MI-06, MI-07b, MI-08, MI-15 | `Modes.selfTest()` + `EarDrills.selfTest()` + `npm test` |
 | `js/styles.js` | FR-37 | MI-16 | `StyleLibrary.selfTest()` + `npm test` |
 | `js/analysis.js` | FR-38, FR-39 | MI-17 | `AnalysisEngine.selfTest()` + `npm test` |
 | `js/studies.js` | FR-40 | MI-18 | `StudyLibrary.selfTest()` + `npm test` |

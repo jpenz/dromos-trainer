@@ -22,8 +22,10 @@ this is where most guitarists go wrong:
 > (F♯), so the ♭3 (F♮) fights the chord. If you only ever reach for the minor
 > pentatonic shape, Hijaz will always sound off and you won't know why.
 
-Note that Ousak and Minor share a pentatonic — same as they share chords. The
-pentatonic can't tell them apart either. That's the point of section 2.
+Note that Ousak and Natural minor share this pentatonic frame. The frame alone
+cannot tell them apart; use the modal colour notes and the actual song's harmony.
+Recall deliberately uses strict, internally coherent Ousak harmony rather than
+pretending every repertoire setting shares one chord bank.
 
 ## 2. The flavour notes are the payoff, not the skeleton
 

@@ -73,37 +73,50 @@
     b7: "seventh", 7: "seventh"
   };
 
-  // ---- the four modes -----------------------------------------------------
-  // `flavour` = the 2nd and 3rd degrees. These two notes alone separate all
-  // four modes (MI-05) — they drive the flavour highlight and the ear trainer.
+  // ---- modal and harmonic maps -------------------------------------------
+  // `flavour` is the smallest set of notes that identifies the current map in
+  // this trainer. For harmonic minor the leading tone (7) matters more than
+  // the natural 2nd, so it deliberately uses ♭3 + 7 rather than pretending
+  // every map can be identified by the same two scale degrees.
   const MODES = {
     major: {
       id: "major", name: "Major", greek: "Μαγιόνε",
       scale: [0, 2, 4, 5, 7, 9, 11],
       flavour: [2, 4],
+      signature: "2 + 3",
       blurb: "Ionian. The ii–V–I engine — everything else is a variation."
     },
     minor: {
-      id: "minor", name: "Minor", greek: "Μπουσελίκ",
-      scale: [0, 2, 3, 5, 7, 8, 10],          // natural minor; V7 borrows the raised 7th
+      id: "minor", name: "Natural minor", greek: "Φυσικό μινόρε",
+      scale: [0, 2, 3, 5, 7, 8, 10],
       flavour: [2, 3],
-      blurb: "Natural minor, with the harmonic-minor V7 available as a borrowed dominant."
+      signature: "2 + ♭3 + ♭7",
+      blurb: "Natural minor. Its ♭7 stays natural; functional V7 belongs in the separate harmonic-minor map."
+    },
+    harmonicMinor: {
+      id: "harmonicMinor", name: "Harmonic minor", greek: "Αρμονικό μινόρε",
+      scale: [0, 2, 3, 5, 7, 8, 11],
+      flavour: [3, 11],
+      signature: "♭3 + 7 (leading tone)",
+      blurb: "Functional minor. The raised 7 pulls into i and makes iiø–V7–i an explicit harmonic-minor cadence."
     },
     ousak: {
       id: "ousak", name: "Ousak", greek: "Ουσάκ",
       scale: [0, 1, 3, 5, 7, 8, 10],          // Phrygian
       flavour: [1, 3],
-      blurb: "Phrygian in equal temperament (the true 2nd is neutral — which is why no chord is built on it). Same chords as minor; the ♭2 lives in the melody."
+      signature: "♭2 + ♭3",
+      blurb: "Phrygian in equal temperament (the true 2nd is neutral — which is why no chord is built on it). The ♭2 lives in the melody; this trainer's strict ear maps keep every displayed chord tone inside the selected collection."
     },
     hijaz: {
       id: "hijaz", name: "Hijaz", greek: "Χιτζάζ",
       scale: [0, 1, 4, 5, 7, 8, 10],          // Phrygian dominant
       flavour: [1, 4],
+      signature: "♭2 + 3",
       blurb: "Major tonic, minor ♭VII. The ♭2–♯3 gap is the sound. Hijaz on the 5th of a minor key = Piraeotikos."
     }
   };
 
-  const MODE_ORDER = ["major", "minor", "ousak", "hijaz"];
+  const MODE_ORDER = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
 
   // The reliable five-note frame for each dromos. It keeps the player out of
   // the way of the harmony, leaving the characteristic 2nd/3rd as intentional
@@ -112,6 +125,7 @@
   const PENTATONIC = {
     major: { offsets: [0, 2, 4, 7, 9], name: "major pentatonic" },
     minor: { offsets: [0, 3, 5, 7, 10], name: "minor pentatonic" },
+    harmonicMinor: { offsets: [0, 3, 5, 7, 10], name: "minor pentatonic + leading-tone target" },
     ousak: { offsets: [0, 3, 5, 7, 10], name: "minor pentatonic" },
     hijaz: { offsets: [0, 4, 5, 7, 10], name: "dominant pentatonic" }
   };
@@ -121,55 +135,63 @@
   // table MI-07; do not edit chords without updating that table + the tests.
   const PROGRESSIONS = {
     major: [
-      { id: "ii-V-I", label: "ii – V – I", tag: "core",
+      { id: "ii-V-I", label: "ii – V – I", tag: "core", earSafe: true,
         chords: [[2, "m7"], [7, "dom7"], [0, "maj7"]],
         why: "The engine. Everything else is a variation." },
-      { id: "I-vi-ii-V", label: "I – vi – ii – V", tag: "core",
+      { id: "I-vi-ii-V", label: "I – vi – ii – V", tag: "core", earSafe: true,
         chords: [[0, "maj7"], [9, "m7"], [2, "m7"], [7, "dom7"]],
         why: "Loops forever — the best ear-training vamp there is." },
-      { id: "IV-V-I", label: "IV – V – I", tag: "folk",
+      { id: "IV-V-I", label: "IV – V – I", tag: "folk", earSafe: true,
         chords: [[5, "maj"], [7, "maj"], [0, "maj"]],
         why: "No leading-tone 7th. The dimotiko cadence, not the jazz one." },
-      { id: "bVII-I", label: "♭VII – I", tag: "modal",
+      { id: "bVII-I", label: "♭VII – I", tag: "modal", earSafe: false,
         chords: [[10, "maj"], [0, "maj"]],
         why: "Modal brightening. All over modern laïko and entechno." }
     ],
     minor: [
-      { id: "iio-V-i", label: "iiø – V7 – i", tag: "core",
-        chords: [[2, "m7b5"], [7, "dom7"], [0, "m7"]],
-        why: "The jazz minor engine. The half-diminished is the sound." },
-      { id: "iv-V-i", label: "iv – V – i", tag: "core",
-        chords: [[5, "min"], [7, "dom7"], [0, "min"]],
-        why: "Harmonic minor. The raised 7th inside the V7 is the tension." },
-      { id: "iv-bVII-i", label: "iv – ♭VII – i", tag: "modal",
+      { id: "i-bVII-i", label: "i – ♭VII – i", tag: "core", earSafe: true,
+        chords: [[0, "min"], [10, "maj"], [0, "min"]],
+        why: "Natural minor home loop. The ♭7 stays natural: no leading-tone pull is implied." },
+      { id: "iv-bVII-i", label: "iv – ♭VII – i", tag: "modal", earSafe: true,
         chords: [[5, "min"], [10, "maj"], [0, "min"]],
         why: "Natural minor. Softer, no leading tone, more folk." },
-      { id: "andalusian", label: "i – ♭VII – ♭VI – V", tag: "gateway",
-        chords: [[0, "min"], [10, "maj"], [8, "maj"], [7, "maj"]],
-        why: "Andalusian cadence. Lands on the V — and that V is a Hijaz tonic." }
+      { id: "bVI-bVII-i", label: "♭VI – ♭VII – i", tag: "modal", earSafe: true,
+        chords: [[8, "maj"], [10, "maj"], [0, "min"]],
+        why: "A natural-minor lift into home: ♭VI → ♭VII → i." }
+    ],
+    harmonicMinor: [
+      { id: "iio-V-i", label: "iiø – V7 – i", tag: "core", earSafe: true,
+        chords: [[2, "m7b5"], [7, "dom7"], [0, "min"]],
+        why: "Functional harmonic-minor cadence. The raised 7 in V7 resolves to the tonic; the final i stays a triad so every chord tone matches the map." },
+      { id: "iv-V-i", label: "iv – V7 – i", tag: "core", earSafe: true,
+        chords: [[5, "min"], [7, "dom7"], [0, "min"]],
+        why: "Hear the dominant's 3rd as the leading tone that wants to resolve up to 1." },
+      { id: "bVI-ii-V-i", label: "♭VI – iiø – V7 – i", tag: "gateway", earSafe: true,
+        chords: [[8, "maj"], [2, "m7b5"], [7, "dom7"], [0, "min"]],
+        why: "A longer functional-minor sentence: colour, predominant, dominant, home." }
     ],
     ousak: [
-      { id: "i-bVII-i", label: "i – ♭VII – i", tag: "core",
-        chords: [[0, "min"], [10, "maj"], [0, "min"]],
-        why: "The vamp. Half of rebetiko sits here." },
-      { id: "iv-bVII-i", label: "iv – ♭VII – i", tag: "core",
-        chords: [[5, "min"], [10, "maj"], [0, "min"]],
-        why: "The 4–7–1." },
-      { id: "bVI-bVII-i", label: "♭VI – ♭VII – i", tag: "core",
-        chords: [[8, "maj"], [10, "maj"], [0, "min"]],
-        why: "The big lift into the tonic." }
+      { id: "i-bVII-i", label: "i – ♭VIIm – i", tag: "core", earSafe: true,
+        chords: [[0, "min"], [10, "min"], [0, "min"]],
+        why: "Strict practice map: the ♭VII is minor so every chord tone agrees with the equal-tempered Ousak collection." },
+      { id: "bII-i", label: "♭II – i", tag: "cadence", earSafe: true,
+        chords: [[1, "maj"], [0, "min"]],
+        why: "Hear the ♭II colour falling directly into the minor home." },
+      { id: "bII-bVII-i", label: "♭II – ♭VIIm – i", tag: "modal", earSafe: true,
+        chords: [[1, "maj"], [10, "min"], [0, "min"]],
+        why: "A strict Ousak colour route: ♭II and minor ♭VII both stay inside this practice collection." }
     ],
     hijaz: [
-      { id: "I-bII-I", label: "I – ♭II – I", tag: "core",
+      { id: "I-bII-I", label: "I – ♭II – I", tag: "core", earSafe: true,
         chords: [[0, "maj"], [1, "maj"], [0, "maj"]],
         why: "The signature. If you play one Hijaz move, play this." },
-      { id: "I-iv-I", label: "I – iv – I", tag: "core",
+      { id: "I-iv-I", label: "I – iv – I", tag: "core", earSafe: true,
         chords: [[0, "maj"], [5, "min"], [0, "maj"]],
         why: "Major tonic pulling against a minor subdominant." },
-      { id: "I-iv-bVII-I", label: "I – iv – ♭VII – I", tag: "core",
+      { id: "I-iv-bVII-I", label: "I – iv – ♭VII – I", tag: "core", earSafe: true,
         chords: [[0, "maj"], [5, "min"], [10, "min"], [0, "maj"]],
         why: "The 1–4–7–1. Note the ♭VII is MINOR — that is Hijaz, not minor." },
-      { id: "bII-I", label: "♭II – I", tag: "cadence",
+      { id: "bII-I", label: "♭II – I", tag: "cadence", earSafe: true,
         chords: [[1, "maj"], [0, "maj"]],
         why: "The cadence on its own. Drill it until it is reflex." }
     ]
@@ -291,8 +313,9 @@
     return { prog, chords };
   }
 
-  // Descending run through the mode — the ear trainer needs MELODY, because
-  // Ousak and Minor are chord-identical (MI-06).
+  // Descending run through the declared map. Recall always pairs this run with
+  // a scale-and-harmony-coherent cadence; melody then exposes the local modal
+  // colour rather than being used to paper over a contradictory chord bank.
   function descendingRun(tonicName, modeId, baseMidi) {
     const t = parseName(tonicName);
     const base = baseMidi == null ? 62 : baseMidi;           // ~D4
@@ -307,10 +330,11 @@
   const EXPECTED = {
     "D|major|ii-V-I": "Em7 A7 Dmaj7",
     "D|major|IV-V-I": "G A D",
-    "D|minor|iio-V-i": "Em7♭5 A7 Dm7",
-    "D|minor|iv-V-i": "Gm A7 Dm",
-    "D|minor|andalusian": "Dm C B♭ A",
-    "D|ousak|iv-bVII-i": "Gm C Dm",
+    "D|minor|i-bVII-i": "Dm C Dm",
+    "D|minor|iv-bVII-i": "Gm C Dm",
+    "D|harmonicMinor|iio-V-i": "Em7♭5 A7 Dm",
+    "D|harmonicMinor|iv-V-i": "Gm A7 Dm",
+    "D|ousak|i-bVII-i": "Dm Cm Dm",
     "D|hijaz|I-bII-I": "D E♭ D",
     "D|hijaz|I-iv-bVII-I": "D Gm Cm D",
     "A|hijaz|I-iv-bVII-I": "A Dm Gm A"
@@ -366,19 +390,28 @@
     results.push({ i: "Solo Road D Hijaz tetrachord split", want: "D E♭ F♯ G / A B♭ C D",
       got: tetra.lower.map((n) => n.name).join(" ") + " / " + tetra.upper.map((n) => n.name).join(" "), pass: tetraPass });
 
-    // MI-06: Ousak and Minor must produce identical chords for iv-bVII-i
-    const a = buildProgression("D", "minor", "iv-bVII-i").chords.map((c) => c.symbol).join(" ");
-    const b = buildProgression("D", "ousak", "iv-bVII-i").chords.map((c) => c.symbol).join(" ");
-    const same = a === b;
-    if (!same) ok = false;
-    results.push({ i: "MI-06 ousak==minor chords", want: a, got: b, pass: same });
+    // MI-06: ear-safe prompts must not contain a chord tone outside their
+    // declared scale. This blocks the old natural-minor/harmonic-minor and
+    // Ousak/major-♭VII contradictions from ever returning to Recall.
+    const incoherent = [];
+    TONICS.forEach((tonic) => MODE_ORDER.forEach((modeId) => {
+      PROGRESSIONS[modeId].filter((progression) => progression.earSafe).forEach((progression) => {
+        const pcs = new Set(scaleOf(tonic, modeId).map((note) => note.pc));
+        buildProgression(tonic, modeId, progression.id).chords.forEach((chord) => {
+          if (chord.notes.some((note) => !pcs.has(note.pc))) incoherent.push(`${tonic}/${modeId}/${progression.id}`);
+        });
+      });
+    }));
+    const coherent = incoherent.length === 0;
+    if (!coherent) ok = false;
+    results.push({ i: "MI-06 ear prompts are scale-and-harmony coherent", want: "0 conflicts", got: incoherent.slice(0, 5).join(", ") || "0 conflicts", pass: coherent });
 
-    // MI-05: every mode must differ from every other in its flavour pair
+    // MI-05: every map must have a distinct signature set.
     const pairs = MODE_ORDER.map((m) => MODES[m].flavour.join(","));
     const uniq = new Set(pairs);
     const distinct = uniq.size === MODE_ORDER.length;
     if (!distinct) ok = false;
-    results.push({ i: "MI-05 flavour pairs distinct", want: "4 unique", got: uniq.size + " unique", pass: distinct });
+    results.push({ i: "MI-05 signature pairs distinct", want: "5 unique", got: uniq.size + " unique", pass: distinct });
 
     // MI-10: every chord the app can display must produce a playable grip.
     // (A silent "no grip" once hid every V7 in the cycle behind an empty neck.)
