@@ -3,13 +3,13 @@
  */
 (function () {
   "use strict";
-  const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes;
+  const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
 
   const state = {
-    view: "cycle",             // cycle | prog | triads | solo | ear
+    view: "cycle",             // cycle | prog | triads | solo | ear | styles
     // --- cycle view ---
     index: 0,
     cycleMode: "full",         // full | iiVI | pivot
@@ -25,6 +25,8 @@
     triads: { step: 0, stringSet: null, showAll: true },
     // --- solo lab ---
     solo: { section: "targets", focus: "third" },
+    // --- foundation and Greek styles ---
+    styles: { section: "foundation", styleId: "zeibekiko" },
     // --- scale lab ---
     lab: {
       drill: "path",           // path | cell
@@ -66,14 +68,15 @@
 
   function renderCoachCue() {
     const step = PRACTICE_STEPS.find((item) => item.view === state.view);
-    if (!step) return;
-    let detail = step.detail;
+    const styleStep = state.view === "styles";
+    if (!step && !styleStep) return;
+    let detail = step ? step.detail : "Build the general language first, then place it inside a real Greek pulse without confusing style and dromos.";
     if (state.view === "solo" && state.solo.section === "path") {
       detail = "Build clean alternate picking first; change the string break before you raise the tempo.";
     } else if (state.view === "solo" && state.solo.section === "cell") {
       detail = "Pre-hear the final note, leave space for it, then reveal and check your ear.";
     }
-    $("coachCue").innerHTML = `<span>${step.label}</span><b>${detail}</b>`;
+    $("coachCue").innerHTML = `<span>${step ? step.label : "Style lab"}</span><b>${detail}</b>`;
   }
 
   // ======================= shared fretboard draw =========================
@@ -234,6 +237,57 @@
   function auditionProg() {
     const { chords } = currentProgression();
     AU.playChord(chords[Math.min(state.progStep, chords.length - 1)].notes, state.strumStyle);
+  }
+
+  // ====================== FOUNDATION & STYLE LAB ========================
+  // This is deliberately separate from the dromos engine: a pulse tells a
+  // player where a phrase belongs in time, while the Song Map tells them what
+  // melodic/harmonic colour they are hearing.
+  function renderStyles() {
+    const section = state.styles.section;
+    $("foundationGuide").classList.toggle("hidden", section !== "foundation");
+    $("styleExplorer").classList.toggle("hidden", section !== "greek");
+    document.querySelectorAll("[data-style-section]").forEach((button) =>
+      button.classList.toggle("active", button.getAttribute("data-style-section") === section));
+
+    if (section === "foundation") {
+      $("foundationGuide").innerHTML = `
+        <p class="style-intro">These are transferable modern improvisation skills. Learn them first; the Greek style maps then decide the pulse, accompaniment role, and phrase shape.</p>
+        <div class="foundation-list">${S.FOUNDATION.map((item, index) => `
+          <article class="foundation-card"><span>${index + 1}</span><div><h3>${item.title}</h3><p>${item.detail}</p></div></article>`).join("")}</div>
+        <p class="style-source">Modern input: pentatonic triad clusters and chord-tone targeting are a route between familiar shapes and real harmony. The goal here is musical decision-making, not copying another player’s licks.</p>`;
+      return;
+    }
+
+    const style = S.byId(state.styles.styleId);
+    const beats = S.beatMap(style);
+    $("styleExplorer").innerHTML = `
+      <p class="style-intro">Select a pulse map. It gives you the feel, comping role, and phrasing job; then open Song Map to choose the tune’s actual dromos and harmony.</p>
+      <div class="style-list" aria-label="Greek style maps">${S.STYLES.map((item) =>
+        `<button class="style-choice${item.id === style.id ? " active" : ""}" data-style-id="${item.id}"><b>${item.title}</b><span>${item.greek} · ${item.meter}</span></button>`
+      ).join("")}</div>
+      <article class="style-detail">
+        <div class="style-detail-head"><div><span class="style-meter">${style.meter}</span><h3>${style.title} <i>${style.greek}</i></h3></div><strong>${style.pulse}</strong></div>
+        <p>${style.character}</p>
+        <div class="pulse-strip" aria-label="${style.title} pulse: ${style.pulse}">${beats.map((beat) =>
+          `<span class="pulse-beat${beat.first ? " group-start" : ""}" data-group="${beat.group}"><b>${beat.beat}</b>${beat.first ? `<i>${beat.size}</i>` : ""}</span>`
+        ).join("")}</div>
+        <div class="style-jobs">
+          <div><span>Comp first</span><p>${style.comp}</p></div>
+          <div><span>Phrase job</span><p>${style.phrase}</p></div>
+          <div><span>Map next</span><p>${style.route}</p></div>
+        </div>
+        <button id="btnOpenSongMap" class="mini primary-mini">Open Song Map — choose the dromos</button>
+      </article>`;
+    $("styleExplorer").querySelectorAll("[data-style-id]").forEach((button) => {
+      button.onclick = () => { state.styles.styleId = button.getAttribute("data-style-id"); renderStyles(); };
+    });
+    $("btnOpenSongMap").onclick = () => setView("prog");
+  }
+
+  function setStyleSection(section) {
+    state.styles.section = section;
+    renderStyles();
   }
 
   // =========================== EAR TRAINER ===============================
@@ -729,8 +783,8 @@
     document.body.setAttribute("data-solo-section", state.solo.section);
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
-    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo"].forEach((id) => $(id).classList.add("hidden"));
-    $("stage").classList.toggle("hidden", v === "ear");
+    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelStyles"].forEach((id) => $(id).classList.add("hidden"));
+    $("stage").classList.toggle("hidden", v === "ear" || v === "styles");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
@@ -739,6 +793,7 @@
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
     else if (v === "triads") { $("panelTriads").classList.remove("hidden"); syncTriadControls(); renderTriads(); }
     else if (v === "solo") { $("panelSolo").classList.remove("hidden"); setSoloSection(state.solo.section); }
+    else if (v === "styles") { $("panelStyles").classList.remove("hidden"); renderStyles(); }
     else { $("panelEar").classList.remove("hidden"); renderEarScore(); }
     // renderCycle rightfully decides whether the pivot explanation is visible;
     // no other practice area should inherit that explanation from a prior view.
@@ -798,6 +853,9 @@
           item.classList.toggle("active", item.getAttribute("data-solo-focus") === state.solo.focus));
         renderSolo();
       });
+
+    document.querySelectorAll("[data-style-section]").forEach((button) =>
+      button.onclick = () => setStyleSection(button.getAttribute("data-style-section")));
 
     const tonicSel = $("tonicSel");
     tonicSel.innerHTML = M.TONICS.map((t) =>
@@ -887,7 +945,7 @@
         e.preventDefault();
         if (state.view === "ear") playEarPrompt();
         else if (state.view === "solo" && state.solo.section !== "targets") $("btnLabPlay").click();
-        else togglePlay();
+        else if (state.view !== "styles") togglePlay();
       }
       else if (e.code === "ArrowRight" && state.view === "triads") { e.preventDefault(); stepTriad(1); }
       else if (e.code === "ArrowLeft" && state.view === "triads") { e.preventDefault(); stepTriad(-1); }
@@ -898,6 +956,7 @@
       else if (e.key === "3") setView("triads");
       else if (e.key === "4") setView("solo");
       else if (e.key === "5") setView("ear");
+      else if (e.key === "6") setView("styles");
       else if (e.key.toLowerCase() === "r" && state.view === "solo" && state.solo.section === "cell") $("btnReveal").click();
     });
   }
@@ -907,10 +966,11 @@
     else if (state.view === "prog") renderProg();
     else if (state.view === "solo") state.solo.section === "targets" ? renderSolo() : renderLab();
     else if (state.view === "triads") { syncTriadControls(); renderTriads(); }
+    else if (state.view === "styles") renderStyles();
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), P.selfTest(), TR.selfTest()];
+    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), P.selfTest(), TR.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

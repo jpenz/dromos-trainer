@@ -12,7 +12,10 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /manifest\.webmanifest/);
   assert.match(html, /serviceWorker\.register\("sw\.js"\)/);
   assert.match(html, /data-view="solo"/);
+  assert.match(html, /data-view="styles"/);
   assert.match(html, /data-solo-section="targets"/);
+  assert.match(html, /data-style-section="foundation"/);
+  assert.match(html, /js\/styles\.js/);
   assert.match(read("js/tuning.js"), /Laouto \(mainland\)/);
   assert.match(read("js/app.js"), /seventh \|\| chordTone\(chord, "R"\)/,
     "triad lessons must use the root anchor instead of inventing a seventh");

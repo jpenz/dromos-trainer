@@ -25,6 +25,7 @@
         <button data-view="triads">Triads</button>
         <button data-view="solo">Solo Lab</button>
         <button data-view="ear">Ear</button>
+        <button data-view="styles">Styles</button>
       </nav>
       <div id="testBadge" class="test-badge"></div>
     </div>
@@ -189,6 +190,17 @@
         <div id="earScore" class="ear-score"></div>
       </div>
 
+      <!-- ---- foundation and Greek style panel ---- -->
+      <div id="panelStyles" class="panel hidden">
+        <span class="panel-label">Foundation and Greek styles</span>
+        <div class="seg" aria-label="Style curriculum area">
+          <button data-style-section="foundation" class="active">Foundation</button>
+          <button data-style-section="greek">Greek styles</button>
+        </div>
+        <div id="foundationGuide" class="foundation-guide"></div>
+        <div id="styleExplorer" class="style-explorer hidden"></div>
+      </div>
+
       <div class="transport">
         <button id="btnPrev" class="tbtn" title="Previous (←)" aria-label="Previous chord">◀</button>
         <button id="btnPlay" class="tbtn primary" title="Play / Pause (Space)">▶ Play</button>
@@ -222,13 +234,14 @@
         <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
       </div>
 
-      <div class="hint">Space play/pause · ← → step · 1–5 switch practice area</div>
+      <div class="hint">Space play/pause · ← → step · 1–6 switch practice area</div>
     </aside>
   </main>
 
   <script src="js/tuning.js"></script>
   <script src="js/theory.js"></script>
   <script src="js/modes.js"></script>
+  <script src="js/styles.js"></script>
   <script src="js/practice.js"></script>
   <script src="js/triads.js"></script>
   <script src="js/fretboard.js"></script>

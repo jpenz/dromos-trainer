@@ -102,6 +102,15 @@ The whole skill in one table:
 | `E♭ F♮` | Ousak |
 | `E♭ F♯` | Hijaz |
 
+### 6. Foundation & Styles
+
+Start with the shared language—singing an answer, compact triad landmarks,
+pentatonic/tetrachord routes, motifs, touch, and pulse—then choose a Greek style
+map. The current maps are **Zeibekiko** `9/4` (`2+2+2+3`), **Kalamatianos** `7/8`
+(`3+2+2`), Hasapiko, Tsifteteli, and Roumba. A style map teaches where a phrase and
+an accompaniment belong in time; it never pretends to choose the song’s dromos for
+you. Use **Open Song Map** from a style to choose the actual harmony.
+
 ---
 
 ## The bridge worth knowing
@@ -120,7 +129,7 @@ already contains a Hijaz section.
 | `Space` | Play / pause (replay prompt in Ear Trainer) |
 | `←` `→` | Step through chords / positions / cells |
 | `R` | Reveal the audiation target |
-| `1` `2` `3` `4` `5` | Switch practice area |
+| `1` `2` `3` `4` `5` `6` | Switch practice area |
 
 ## Instruments
 

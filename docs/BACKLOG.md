@@ -7,7 +7,7 @@ Ordered roughly by value. Promote an item into the table in
 
 | ID | Item | Notes |
 |---|---|---|
-| FR-17 | Headless test runner | Needs Node, which the build machine lacks. `selfTest()` returns plain data, so a runner is ~20 lines once Node exists. Keep the in-browser badge either way. |
+| FR-17 | Headless test runner | DONE — Node tests cover theory, dromos pentatonic identity, laouto maps, style pulses, and the static app shell. Keep the in-browser badge as a second check. |
 | FR-18 | Persist session state | `localStorage` for tonic/mode/progression + ear-trainer score. Low risk, self-contained. |
 | FR-19 | Printable one-page chart | Print stylesheet: current mode's scale, grips and progressions on one sheet for the music stand. |
 | FR-31 | Song-change ear drills | Prompt an isolated progression; player names functions before revealing the chord/neck map. |
@@ -16,6 +16,7 @@ Ordered roughly by value. Promote an item into the table in
 | FR-34 | Phrase Lab | Dromos-specific `seira`, lower/upper tetrachord cells, resolution targets, and hear–sing–play call/response; original exercises only. |
 | FR-35 | Rhythm & comping lab | Instrument-specific right-hand patterns and sparse accompaniment in real Greek meters; mainland laouto is treated as rhythmic as well as melodic. |
 | FR-36 | User song-map studio | User enters/transcribes functions by ear, then reveals triads, targets and positions; avoids a copyrighted-song database. |
+| FR-37 | Foundation and Greek-style pulse explorer | DONE — modern improvisation foundation plus Zeibekiko, Kalamatianos, Hasapiko, Tsifteteli, and Roumba pulse maps; backing/count-in remains FR-32. |
 
 ## Proposed (no ID yet)
 

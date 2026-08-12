@@ -6,7 +6,7 @@
   "description": "Offline-first modal-harmony practice curriculum for fretted instruments.",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check js/tuning.js && node --check js/theory.js && node --check js/modes.js && node --check js/practice.js && node --check js/triads.js && node --check js/fretboard.js && node --check js/audio.js && node --check js/app.js"
+    "check": "node --check js/tuning.js && node --check js/theory.js && node --check js/modes.js && node --check js/styles.js && node --check js/practice.js && node --check js/triads.js && node --check js/fretboard.js && node --check js/audio.js && node --check js/app.js"
   },
   "engines": {
     "node": ">=20"

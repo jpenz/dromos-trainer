@@ -56,6 +56,9 @@ principles behind these decisions.
 - Guitar, drop-D guitar, tetrachordo bouzouki, trichordo bouzouki, and mainland
   laouto.
 - Solo Lab target map: pentatonic frame plus current/next 3rd or guide-tone targets.
+- Foundation & Styles: a modern improvisation foundation, then selectable Zeibekiko,
+  Kalamatianos, Hasapiko, Tsifteteli, and Roumba pulse maps. A style controls
+  phrase placement and accompaniment role; Song Map still controls dromos and harmony.
 - Installable, offline-capable browser app with no runtime dependency or build step.
 
 ### Next curriculum milestones

@@ -1,8 +1,29 @@
 # Curriculum research notes
 
-Research completed 2026-08-11. These sources guide product decisions; they are
-not content licensed for copying into the app. Dromos Trainer must use original
-explanations, original exercises, and user-provided song maps.
+Research completed 2026-08-11. External sources guide product decisions; they are
+not content licensed for copying into the app. Dromos Trainer uses original
+explanations and exercises unless material is supplied and explicitly authorised by
+the user.
+
+## User-authorised curriculum library
+
+The user has authorised use of the material in their **Nikos Gyras** and **Greek
+Music Notes** folders for this self-study project. The reviewed set includes original
+tempo/right-hand maps, old/new Zeibekiko material, song-form charts, dromos and
+fingering sheets, song studies, and the following recurring style vocabulary:
+
+- Zeibekiko `9/4`, including monó/old and dipló/new right-hand studies.
+- Kalamatianos `7/8`, plus 5/8, 9/8, Hasapiko, Tsifteteli, Roumba, Syrtos,
+  Aptaliko, Bolero, and other pulse examples.
+- A dromos family perspective: Hijaz, Hijaskiar, Peiraiotiko, Ussak, Kurdi,
+  Saba, Nikriz, Segah, Huzzam, and related shapes—not only four Westernised labels.
+- Real song-study fields: tempo, rhythm, key, scale/dromos, structure, melody,
+  bass movement, and chord alternatives.
+
+This directly changes the product model: **Foundation** teaches general musical
+decisions; **Styles** teaches pulse and accompaniment role; **Song Map** supplies
+the particular dromos, harmony, melody, and form. The app must not infer a scale
+from a dance name or flatten every 9-beat rhythm into the same loop.
 
 ## What the research changes
 
@@ -74,6 +95,20 @@ initial blocking; use a local practice log to schedule review. Ask a player to t
 the failure (`didn't hear change`, `couldn't find triad`, `missed target`, `rhythm`,
 `right hand`) before suggesting the next micro-drill.
 
+### 5. Use modern guitar pedagogy as a bridge, not a stylistic substitute
+
+John Mayer's 2018 Instagram Live lesson ranged from lead-and-bass coordination to
+other practical guitar topics. The useful transferable cue is that the player must
+make a guitar phrase behave like a deliberate musical voice, with time, touch, and
+space—not merely run a box. The Donut Doctor's pentatonic-triad material gives an
+especially good bridge for this project: familiar pentatonic territory can reveal
+small triad clusters, chord-tone targets, and rhythm-comping options.
+
+**Product consequence:** the Foundation module now places `hear/sing → triad
+landmark → pentatonic or tetrachord route → motif → pulse` before a player opens a
+Greek Style map. The style map does not teach a “John Mayer in Hijaz” imitation; it
+asks the player to apply the same decision skills to an idiomatic pulse.
+
 ## Books and methods worth using alongside the app
 
 | Resource | Why it belongs beside Dromos Trainer |
@@ -109,6 +144,11 @@ the failure (`didn't hear change`, `couldn't find triad`, `missed target`, `rhyt
 - The published [Garcia interview](https://deadstudies.org/wp-content/uploads/2022/04/Proceedings_v1_Bailey.pdf)
   is useful as a reminder that improvisation must remain responsive and alive. The
   app should teach decision-making, not reproduce a celebrity’s licks.
+- The [Mayer Instagram Live lesson overview](https://blog.charvel.com/2018/02/john-mayer-shares-the-wealth-with-instagram-live-guitar-lessons/)
+  confirms a practical, cross-level lesson format rather than a fixed style recipe.
+- The Donut Doctor’s [Pentatonic Triad System](https://www.youtube.com/watch?v=1Ds6iayj2bE)
+  explicitly connects pentatonic positions, triads, chord-tone targets, and phrasing;
+  this is the modern-guitar bridge behind Solo Lab, not a replacement for dromos.
 
 ## Design commitments now
 
@@ -120,3 +160,5 @@ the failure (`didn't hear change`, `couldn't find triad`, `missed target`, `rhyt
 4. Make **Song Map** user-entered and function-first: players transcribe a progression
    by ear, then reveal shapes/targets. Do not scrape or redistribute copyrighted songs.
 5. Use local, private practice history only; no account is required to benefit.
+6. Keep **Foundation → Styles → Song Map** distinct: transferable musicianship,
+   dance pulse, and a song’s modal/harmonic language are separate but connected maps.

@@ -392,12 +392,51 @@ main {
 .cell-target { font-size: 12px; color: var(--muted); line-height: 1.45; }
 .cell-target b { color: var(--text); }
 
+/* ---------- foundation and Greek style lab ---------- */
+.style-intro { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0; }
+.foundation-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.foundation-card { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start;
+  padding: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.foundation-card > span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px;
+  background: rgba(255,207,92,.18); color: var(--accent); font-size: 12px; font-weight: 850; }
+.foundation-card h3, .style-detail h3 { margin: 0; color: var(--text); font-size: 14px; }
+.foundation-card p, .style-source { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.style-source { padding: 10px 12px; border-left: 3px solid var(--flavour); background: rgba(255,138,76,.08); border-radius: 8px; }
+.style-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.style-choice { display: flex; flex: 1 1 135px; flex-direction: column; gap: 2px; min-width: 0; text-align: left;
+  padding: 10px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); cursor: pointer; }
+.style-choice:hover { background: var(--panel2); }
+.style-choice.active { border-color: var(--accent); background: rgba(255,207,92,.10); }
+.style-choice b { font-size: 13px; } .style-choice span { color: var(--muted); font-size: 11px; }
+.style-detail { padding: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+.style-detail-head { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; }
+.style-detail-head h3 { font-size: 19px; margin-top: 4px; } .style-detail-head h3 i { font-size: 13px; color: var(--accent); font-style: normal; }
+.style-detail-head > strong { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; color: #101418; background: var(--accent); font-size: 12px; }
+.style-meter { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .8px; }
+.style-detail > p { margin: 12px 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.pulse-strip { display: flex; gap: 5px; align-items: stretch; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); }
+.pulse-beat { position: relative; display: grid; flex: 1; min-width: 23px; min-height: 32px; place-items: center; border-radius: 6px; color: var(--muted); background: var(--panel2); font-size: 12px; }
+.pulse-beat.group-start { background: rgba(77,156,255,.22); color: #c9e0ff; border: 1px solid rgba(77,156,255,.65); }
+.pulse-beat i { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); padding: 0 3px; background: var(--bg2); color: var(--accent); font-size: 9px; font-style: normal; font-weight: 800; }
+.style-jobs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 13px 0; }
+.style-jobs > div { padding: 10px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); }
+.style-jobs span { color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .4px; text-transform: uppercase; }
+.style-jobs p { margin: 5px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.42; }
+
 /* ear view: no fretboard, so collapse to a single centred column and hide
    the controls that only make sense with a chord on screen */
 body[data-view="ear"] main { grid-template-columns: 1fr; max-width: 660px; margin: 0 auto; }
+body[data-view="styles"] main { grid-template-columns: 1fr; max-width: 920px; margin: 0 auto; }
 body[data-view="ear"] #readout,
 body[data-view="ear"] .transport,
-body[data-view="ear"] .audition { display: none; }
+body[data-view="ear"] .audition,
+body[data-view="styles"] #readout,
+body[data-view="styles"] .transport,
+body[data-view="styles"] .audition,
+body[data-view="styles"] .tempo,
+body[data-view="styles"] .toggles,
+body[data-view="styles"] .tuning-sub,
+body[data-view="styles"] .side > .tonic-row { display: none; }
 body[data-view="triads"] .transport,
 body[data-view="triads"] .audition,
 body[data-view="solo"][data-solo-section="path"] .transport,
@@ -433,4 +472,6 @@ body[data-view="solo"] #btnShift { display: none; }
   .toggles { gap: 9px 10px; }
   .solo-targets { grid-template-columns: 1fr; gap: 2px; }
   .solo-targets strong { margin-bottom: 5px; }
+  .foundation-list, .style-jobs { grid-template-columns: 1fr; }
+  .style-detail-head { align-items: flex-start; }
 }
