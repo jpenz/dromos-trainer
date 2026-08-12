@@ -19,6 +19,11 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-style-section="foundation"/);
   assert.match(html, /js\/styles\.js/);
   assert.match(html, /js\/analysis\.js/);
+  assert.match(html, /js\/studies\.js/);
+  assert.match(html, /js\/musicxml\.js/);
+  assert.match(html, /js\/resources\.js/);
+  assert.match(html, /id="scoreFile"/);
+  assert.match(html, /id="analysisInstrument"/);
   assert.match(read("js/tuning.js"), /Laouto \(mainland\)/);
   assert.match(read("js/app.js"), /seventh \|\| chordTone\(chord, "R"\)/,
     "triad lessons must use the root anchor instead of inventing a seventh");

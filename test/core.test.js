@@ -10,16 +10,39 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/styles.js", "js/analysis.js", "js/practice.js", "js/triads.js", "js/fretboard.js"]
+  ["js/tuning.js", "js/theory.js", "js/modes.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/practice.js", "js/triads.js", "js/fretboard.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.Practice.selfTest(), app.Triads.selfTest()];
+  const suites = [app.Theory.selfTest(), app.Modes.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.Practice.selfTest(), app.Triads.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
+});
+
+test("authorised study starters and referenced methods remain clearly bounded", () => {
+  const { StudyLibrary, ResourceLibrary } = loadCore();
+  assert.equal(StudyLibrary.STUDIES.length, 3);
+  assert.ok(StudyLibrary.STUDIES.every((study) => /User-authorised/.test(study.source)));
+  assert.equal(ResourceLibrary.TRIGAS.length, 5);
+  assert.ok(ResourceLibrary.TRIGAS.every((item) => /trigas\.gr/.test(item.href)));
+});
+
+test("imported score harmony has a playable chart on every supported tuning", () => {
+  const { Tuning, AnalysisEngine, Fretboard, MusicXmlImport } = loadCore();
+  const xml = `<?xml version="1.0"?><score-partwise><part><measure number="1"><harmony><root><root-step>D</root-step></root><kind>minor</kind></harmony><note><pitch><step>A</step></pitch></note><harmony><root><root-step>A</root-step></root><kind>dominant</kind></harmony><note><pitch><step>C</step><alter>1</alter></pitch></note></measure></part></score-partwise>`;
+  const imported = MusicXmlImport.parseMusicXml(xml);
+  assert.equal(imported.chordMap, "Dm A7");
+  const records = AnalysisEngine.analyzeProgression(imported.chordMap, { tonic: "D", modeId: "minor" }).records;
+  Tuning.TUNINGS.forEach((tuning) => {
+    Tuning.set(tuning.id);
+    records.forEach((record) => {
+      const voicing = record.tones.map((tone) => ({ pc: tone.pc, role: tone.role, name: tone.name }));
+      assert.ok(Fretboard.findGrip(voicing), `${record.chord.raw} needs a chart on ${tuning.name}`);
+    });
+  });
 });
 
 test("Greek style pulses are complete and never prescribe a dromos", () => {

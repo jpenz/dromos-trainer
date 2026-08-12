@@ -12,6 +12,25 @@ folder for an installable/offline-capable browser app on mobile and iPad.
 open index.html
 ```
 
+## Score study
+
+The **Analyze** area accepts chord maps and chord-aligned note fragments. It can also
+read an **uncompressed MusicXML** (`.musicxml` / `.xml`) score that you choose
+locally when it contains written chord symbols. It explains the harmonic map, labels
+note roles, gives target-tone routes, and generates a compact chord chart plus tab
+for the selected tuning.
+
+It intentionally does not OCR a PDF, transcribe an audio recording, read compressed
+`.mxl`, or include a copied repertoire database. Export a score you own to MusicXML
+(including harmony symbols) for the reliable, transparent route.
+
+## Sources and rights
+
+The Concepts area includes a linked Trigas reference shelf and complementary bouzouki
+methods. These are research pointers and original curriculum connections—not scans,
+copied exercises, recordings, or notation. Three short Analyzer starters are taken
+only from the user-authorised local study material and identify their source.
+
 ---
 
 ## The practice path

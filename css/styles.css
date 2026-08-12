@@ -426,6 +426,15 @@ main {
 /* ---------- transparent analyzer and concept pyramid ---------- */
 .analysis-intro, .analysis-help { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
 .analysis-label { color: var(--muted); font-size: 12px; font-weight: 750; }
+.study-starters { display: grid; gap: 7px; }
+.study-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.study-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-height: 104px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); color: var(--text); text-align: left; cursor: pointer; }
+.study-choice:hover, .study-choice.active { border-color: var(--accent); background: rgba(255,207,92,.10); }
+.study-choice b { font-size: 12px; }.study-choice span, .study-choice i { color: var(--muted); font-size: 10.5px; font-style: normal; line-height: 1.35; }.study-choice i { margin-top: auto; color: var(--accent); }
+.score-import { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px; border: 1px solid rgba(77,156,255,.42); border-radius: 11px; background: linear-gradient(120deg, rgba(77,156,255,.11), rgba(176,123,255,.06)); }
+.score-import b { color: var(--text); font-size: 12.5px; }.score-import p { max-width: 620px; margin: 4px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.file-button { flex: 0 0 auto; padding: 9px 11px; border: 1px solid var(--accent); border-radius: 9px; color: var(--accent); font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }.file-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); }
+.score-import-status { min-height: 0; margin: -5px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.4; }.score-import-status:empty { display: none; }.score-import-status.ok { color: #8ad7a0; }.score-import-status.error { color: #ff9c94; }
 #panelAnalyze textarea { width: 100%; resize: vertical; padding: 10px 11px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--panel); color: var(--text); font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 #panelAnalyze textarea:focus { border-color: var(--accent); outline: none; }
@@ -435,7 +444,7 @@ main {
 .analysis-answer h3 { margin: 5px 0; color: var(--text); font-size: 16px; line-height: 1.38; }
 .analysis-answer p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
 .analysis-map { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
-.analysis-chord { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.analysis-chord { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); text-align: left; cursor: pointer; }.analysis-chord:hover, .analysis-chord.active { border-color: var(--accent); background: rgba(255,207,92,.08); }
 .analysis-function { display: block; color: var(--accent); font-size: 11px; font-weight: 850; }
 .analysis-chord > b { display: block; margin-top: 3px; color: var(--text); font-size: 18px; }
 .analysis-chord p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.38; }
@@ -455,6 +464,9 @@ main {
 .line-segment > b { width: 34px; color: var(--accent); font-size: 12px; }
 .line-note { display: flex; flex-direction: column; align-items: center; min-width: 34px; padding: 4px 6px; border-radius: 7px; background: var(--panel2); color: var(--text); font-size: 12px; }
 .line-note i { color: var(--muted); font-size: 9px; font-style: normal; }.line-note.chord { border: 1px solid var(--c-third); }.line-note.outside { border: 1px dashed var(--flavour); }
+.analysis-instrument { margin-top: 12px; }.instrument-answer { display: grid; gap: 11px; padding: 14px; border: 1px solid rgba(77,156,255,.45); border-radius: 13px; background: linear-gradient(125deg, rgba(77,156,255,.11), var(--panel)); }.instrument-answer > div:first-child > span, .reference-shelf > div > span { color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .6px; text-transform: uppercase; }.instrument-answer h3 { margin: 5px 0; color: var(--text); font-size: 17px; }.instrument-answer p { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.42; }
+.analysis-position-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }.analysis-position-strip button { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; min-width: 62px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--muted); cursor: pointer; }.analysis-position-strip button.active { border-color: var(--accent); color: var(--text); }.analysis-position-strip b { font-size: 12px; }.analysis-position-strip span { font-size: 10px; }
+.analysis-fretboard-wrap { max-width: 100%; overflow-x: auto; border-radius: 9px; background: rgba(0,0,0,.12); }.analysis-fretboard-wrap #analysisFretboard { display: block; width: 100%; min-width: 650px; height: auto; }.analysis-tab { display: grid; grid-template-columns: minmax(155px, .5fr) 1fr; align-items: center; gap: 8px 16px; padding-top: 10px; border-top: 1px solid var(--line); }.analysis-tab b { color: var(--accent); font-size: 11px; }.analysis-tab pre { grid-row: span 2; margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--panel2); color: var(--text); font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }.analysis-tab p { margin: 0; }
 .concept-pyramid { display: flex; flex-direction: column; gap: 12px; }
 .concept-apex { padding: 17px; border: 1px solid rgba(255,207,92,.65); border-radius: 15px; background: linear-gradient(130deg, rgba(255,207,92,.15), rgba(176,123,255,.10)); text-align: center; }
 .concept-apex h2 { max-width: 620px; margin: 6px auto; font-size: 20px; line-height: 1.3; }.concept-apex p { max-width: 680px; margin: 0 auto; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
@@ -462,6 +474,7 @@ main {
 .concept-layer { padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: var(--panel); }
 .concept-layer > div > span { color: var(--accent); font-size: 11px; font-weight: 850; }.concept-layer h3 { margin: 5px 0 8px; font-size: 14px; line-height: 1.35; }
 .concept-layer > p { color: var(--muted); font-size: 11.5px; line-height: 1.45; }.concept-layer .concept-greek { padding: 8px 9px; border-radius: 8px; background: var(--panel2); }.concept-layer b { color: var(--text); }.concept-drill { border-top: 1px solid var(--line); padding-top: 8px; margin-bottom: 0; }
+.reference-shelf { display: grid; gap: 10px; padding: 15px; border: 1px solid rgba(176,123,255,.45); border-radius: 14px; background: linear-gradient(130deg, rgba(176,123,255,.10), var(--panel)); }.reference-shelf h2 { margin: 5px 0; font-size: 17px; }.reference-shelf h3 { margin: 6px 0 -2px; color: var(--accent); font-size: 12px; }.reference-shelf > div > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }.reference-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }.reference-list a { display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); color: inherit; text-decoration: none; }.reference-list a:hover { border-color: var(--accent); }.reference-list b { color: var(--text); font-size: 12px; }.reference-list span, .reference-list i { color: var(--muted); font-size: 11px; font-style: normal; line-height: 1.4; }.reference-list i { color: #b7c5de; }
 
 /* ear view: no fretboard, so collapse to a single centred column and hide
    the controls that only make sense with a chord on screen */
@@ -528,6 +541,9 @@ body[data-view="solo"] #btnShift { display: none; }
   .solo-targets { grid-template-columns: 1fr; gap: 2px; }
   .solo-targets strong { margin-bottom: 5px; }
   .foundation-list, .style-jobs { grid-template-columns: 1fr; }
+  .study-list, .reference-list { grid-template-columns: 1fr; }
+  .score-import { align-items: flex-start; flex-direction: column; }
+  .analysis-tab { grid-template-columns: 1fr; }.analysis-tab pre { grid-row: auto; }
   .style-detail-head { align-items: flex-start; }
   .concept-layers { grid-template-columns: 1fr; }
 }

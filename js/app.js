@@ -3,7 +3,8 @@
  */
 (function () {
   "use strict";
-  const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine;
+  const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
+    U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -28,7 +29,7 @@
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
     // --- transparent analysis ---
-    analysis: { tonic: "D", modeId: "minor" },
+    analysis: { tonic: "D", modeId: "minor", selected: 0, studyId: null, importStatus: "" },
     // --- scale lab ---
     lab: {
       drill: "path",           // path | cell
@@ -50,6 +51,9 @@
 
   const $ = (id) => document.getElementById(id);
   const svg = () => $("fretboard");
+  const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+  }[character]));
 
   const PRACTICE_STEPS = [
     { view: "cycle", label: "1 · Hear", detail: "Follow the ii–V–I pivot until the next key feels inevitable." },
@@ -303,46 +307,131 @@
     return { tonic: state.analysis.tonic, modeId: state.analysis.modeId };
   }
 
+  function renderStudyStarters() {
+    if (!U || !$("studyStarters")) return;
+    $("studyStarters").innerHTML = `<span class="analysis-label">Authorised study starters</span><div class="study-list">${U.STUDIES.map((study) =>
+      `<button class="study-choice${study.id === state.analysis.studyId ? " active" : ""}" data-study-id="${escapeHtml(study.id)}"><b>${escapeHtml(study.title)}</b><span>${escapeHtml(study.style)} · ${escapeHtml(study.focus)}</span><i>${escapeHtml(study.source)}</i></button>`
+    ).join("")}</div>`;
+    $("studyStarters").querySelectorAll("[data-study-id]").forEach((button) => {
+      button.onclick = () => {
+        const study = U.byId(button.getAttribute("data-study-id"));
+        state.analysis.tonic = study.tonic;
+        state.analysis.modeId = study.modeId;
+        state.analysis.studyId = study.id;
+        state.analysis.selected = 0;
+        $("analysisChords").value = study.chords;
+        $("analysisLine").value = "";
+        syncAnalysisControls(); renderAnalyzer();
+      };
+    });
+  }
+
+  function setScoreImportStatus(message, tone) {
+    state.analysis.importStatus = { message: message || "", tone: tone || "" };
+    const status = $("scoreImportStatus");
+    if (!status) return;
+    status.textContent = state.analysis.importStatus.message;
+    status.className = "score-import-status" + (state.analysis.importStatus.tone ? " " + state.analysis.importStatus.tone : "");
+  }
+
+  function colourGroup(role) {
+    if (role === "R") return "root";
+    if (role === "3" || role === "♭3") return "third";
+    if (role === "5" || role === "♭5" || role === "♯5") return "fifth";
+    return "seventh";
+  }
+
+  function analysisVoicing(record) {
+    return record.tones.map((tone) => ({
+      pc: tone.pc, name: tone.name, role: tone.role, roleLabel: tone.role, colorGroup: colourGroup(tone.role)
+    }));
+  }
+
+  function tabForGrip(grip) {
+    const tuning = window.Tuning.current();
+    if (!grip) return "No compact grip found in the displayed range.";
+    const placements = new Map(grip.placements.map((placement) => [placement.stringIndex, placement]));
+    const lines = [];
+    for (let stringIndex = tuning.open.length - 1; stringIndex >= 0; stringIndex--) {
+      const placement = placements.get(stringIndex);
+      lines.push(tuning.names[stringIndex].padEnd(2, " ") + "|" + (placement ? "--" + String(placement.fret).padStart(2, "-") + "--" : "------"));
+    }
+    return lines.join("\n");
+  }
+
+  function renderAnalysisInstrument(result) {
+    const holder = $("analysisInstrument");
+    if (!holder) return;
+    if (!result.records.length) { holder.innerHTML = ""; return; }
+    state.analysis.selected = Math.max(0, Math.min(state.analysis.selected, result.records.length - 1));
+    const record = result.records[state.analysis.selected];
+    const grip = FB.findGrip(analysisVoicing(record), state.position);
+    const location = grip ? (grip.lowFret === 0 ? "open / first position" : "around fret " + grip.lowFret) + " · " + grip.span + "-fret span" : "no compact shape in this range";
+    holder.innerHTML = `<section class="instrument-answer"><div><span>Instrument map</span><h3>${escapeHtml(record.chord.raw)} on ${escapeHtml(window.Tuning.current().name)}</h3><p>Auto-selected ${location}. Gold rings are the strong arrival tones; the shape is a compact voicing, not the only valid fingering.</p></div><div class="analysis-position-strip">${result.records.map((item, index) =>
+      `<button data-analysis-chord="${index}" class="${index === state.analysis.selected ? "active" : ""}"><b>${escapeHtml(item.chord.raw)}</b><span>${escapeHtml(item.label)}</span></button>`
+    ).join("")}</div><div class="analysis-fretboard-wrap"><svg id="analysisFretboard" role="img" aria-label="${escapeHtml(record.chord.raw)} chord chart"></svg></div><div class="analysis-tab"><b>Playable tab · high to low</b><pre>${escapeHtml(tabForGrip(grip))}</pre><p>Strong targets: ${record.strong.map((tone) => escapeHtml(tone.name + " (" + tone.role + ")")).join(" · ")}</p></div></section>`;
+    holder.querySelectorAll("[data-analysis-chord]").forEach((button) => {
+      button.onclick = () => { state.analysis.selected = +button.getAttribute("data-analysis-chord"); renderAnalyzer(); };
+    });
+    if (!grip) return;
+    FB.render($("analysisFretboard"), {
+      grip,
+      ghosts: false,
+      labelMode: state.labelMode,
+      lefty: state.lefty,
+      targetPcs: record.strong.map((tone) => tone.pc)
+    });
+  }
+
   function renderAnalyzer() {
+    renderStudyStarters();
     const result = A.analyzeProgression($("analysisChords").value, analysisContext());
     const concepts = result.concepts.length
       ? `<div class="analysis-concepts">${result.concepts.map((concept) =>
-        `<article class="analysis-concept"><span>${concept.chord}</span><div><b>${concept.title}</b><p>${concept.detail}</p></div></article>`
+        `<article class="analysis-concept"><span>${escapeHtml(concept.chord)}</span><div><b>${escapeHtml(concept.title)}</b><p>${escapeHtml(concept.detail)}</p></div></article>`
       ).join("")}</div>`
       : "";
     const map = result.records.length
-      ? `<div class="analysis-map">${result.records.map((record) =>
-        `<article class="analysis-chord"><span class="analysis-function">${record.label}</span><b>${record.chord.raw}</b>
-          <p>${record.strong.map((tone) => `${tone.name} (${tone.role})`).join(" · ")}</p></article>`
+      ? `<div class="analysis-map">${result.records.map((record, index) =>
+        `<button class="analysis-chord${index === state.analysis.selected ? " active" : ""}" data-analysis-chord="${index}"><span class="analysis-function">${escapeHtml(record.label)}</span><b>${escapeHtml(record.chord.raw)}</b>
+          <p>${record.strong.map((tone) => escapeHtml(tone.name + " (" + tone.role + ")")).join(" · ")}</p></button>`
       ).join("")}</div>`
       : "";
     const linePlan = result.linePlan.length
       ? `<div class="analysis-plan">${result.linePlan.map((step) =>
-        `<article><b>Over ${step.chord}</b><span>Land now: ${step.now}</span><span>Hear next: ${step.arriving}</span></article>`
+        `<article><b>Over ${escapeHtml(step.chord)}</b><span>Land now: ${escapeHtml(step.now)}</span><span>Hear next: ${escapeHtml(step.arriving)}</span></article>`
       ).join("")}</div>`
       : "";
     const lineText = $("analysisLine").value.trim();
     const line = lineText ? A.analyzeLine(lineText, analysisContext()) : null;
     const lineResult = line && line.segments.length
-      ? `<section class="analysis-line"><h3>Line annotation</h3><p>${line.summary}</p>${line.segments.map((segment) =>
-        `<div class="line-segment"><b>${segment.chord}</b>${segment.notes.map((note) =>
-          `<span class="line-note ${note.kind}">${note.name}<i>${note.role}</i></span>`
+      ? `<section class="analysis-line"><h3>Line annotation</h3><p>${escapeHtml(line.summary)}</p>${line.segments.map((segment) =>
+        `<div class="line-segment"><b>${escapeHtml(segment.chord)}</b>${segment.notes.map((note) =>
+          `<span class="line-note ${note.kind}">${escapeHtml(note.name)}<i>${escapeHtml(note.role)}</i></span>`
         ).join("")}</div>`
       ).join("")}</section>`
       : lineText ? `<section class="analysis-line"><h3>Line annotation</h3><p>Use the form <b>Chord: notes | Chord: notes</b> so the app can explain each note against the harmony.</p></section>` : "";
 
     $("analysisResult").innerHTML = `
-      <section class="analysis-answer"><span>Answer first</span><h3>${result.summary}</h3><p>Strong notes are not the only valid notes. They are the reliable arrivals that let you use dromos tones, approaches, motifs, and ornaments intentionally.</p></section>
+      <section class="analysis-answer"><span>Answer first</span><h3>${escapeHtml(result.summary)}</h3><p>Strong notes are not the only valid notes. They are the reliable arrivals that let you use dromos tones, approaches, motifs, and ornaments intentionally.</p></section>
       ${map}${concepts ? `<section class="analysis-section"><h3>What is happening</h3>${concepts}</section>` : ""}
       ${linePlan ? `<section class="analysis-section"><h3>Solo plan</h3>${linePlan}</section>` : ""}
       ${lineResult}`;
+    $("analysisResult").querySelectorAll("[data-analysis-chord]").forEach((button) => {
+      button.onclick = () => { state.analysis.selected = +button.getAttribute("data-analysis-chord"); renderAnalyzer(); };
+    });
+    renderAnalysisInstrument(result);
   }
 
   function renderConcepts() {
+    const shelf = (items) => items.map((item) =>
+      `<a href="${escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer"><b>${escapeHtml(item.title)}</b><span>${escapeHtml(item.focus)}</span><i><strong>App use:</strong> ${escapeHtml(item.use)}</i></a>`
+    ).join("");
     $("conceptPyramid").innerHTML = `
       <section class="concept-apex"><span>Pyramid answer</span><h2>Make a phrase that reveals the song, sits in the pulse, and sounds like you.</h2><p>Work top-down: first the musical conclusion, then four non-overlapping causes. Do not solve a rhythm problem with a new scale, or a target-note problem with more speed.</p></section>
       <div class="concept-layers">${A.PYRAMID.map((item) => `
-        <article class="concept-layer concept-${item.id}"><div><span>${item.title}</span><h3>${item.question}</h3></div><p>${item.why}</p><p class="concept-greek"><b>Greek/Balkan lens:</b> ${item.id === "time" ? "Feel the additive group first—9/4, 7/8, 5/8, or the song’s actual dance pulse—not a generic click." : item.id === "map" ? "Treat dromos as directional melodic behaviour plus harmony; a scale name by itself is not the whole map." : item.id === "line" ? "Use local triads and tetrachord/seira ideas to connect arrivals, rather than importing unrelated licks." : "Let bouzouki, guitar, or laouto articulation serve the vocal line and accompaniment role; ornament follows function."}</p><p class="concept-drill"><b>One drill:</b> ${item.drill}</p></article>`).join("")}</div>`;
+        <article class="concept-layer concept-${item.id}"><div><span>${escapeHtml(item.title)}</span><h3>${escapeHtml(item.question)}</h3></div><p>${escapeHtml(item.why)}</p><p class="concept-greek"><b>Greek/Balkan lens:</b> ${item.id === "time" ? "Feel the additive group first—9/4, 7/8, 5/8, or the song’s actual dance pulse—not a generic click." : item.id === "map" ? "Treat dromos as directional melodic behaviour plus harmony; a scale name by itself is not the whole map." : item.id === "line" ? "Use local triads and tetrachord/seira ideas to connect arrivals, rather than importing unrelated licks." : "Let bouzouki, guitar, or laouto articulation serve the vocal line and accompaniment role; ornament follows function."}</p><p class="concept-drill"><b>One drill:</b> ${escapeHtml(item.drill)}</p></article>`).join("")}</div>
+      <section class="reference-shelf"><div><span>Research shelf</span><h2>Bouzouki methods inform the curriculum—without reproducing them.</h2><p>Use a source you own alongside the app: analyse its form, identify the map, choose targets, then test the answer in the correct pulse.</p></div><h3>Vangelis Trigas · verified course and material families</h3><div class="reference-list">${R ? shelf(R.TRIGAS) : ""}</div><h3>Other strong Greek bouzouki references</h3><div class="reference-list">${R ? shelf(R.OTHER) : ""}</div></section>`;
   }
 
   // =========================== EAR TRAINER ===============================
@@ -915,20 +1004,43 @@
       button.onclick = () => setStyleSection(button.getAttribute("data-style-section")));
 
     $("analysisTonic").innerHTML = M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}</option>`).join("");
-    $("analysisTonic").onchange = (event) => { state.analysis.tonic = event.target.value; renderAnalyzer(); };
+    $("analysisTonic").onchange = (event) => {
+      state.analysis.tonic = event.target.value; state.analysis.studyId = null; state.analysis.selected = 0; renderAnalyzer();
+    };
     document.querySelectorAll("[data-analysis-mode]").forEach((button) => {
       button.onclick = () => {
-        state.analysis.modeId = button.getAttribute("data-analysis-mode");
+        state.analysis.modeId = button.getAttribute("data-analysis-mode"); state.analysis.studyId = null; state.analysis.selected = 0;
         syncAnalysisControls(); renderAnalyzer();
       };
     });
-    $("btnAnalyze").onclick = renderAnalyzer;
+    $("btnAnalyze").onclick = () => { state.analysis.studyId = null; state.analysis.selected = 0; renderAnalyzer(); };
     $("btnUseSongMap").onclick = () => {
       const { chords } = currentProgression();
       state.analysis.tonic = state.tonic;
       state.analysis.modeId = state.modeId;
+      state.analysis.studyId = null;
+      state.analysis.selected = 0;
       $("analysisChords").value = chords.map((chord) => chord.symbol).join(" ");
       syncAnalysisControls(); renderAnalyzer();
+    };
+    $("scoreFile").onchange = async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (!Q) { setScoreImportStatus("Score import is unavailable because its local parser did not load.", "error"); return; }
+      try {
+        const imported = Q.parseMusicXml(await file.text());
+        if (!imported.ok) { setScoreImportStatus(imported.message, "error"); return; }
+        $("analysisChords").value = imported.chordMap;
+        $("analysisLine").value = imported.lineText;
+        state.analysis.studyId = null;
+        state.analysis.selected = 0;
+        setScoreImportStatus((imported.title ? imported.title + " — " : "") + imported.message + (imported.lineText ? " Note groups were attached to their written chord symbols." : " No notes could be attached to a harmony symbol."), "ok");
+        renderAnalyzer();
+      } catch (error) {
+        setScoreImportStatus("Could not read that file as uncompressed MusicXML. Export it again from your notation app and include chord symbols.", "error");
+      } finally {
+        event.target.value = "";
+      }
     };
 
     const tonicSel = $("tonicSel");
@@ -1048,7 +1160,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), A.selfTest(), P.selfTest(), TR.selfTest()];
+    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), P.selfTest(), TR.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

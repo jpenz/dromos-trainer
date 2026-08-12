@@ -136,6 +136,46 @@ fretboard map.
 | [Preparatory Audiation, Audiation, and Music Learning Theory — Edwin E. Gordon](https://giamusic.com/resource/preparatory-audiation-audiation-and-music-learning-theory-book-g5726) | Framework for the `hear → sing → play → label` loop, whole-part-whole sequencing, and progressing from sound to symbol. |
 | [Learn Faster, Perform Better — Molly Gebrian](https://academic.oup.com/book/57630) | Practice-science source for targeted repetition, feedback, spaced sessions, breaks, and interleaving—the future practice log should embody these, not just count streaks. |
 
+## Vangelis Trigas and contemporary bouzouki-method research
+
+The official Trigas catalogue makes a particularly important product point: serious
+bouzouki study is an **instrument-specific, progressive method**, not guitar theory
+with a bouzouki fretboard pasted on. The current official catalogue verifies two
+parallel five-book methods—one for three-course and one for four-course bouzouki.
+Each consists of three core volumes and two song companions. The three-course
+edition reports 643 pages, 493 exercises and 71 songs; its material includes
+right/left-hand work, glissandi, arpeggios, ornaments, chords, rhythms, taxim,
+dromoi, fingering and independence. Volume 3 explicitly reaches odd meters,
+accompaniment, dromoi/harmony and taxim. The site also documents a written/recorded
+instrumental collection and several song-collection families. It reports a wider
+39-book body of work, but this research deliberately lists only the verifiable
+course/material families—not an invented title-by-title catalogue.
+
+**Product consequence:** the app’s original curriculum follows the same disciplined
+sequence: map rhythm/form, map dromos/harmony, choose a melodic target/route, then
+decide articulation and instrument role. It links to the publications as a study
+shelf; it does not reproduce their exercises, notation, recordings or songs.
+
+- [Trigas: three-string five-book method and scope](https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-three-string-bouzouki/)
+- [Trigas: four-string five-book method and scope](https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-four-string-bouzouki/)
+- [Trigas: advanced three-string Volume 3](https://www.trigas.gr/en/book/methodos-gia-trichordo-bouzouki-no-3/)
+- [Trigas: 2 Instrumentals for three-string bouzouki](https://www.trigas.gr/en/book/vangelis-trigkas-12-organika-gia-trichordo-bouzouki/)
+- [Trigas: song and instrumental collection families](https://www.trigas.gr/en/book_categories/en-sylloges-tragoudion-diaforon-syntheton/)
+- [Manolis Michalakis: methods, scales, improvisation and chords](https://www.manolismichalakis.gr/en/books-2/)
+- [Nakas: Polykandriotis, Pagiatis and other bouzouki methods](https://www.nakas.gr/en/proionta/mousika-vivlia/methodoi/methodoi-gia-bouzouki-baglamas/)
+
+## Score-first analysis boundary
+
+MusicXML is the appropriate first import format: it carries **written chord symbols
+and pitch spelling**, so the Analyzer can state exactly what it read and display
+how a note functions against the written harmony. A PDF image, an audio recording,
+or a compressed `.mxl` archive needs a separate recognition/decompression workflow
+and must not be presented as a certain analysis. The shipped importer is therefore
+local, uncompressed MusicXML only; it needs harmony symbols and never uploads or
+caches the user’s score. A selected chord receives a compact, tuning-aware SVG chart
+and simple high-to-low tab, with strong arrival tones ringed. This is a recommended
+position, not an authoritative transcription of a performer’s fingering.
+
 ## Source-specific product evidence
 
 - The [Greek Bouzouki Method](https://www.halleonard.com/product/viewproduct.action?digitalbook=true&itemid=291974)

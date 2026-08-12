@@ -19,6 +19,9 @@ Ordered roughly by value. Promote an item into the table in
 | FR-37 | Foundation and Greek-style pulse explorer | DONE — modern improvisation foundation plus Zeibekiko, Kalamatianos, Hasapiko, Tsifteteli, and Roumba pulse maps; backing/count-in remains FR-32. |
 | FR-38 | Transparent song/part analyzer | DONE — analyzes user-entered chord maps and chord-aligned note fragments, including conditional modal-mixture and secondary-function explanations; raw audio transcription remains a separate future decision. |
 | FR-39 | MECE concept pyramid | DONE — answer-first concept library with Time/Form, Modal-Harmonic Map, Melodic Route, and Touch/Instrument Role. |
+| FR-40 | Authorised Greek study starters | DONE — three source-labelled excerpts from the user-approved library load into the Analyzer without copying a complete arrangement. |
+| FR-41 | Score-to-study analysis and instrument map | DONE — local uncompressed MusicXML chord symbols and notes populate analysis; each change gets tuning-aware chart/tab. PDF OCR, .mxl decompression and audio transcription are intentionally separate decisions. |
+| FR-42 | Research-backed bouzouki reference shelf | DONE — Trigas course/material families and selected complementary methods are linked and tied to original drills. |
 
 ## Proposed (no ID yet)
 
