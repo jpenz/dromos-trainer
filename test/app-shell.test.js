@@ -15,6 +15,7 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-view="styles"/);
   assert.match(html, /data-view="analyze"/);
   assert.match(html, /data-view="concepts"/);
+  assert.match(html, /data-view="coach"/);
   assert.match(html, /data-solo-section="targets"/);
   assert.match(html, /data-style-section="foundation"/);
   assert.match(html, /js\/styles\.js/);
@@ -22,6 +23,8 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /js\/studies\.js/);
   assert.match(html, /js\/musicxml\.js/);
   assert.match(html, /js\/resources\.js/);
+  assert.match(html, /js\/coach\.js/);
+  assert.match(html, /id="coachApp"/);
   assert.match(html, /id="scoreFile"/);
   assert.match(html, /id="analysisInstrument"/);
   assert.match(read("js/tuning.js"), /Laouto \(mainland\)/);

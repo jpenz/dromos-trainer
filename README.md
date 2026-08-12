@@ -151,6 +151,24 @@ answer-first, MECE teaching structure: each layer has a Greek/Balkan lens and on
 concrete drill, so the player can fix the actual problem instead of learning another
 unrelated lick.
 
+### 9. Adaptive Practice Coach
+
+The Coach answers questions using the instrument, tuning, current dromos, Song Map,
+style, selected study, and recent practice history. It ends with at most one safe,
+one-tap route into an exercise—such as the exact Song Map, Triads, Solo Lab, Style,
+study starter, or Analyzer state that answers the question.
+
+It uses anonymous device profiles: the browser stores only a signed opaque session
+token, while conversation and practice events are stored in the configured Neon
+database. This lets recommendations evolve from real events—missed targets route
+back to target practice; ear misses route back to hearing—without an account or a
+browser-held API key. Cross-device sign-in is deliberately a later choice.
+
+The Coach is inactive when opening `index.html` directly. To activate it, deploy to
+Vercel, connect Neon through Vercel Marketplace, and add the server secrets in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The current economical default is
+`gemini-3.1-flash-lite`, accessed only from Vercel Functions.
+
 ---
 
 ## The bridge worth knowing
@@ -169,7 +187,7 @@ already contains a Hijaz section.
 | `Space` | Play / pause (replay prompt in Ear Trainer) |
 | `←` `→` | Step through chords / positions / cells |
 | `R` | Reveal the audiation target |
-| `1`–`8` | Switch practice area |
+| `1`–`9` | Switch practice area (`9` = Coach) |
 
 ## Instruments
 
@@ -203,6 +221,8 @@ on every page load, asserting generated chords against a hand-verified ground tr
 - [CONTRIBUTING.md](CONTRIBUTING.md) — recipes for adding a progression or a mode
 - [docs/BACKLOG.md](docs/BACKLOG.md) — what is next
 - [docs/CURRICULUM.md](docs/CURRICULUM.md) — product intent, practice loop and curriculum roadmap
+- [docs/AI_COACH.md](docs/AI_COACH.md) — coach product boundary and design
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Vercel + Neon production setup
 
 ## Licence
 

@@ -28,6 +28,7 @@
         <button data-view="styles">Styles</button>
         <button data-view="analyze">Analyze</button>
         <button data-view="concepts">Concepts</button>
+        <button data-view="coach">Coach</button>
       </nav>
       <div id="testBadge" class="test-badge"></div>
     </div>
@@ -242,6 +243,11 @@
         <div id="conceptPyramid" class="concept-pyramid"></div>
       </div>
 
+      <!-- ---- adaptive AI practice coach ---- -->
+      <div id="panelCoach" class="panel hidden">
+        <div id="coachApp"></div>
+      </div>
+
       <div class="transport">
         <button id="btnPrev" class="tbtn" title="Previous (←)" aria-label="Previous chord">◀</button>
         <button id="btnPlay" class="tbtn primary" title="Play / Pause (Space)">▶ Play</button>
@@ -275,7 +281,7 @@
         <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
       </div>
 
-      <div class="hint">Space play/pause · ← → step · 1–8 switch practice area</div>
+      <div class="hint">Space play/pause · ← → step · 1–9 switch practice area</div>
     </aside>
   </main>
 
@@ -287,6 +293,7 @@
   <script src="js/studies.js"></script>
   <script src="js/musicxml.js"></script>
   <script src="js/resources.js"></script>
+  <script src="js/coach.js"></script>
   <script src="js/practice.js"></script>
   <script src="js/triads.js"></script>
   <script src="js/fretboard.js"></script>

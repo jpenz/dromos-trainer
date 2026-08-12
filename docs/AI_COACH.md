@@ -1,6 +1,7 @@
 # AI Practice Coach — implementation decision record
 
-Status: **approved product requirement; waiting on hosting and server-secret setup**.
+Status: **implemented and verified locally; waiting for Vercel/Neon provisioning and
+environment secrets before it becomes live**.
 
 ## Outcome
 
@@ -20,11 +21,12 @@ exercise and be able to open it. Examples:
 1. Keep the static practice engine local. Add a serverless `POST /api/coach` endpoint
    on the selected host; the browser sends only the current, user-visible practice
    context and the question.
-2. Store `OPENAI_API_KEY` only as a host environment secret. Never ship it in
+2. Store `GEMINI_API_KEY` only as a host environment secret. Never ship it in
    JavaScript, a PWA cache, Git, or an `.env` committed to the repository.
-3. Call the **Responses API** with the current flagship `gpt-5.6-sol` for
-   high-value/deep questions. Start at `reasoning.effort: medium`; compare `high`
-   against representative coach questions before paying for it by default.
+3. Call the Gemini API with `gemini-3.1-flash-lite`, the lowest-cost capable
+   structured-output option researched for short coaching replies and exercise
+   routing. It is capped at 800 output tokens and required to return JSON. A stronger
+   model is an explicit future escalation for difficult score analysis—not the default.
 4. Require structured output with two parts: `answer` and optional `action`.
    The action is a closed union: `navigate`, `set_song_map`, `open_study`, or
    `open_analyzer`. The browser validates it against known mode, tuning, study and
@@ -33,27 +35,30 @@ exercise and be able to open it. Examples:
    teacher; answer conditionally where the score/audio context is incomplete;
    distinguish pulse, dromos, harmony, route, and touch; do not reproduce
    copyrighted notation or imitate a named living player.
-6. Keep conversation history on-device by default, with an explicit privacy notice.
-   Send only the conversation and score excerpt the player chooses to submit.
+6. Give each device an opaque, signed anonymous practice profile. Conversation,
+   practice events, current context and recommendations are held in Neon for that
+   profile; the token is stored locally in the browser. Cross-device accounts are a
+   later, explicit authentication decision.
 7. Add request-size limits, rate limiting, error UI, and an evaluation fixture set:
    ii–V–I pivot, Ousak-vs-minor, Hijaz ♭II, major IV in minor, Zeibekiko pulse,
    laouto triads, and a user MusicXML chord/line import.
 
-## Why it is not yet coded into the static app
+## Current implementation
 
-The current application is intentionally dependency-free and can open from `file://`.
-An AI API call changes the trust boundary and creates usage cost. A browser-only
-implementation would expose the API key, so the server endpoint and deployment must
-be selected before the chat UI is allowed to imply that it is live.
+The app now includes the Coach practice area, signed anonymous-device sessions,
+conversation and event logging, progress summaries, adaptive recommendations, a
+12-question/minute database-backed limit, and guarded one-tap routing. The browser
+still works from `file://`, but the coach visibly stays offline there. The live
+endpoint is Vercel Functions plus Neon Postgres; API and database keys never enter
+the browser bundle.
 
 ## Decision required
 
-Choose the serverless host for `/api/coach` and set the API secret there. The
-recommended first deployment is the host already used for the project, if any;
-otherwise Vercel is a straightforward fit for a static site plus one serverless API
-route. Do not send an API key in chat.
+Provision Neon through Vercel Marketplace and add the four variables listed in
+`.env.example` in Vercel Project Settings. The exact deployment checklist is in
+[DEPLOYMENT.md](DEPLOYMENT.md). Do not send an API key in chat.
 
 ## Sources
 
-- [OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model)
-- [GPT-5.6 Sol model page](https://developers.openai.com/api/docs/models/gpt-5.6-sol)
+- [Gemini 3.1 Flash-Lite pricing](https://ai.google.dev/gemini-api/docs/pricing)
+- [Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output)

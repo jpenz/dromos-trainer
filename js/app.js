@@ -4,13 +4,13 @@
 (function () {
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
-    U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary;
+    U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, C = window.PracticeCoach;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
 
   const state = {
-    view: "cycle",             // cycle | prog | triads | solo | ear | styles
+    view: "cycle",             // cycle | prog | triads | solo | ear | styles | analyze | concepts | coach
     // --- cycle view ---
     index: 0,
     cycleMode: "full",         // full | iiVI | pivot
@@ -432,6 +432,53 @@
       <div class="concept-layers">${A.PYRAMID.map((item) => `
         <article class="concept-layer concept-${item.id}"><div><span>${escapeHtml(item.title)}</span><h3>${escapeHtml(item.question)}</h3></div><p>${escapeHtml(item.why)}</p><p class="concept-greek"><b>Greek/Balkan lens:</b> ${item.id === "time" ? "Feel the additive group first—9/4, 7/8, 5/8, or the song’s actual dance pulse—not a generic click." : item.id === "map" ? "Treat dromos as directional melodic behaviour plus harmony; a scale name by itself is not the whole map." : item.id === "line" ? "Use local triads and tetrachord/seira ideas to connect arrivals, rather than importing unrelated licks." : "Let bouzouki, guitar, or laouto articulation serve the vocal line and accompaniment role; ornament follows function."}</p><p class="concept-drill"><b>One drill:</b> ${escapeHtml(item.drill)}</p></article>`).join("")}</div>
       <section class="reference-shelf"><div><span>Research shelf</span><h2>Bouzouki methods inform the curriculum—without reproducing them.</h2><p>Use a source you own alongside the app: analyse its form, identify the map, choose targets, then test the answer in the correct pulse.</p></div><h3>Vangelis Trigas · verified course and material families</h3><div class="reference-list">${R ? shelf(R.TRIGAS) : ""}</div><h3>Other strong Greek bouzouki references</h3><div class="reference-list">${R ? shelf(R.OTHER) : ""}</div></section>`;
+  }
+
+  // =========================== PRACTICE COACH ===========================
+  function coachContext() {
+    return {
+      view: state.view,
+      tonic: state.tonic,
+      modeId: state.modeId,
+      progressionId: state.progId,
+      progressionStep: state.progStep,
+      tuningId: window.Tuning.currentId(),
+      soloSection: state.solo.section,
+      styleId: state.styles.styleId,
+      studyId: state.analysis.studyId,
+      bpm: state.bpm,
+      analysisChords: $("analysisChords") ? $("analysisChords").value : "",
+      analysisLine: $("analysisLine") ? $("analysisLine").value : ""
+    };
+  }
+
+  function useCoachAction(action) {
+    if (!action || typeof action !== "object") return;
+    if (action.kind === "navigate") { setView(action.view); return; }
+    if (action.kind === "song_map") {
+      state.tonic = action.tonic; state.modeId = action.modeId; state.progId = action.progressionId; state.progStep = 0;
+      setView("prog"); return;
+    }
+    if (action.kind === "study") {
+      const study = U.byId(action.studyId);
+      state.analysis.tonic = study.tonic; state.analysis.modeId = study.modeId; state.analysis.studyId = study.id; state.analysis.selected = 0;
+      $("analysisChords").value = study.chords; $("analysisLine").value = "";
+      setView("analyze"); return;
+    }
+    if (action.kind === "style") {
+      state.styles.section = action.section;
+      if (action.styleId) state.styles.styleId = action.styleId;
+      setView("styles"); return;
+    }
+    if (action.kind === "solo_lab") {
+      state.solo.section = action.section;
+      setView("solo"); return;
+    }
+    if (action.kind === "analyzer") {
+      state.analysis.tonic = action.tonic; state.analysis.modeId = action.modeId; state.analysis.studyId = null; state.analysis.selected = 0;
+      $("analysisChords").value = action.chords; $("analysisLine").value = action.line || "";
+      setView("analyze");
+    }
   }
 
   // =========================== EAR TRAINER ===============================
@@ -927,8 +974,8 @@
     document.body.setAttribute("data-solo-section", state.solo.section);
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
-    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelStyles", "panelAnalyze", "panelConcepts"].forEach((id) => $(id).classList.add("hidden"));
-    $("stage").classList.toggle("hidden", v === "ear" || v === "styles" || v === "analyze" || v === "concepts");
+    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelStyles", "panelAnalyze", "panelConcepts", "panelCoach"].forEach((id) => $(id).classList.add("hidden"));
+    $("stage").classList.toggle("hidden", v === "ear" || v === "styles" || v === "analyze" || v === "concepts" || v === "coach");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
@@ -940,12 +987,14 @@
     else if (v === "styles") { $("panelStyles").classList.remove("hidden"); renderStyles(); }
     else if (v === "analyze") { $("panelAnalyze").classList.remove("hidden"); syncAnalysisControls(); renderAnalyzer(); }
     else if (v === "concepts") { $("panelConcepts").classList.remove("hidden"); renderConcepts(); }
+    else if (v === "coach") { $("panelCoach").classList.remove("hidden"); C.render(); }
     else { $("panelEar").classList.remove("hidden"); renderEarScore(); }
     // renderCycle rightfully decides whether the pivot explanation is visible;
     // no other practice area should inherit that explanation from a prior view.
     if (v !== "cycle") $("pivotBanner").classList.remove("show");
     renderPracticePath();
     renderCoachCue();
+    if (C) C.trackView(v, coachContext());
   }
 
   // ============================= wiring ==================================
@@ -1145,6 +1194,7 @@
       else if (e.key === "6") setView("styles");
       else if (e.key === "7") setView("analyze");
       else if (e.key === "8") setView("concepts");
+      else if (e.key === "9") setView("coach");
       else if (e.key.toLowerCase() === "r" && state.view === "solo" && state.solo.section === "cell") $("btnReveal").click();
     });
   }
@@ -1157,10 +1207,11 @@
     else if (state.view === "styles") renderStyles();
     else if (state.view === "analyze") renderAnalyzer();
     else if (state.view === "concepts") renderConcepts();
+    else if (state.view === "coach") C.render();
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), P.selfTest(), TR.selfTest()];
+    const suites = [T.selfTest(), M.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;
@@ -1174,6 +1225,7 @@
     wire();
     showTestBadge();
     $("bpm").value = state.bpm; $("bpmVal").textContent = state.bpm;
+    C.mount({ context: coachContext, onAction: useCoachAction });
     setView("cycle");
   });
 })();

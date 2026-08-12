@@ -476,11 +476,20 @@ main {
 .concept-layer > p { color: var(--muted); font-size: 11.5px; line-height: 1.45; }.concept-layer .concept-greek { padding: 8px 9px; border-radius: 8px; background: var(--panel2); }.concept-layer b { color: var(--text); }.concept-drill { border-top: 1px solid var(--line); padding-top: 8px; margin-bottom: 0; }
 .reference-shelf { display: grid; gap: 10px; padding: 15px; border: 1px solid rgba(176,123,255,.45); border-radius: 14px; background: linear-gradient(130deg, rgba(176,123,255,.10), var(--panel)); }.reference-shelf h2 { margin: 5px 0; font-size: 17px; }.reference-shelf h3 { margin: 6px 0 -2px; color: var(--accent); font-size: 12px; }.reference-shelf > div > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }.reference-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }.reference-list a { display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); color: inherit; text-decoration: none; }.reference-list a:hover { border-color: var(--accent); }.reference-list b { color: var(--text); font-size: 12px; }.reference-list span, .reference-list i { color: var(--muted); font-size: 11px; font-style: normal; line-height: 1.4; }.reference-list i { color: #b7c5de; }
 
+/* ---------- adaptive practice coach ---------- */
+.coach-shell { display: grid; gap: 12px; max-width: 840px; margin: 0 auto; }
+.coach-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 16px; border: 1px solid rgba(77,156,255,.58); border-radius: 15px; background: linear-gradient(130deg, rgba(77,156,255,.16), rgba(176,123,255,.09)); }.coach-head > div > span, .coach-recommendation > span { color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .6px; text-transform: uppercase; }.coach-head h2 { margin: 5px 0; color: var(--text); font-size: 20px; line-height: 1.28; }.coach-head p { max-width: 620px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }.coach-progress { flex: 0 0 auto; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--panel); font-size: 11px; white-space: nowrap; }
+.coach-recommendation { padding: 13px; border: 1px solid rgba(255,207,92,.50); border-radius: 12px; background: rgba(255,207,92,.08); }.coach-recommendation h3 { margin: 5px 0; font-size: 14px; }.coach-recommendation p { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.coach-quick { display: flex; flex-wrap: wrap; gap: 7px; }.coach-quick button { padding: 8px 10px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel2); color: var(--muted); font-size: 11.5px; cursor: pointer; }.coach-quick button:hover { border-color: var(--accent); color: var(--text); }
+.coach-messages { display: flex; flex-direction: column; gap: 9px; min-height: 230px; max-height: 510px; padding: 12px; overflow-y: auto; border: 1px solid var(--line); border-radius: 13px; background: rgba(0,0,0,.10); }.coach-message { max-width: min(680px, 92%); padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }.coach-message.user { align-self: flex-end; border-color: rgba(77,156,255,.50); background: rgba(77,156,255,.09); }.coach-message > span { color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .5px; text-transform: uppercase; }.coach-message p { margin: 5px 0 0; color: var(--text); font-size: 12.5px; line-height: 1.5; }
+.coach-action { margin-top: 9px; padding: 8px 10px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(255,207,92,.10); color: var(--accent); font-size: 11.5px; font-weight: 800; cursor: pointer; }.coach-action:hover { background: rgba(255,207,92,.20); }
+.coach-form { display: grid; gap: 7px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }.coach-form > label { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }.coach-form textarea { width: 100%; resize: vertical; padding: 10px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel2); color: var(--text); font: 13px/1.45 inherit; }.coach-form textarea:focus { border-color: var(--accent); outline: none; }.coach-form > div { display: flex; justify-content: space-between; gap: 8px; }.coach-form button:disabled { cursor: not-allowed; opacity: .55; }.coach-privacy { margin: -3px 2px 0; color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+
 /* ear view: no fretboard, so collapse to a single centred column and hide
    the controls that only make sense with a chord on screen */
 body[data-view="ear"] main { grid-template-columns: 1fr; max-width: 660px; margin: 0 auto; }
 body[data-view="styles"] main { grid-template-columns: 1fr; max-width: 920px; margin: 0 auto; }
-body[data-view="analyze"] main, body[data-view="concepts"] main { grid-template-columns: 1fr; max-width: 920px; margin: 0 auto; }
+body[data-view="analyze"] main, body[data-view="concepts"] main, body[data-view="coach"] main { grid-template-columns: 1fr; max-width: 920px; margin: 0 auto; }
 body[data-view="ear"] #readout,
 body[data-view="ear"] .transport,
 body[data-view="ear"] .audition,
@@ -504,7 +513,14 @@ body[data-view="concepts"] .audition,
 body[data-view="concepts"] .tempo,
 body[data-view="concepts"] .toggles,
 body[data-view="concepts"] .tuning-sub,
-body[data-view="concepts"] .side > .tonic-row { display: none; }
+body[data-view="concepts"] .side > .tonic-row,
+body[data-view="coach"] #readout,
+body[data-view="coach"] .transport,
+body[data-view="coach"] .audition,
+body[data-view="coach"] .tempo,
+body[data-view="coach"] .toggles,
+body[data-view="coach"] .tuning-sub,
+body[data-view="coach"] .side > .tonic-row { display: none; }
 body[data-view="triads"] .transport,
 body[data-view="triads"] .audition,
 body[data-view="solo"][data-solo-section="path"] .transport,
@@ -544,6 +560,7 @@ body[data-view="solo"] #btnShift { display: none; }
   .study-list, .reference-list { grid-template-columns: 1fr; }
   .score-import { align-items: flex-start; flex-direction: column; }
   .analysis-tab { grid-template-columns: 1fr; }.analysis-tab pre { grid-row: auto; }
+  .coach-head { flex-direction: column; }.coach-progress { white-space: normal; }.coach-form > div { align-items: stretch; flex-direction: column; }
   .style-detail-head { align-items: flex-start; }
   .concept-layers { grid-template-columns: 1fr; }
 }
