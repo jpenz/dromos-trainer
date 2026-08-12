@@ -212,13 +212,15 @@
 
     // helper to place a dot
     const flavourSet = opts.flavourPcs ? new Set(opts.flavourPcs) : null;
+    const targetSet = opts.targetPcs ? new Set(opts.targetPcs) : null;
     function dot(p, kind) {
       const sIdx = p.stringIndex;
       const rowFromTop = LAST - sIdx;
       const cx = p.fret === 0 ? GEO.padL - 0 : xForFret(p.fret);
       const cy = yForString(rowFromTop);
       const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
-      const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "");
+      const isTarget = targetSet ? targetSet.has(p.note.pc) : false;
+      const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "");
       const gg = el("g", { class: cls, "data-group": p.note.colorGroup });
       if (opts.lefty) {
         // counter-flip text so labels read normally
@@ -228,10 +230,13 @@
       if (isFlavour && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 4, class: "dot-flavour-ring" }));
       }
+      if (isTarget && kind !== "ghost") {
+        gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-target-ring" }));
+      }
       gg.appendChild(el("circle", { cx, cy, r, class: "dot-bg" }));
       let label = p.note.roleLabel || p.note.degree;
       if (opts.labelMode === "note") label = p.note.name;
-      else if (kind === "scale") label = p.note.degree || p.note.name;
+      else if (kind === "scale" || kind === "pentatonic") label = p.note.degree || p.note.name;
       const t = el("text", { x: cx, y: cy + 4, "text-anchor": "middle", class: "dot-label" }, label);
       gg.appendChild(t);
       // downward arrow badge on moved notes
@@ -290,27 +295,40 @@
       });
     }
 
-    // scale / mode overlay: every occurrence of each mode degree on the neck
-    if (opts.scaleNotes && opts.scaleNotes.length) {
+    // Degree overlays: every occurrence of a selected note set on the neck.
+    // The pentatonic frame is intentionally quieter than the current triad so
+    // the player sees "safe notes" and "landing notes" at the same time.
+    function renderOverlay(notes, kind) {
       const byPc = {};
-      opts.scaleNotes.forEach((n) => { byPc[n.pc] = n; });
+      notes.forEach((n) => { byPc[n.pc] = n; });
+      const range = opts.overlayRange || { from: 0, to: N_FRETS };
+      const fromFret = Math.max(0, range.from == null ? 0 : range.from);
+      const toFret = Math.min(N_FRETS, range.to == null ? N_FRETS : range.to);
       const active = new Set(
         (opts.grip ? opts.grip.placements : []).map((p) => p.stringIndex + ":" + p.fret)
       );
       for (let s = 0; s < NSTR; s++) {
-        for (let f = 0; f <= N_FRETS; f++) {
+        for (let f = fromFret; f <= toFret; f++) {
           const pc = (((OPEN[s] + f) % 12) + 12) % 12;
           const sn = byPc[pc];
           if (!sn) continue;
           if (active.has(s + ":" + f)) continue;
-          const group = sn.isTonic ? "tonic" : sn.isFlavour ? "flavourdeg" : "scaledeg";
+          const group = kind === "pentatonic" ? "pentatonic" : kind === "target" ? "target" :
+            (sn.isTonic ? "tonic" : sn.isFlavour ? "flavourdeg" : "scaledeg");
           g.appendChild(dot(
-            { stringIndex: s, fret: f, note: { pc, degree: sn.degree, name: sn.name, colorGroup: group, isFlavour: sn.isFlavour } },
-            "scale"
+            { stringIndex: s, fret: f, note: {
+              pc, degree: sn.degree, roleLabel: sn.roleLabel, name: sn.name,
+              colorGroup: group, isFlavour: sn.isFlavour
+            } },
+            kind
           ));
         }
       }
     }
+
+    if (opts.pentatonicNotes && opts.pentatonicNotes.length) renderOverlay(opts.pentatonicNotes, "pentatonic");
+    if (opts.targetNotes && opts.targetNotes.length) renderOverlay(opts.targetNotes, "target");
+    if (opts.scaleNotes && opts.scaleNotes.length) renderOverlay(opts.scaleNotes, "scale");
 
     if (opts.ghosts && opts.allPositions) {
       const active = new Set(opts.grip.placements.map((p) => p.stringIndex + ":" + p.fret));

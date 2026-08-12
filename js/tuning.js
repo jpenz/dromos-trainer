@@ -29,6 +29,15 @@
       frets: 15
     },
     {
+      id: "laouto4",
+      name: "Laouto (mainland)",
+      sub: "A D G C — the 4-course mainland laouto tuning",
+      // low -> high: A2 D3 G3 C4
+      open: [45, 50, 55, 60],
+      names: ["A", "D", "G", "C"],
+      frets: 15
+    },
+    {
       id: "bouzouki3",
       name: "Bouzouki (trichordo)",
       sub: "D A D — the older 3-course tuning",

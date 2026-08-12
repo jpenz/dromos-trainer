@@ -10,6 +10,12 @@ Ordered roughly by value. Promote an item into the table in
 | FR-17 | Headless test runner | Needs Node, which the build machine lacks. `selfTest()` returns plain data, so a runner is ~20 lines once Node exists. Keep the in-browser badge either way. |
 | FR-18 | Persist session state | `localStorage` for tonic/mode/progression + ear-trainer score. Low risk, self-contained. |
 | FR-19 | Printable one-page chart | Print stylesheet: current mode's scale, grips and progressions on one sheet for the music stand. |
+| FR-31 | Song-change ear drills | Prompt an isolated progression; player names functions before revealing the chord/neck map. |
+| FR-32 | Meter, count-in and backing loop | 2/4, 4/4, 7/8, 9/8; supports the actual rhythmic context of rebetiko, laïko and nisiotika. |
+| FR-33 | Local practice history | Persist sessions, weak targets and spaced review on-device with no account requirement. |
+| FR-34 | Phrase Lab | Dromos-specific `seira`, lower/upper tetrachord cells, resolution targets, and hear–sing–play call/response; original exercises only. |
+| FR-35 | Rhythm & comping lab | Instrument-specific right-hand patterns and sparse accompaniment in real Greek meters; mainland laouto is treated as rhythmic as well as melodic. |
+| FR-36 | User song-map studio | User enters/transcribes functions by ear, then reveals triads, targets and positions; avoids a copyrighted-song database. |
 
 ## Proposed (no ID yet)
 
@@ -17,7 +23,7 @@ Ordered roughly by value. Promote an item into the table in
 
 - **Loop / backing player.** You cannot practise soloing without the changes playing
   underneath. The transport already schedules chords; this is mostly UI. *Highest
-  value remaining.*
+  value remaining.* (Promote with FR-32.)
 - **Pentatonic overlay + flavour targets.** Show the mode's pentatonic skeleton on
   the neck, with the flavour notes as separate "arrival" targets (SOLOING §1–2).
   Note Hijaz needs the DOMINANT pentatonic, not the minor one.

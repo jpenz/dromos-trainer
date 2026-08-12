@@ -1,11 +1,12 @@
 # Dromos Trainer
 
-A visual guitar trainer for **modal harmony** — the jazz ii–V–I pivot cycle plus the
-Greek *dromoi* (Major, Minor, Ousak, Hijaz). Shows every chord as a playable grip on
-the fretboard, colours every note by its interval, and highlights the two notes that
-actually define each mode.
+A serious self-teaching trainer for **hearing harmonic movement, mapping it on the
+neck, comping, and soloing** in the jazz ii–V–I pivot cycle and Greek *dromoi*
+(Major, Minor, Ousak, Hijaz). It turns the same progression into an ear drill, a
+fretboard map, a low-movement triad path, and a targeted soloing exercise.
 
-**No install. No build. No dependencies.** Open `index.html`.
+**No install. No build. No runtime dependencies.** Open `index.html`, or host the
+folder for an installable/offline-capable browser app on mobile and iPad.
 
 ```bash
 open index.html
@@ -13,7 +14,13 @@ open index.html
 
 ---
 
-## The three views
+## The practice path
+
+Use the five-step loop, in order, on one progression and one position before moving
+on: **Hear → Map → Comp → Solo → Recall**. Full curriculum intent and roadmap:
+[docs/CURRICULUM.md](docs/CURRICULUM.md).
+
+## The practice areas
 
 ### 1. Pivot Cycle
 A ii–V–I where each `Imaj7` becomes the `iim7` of the next key — lower the 3rd and
@@ -52,8 +59,8 @@ Turn on **Scale overlay** and the ♭2 and 3rd of the current mode get an orange
 everywhere they appear on the neck. Switching Major → Minor → Ousak → Hijaz then shows
 you, physically, that only two dots move.
 
-### 3. Scale Lab
-The core practice routine — technique and ear in one loop.
+### 3. Solo Lab — technique and ear
+The core technique and ear routine that supports the target map.
 
 **Picking path.** Runs the mode as a path across the neck with **strict alternate
 picking** marked on every note (⊓ down, V up), and every string change classified:
@@ -71,7 +78,18 @@ and drop the tempo until every crossing is clean.
 one away back down to 3. The **last note is the target**: playback leaves a *silent
 beat* where it belongs so you sing it internally first, then reveal to check yourself.
 
-### 4. Ear Trainer
+### 4. Solo Lab
+
+The missing bridge between scale practice and real playing. It gives you the correct
+five-note frame for the mode, then highlights the **current and next chord-tone
+targets**. Start with 3rds; then switch to guide targets (3rds + 7ths when the chord
+has sevenths, otherwise 3rd + root for a triad). The rule is simple: move through the
+pentatonic, but arrive on a target when the chord changes.
+
+Hijaz uses **dominant pentatonic** (`1 3 4 5 ♭7`), never minor pentatonic—its major
+3rd is essential.
+
+### 5. Ear Trainer
 Plays a mode's signature cadence followed by a descending run, and you name the
 dromos. The run is not decoration — since Ousak and Minor are chord-identical, the
 melody is the only thing that can distinguish them.
@@ -102,7 +120,7 @@ already contains a Hijaz section.
 | `Space` | Play / pause (replay prompt in Ear Trainer) |
 | `←` `→` | Step through chords / positions / cells |
 | `R` | Reveal the audiation target |
-| `1` `2` `3` `4` | Switch view |
+| `1` `2` `3` `4` `5` | Switch practice area |
 
 ## Instruments
 
@@ -114,6 +132,7 @@ Everything — grips, scale paths, overlays — redraws for the selected instrum
 | Guitar (drop D) | `D A D G B E` |
 | **Bouzouki tetrachordo** | `C F A D` — the guitar's top four strings, each down a whole step |
 | Bouzouki trichordo | `D A D` |
+| Mainland laouto | `A D G C` |
 
 When a chord has more notes than the instrument has strings, it thins automatically —
 the 5th goes first, then the root, so the guide tones survive.
@@ -134,6 +153,7 @@ on every page load, asserting generated chords against a hand-verified ground tr
   are two chord engines
 - [CONTRIBUTING.md](CONTRIBUTING.md) — recipes for adding a progression or a mode
 - [docs/BACKLOG.md](docs/BACKLOG.md) — what is next
+- [docs/CURRICULUM.md](docs/CURRICULUM.md) — product intent, practice loop and curriculum roadmap
 
 ## Licence
 

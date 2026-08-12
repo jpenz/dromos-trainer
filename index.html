@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dromos Trainer · ii–V–I, Minor, Ousak &amp; Hijaz</title>
+  <meta name="theme-color" content="#0e1116" />
+  <meta name="description" content="A serious ear-training and fretboard curriculum for Greek modal harmony on guitar, bouzouki, and laouto." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -12,16 +15,16 @@
       <span class="logo">↻</span>
       <div>
         <h1>Dromos Trainer</h1>
-        <p class="tagline">ii–V–I pivot cycle · Major / Minor / Ousak / Hijaz progressions · ear training</p>
+        <p class="tagline">Hear changes · map the neck · comp and solo in the dromoi</p>
       </div>
     </div>
     <div class="top-right">
-      <nav class="viewtabs">
-        <button data-view="cycle" class="active">Pivot Cycle</button>
-        <button data-view="prog">Progressions</button>
+      <nav class="viewtabs" aria-label="Practice areas">
+        <button data-view="cycle" class="active">Cycle</button>
+        <button data-view="prog">Song Map</button>
         <button data-view="triads">Triads</button>
-        <button data-view="lab">Scale Lab</button>
-        <button data-view="ear">Ear Trainer</button>
+        <button data-view="solo">Solo Lab</button>
+        <button data-view="ear">Ear</button>
       </nav>
       <div id="testBadge" class="test-badge"></div>
     </div>
@@ -30,12 +33,14 @@
   <div id="keymapWrap" class="keymap-wrap"><div id="keymap" class="keymap"></div></div>
   <div id="progStrip" class="prog-strip hidden"></div>
   <div id="triadStrip" class="prog-strip hidden"></div>
+  <div id="practicePath" class="practice-path" aria-label="Practice path"></div>
 
   <main>
     <section id="stage" class="stage">
+      <div id="coachCue" class="coach-cue" aria-live="polite"></div>
       <div id="pivotBanner" class="pivot-banner"></div>
       <div class="fretboard-wrap">
-        <svg id="fretboard" role="img" aria-label="guitar fretboard"></svg>
+        <svg id="fretboard" role="img" aria-label="instrument fretboard"></svg>
       </div>
       <div class="legend">
         <span class="legend-item" data-group="root"><i></i>Root</span>
@@ -78,13 +83,13 @@
           <label for="tonicSel">Tonic</label>
           <select id="tonicSel"></select>
         </div>
-        <span class="panel-label">Progressions</span>
+        <span class="panel-label">Song changes</span>
         <div id="progList" class="prog-list"></div>
       </div>
 
       <!-- ---- triads panel ---- -->
       <div id="panelTriads" class="panel hidden">
-        <span class="panel-label">Triads through the changes</span>
+        <span class="panel-label">Comping &amp; chord soloing</span>
         <p class="ear-hint">Every triad shape of the current chord, all over the neck.
           The highlighted one is the <b>least-movement</b> choice from the previous
           chord — that is what hitting the changes looks like under the hand.</p>
@@ -100,13 +105,27 @@
         </div>
       </div>
 
+      <!-- ---- solo lab panel ---- -->
+      <div id="panelSolo" class="panel hidden">
+        <span class="panel-label">Solo Lab</span>
+        <div class="seg seg-3" aria-label="Solo lab activity">
+          <button data-solo-section="targets" class="active">Target map</button>
+          <button data-solo-section="path">Picking path</button>
+          <button data-solo-section="cell">Audiation</button>
+        </div>
+        <div id="soloTargets" class="sub">
+          <p class="ear-hint">Start in the five-note frame, then make the harmony audible by landing on a chord tone when the change arrives.</p>
+          <span class="panel-label">Landing strategy</span>
+          <div class="seg">
+            <button data-solo-focus="third" class="active">Land on 3rds</button>
+            <button data-solo-focus="guide">Guide tones</button>
+          </div>
+          <div id="soloRecipe" class="solo-recipe"></div>
+        </div>
+      </div>
+
       <!-- ---- scale lab panel ---- -->
       <div id="panelLab" class="panel hidden">
-        <div class="seg">
-          <button data-drill="path" class="active">Picking path</button>
-          <button data-drill="cell">Audiation cells</button>
-        </div>
-
         <div id="labPath" class="sub">
           <span class="panel-label">Layout — changes where the strings break</span>
           <div class="seg seg-4">
@@ -171,9 +190,9 @@
       </div>
 
       <div class="transport">
-        <button id="btnPrev" class="tbtn" title="Previous (←)">◀</button>
+        <button id="btnPrev" class="tbtn" title="Previous (←)" aria-label="Previous chord">◀</button>
         <button id="btnPlay" class="tbtn primary" title="Play / Pause (Space)">▶ Play</button>
-        <button id="btnNext" class="tbtn" title="Next (→)">▶</button>
+        <button id="btnNext" class="tbtn" title="Next (→)" aria-label="Next chord">▶</button>
       </div>
 
       <div class="audition">
@@ -203,7 +222,7 @@
         <label><input type="checkbox" id="tglLefty" /> Left-handed</label>
       </div>
 
-      <div class="hint">Space play/pause · ← → step · 1/2/3 switch view</div>
+      <div class="hint">Space play/pause · ← → step · 1–5 switch practice area</div>
     </aside>
   </main>
 
@@ -215,5 +234,10 @@
   <script src="js/fretboard.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.register("sw.js");
+    }
+  </script>
 </body>
 </html>

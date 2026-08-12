@@ -105,6 +105,17 @@
 
   const MODE_ORDER = ["major", "minor", "ousak", "hijaz"];
 
+  // The reliable five-note frame for each dromos. It keeps the player out of
+  // the way of the harmony, leaving the characteristic 2nd/3rd as intentional
+  // arrival notes rather than another scale run. Hijaz needs a *dominant*
+  // pentatonic: its major 3rd is non-negotiable.
+  const PENTATONIC = {
+    major: { offsets: [0, 2, 4, 7, 9], name: "major pentatonic" },
+    minor: { offsets: [0, 3, 5, 7, 10], name: "minor pentatonic" },
+    ousak: { offsets: [0, 3, 5, 7, 10], name: "minor pentatonic" },
+    hijaz: { offsets: [0, 4, 5, 7, 10], name: "dominant pentatonic" }
+  };
+
   // ---- progression banks --------------------------------------------------
   // deg = semitones above the TONIC. Verified against docs/REQUIREMENTS.md
   // table MI-07; do not edit chords without updating that table + the tests.
@@ -185,6 +196,23 @@
   function flavourPcs(tonicName, modeId) {
     const t = parseName(tonicName);
     return MODES[modeId].flavour.map((off) => (t.pc + off) % 12);
+  }
+
+  function pentatonicOf(tonicName, modeId) {
+    const frame = PENTATONIC[modeId];
+    const scale = scaleOf(tonicName, modeId);
+    return frame.offsets.map((off) => {
+      const note = scale.find((n) => n.off === off);
+      // Every current pentatonic is a subset of its parent mode. Keeping a
+      // defensive fallback makes later mode additions fail usefully, not silently.
+      if (note) return Object.assign({}, note);
+      const tonic = parseName(tonicName);
+      const pc = (tonic.pc + off) % 12;
+      return {
+        pc, off, name: simplify(nameFor(tonic.letterIdx + DEFAULT_STEP[off], pc)),
+        degree: DEGREE_LABEL[off], isFlavour: false, isTonic: off === 0
+      };
+    });
   }
 
   // Build a chord from a scale degree (semitones above tonic) + quality.
@@ -300,6 +328,22 @@
       results.push({ i: k + " scale", want: scaleChecks[k], got, pass });
     });
 
+    // The solo map must choose the right five-note skeleton. Hijaz is the
+    // important guard: minor pentatonic would put a ♭3 against its major tonic.
+    const pentChecks = {
+      "D|major": "D E F♯ A B",
+      "D|minor": "D F G A C",
+      "D|ousak": "D F G A C",
+      "D|hijaz": "D F♯ G A C"
+    };
+    Object.keys(pentChecks).forEach((k) => {
+      const [tonic, modeId] = k.split("|");
+      const got = pentatonicOf(tonic, modeId).map((n) => n.name).join(" ");
+      const pass = got === pentChecks[k];
+      if (!pass) ok = false;
+      results.push({ i: k + " pentatonic", want: pentChecks[k], got, pass });
+    });
+
     // MI-06: Ousak and Minor must produce identical chords for iv-bVII-i
     const a = buildProgression("D", "minor", "iv-bVII-i").chords.map((c) => c.symbol).join(" ");
     const b = buildProgression("D", "ousak", "iv-bVII-i").chords.map((c) => c.symbol).join(" ");
@@ -350,9 +394,9 @@
   }
 
   window.Modes = {
-    MODES, MODE_ORDER, PROGRESSIONS, TONICS, QUALITY, DEGREE_LABEL,
+    MODES, MODE_ORDER, PROGRESSIONS, TONICS, QUALITY, DEGREE_LABEL, PENTATONIC,
     parseName, nameFor, simplify,
-    scaleOf, flavourPcs, buildChord, buildProgression, descendingRun,
+    scaleOf, flavourPcs, pentatonicOf, buildChord, buildProgression, descendingRun,
     selfTest
   };
 })();

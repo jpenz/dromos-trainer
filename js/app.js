@@ -9,7 +9,7 @@
   const N = cycle.length;
 
   const state = {
-    view: "cycle",             // cycle | prog | ear
+    view: "cycle",             // cycle | prog | triads | solo | ear
     // --- cycle view ---
     index: 0,
     cycleMode: "full",         // full | iiVI | pivot
@@ -23,6 +23,8 @@
     ear: { answer: null, score: 0, total: 0, streak: 0, best: 0, locked: false },
     // --- triads ---
     triads: { step: 0, stringSet: null, showAll: true },
+    // --- solo lab ---
+    solo: { section: "targets", focus: "third" },
     // --- scale lab ---
     lab: {
       drill: "path",           // path | cell
@@ -45,6 +47,35 @@
   const $ = (id) => document.getElementById(id);
   const svg = () => $("fretboard");
 
+  const PRACTICE_STEPS = [
+    { view: "cycle", label: "1 · Hear", detail: "Follow the ii–V–I pivot until the next key feels inevitable." },
+    { view: "prog", label: "2 · Map", detail: "Name the dromos, progression, and chord function before you play." },
+    { view: "triads", label: "3 · Comp", detail: "Keep the changes close with three-note shapes and clear inversions." },
+    { view: "solo", label: "4 · Solo", detail: "Use a pentatonic frame, then land on chord tones at each change." },
+    { view: "ear", label: "5 · Recall", detail: "Hear the cadence and name the dromos without the neck as a crutch." }
+  ];
+
+  function renderPracticePath() {
+    $("practicePath").innerHTML = PRACTICE_STEPS.map((step) =>
+      `<button class="practice-step${step.view === state.view ? " active" : ""}" data-practice-view="${step.view}">${step.label}</button>`
+    ).join("");
+    $("practicePath").querySelectorAll("[data-practice-view]").forEach((button) => {
+      button.onclick = () => setView(button.getAttribute("data-practice-view"));
+    });
+  }
+
+  function renderCoachCue() {
+    const step = PRACTICE_STEPS.find((item) => item.view === state.view);
+    if (!step) return;
+    let detail = step.detail;
+    if (state.view === "solo" && state.solo.section === "path") {
+      detail = "Build clean alternate picking first; change the string break before you raise the tempo.";
+    } else if (state.view === "solo" && state.solo.section === "cell") {
+      detail = "Pre-hear the final note, leave space for it, then reveal and check your ear.";
+    }
+    $("coachCue").innerHTML = `<span>${step.label}</span><b>${detail}</b>`;
+  }
+
   // ======================= shared fretboard draw =========================
   function drawChord(chordNotes, moveClass, extra) {
     const grip = FB.findGrip(chordNotes, state.position);
@@ -57,6 +88,7 @@
       moveClass: moveClass
     }, extra || {}));
     if (!grip) console.warn("no playable grip found", chordNotes);
+    svg().setAttribute("aria-label", window.Tuning.current().name + " fretboard");
     return grip;
   }
 
@@ -297,6 +329,7 @@
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       showStrokes: true
     });
+    svg().setAttribute("aria-label", window.Tuning.current().name + " picking path");
 
     const m = path.meta;
     const mode = M.MODES[state.modeId];
@@ -333,6 +366,7 @@
       pathIndex: L.revealed || !L.audiate ? laid.length - 1 : laid.length - 2,
       labelMode: state.labelMode, lefty: state.lefty, showStrokes: false
     });
+    svg().setAttribute("aria-label", window.Tuning.current().name + " audiation cell");
 
     const hidden = L.audiate && !L.revealed;
     $("cellProgress").innerHTML = cells.map((c, i) =>
@@ -432,6 +466,7 @@
       labelMode: state.labelMode, lefty: state.lefty,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId)
     });
+    svg().setAttribute("aria-label", window.Tuning.current().name + " triad map");
 
     // movement from the previous shape
     let move = "";
@@ -501,6 +536,101 @@
     }
   }
 
+  // ============================= SOLO LAB ================================
+  function chordTone(chord, role) {
+    return chord.notes.find((note) => note.role === role) || null;
+  }
+
+  function soloTargets(chord, focus) {
+    const third = chordTone(chord, "3") || chordTone(chord, "b3");
+    if (focus === "guide") {
+      const seventh = chordTone(chord, "7") || chordTone(chord, "b7");
+      // Many Greek progression-bank chords are intentionally triads. A 7th is
+      // the classic jazz guide tone, but inventing one would teach the wrong
+      // harmony; on a triad, pair its colour-defining 3rd with the root anchor.
+      return [third, seventh || chordTone(chord, "R")].filter(Boolean);
+    }
+    return third ? [third] : chord.notes.slice(0, 1);
+  }
+
+  function renderSolo() {
+    const { chords } = currentProgression();
+    const idx = Math.min(state.progStep, chords.length - 1);
+    const cur = chords[idx];
+    const next = chords[(idx + 1) % chords.length];
+    const focus = state.solo.focus;
+    const curTargets = soloTargets(cur, focus);
+    const nextTargets = soloTargets(next, focus);
+    const targetNotes = curTargets.map((note) => Object.assign({}, note, {
+      roleLabel: focus === "guide" ? note.roleLabel : "now"
+    })).concat(nextTargets.map((note) => Object.assign({}, note, {
+      roleLabel: focus === "guide" ? note.roleLabel : "next"
+    })));
+    const triadPath = TR.pathThrough(chords, { startFret: 5, nameFor: spellPc });
+    const shape = triadPath[idx];
+    const fallbackGrip = shape ? null : FB.findGrip(cur.notes, state.position);
+    const activeGrip = shape ? { placements: shape.placements } : fallbackGrip;
+    const gripFrets = activeGrip ? activeGrip.placements.map((p) => p.fret) : [5];
+    // A player needs a small decision window while a chord is passing, not an
+    // encyclopaedia of legal dots. The Triads view remains the whole-neck map.
+    const overlayRange = {
+      from: Math.max(0, Math.min.apply(null, gripFrets) - 2),
+      to: Math.min(FB.N_FRETS, Math.max.apply(null, gripFrets) + 2)
+    };
+    const pentatonic = M.pentatonicOf(state.tonic, state.modeId);
+
+    FB.render(svg(), {
+      grip: activeGrip,
+      pentatonicNotes: state.solo.section === "targets" ? pentatonic : null,
+      targetNotes: state.solo.section === "targets" ? targetNotes : null,
+      targetPcs: targetNotes.map((note) => note.pc),
+      overlayRange,
+      flavourPcs: M.flavourPcs(state.tonic, state.modeId),
+      labelMode: state.labelMode,
+      lefty: state.lefty
+    });
+    svg().setAttribute("aria-label", window.Tuning.current().name + " soloing map");
+
+    const frame = M.PENTATONIC[state.modeId];
+    const targetLabel = (notes) => notes.map((note) => note.name + " (" + note.roleLabel + ")").join(" · ");
+    const hasSeventhGuide = curTargets.concat(nextTargets).some((note) => note.role === "7" || note.role === "b7");
+    const guideInstruction = hasSeventhGuide
+      ? "Connect the 3rd and 7th with the smallest move you can hear; the line should explain the harmony even without a chord."
+      : "This change uses triads: hear the 3rd as the colour, then land on the root when you want the resolution to feel final.";
+    $("soloRecipe").innerHTML = `
+      <div class="solo-frame"><b>${frame.name}</b><span>${pentatonic.map((note) => note.name).join(" · ")}</span></div>
+      <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
+      <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
+      <p>${focus === "third"
+        ? "Treat the pentatonic as the sentence and the 3rd as the punctuation: arrive on it when the chord changes."
+        : guideInstruction}</p>`;
+
+    $("readout").innerHTML = `
+      <div class="ro-head"><span class="fn-badge fn-deg">solo</span>
+      <span class="ro-symbol">${cur.symbol}</span><span class="ro-key">into ${next.symbol}</span></div>
+      <div class="tri-tags"><span class="tri-inv i-${shape ? shape.inversion : 0}">${shape ? shape.inversionName : "triad"}</span>
+      <span class="tri-set">${frame.name}</span></div>
+      <div class="tri-move"><b>Land now:</b> ${targetLabel(curTargets)}<br />
+      <b>Hear next:</b> ${targetLabel(nextTargets)}</div>
+      <div class="ro-foot">Play inside the quiet five-note frame, then make the change audible by aiming for the highlighted target.</div>`;
+  }
+
+  function setSoloSection(section) {
+    state.solo.section = section;
+    document.body.setAttribute("data-solo-section", section);
+    $("soloTargets").classList.toggle("hidden", section !== "targets");
+    $("panelLab").classList.toggle("hidden", section === "targets");
+    document.querySelectorAll("[data-solo-section]").forEach((button) =>
+      button.classList.toggle("active", button.getAttribute("data-solo-section") === section));
+    if (section === "path" || section === "cell") {
+      state.lab.drill = section;
+      renderLab();
+    } else {
+      renderSolo();
+    }
+    renderCoachCue();
+  }
+
   // ======================= shared chord readout ==========================
   function renderChordReadout(symbol, badge, sub, notes, moveClass, foot) {
     const fnClass = { ii: "fn-ii", V: "fn-v", I: "fn-i" }[badge] || "fn-deg";
@@ -530,9 +660,11 @@
     if (state.view === "cycle") {
       const seq = sequenceFor(state.cycleMode, state.index);
       pb = { kind: "cycle", seq, pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
-    } else {
+    } else if (state.view === "prog" || state.view === "solo") {
       const { chords } = currentProgression();
       pb = { kind: "prog", len: chords.length, pos: state.progStep, started: false };
+    } else {
+      return;
     }
 
     AU.startTransport({
@@ -563,7 +695,10 @@
         pb.started = true;
         const chords = currentProgression().chords;
         const c = chords[pb.pos];
-        setTimeout(() => { state.progStep = pb.pos; renderProg(); }, delay);
+        setTimeout(() => {
+          state.progStep = pb.pos;
+          state.view === "solo" ? renderSolo() : renderProg();
+        }, delay);
         return { notes: c.notes };
       }
     });
@@ -581,17 +716,20 @@
   function auditionCurrent(style) {
     AU.ensure();
     if (state.view === "cycle") AU.playChord(cycle[state.index].notes, style || state.strumStyle);
-    else auditionProg();
+    else if (state.view === "prog" || state.view === "solo") auditionProg();
+    else if (state.view === "triads") auditionTriad();
   }
 
   // ============================== views ==================================
   function setView(v) {
+    if (v === "lab") v = "solo";   // compatibility with bookmarks from the first version
     stopPlay();
     state.view = v;
     document.body.setAttribute("data-view", v);
+    document.body.setAttribute("data-solo-section", state.solo.section);
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
-    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads"].forEach((id) => $(id).classList.add("hidden"));
+    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo"].forEach((id) => $(id).classList.add("hidden"));
     $("stage").classList.toggle("hidden", v === "ear");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
@@ -599,9 +737,14 @@
     $("triadStrip").classList.toggle("hidden", v !== "triads");
     if (v === "cycle") { $("panelCycle").classList.remove("hidden"); renderCycle(); }
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
-    else if (v === "lab") { $("panelLab").classList.remove("hidden"); renderLab(); }
     else if (v === "triads") { $("panelTriads").classList.remove("hidden"); syncTriadControls(); renderTriads(); }
+    else if (v === "solo") { $("panelSolo").classList.remove("hidden"); setSoloSection(state.solo.section); }
     else { $("panelEar").classList.remove("hidden"); renderEarScore(); }
+    // renderCycle rightfully decides whether the pivot explanation is visible;
+    // no other practice area should inherit that explanation from a prior view.
+    if (v !== "cycle") $("pivotBanner").classList.remove("show");
+    renderPracticePath();
+    renderCoachCue();
   }
 
   // ============================= wiring ==================================
@@ -609,8 +752,22 @@
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.onclick = () => setView(b.getAttribute("data-view")));
 
-    $("btnPrev").onclick = () => { stopPlay(); state.view === "cycle" ? stepCycle(-1) : stepProg(-1); auditionCurrent("block"); };
-    $("btnNext").onclick = () => { stopPlay(); state.view === "cycle" ? stepCycle(1) : stepProg(1); auditionCurrent(); };
+    $("btnPrev").onclick = () => {
+      stopPlay();
+      if (state.view === "cycle") stepCycle(-1);
+      else if (state.view === "prog" || state.view === "solo") stepProg(-1);
+      else if (state.view === "triads") stepTriad(-1);
+      else return;
+      auditionCurrent("block");
+    };
+    $("btnNext").onclick = () => {
+      stopPlay();
+      if (state.view === "cycle") stepCycle(1);
+      else if (state.view === "prog" || state.view === "solo") stepProg(1);
+      else if (state.view === "triads") stepTriad(1);
+      else return;
+      auditionCurrent();
+    };
     $("btnPlay").onclick = togglePlay;
     $("btnStrum").onclick = () => auditionCurrent("strum");
     $("btnArp").onclick = () => auditionCurrent("arp");
@@ -618,7 +775,7 @@
       const anchors = [null, 0, 3, 5, 7, 9];
       state.position = anchors[(anchors.indexOf(state.position) + 1) % anchors.length];
       $("btnShift").textContent = "Position: " + (state.position == null ? "auto" : state.position);
-      state.view === "cycle" ? renderCycle() : renderProg();
+      rerender();
     };
 
     document.querySelectorAll("[data-mode]").forEach((el) => el.onclick = () => {
@@ -631,6 +788,16 @@
 
     document.querySelectorAll("[data-modeid]").forEach((el) =>
       el.onclick = () => selectMode(el.getAttribute("data-modeid")));
+
+    document.querySelectorAll("[data-solo-section]").forEach((button) =>
+      button.onclick = () => setSoloSection(button.getAttribute("data-solo-section")));
+    document.querySelectorAll("[data-solo-focus]").forEach((button) =>
+      button.onclick = () => {
+        state.solo.focus = button.getAttribute("data-solo-focus");
+        document.querySelectorAll("[data-solo-focus]").forEach((item) =>
+          item.classList.toggle("active", item.getAttribute("data-solo-focus") === state.solo.focus));
+        renderSolo();
+      });
 
     const tonicSel = $("tonicSel");
     tonicSel.innerHTML = M.TONICS.map((t) =>
@@ -719,26 +886,26 @@
       if (e.code === "Space") {
         e.preventDefault();
         if (state.view === "ear") playEarPrompt();
-        else if (state.view === "lab") $("btnLabPlay").click();
+        else if (state.view === "solo" && state.solo.section !== "targets") $("btnLabPlay").click();
         else togglePlay();
       }
       else if (e.code === "ArrowRight" && state.view === "triads") { e.preventDefault(); stepTriad(1); }
       else if (e.code === "ArrowLeft" && state.view === "triads") { e.preventDefault(); stepTriad(-1); }
-      else if (e.code === "ArrowRight") { e.preventDefault(); state.view === "lab" ? (state.lab.drill === "cell" ? stepCell(1) : shiftPosition(1)) : $("btnNext").click(); }
-      else if (e.code === "ArrowLeft") { e.preventDefault(); state.view === "lab" ? (state.lab.drill === "cell" ? stepCell(-1) : shiftPosition(-1)) : $("btnPrev").click(); }
+      else if (e.code === "ArrowRight") { e.preventDefault(); state.view === "solo" && state.solo.section !== "targets" ? (state.lab.drill === "cell" ? stepCell(1) : shiftPosition(1)) : $("btnNext").click(); }
+      else if (e.code === "ArrowLeft") { e.preventDefault(); state.view === "solo" && state.solo.section !== "targets" ? (state.lab.drill === "cell" ? stepCell(-1) : shiftPosition(-1)) : $("btnPrev").click(); }
       else if (e.key === "1") setView("cycle");
       else if (e.key === "2") setView("prog");
       else if (e.key === "3") setView("triads");
-      else if (e.key === "4") setView("lab");
+      else if (e.key === "4") setView("solo");
       else if (e.key === "5") setView("ear");
-      else if (e.key.toLowerCase() === "r" && state.view === "lab") $("btnReveal").click();
+      else if (e.key.toLowerCase() === "r" && state.view === "solo" && state.solo.section === "cell") $("btnReveal").click();
     });
   }
 
   function rerender() {
     if (state.view === "cycle") renderCycle();
     else if (state.view === "prog") renderProg();
-    else if (state.view === "lab") renderLab();
+    else if (state.view === "solo") state.solo.section === "targets" ? renderSolo() : renderLab();
     else if (state.view === "triads") { syncTriadControls(); renderTriads(); }
   }
 
