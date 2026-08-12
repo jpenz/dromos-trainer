@@ -5,13 +5,14 @@
   "use strict";
 
   const TOKEN_KEY = "dromos-trainer-coach-session-v1";
+  const FREE_TIER_ACK_KEY = "dromos-trainer-coach-free-tier-ack-v1";
   const VIEWS = ["cycle", "prog", "triads", "solo", "ear", "styles", "analyze", "concepts"];
   const MODES = ["major", "minor", "ousak", "hijaz"];
   const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
   const STUDIES = ["paliatzis", "apopse", "tsigaro"];
   const STYLES = ["zeibekiko", "kalamatianos", "hasapiko", "tsifteteli", "roumba"];
   const SECTIONS = ["targets", "path", "cell"];
-  const state = { token: "", status: "idle", messages: [], summary: null, recommendation: null, lastViewKey: "", lastViewAt: 0 };
+  const state = { token: "", status: "idle", messages: [], summary: null, recommendation: null, lastViewKey: "", lastViewAt: 0, freeTierAcknowledged: false };
   let config = { context: () => ({}), onAction: () => {} };
   let sessionPromise = null;
 
@@ -143,9 +144,15 @@
     const messages = state.messages.length ? state.messages : [{ role: "assistant", content: "Ask a theory, ear-training, comping, soloing, dromos, or instrument-position question. I will explain the musical reason and give one next exercise." }];
     const recommendation = state.recommendation ? `<section class="coach-recommendation"><span>Next recommendation</span><h3>${escapeHtml(state.recommendation.title)}</h3><p>${escapeHtml(state.recommendation.reason)}</p>${state.recommendation.action ? `<button class="coach-action" data-recommendation-action="true">${escapeHtml(state.recommendation.actionLabel || defaultActionLabel(state.recommendation.action))}</button>` : ""}</section>` : "";
     const progress = state.summary ? `<span class="coach-progress">${state.summary.completed} completed · ${state.summary.targetMisses} target misses · ${state.summary.earAttempts ? state.summary.earCorrect + "/" + state.summary.earAttempts + " ear" : "ear not started"}</span>` : "";
-    root.innerHTML = `<section class="coach-shell"><div class="coach-head"><div><span>Adaptive practice coach</span><h2>Ask what matters. Then go straight to the drill.</h2><p>${escapeHtml(status)}</p></div>${progress}</div>${recommendation}<div class="coach-quick" aria-label="Suggested questions"><button data-coach-prompt="I cannot hear the next chord change. Give me one ear exercise for my current map.">I can’t hear the change</button><button data-coach-prompt="Explain the strongest notes for my current chord and show me the next drill.">What should I land on?</button><button data-coach-prompt="How should I phrase this in the current Greek style without overplaying?">How should I phrase it?</button></div><div id="coachMessages" class="coach-messages" aria-live="polite">${messages.map(messageHtml).join("")}</div><form id="coachForm" class="coach-form"><label for="coachQuestion">Ask the coach</label><textarea id="coachQuestion" rows="3" maxlength="1800" placeholder="For example: Why does A7 pull so strongly back to D minor?"></textarea><div><button type="button" id="coachComplete" class="mini">Mark current drill complete</button><button type="submit" class="mini primary-mini" ${state.status === "ready" ? "" : "disabled"}>Ask coach</button></div></form><p class="coach-privacy">The coach saves this device’s conversation and practice events to personalize future drills. It never receives your API key; score content is sent only when you choose to include it in a question.</p></section>`;
+    const canAsk = state.status === "ready" && state.freeTierAcknowledged;
+    root.innerHTML = `<section class="coach-shell"><div class="coach-head"><div><span>Adaptive practice coach</span><h2>Ask what matters. Then go straight to the drill.</h2><p>${escapeHtml(status)}</p></div>${progress}</div>${recommendation}<div class="coach-quick" aria-label="Suggested questions"><button data-coach-prompt="I cannot hear the next chord change. Give me one ear exercise for my current map.">I can’t hear the change</button><button data-coach-prompt="Explain the strongest notes for my current chord and show me the next drill.">What should I land on?</button><button data-coach-prompt="How should I phrase this in the current Greek style without overplaying?">How should I phrase it?</button></div><div id="coachMessages" class="coach-messages" aria-live="polite">${messages.map(messageHtml).join("")}</div><form id="coachForm" class="coach-form"><label for="coachQuestion">Ask the coach</label><textarea id="coachQuestion" rows="3" maxlength="1800" placeholder="For example: Why does A7 pull so strongly back to D minor?"></textarea><label class="coach-free-tier"><input id="coachFreeTierConsent" type="checkbox" ${state.freeTierAcknowledged ? "checked" : ""} /> I understand this free Gemini tier may use submitted questions and practice context to improve Google products. I will not include sensitive or private material.</label><div><button type="button" id="coachComplete" class="mini">Mark current drill complete</button><button type="submit" class="mini primary-mini" ${canAsk ? "" : "disabled"}>Ask coach</button></div></form><p class="coach-privacy">The coach saves this device’s conversation and practice events to personalize future drills. It never receives your API key; score content is sent only when you choose to include it in a question.</p></section>`;
     root.querySelectorAll("[data-coach-prompt]").forEach((button) => { button.onclick = () => { root.querySelector("#coachQuestion").value = button.getAttribute("data-coach-prompt"); root.querySelector("#coachQuestion").focus(); }; });
     root.querySelector("#coachForm").onsubmit = (event) => { event.preventDefault(); send(root.querySelector("#coachQuestion").value); };
+    root.querySelector("#coachFreeTierConsent").onchange = (event) => {
+      state.freeTierAcknowledged = event.target.checked;
+      try { localStorage.setItem(FREE_TIER_ACK_KEY, state.freeTierAcknowledged ? "yes" : "no"); } catch { /* acknowledgement lasts for this visit */ }
+      render();
+    };
     root.querySelector("#coachComplete").onclick = () => track("exercise_completed", { exercise: context.view }, context, true);
     root.querySelectorAll("[data-coach-action]").forEach((button) => { button.onclick = () => runAction(messages[+button.getAttribute("data-coach-action")].action); });
     const recommendationButton = root.querySelector("[data-recommendation-action]");
@@ -154,7 +161,7 @@
 
   async function send(value) {
     const question = text(value, 1800);
-    if (!question || state.status !== "ready") return;
+    if (!question || state.status !== "ready" || !state.freeTierAcknowledged) return;
     state.messages.push({ role: "user", content: question });
     state.status = "sending";
     render();
@@ -208,7 +215,11 @@
   }
 
   window.PracticeCoach = {
-    mount(options) { config = Object.assign(config, options || {}); render(); start(); },
+    mount(options) {
+      config = Object.assign(config, options || {});
+      try { state.freeTierAcknowledged = localStorage.getItem(FREE_TIER_ACK_KEY) === "yes"; } catch { state.freeTierAcknowledged = false; }
+      render(); start();
+    },
     render, trackView, track, selfTest
   };
 })();

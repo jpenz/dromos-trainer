@@ -23,10 +23,12 @@ exercise and be able to open it. Examples:
    context and the question.
 2. Store `GEMINI_API_KEY` only as a host environment secret. Never ship it in
    JavaScript, a PWA cache, Git, or an `.env` committed to the repository.
-3. Call the Gemini API with `gemini-3.1-flash-lite`, the lowest-cost capable
-   structured-output option researched for short coaching replies and exercise
-   routing. It is capped at 800 output tokens and required to return JSON. A stronger
-   model is an explicit future escalation for difficult score analysis—not the default.
+3. Call the Gemini API with `gemini-3.1-flash-lite` on its **Free Tier**, the
+   no-charge capable structured-output option researched for short coaching replies
+   and exercise routing. It is capped at 800 output tokens and required to return
+   JSON. Before asking, the player must acknowledge the Free Tier disclosure: Google
+   may use submitted material to improve its products, so sensitive/private material
+   must not be entered. A paid privacy-preserving tier is a future, explicit upgrade.
 4. Require structured output with two parts: `answer` and optional `action`.
    The action is a closed union: `navigate`, `set_song_map`, `open_study`, or
    `open_analyzer`. The browser validates it against known mode, tuning, study and

@@ -25,6 +25,7 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /js\/resources\.js/);
   assert.match(html, /js\/coach\.js/);
   assert.match(html, /id="coachApp"/);
+  assert.match(read("js/coach.js"), /coachFreeTierConsent/);
   assert.match(html, /id="scoreFile"/);
   assert.match(html, /id="analysisInstrument"/);
   assert.match(read("js/tuning.js"), /Laouto \(mainland\)/);

@@ -167,7 +167,9 @@ browser-held API key. Cross-device sign-in is deliberately a later choice.
 The Coach is inactive when opening `index.html` directly. To activate it, deploy to
 Vercel, connect Neon through Vercel Marketplace, and add the server secrets in
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The current economical default is
-`gemini-3.1-flash-lite`, accessed only from Vercel Functions.
+`gemini-3.1-flash-lite` Free Tier, accessed only from Vercel Functions. Before
+sending a question, the player must acknowledge the Free Tier data-use disclosure;
+do not enter sensitive or private material.
 
 ---
 

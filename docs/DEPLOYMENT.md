@@ -28,7 +28,7 @@ In **Project Settings → Environment Variables**, add these for **Preview** and
 
 | Variable | Value |
 |---|---|
-| `GEMINI_API_KEY` | A paid-tier Google AI Studio API key; never commit or paste it into chat |
+| `GEMINI_API_KEY` | A Google AI Studio **Free Tier** API key; never commit or paste it into chat |
 | `GEMINI_COACH_MODEL` | `gemini-3.1-flash-lite` |
 | `DATABASE_URL` | Normally injected by the Neon Marketplace integration |
 | `COACH_SESSION_SECRET` | A randomly generated value of at least 32 characters |
@@ -62,10 +62,13 @@ the browser. The code reads it only inside Vercel Functions.
   default.
 - The coach can offer only validated in-app routes. It cannot edit data externally,
   visit arbitrary URLs, or expose a secret.
-- Gemini 3.1 Flash-Lite is the selected low-cost model: at current paid-tier list
-  pricing it is $0.25/M input tokens and $1.50/M output tokens. The response is
-  capped and the system prompt is intentionally short; use the paid tier (not the
-  free tier) and check actual usage after the first week before upgrading the model.
+- Gemini 3.1 Flash-Lite is the selected **free** model. New Gemini accounts begin
+  on the Free Tier and this model's standard input/output is free of charge within
+  its published rate limits. This means capacity is not guaranteed for a public app;
+  the endpoint can temporarily rate-limit requests. Google says Free Tier content may
+  be used to improve its products, so the Coach requires a visible acknowledgement
+  and must not be used for sensitive/private material. Move to Paid Tier only when
+  reliable capacity and the no-product-improvement data setting outweigh free use.
 
 ## Sources
 
