@@ -15,7 +15,7 @@ open index.html
 ## Score study
 
 The **Analyze** area accepts chord maps and chord-aligned note fragments. It can also
-read an **uncompressed MusicXML** (`.musicxml` / `.xml`) score that you choose
+read an **uncompressed, partwise MusicXML** (`.musicxml` / `.xml`) score that you choose
 locally when it contains written chord symbols. It explains the harmonic map, labels
 note roles, gives target-tone routes, and generates a compact chord chart plus tab
 for the selected tuning.

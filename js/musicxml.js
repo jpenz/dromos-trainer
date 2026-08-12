@@ -68,10 +68,18 @@
    * chord means no claimed harmony. */
   function parseMusicXml(xml) {
     const source = String(xml || "");
-    if (!/<score-(?:partwise|timewise)\b/i.test(source)) {
-      return { ok: false, code: "not-musicxml", message: "Choose an uncompressed MusicXML (.musicxml or .xml) score exported from notation software." };
+    if (!/<score-partwise\b/i.test(source)) {
+      return { ok: false, code: "not-musicxml", message: "Choose an uncompressed, partwise MusicXML (.musicxml or .xml) score exported from notation software." };
     }
-    const measures = source.match(/<measure\b[^>]*>[\s\S]*?<\/measure>/gi) || [];
+    const parts = source.match(/<part(?:\s+[^>]*)?>[\s\S]*?<\/part>/gi) || [];
+    // Full scores often repeat chord symbols across staves. Read the part with
+    // the most written harmony events, rather than silently doubling a song map.
+    const scorePart = parts.reduce((best, part) => {
+      const count = (part.match(/<harmony\b/gi) || []).length;
+      const bestCount = (best.match(/<harmony\b/gi) || []).length;
+      return count > bestCount ? part : best;
+    }, parts[0] || "");
+    const measures = scorePart.match(/<measure\b[^>]*>[\s\S]*?<\/measure>/gi) || [];
     const sequence = [];
     let active = null;
     measures.forEach((measure, measureIndex) => {
@@ -111,11 +119,12 @@
   }
 
   function selfTest() {
-    const fixture = `<?xml version="1.0"?><score-partwise><work><work-title>Minor pull</work-title></work><part><measure number="1"><harmony><root><root-step>D</root-step></root><kind>minor</kind></harmony><note><pitch><step>A</step></pitch></note><note><pitch><step>C</step></pitch></note><harmony><root><root-step>A</root-step></root><kind>dominant</kind></harmony><note><pitch><step>C</step><alter>1</alter></pitch></note></measure></part></score-partwise>`;
+    const fixture = `<?xml version="1.0"?><score-partwise><work><work-title>Minor pull</work-title></work><part id="melody"><measure number="1"><harmony><root><root-step>D</root-step></root><kind>minor</kind></harmony><note><pitch><step>A</step></pitch></note><note><pitch><step>C</step></pitch></note><harmony><root><root-step>A</root-step></root><kind>dominant</kind></harmony><note><pitch><step>C</step><alter>1</alter></pitch></note></measure></part><part id="guitar"><measure number="1"><harmony><root><root-step>D</root-step></root><kind>minor</kind></harmony></measure></part></score-partwise>`;
     const imported = parseMusicXml(fixture);
     const results = [
       { name: "MusicXML reads chord symbols in score order", pass: imported.ok && imported.chordMap === "Dm A7", detail: imported.chordMap || "" },
       { name: "MusicXML preserves sharp melodic targets", pass: imported.lineText.includes("A7: C♯"), detail: imported.lineText || "" },
+      { name: "MusicXML ignores duplicate accompaniment-staff harmony", pass: imported.harmonyCount === 2, detail: String(imported.harmonyCount || 0) },
       { name: "non-MusicXML files are rejected transparently", pass: !parseMusicXml("not a score").ok, detail: "no OCR or audio guess" }
     ];
     return { ok: results.every((result) => result.pass), results };

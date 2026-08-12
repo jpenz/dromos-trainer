@@ -171,7 +171,7 @@ and pitch spelling**, so the Analyzer can state exactly what it read and display
 how a note functions against the written harmony. A PDF image, an audio recording,
 or a compressed `.mxl` archive needs a separate recognition/decompression workflow
 and must not be presented as a certain analysis. The shipped importer is therefore
-local, uncompressed MusicXML only; it needs harmony symbols and never uploads or
+local, uncompressed **partwise** MusicXML only; it needs harmony symbols and never uploads or
 caches the user’s score. A selected chord receives a compact, tuning-aware SVG chart
 and simple high-to-low tab, with strong arrival tones ringed. This is a recommended
 position, not an authoritative transcription of a performer’s fingering.
