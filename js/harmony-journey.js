@@ -7,6 +7,12 @@
 
   const mod = (value, length) => ((value % length) + length) % length;
 
+  // Function tags come from the theory cycle ("I") or a progression's roman
+  // labels ("i", "♭VII"): tonic and dominant checks must ignore case so minor
+  // homes hold two bars exactly like major ones.
+  const isTonicFn = (chord) => /^i$/i.test((chord && chord.fn) || "");
+  const isDominantFn = (chord) => /^v$/i.test((chord && chord.fn) || "");
+
   function sequenceForCycle(mode, index, cycle) {
     const length = cycle.length;
     if (mode === "iiVI") {
@@ -33,7 +39,7 @@
       symbol: chord.symbol,
       functionLabel: chord.degreeLabel || chord.fn || "chord",
       keyLabel: chord.key || "",
-      durationBars: holdI && chord.fn === "I" ? 2 : 1
+      durationBars: holdI && isTonicFn(chord) ? 2 : 1
     };
   }
 
@@ -45,8 +51,11 @@
     const heldPcs = Array.from(to).filter((pc) => from.has(pc));
     const enteringPcs = Array.from(to).filter((pc) => !from.has(pc));
     const leavingPcs = Array.from(from).filter((pc) => !to.has(pc));
-    const isPivot = now.chord.fn === "I" && next.chord.fn === "ii";
-    const isResolution = now.chord.fn === "V" && next.chord.fn === "I";
+    // A pivot is a reinterpretation across keys; the same I looping back to
+    // its own ii inside one key (a song map repeating) is not a modulation.
+    const isPivot = isTonicFn(now.chord) && /^ii/i.test(next.chord.fn || "")
+      && !!now.keyLabel && !!next.keyLabel && now.keyLabel !== next.keyLabel;
+    const isResolution = isDominantFn(now.chord) && isTonicFn(next.chord);
     return {
       kind: wrapped ? "loop" : isPivot ? "pivot" : isResolution ? "resolution" : kind === "song" ? "song-change" : "within-key",
       heldPcs, enteringPcs, leavingPcs,

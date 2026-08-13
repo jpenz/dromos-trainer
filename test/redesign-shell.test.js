@@ -38,6 +38,19 @@ test("playback speaks the redesigned musical language", () => {
   assert.match(read("js/practice.js"), /sweet-lean/, "the sweet 2→3 melodic route must exist");
 });
 
+test("the held tonic stays audible and visible, not implied", () => {
+  const app = read("js/app.js");
+  const holdReturns = app.match(/hold: true, notes:/g) || [];
+  assert.ok(holdReturns.length >= 2, "held bars must re-comp the chord in cycle AND progression playback");
+  assert.match(app, /pchip-held/, "the prog strip must render the held tonic bar as its own chip");
+  assert.match(app, /data-held-for/, "held chips must be addressable for the bar-accurate cursor");
+  assert.match(app, /function markHeldBar/, "playback must move the highlight onto the held bar");
+  assert.doesNotMatch(app, /c\.fn \|\| c\.scaleDegree/, "numeric scaleDegree must never shadow the roman function");
+  const css = read("css/styles.css");
+  assert.match(css, /\.pchip\.pchip-held/, "held chips need their own visual treatment");
+  assert.match(css, /held-sounding/, "the sounding held bar needs an active state");
+});
+
 test("the design system defines the redesigned tokens", () => {
   const css = read("css/styles.css");
   assert.match(css, /--terracotta: #D4763B/);

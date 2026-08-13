@@ -53,6 +53,23 @@ test("imported score harmony has a playable chart on every supported tuning", ()
   });
 });
 
+test("progression chords carry the bare roman function that playback holds and pickups need", () => {
+  const { Modes, HarmonyJourney } = loadCore();
+  const major = Modes.buildProgression("D", "major", "ii-V-I").chords;
+  assert.equal(major.map((chord) => chord.fn).join(" "), "ii V I");
+  const harmonic = Modes.buildProgression("D", "harmonicMinor", "iio-V-i").chords;
+  assert.equal(harmonic.map((chord) => chord.fn).join(" "), "ii V i", "quality suffixes (ø, 7) must be stripped");
+  const minor = Modes.buildProgression("D", "minor", "i-bVII-i").chords;
+  assert.equal(minor.map((chord) => chord.fn).join(" "), "i ♭VII i", "accidentals must survive so ♭VII is never a tonic");
+  // The journey model must hold minor and major homes alike…
+  const journey = HarmonyJourney.buildJourney({ kind: "song", chords: harmonic, step: 0, loop: true, holdI: true });
+  assert.equal(journey.items[2].durationBars, 2, "a minor tonic holds two bars exactly like a major one");
+  assert.equal(journey.items[0].durationBars, 1);
+  // …and a song map looping I back to its own ii is a loop, not a modulation.
+  const majorJourney = HarmonyJourney.buildJourney({ kind: "song", chords: major, step: 2, loop: true, holdI: true });
+  assert.notEqual(majorJourney.transition.kind, "pivot", "same-key loops must not claim a pivot reinterpretation");
+});
+
 test("Greek style pulses are complete and never prescribe a dromos", () => {
   const { StyleLibrary } = loadCore();
   const zeibekiko = StyleLibrary.byId("zeibekiko");
