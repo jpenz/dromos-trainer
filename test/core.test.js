@@ -70,6 +70,19 @@ test("progression chords carry the bare roman function that playback holds and p
   assert.notEqual(majorJourney.transition.kind, "pivot", "same-key loops must not claim a pivot reinterpretation");
 });
 
+test("the Piraeus tier leads the minor bank and Ousak breathes without breaking its strict map", () => {
+  const { Modes } = loadCore();
+  const minor = Modes.PROGRESSIONS.minor;
+  assert.equal(minor[0].id, "i-III-i", "the documented Piraeus i–III oscillation must lead the minor bank");
+  assert.equal(Modes.buildProgression("D", "minor", "i-III-i").chords.map((c) => c.symbol).join(" "), "Dm F Dm");
+  assert.ok(minor.every((p) => p.group === "Piraeus · modal"), "the minor bank is the modal tier");
+  const mobile = Modes.mobileTonesOf("D", "ousak");
+  assert.equal(mobile.map((m) => m.name).join(" "), "E B", "Ousak sharpens its 2nd and 6th on the way up");
+  assert.ok(mobile.every((m) => m.mobile), "mobile tones must be marked as such for the hollow-dot render");
+  assert.equal(Modes.mobileTonesOf("D", "hijaz").length, 0, "mobile tones are documented for Ousak only");
+  assert.equal(Modes.scaleOf("D", "ousak").length, 7, "the strict Ousak collection itself is untouched");
+});
+
 test("Greek style pulses are complete and never prescribe a dromos", () => {
   const { StyleLibrary } = loadCore();
   const zeibekiko = StyleLibrary.byId("zeibekiko");

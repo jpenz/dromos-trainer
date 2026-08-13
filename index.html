@@ -94,12 +94,11 @@
           <div id="coachCue" class="coach-cue" aria-live="polite"></div>
 
           <nav id="harmonyTabs" class="mode-tabs hidden" aria-label="Harmony workspace mode">
-            <button data-harmony-mode="full">Full Cycle</button>
-            <button data-harmony-mode="iiVI">ii–V–I</button>
-            <button data-harmony-mode="pivot">Pivot Cycle</button>
+            <button data-harmony-mode="pivot">Changes Gym</button>
             <button data-view="prog">Song Map</button>
             <button data-view="triads">Comp</button>
           </nav>
+          <p id="modePurpose" class="mode-purpose hidden" aria-live="polite"></p>
           <nav id="learnTabs" class="mode-tabs hidden" aria-label="Learn area">
             <button data-view="styles">Greek Pulse</button>
             <button data-view="video">Video Study</button>
@@ -159,6 +158,20 @@
                 <button id="btnPivotPairPrev" class="mini" aria-label="Previous key in the pivot wheel">◀ key</button>
                 <span id="pivotPairLabel"></span>
                 <button id="btnPivotPairNext" class="mini" aria-label="Next key in the pivot wheel">key ▶</button>
+              </div>
+              <div id="gymSettings" class="gym-settings">
+                <div class="gym-row">
+                  <span class="panel-label">Keys</span>
+                  <div class="seg" id="gymKeysSeg" aria-label="How many keys the gym chains">
+                    <button data-gym-keys="1">1 · learn the move</button>
+                    <button data-gym-keys="3">3</button>
+                    <button data-gym-keys="6" class="active">6 · the wheel</button>
+                  </div>
+                  <label class="gym-skeleton"><input type="checkbox" id="tglGymSkeleton" /> Skeleton first — one whole note per chord: just the 3rd. Start every new key count here.</label>
+                  <button id="btnTaximiBridge" class="mini" title="Drone on the next tonic. Set the new dromos with a free phrase, then the band comes back in.">Taximi bridge</button>
+                </div>
+                <p class="gym-note">Not the circle of fifths: each key drops a whole step because every old I becomes the next key's ii. Six keys, then it loops.</p>
+                <p class="gym-honesty">A voice-leading gym, not folklore. Greek bands usually re-center with a taximi or a relative-key move. Train your ear here, then try the real thing.</p>
               </div>
               <div class="cycle-workbench">
                 <span class="panel-label">What do you want to practise?</span>
@@ -228,11 +241,11 @@
               <div class="solo-title"><span class="panel-label">Solo Road</span><span>map → phrase → change</span></div>
               <div id="soloMapControls" class="solo-map-controls"></div>
               <div class="solo-section-nav" aria-label="Solo lab activity">
-                <button data-solo-section="road" class="active">1 Road</button>
-                <button data-solo-section="path">2 Shape</button>
-                <button data-solo-section="phrase">3 Numbers</button>
-                <button data-solo-section="targets">4 Changes</button>
-                <button data-solo-section="cell">5 Ear</button>
+                <button data-solo-section="road" class="active" title="The dromos, built the Greek way: lower tetrachord, upper tetrachord, close the octave.">1 Road</button>
+                <button data-solo-section="path" title="The smaller shape inside the road. Slide it up the neck and you own a new tonic.">2 Frame</button>
+                <button data-solo-section="phrase" title="One four-note cell, every chord, every key.">3 Cells</button>
+                <button data-solo-section="targets" title="Watch the 3rd move to its nearest neighbor. Play the line the lights draw.">4 Changes</button>
+                <button data-solo-section="cell" title="Low phrases, then high, then home. The intro that sets up the song.">5 Taximi</button>
               </div>
               <div id="soloRoad" class="sub"></div>
               <div id="soloTargets" class="sub hidden">
@@ -285,6 +298,18 @@
               </div>
 
               <div id="labCell" class="sub hidden">
+                <div id="taximiArc" class="taximi-arc">
+                  <div class="taximi-head"><span class="panel-label">Taximi arc</span><span>the intro that sets the dromos of the song — unmetered, over a drone</span></div>
+                  <div class="taximi-stages" aria-label="Taximi arc stages">
+                    <button data-taximi-stage="low" class="active"><b>1 · Low</b><span>short phrases in the lower tetrachord, rest on the tonic</span></button>
+                    <button data-taximi-stage="high"><b>2 · High</b><span>expand into the upper tetrachord, touch the octave</span></button>
+                    <button data-taximi-stage="home"><b>3 · Home</b><span>cadence back down and let the tonic settle</span></button>
+                  </div>
+                  <div class="row">
+                    <button id="btnTaximiDrone" class="mini grow primary-mini">▶ Drone on the tonic</button>
+                  </div>
+                  <p class="taximi-note">The taximi sets the dromos of the song before the verse begins. When the arc feels natural, open the Song Map and let the progression enter. The audiation cell drill below is your ear inside the arc.</p>
+                </div>
                 <div id="cellProgress" class="cell-progress"></div>
                 <div id="cellBody" class="cell-body"></div>
                 <div class="row">

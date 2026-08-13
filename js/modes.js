@@ -135,10 +135,10 @@
   // table MI-07; do not edit chords without updating that table + the tests.
   const PROGRESSIONS = {
     major: [
-      { id: "ii-V-I", label: "ii – V – I", tag: "core", group: "Cadences", earSafe: true,
+      { id: "ii-V-I", label: "ii – V – I", tag: "core", group: "Laiko · Westernized", earSafe: true,
         chords: [[2, "m7"], [7, "dom7"], [0, "maj7"]],
-        why: "The engine. Everything else is a variation." },
-      { id: "I-vi-ii-V", label: "I – vi – ii – V", tag: "core", group: "Turnarounds", earSafe: true,
+        why: "The engine of the Westernized laiko layer. Everything else is a variation." },
+      { id: "I-vi-ii-V", label: "I – vi – ii – V", tag: "core", group: "Laiko · Westernized", earSafe: true,
         chords: [[0, "maj7"], [9, "m7"], [2, "m7"], [7, "dom7"]],
         why: "Loops forever — the best ear-training vamp there is." },
       { id: "IV-V-I", label: "IV – V – I", tag: "folk", group: "Song endings", earSafe: true,
@@ -149,24 +149,30 @@
         why: "Modal brightening. All over modern laïko and entechno." }
     ],
     minor: [
-      { id: "i-bVII-i", label: "i – ♭VII – i", tag: "core", group: "Home loops", earSafe: true,
+      // "Piraeus · modal" vs "Laiko · Westernized" is the documented historical
+      // layering of rebetiko harmony (Pennanen): modal loops first, functional
+      // V-based cadences as the later Westernized layer.
+      { id: "i-III-i", label: "i – III – i", tag: "piraeus", group: "Piraeus · modal", earSafe: true,
+        chords: [[0, "min"], [3, "maj"], [0, "min"]],
+        why: "The Piraeus backbone: minor home and its relative major answering each other. The single most documented progression of early rebetiko." },
+      { id: "i-bVII-i", label: "i – ♭VII – i", tag: "core", group: "Piraeus · modal", earSafe: true,
         chords: [[0, "min"], [10, "maj"], [0, "min"]],
         why: "Natural minor home loop. The ♭7 stays natural: no leading-tone pull is implied." },
-      { id: "iv-bVII-i", label: "iv – ♭VII – i", tag: "modal", group: "Modal motion", earSafe: true,
+      { id: "iv-bVII-i", label: "iv – ♭VII – i", tag: "modal", group: "Piraeus · modal", earSafe: true,
         chords: [[5, "min"], [10, "maj"], [0, "min"]],
         why: "Natural minor. Softer, no leading tone, more folk." },
-      { id: "bVI-bVII-i", label: "♭VI – ♭VII – i", tag: "modal", group: "Lift into home", earSafe: true,
+      { id: "bVI-bVII-i", label: "♭VI – ♭VII – i", tag: "modal", group: "Piraeus · modal", earSafe: true,
         chords: [[8, "maj"], [10, "maj"], [0, "min"]],
         why: "A natural-minor lift into home: ♭VI → ♭VII → i." }
     ],
     harmonicMinor: [
-      { id: "iio-V-i", label: "iiø – V7 – i", tag: "core", group: "Cadences", earSafe: true,
+      { id: "iio-V-i", label: "iiø – V7 – i", tag: "core", group: "Laiko · Westernized", earSafe: true,
         chords: [[2, "m7b5"], [7, "dom7"], [0, "min"]],
         why: "Functional harmonic-minor cadence. The raised 7 in V7 resolves to the tonic; the final i stays a triad so every chord tone matches the map." },
-      { id: "iv-V-i", label: "iv – V7 – i", tag: "core", group: "Cadences", earSafe: true,
+      { id: "iv-V-i", label: "iv – V7 – i", tag: "core", group: "Laiko · Westernized", earSafe: true,
         chords: [[5, "min"], [7, "dom7"], [0, "min"]],
         why: "Hear the dominant's 3rd as the leading tone that wants to resolve up to 1." },
-      { id: "bVI-ii-V-i", label: "♭VI – iiø – V7 – i", tag: "gateway", group: "Long turnarounds", earSafe: true,
+      { id: "bVI-ii-V-i", label: "♭VI – iiø – V7 – i", tag: "gateway", group: "Laiko · Westernized", earSafe: true,
         chords: [[8, "maj"], [2, "m7b5"], [7, "dom7"], [0, "min"]],
         why: "A longer functional-minor sentence: colour, predominant, dominant, home." }
     ],
@@ -233,6 +239,22 @@
       return {
         pc, off, name: simplify(nameFor(tonic.letterIdx + DEFAULT_STEP[off], pc)),
         degree: DEGREE_LABEL[off], isFlavour: false, isTonic: off === 0
+      };
+    });
+  }
+
+  // Mobile (ascending) tones: working players sharpen Ousak's 2nd and 6th on
+  // the way up. These are a fretboard-road hint only — hollow "breathing"
+  // dots — and never enter the strict ear-training collections (MI-06 holds).
+  const MOBILE_ASCENDING = { ousak: [2, 9] };
+  function mobileTonesOf(tonicName, modeId) {
+    const offsets = MOBILE_ASCENDING[modeId] || [];
+    const t = parseName(tonicName);
+    return offsets.map((off) => {
+      const pc = (t.pc + off) % 12;
+      return {
+        pc, off, name: simplify(nameFor(t.letterIdx + DEFAULT_STEP[off], pc)),
+        degree: DEGREE_LABEL[off], mobile: true, isFlavour: false, isTonic: false
       };
     });
   }
@@ -458,7 +480,7 @@
   window.Modes = {
     MODES, MODE_ORDER, PROGRESSIONS, TONICS, QUALITY, DEGREE_LABEL, PENTATONIC,
     parseName, nameFor, simplify,
-    scaleOf, flavourPcs, pentatonicOf, tetrachordsOf, buildChord, buildProgression, descendingRun,
+    scaleOf, flavourPcs, pentatonicOf, tetrachordsOf, mobileTonesOf, buildChord, buildProgression, descendingRun,
     selfTest
   };
 })();

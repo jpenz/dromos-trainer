@@ -376,6 +376,18 @@ main {
 /* now/next landing targets */
 .dot-now-ring { fill: none; stroke: var(--terracotta); stroke-width: 2.5; }
 .dot-next-ring { fill: none; stroke: var(--turquoise); stroke-width: 2; stroke-dasharray: 4 3; opacity: 0.85; }
+/* Change choreography: the lean pulse previews the next landing; the arrival
+   ignites it while the old target falls back. Driven by svg-level classes. */
+svg.lean-phase .dot-next-ring { opacity: 1; stroke-width: 3; stroke-dasharray: none; }
+svg.arrive-phase .dot-next-ring { opacity: 1; stroke-width: 3.5; stroke-dasharray: none; }
+svg.arrive-phase .dot-now-ring { opacity: 0.35; }
+svg.lean-phase .dot-next-ring, svg.arrive-phase .dot-next-ring { transition: opacity 0.25s ease, stroke-width 0.25s ease; }
+/* The lean tracer: the 2→3 (or 7→3) half/whole-step thread drawn on the neck. */
+.tracer-line { stroke: var(--turquoise); stroke-width: 2; stroke-dasharray: 2 3; opacity: 0.8; }
+.tracer-head { fill: var(--turquoise); font-size: 11px; opacity: 0.9; }
+/* Mobile (ascending) road tones — hollow dots: Ousak breathes. */
+.fb-dot.mobile .dot-bg { fill: transparent; stroke-dasharray: 3 3; opacity: 0.8; }
+.fb-dot.mobile .dot-label { opacity: 0.75; }
 .fb-dot.target-now .dot-bg { stroke: var(--terracotta); stroke-width: 2; }
 .fb-dot.target-next .dot-bg { stroke: var(--turquoise); stroke-width: 1.5; }
 .fb-dot.target-next { opacity: 0.82; }
@@ -437,6 +449,18 @@ body[data-view="solo"] #fretboard { min-width: 1280px; }
 .legend-item.flavour-key i { background: transparent; border: 3px solid var(--flavour); }
 .fb-dot[data-group="lower-tetra"] .dot-bg { fill: #6B95C2; }
 .fb-dot[data-group="upper-tetra"] .dot-bg { fill: #8B7BB5; }
+.road-mobile-hint { margin: 4px 0 0; color: var(--faint); font-size: 11.5px; font-style: italic; }
+.solo-thread { margin: 6px 0 0; padding: 7px 9px; border-left: 2px solid var(--turquoise); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: rgba(82, 168, 157, 0.08); color: var(--text); font-size: 12px; }
+.solo-thread.quiet { border-left-color: var(--line-strong); background: transparent; color: var(--muted); }
+.taximi-arc { display: grid; gap: 8px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); }
+.taximi-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.taximi-head > span:last-child { color: var(--muted); font-size: 11.5px; }
+.taximi-stages { display: grid; gap: 6px; grid-template-columns: repeat(3, 1fr); }
+.taximi-stages button { display: grid; gap: 3px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; }
+.taximi-stages button span { color: var(--muted); font-size: 10.5px; }
+.taximi-stages button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.taximi-note { margin: 0; color: var(--muted); font-size: 11.5px; }
+@media (max-width: 640px) { .taximi-stages { grid-template-columns: 1fr; } }
 .fb-dot.road .dot-bg { stroke: rgba(242, 237, 227, 0.34); stroke-width: 1.7; }
 .fb-dot.road.tonic .dot-bg { stroke: #F5E4C3; stroke-width: 3; }
 .fb-dot.road .dot-label { font-size: 11px; }
@@ -625,6 +649,13 @@ body[data-view="solo"] #fretboard { min-width: 1280px; }
 
 .pivot-pair-nav { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(139, 123, 181, 0.09); }
 .pivot-pair-nav > span { color: var(--muted); font-size: 11px; text-align: center; }
+.mode-purpose { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+.gym-settings { display: grid; gap: 6px; margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); }
+.gym-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.gym-row .panel-label { margin: 0; }
+.gym-skeleton { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
+.gym-note { margin: 0; color: var(--muted); font-size: 12px; }
+.gym-honesty { margin: 0; color: var(--faint); font-size: 11px; font-style: italic; }
 .pivot-pair-nav b { color: var(--text); font-family: var(--font-mono); }
 .pivot-pair-nav span span { color: var(--violet); padding: 0 4px; }
 
