@@ -5,7 +5,7 @@
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
-    PP = window.PlayerProfiles, HJ = window.HarmonyJourney;
+    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -17,7 +17,7 @@
     cycleMode: "pivot",        // the Changes Gym; "full"/"iiVI" survive only as legacy preference values
     // Changes Gym settings: how many keys the wheel chains, the whole-note
     // skeleton drill, and the unmetered taximi bridge between keys.
-    gym: { keys: 6, skeleton: false, bridging: false, bridgeTimer: null },
+    gym: { keys: 6, anchor: 0, skeleton: false, bridging: false, bridgeTimer: null },
     cycleComping: { focus: "hear", step: 0, kind: "full", voicingIndex: 0, stringSet: null, zone: "mid" },
     // --- progression view ---
     tonic: "D",
@@ -25,6 +25,7 @@
     progId: "ii-V-I",
     progStep: 0,
     scaleOverlay: false,
+    chordMap: { degree: 0, targetIndex: 1, shapeIndex: 0 },
     // --- ear trainer ---
     ear: {
       drill: "colour", tonic: "D", answer: null, guess: null, hintLevel: 0, score: 0, total: 0, streak: 0, best: 0, locked: false,
@@ -58,8 +59,8 @@
     holdI: true,
     loop: true,
     strumStyle: "strum",
-    // chord reference voice: "clean" (guitar) | "piano" | "auto" (match instrument)
-    chordVoice: "clean",
+    // chord reference voice: sampled studio piano is the pitch-stable default.
+    chordVoice: "studio",
     // optional "five of two": a dominant pickup on beat 3 of the phrase's
     // last bar that pulls the ear back to the ii chord (A7 -> Dm7 in C).
     pickupV2: false,
@@ -78,7 +79,7 @@
   function loadUiPreferences() {
     try {
       const raw = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || "{}");
-      if (["clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
+      if (["studio", "clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
       if (typeof raw.pickupV2 === "boolean") state.pickupV2 = raw.pickupV2;
       if ([1, 3, 6].includes(raw.gymKeys)) state.gym.keys = raw.gymKeys;
       if (typeof raw.gymSkeleton === "boolean") state.gym.skeleton = raw.gymSkeleton;
@@ -87,16 +88,16 @@
   function saveUiPreferences() {
     try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickupV2: state.pickupV2, gymKeys: state.gym.keys, gymSkeleton: state.gym.skeleton })); } catch { /* private mode */ }
   }
-  // "clean" is a warm plucked guitar reference; "piano" is a clean additive
-  // piano; "auto" matches the selected instrument (bouzouki/laouto/guitar).
+  // "studio" is a real sampled piano reference; "piano" is the zero-network
+  // additive fallback; "auto" matches the selected instrument.
   function chordReferenceVoice() {
-    return state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
+    return state.chordVoice === "studio" ? "studio" : state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
   }
   const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   }[character]));
 
-  const PERSISTED_VIEWS = ["cycle", "prog", "ear", "triads", "solo", "styles", "video", "analyze", "concepts", "coach"];
+  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "triads", "solo", "styles", "video", "analyze", "concepts", "coach"];
 
   function stablePreferences() {
     return {
@@ -126,6 +127,7 @@
     state.cycleMode = "pivot";
     if (preferences.cycleMode === "iiVI") state.gym.keys = 1;
     state.index = 0;
+    state.gym.anchor = 0;
     state.cycleComping.zone = preferences.cycleZone;
     state.triads.zone = preferences.triadZone;
     state.labelMode = preferences.labelMode;
@@ -209,7 +211,7 @@
   // ====================== primary navigation model ======================
   // Eight destinations; implementation-level views hang underneath them.
   const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", harmony: "cycle", solo: "solo", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
-  const VIEW_NAV = { today: "today", ear: "hear", cycle: "harmony", prog: "harmony", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", concepts: "learn", coach: "coach", progress: "progress" };
+  const VIEW_NAV = { today: "today", ear: "hear", cycle: "harmony", prog: "harmony", chordmap: "harmony", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", concepts: "learn", coach: "coach", progress: "progress" };
   const NAV_TITLES = { today: "Today", hear: "Hear", harmony: "Harmony", solo: "Solo", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
 
   // One sentence per workspace answering "what is this FOR" — the purposes the
@@ -217,6 +219,7 @@
   const MODE_PURPOSE = {
     cycle: "Land the 3rd of every chord as the keys fall. This is the muscle that keeps your solo inside the song on stage.",
     prog: "Real Greek progressions for each dromos — Piraeus modal loops first, the Westernized laiko layer second. Drills end here.",
+    chordmap: "The reference layer: see which triad lives on every degree, then hear its root, 3rd, and 5th on your instrument.",
     triads: "The accompanist's seat: keep the changes close with the nearest shape when the harmony moves.",
     solo: "One neck, three layers: the road, the frame inside it, and the little cells that hit every chord's 3rd."
   };
@@ -238,6 +241,7 @@
   const PRACTICE_STEPS = [
     { view: "cycle", label: "1 · Hear", detail: "Follow the ii–V–I pivot until the next key feels inevitable." },
     { view: "prog", label: "2 · Map", detail: "Name the dromos, progression, and chord function before you play." },
+    { view: "chordmap", label: "2b · Harmonize", detail: "Stack the road into triads, then sing R → 3rd → 5th before you locate the shape." },
     { view: "ear", label: "3 · Recall", detail: "Hear a colour or a full cadence, then name its home and change boxes." },
     { view: "triads", label: "4 · Comp", detail: "Keep the changes close with three-note shapes and clear inversions." },
     { view: "solo", label: "5 · Solo", detail: "Use a pentatonic frame, then land on chord tones at each change." },
@@ -257,6 +261,7 @@
   const PAGE_GUIDES = {
     cycle: { purpose: "Hear harmonic gravity", title: "Train the ii–V–I pivot before you touch a shape.", steps: ["Press Play and follow the highlighted chord.", "Say its function: ii, V, or I.", "Notice when the old I becomes the next ii."] },
     prog: { purpose: "Name the map", title: "Choose a dromos, home, and progression—then hear each box clearly.", steps: ["Pick the dromos and tonic.", "Choose one progression; its Roman numerals are the map.", "Step each chord and say its function before you play it."] },
+    chordmap: { purpose: "Harmonize the road", title: "Connect scale construction, chord quality, and a practical triad shape.", steps: ["Choose one tonic and dromos.", "Read the lower 1–4 and upper 5–8 road before selecting a chord.", "Hear R → 3rd → 5th, then find the highlighted shape on your instrument."] },
     ear: { purpose: "Recall without the neck", title: "First identify colour; then identify the home and the change boxes by ear.", steps: ["Use Dromos colour to isolate the 2nd and 3rd.", "Use Key & changes to choose both the home and progression.", "After checking, open Song Map and find the same boxes."] },
     triads: { purpose: "Comp with voice leading", title: "See the nearest useful triad instead of hunting for a large chord.", steps: ["Choose a Song Map progression.", "Follow the highlighted low-travel triad.", "Change inversion only when it serves the next chord."] },
     solo: { purpose: "Make a line explain the song", title: "Road → shape → numbers → change → ear is the soloing order.", steps: ["Start with the full Solo Road, not a random box.", "Choose a shape/position, then speak a number contour.", "Land the final note on the current chord target."] },
@@ -388,10 +393,9 @@
   function cycleJourney() {
     // The Changes Gym plays ii-V-I-(I) and then the old I is reinterpreted as
     // the new ii a whole step down. Keys=1 stays inside one group (the
-    // on-ramp); keys=3/6 chain groups. The journey uses the full-cycle order —
-    // at a 3-key wrap the guide previews the 4th key while the audio loops,
-    // an accepted edge over duplicating the journey model.
-    const journey = HJ.buildJourney({ kind: "cycle", cycle, mode: state.gym.keys === 1 ? "iiVI" : "full", index: state.index, loop: state.loop, holdI: state.holdI });
+    // on-ramp); keys=3/6 chain groups. The shared journey model owns the key
+    // count so the visible look-ahead wraps on the same chord as the audio.
+    const journey = HJ.buildJourney({ kind: "cycle", cycle, mode: state.gym.keys === 1 ? "iiVI" : "full", keyCount: state.gym.keys, startIndex: state.gym.anchor, index: state.index, loop: state.loop, holdI: state.holdI });
     journey.label = "Changes Gym";
     return journey;
   }
@@ -399,8 +403,7 @@
   // The gym's playable sequence: keys*3 chords starting at the current key
   // group, wrapping around the six-key wheel.
   function gymSequence(idx) {
-    const start = Math.floor((((idx % N) + N) % N) / 3) * 3;
-    return Array.from({ length: Math.min(state.gym.keys, 6) * 3 }, (_, n) => (start + n) % N);
+    return HJ.sequenceForKeyCount(state.gym.anchor == null ? idx : state.gym.anchor, cycle, state.gym.keys);
   }
 
   function songJourney(chords, step) {
@@ -521,10 +524,11 @@
   }
 
   function shapeAudioNotes(shape) {
-    return shape.placements.map((placement) => ({
-      midi: placement.midi,
-      freq: 440 * Math.pow(2, (placement.midi - 69) / 12)
-    }));
+    const open = window.Tuning.open();
+    return shape.placements.map((placement) => {
+      const midi = placement.midi == null ? open[placement.stringIndex] + placement.fret : placement.midi;
+      return { midi, freq: 440 * Math.pow(2, (midi - 69) / 12) };
+    });
   }
 
   function renderCycleTriadRoute() {
@@ -633,10 +637,20 @@
   }
 
   function renderKeymap(cur) {
-    const keys = ["C", "B♭", "A♭", "G♭", "E", "D"];
-    $("keymap").innerHTML = keys.map((k) =>
-      `<span class="key-node${k === cur.key ? " active" : ""}">${k}</span>`
-    ).join('<span class="key-arrow">→</span>');
+    const journey = cycleJourney();
+    const keys = [];
+    journey.items.forEach((entry) => {
+      if (keys.some((item) => item.key === entry.keyLabel)) return;
+      keys.push({ key: entry.keyLabel, sourceIndex: entry.sourceIndex });
+    });
+    const active = keys.findIndex((item) => item.key === cur.key);
+    $("keymapTitle").textContent = `${keys.length}-key loop · old I becomes the next ii`;
+    $("keymap").innerHTML = keys.map((item, index) =>
+      `<button data-cycle-key="${item.sourceIndex}" class="key-node${index === active ? " active" : ""}${index === (active + 1) % keys.length && keys.length > 1 ? " next" : ""}"><span>${index === active ? "Now" : index === (active + 1) % keys.length && keys.length > 1 ? "Next" : `Key ${index + 1}`}</span><b>${escapeHtml(item.key)}</b><small>ii · V · I · I</small></button>`
+    ).join("");
+    $("keymap").querySelectorAll("[data-cycle-key]").forEach((button) => button.onclick = () => {
+      stopPlay(); setCycleIndex(+button.getAttribute("data-cycle-key")); auditionCurrent("block");
+    });
   }
 
   function stepCycle(delta) {
@@ -656,6 +670,7 @@
   function stepPivotPair(delta) {
     const pair = sequenceFor("pivot", state.index);
     state.index = (pair[0] + delta * 3 + N) % N;
+    state.gym.anchor = state.index;
     renderCycle();
   }
 
@@ -750,22 +765,26 @@
     document.querySelectorAll("[data-modeid]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-modeid") === state.modeId));
     const list = M.PROGRESSIONS[state.modeId];
-    const groups = [];
+    const tiers = [];
     list.forEach((progression) => {
-      const name = progression.group || "Core maps";
-      let group = groups.find((item) => item.name === name);
-      if (!group) { group = { name, items: [] }; groups.push(group); }
-      group.items.push(progression);
+      const tierName = progression.tier || "Practice maps";
+      let tier = tiers.find((item) => item.name === tierName);
+      if (!tier) { tier = { name: tierName, jobs: [] }; tiers.push(tier); }
+      const jobName = progression.group || "Core maps";
+      let job = tier.jobs.find((item) => item.name === jobName);
+      if (!job) { job = { name: jobName, items: [] }; tier.jobs.push(job); }
+      job.items.push(progression);
     });
-    $("progList").innerHTML = groups.map((group) => `<section class="progression-group">
-      <h3>${group.name}</h3>
-      ${group.items.map((progression) => {
+    $("progList").innerHTML = tiers.map((tier) => `<section class="progression-tier">
+      <header><span>Layer</span><h3>${tier.name}</h3></header>
+      ${tier.jobs.map((job) => `<div class="progression-job"><h4>${job.name}</h4>
+      ${job.items.map((progression) => {
         const symbols = M.buildProgression(state.tonic, state.modeId, progression.id).chords.map((chord) => chord.symbol).join(" → ");
         return `<button class="prog-item${progression.id === state.progId ? " active" : ""}" data-prog="${progression.id}">
           <span class="prog-function"><b>${progression.label}</b><i>${progression.tag}</i></span>
           <span class="prog-symbols">${symbols}</span>
           <span class="prog-why">${progression.why}</span></button>`;
-      }).join("")}
+      }).join("")}</div>`).join("")}
     </section>`).join("");
     $("progList").querySelectorAll("[data-prog]").forEach((b) => {
       b.onclick = () => {
@@ -775,6 +794,128 @@
         syncProgControls(); renderProg(); auditionProg();
       };
     });
+  }
+
+  // ======================= DROMOS CHORD MAP ============================
+  function chordMapShapes(chord) {
+    const preferred = state.position == null ? 5 : state.position;
+    return TR.allShapes(chord.rootPc, chord.quality, spellPc)
+      .filter((shape) => shape.placements.every((placement) => placement.fret <= 15))
+      .sort((a, b) => Math.abs(a.lowFret - preferred) - Math.abs(b.lowFret - preferred) || a.lowFret - b.lowFret);
+  }
+
+  function currentChordMapSelection() {
+    const chords = CM.harmonize(state.tonic, state.modeId);
+    state.chordMap.degree = Math.max(0, Math.min(6, state.chordMap.degree));
+    const chord = chords[state.chordMap.degree];
+    const shapes = chordMapShapes(chord);
+    state.chordMap.shapeIndex = shapes.length ? state.chordMap.shapeIndex % shapes.length : 0;
+    return { chords, chord, shapes, shape: shapes[state.chordMap.shapeIndex] || FB.findGrip(chord.notes, state.position) };
+  }
+
+  function auditionChordMap(style) {
+    const selected = currentChordMapSelection();
+    const notes = selected.shape && selected.shape.placements ? shapeAudioNotes(selected.shape) : selected.chord.notes;
+    AU.playChord(notes, style || "strum", undefined, chordReferenceVoice());
+  }
+
+  function selectChordMapDegree(index, shouldPlay) {
+    stopPlay();
+    state.chordMap.degree = Math.max(0, Math.min(6, Number(index) || 0));
+    state.chordMap.targetIndex = 1;
+    state.chordMap.shapeIndex = 0;
+    renderChordMap();
+    if (shouldPlay !== false) auditionChordMap("strum");
+  }
+
+  function renderChordMapRoad() {
+    const lanes = CM.road(state.tonic, state.modeId);
+    const laneHtml = (label, notes) => `<div class="chord-road-lane"><span>${label}</span><div>${notes.map((note, index) => {
+      const degree = lanes.scale.findIndex((scaleNote) => scaleNote.pc === note.pc);
+      return `<button data-chord-degree="${Math.max(0, degree)}" class="road-note${degree === state.chordMap.degree ? " active" : ""}${note.isFlavour ? " flavour" : ""}"><b>${escapeHtml(note.degree)}</b><strong>${escapeHtml(note.name)}</strong></button>${note.gap != null ? `<i aria-label="${note.gap} semitone${note.gap === 1 ? "" : "s"}"><span>${escapeHtml(note.gapLabel)}</span><small>step</small></i>` : ""}`;
+    }).join("")}</div></div>`;
+    $("chordMapRoad").innerHTML = laneHtml("Lower road · 1–4", lanes.lower) + laneHtml("Upper road · 5–8", lanes.upper);
+  }
+
+  function renderChordMapComparison() {
+    const columns = CM.comparison(state.tonic);
+    $("chordMapCompare").innerHTML = `<table><thead><tr><th scope="col">Degree</th>${columns.map((column) => `<th scope="col">${escapeHtml(column.mode.name)}</th>`).join("")}</tr></thead><tbody>${Array.from({ length: 7 }, (_, degree) => `<tr><th scope="row">${degree + 1}</th>${columns.map((column) => {
+      const chord = column.chords[degree];
+      const active = column.modeId === state.modeId && degree === state.chordMap.degree;
+      return `<td><button class="${active ? "active" : ""}" data-compare-mode="${column.modeId}" data-chord-degree="${degree}"><span>${escapeHtml(chord.roman)}</span><b>${escapeHtml(chord.symbol)}</b><small>${chord.notes.map((note) => escapeHtml(note.name)).join(" · ")}</small></button></td>`;
+    }).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+
+  function renderChordMap() {
+    const selected = currentChordMapSelection();
+    const chord = selected.chord;
+    const scale = M.scaleOf(state.tonic, state.modeId);
+    const mode = M.MODES[state.modeId];
+    const targetIndex = state.chordMap.targetIndex % chord.notes.length;
+    const nextTargetIndex = (targetIndex + 1) % chord.notes.length;
+    const target = chord.notes[targetIndex];
+    const nextTarget = chord.notes[nextTargetIndex];
+    const grip = selected.shape && selected.shape.placements ? { placements: selected.shape.placements } : selected.shape;
+    FB.render(svg(), {
+      grip,
+      otherShapes: selected.shapes.filter((shape) => shape !== selected.shape),
+      scaleNotes: scale,
+      targetNowPcs: [target.pc],
+      targetNextPcs: [nextTarget.pc],
+      flavourPcs: M.flavourPcs(state.tonic, state.modeId),
+      labelMode: state.labelMode,
+      lefty: state.lefty
+    });
+    svg().setAttribute("aria-label", `${window.Tuning.current().name} ${state.tonic} ${mode.name} chord map: ${chord.roman} ${chord.symbol}; ${target.roleLabel} ${target.name} is the current target and ${nextTarget.roleLabel} ${nextTarget.name} is next in the target sequence`);
+    $("stageLayers").innerHTML = `<span class="layer-chip on is-static"><i class="layer-swatch lc-scale"></i>full scale</span><span class="layer-chip on is-static"><i class="layer-swatch lc-triad"></i>${escapeHtml(chord.roman)} triad</span><span class="layer-chip on is-static"><i class="layer-swatch lc-now"></i>target now · ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</span><span class="layer-chip on is-static"><i class="layer-swatch lc-next"></i>then · ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)}</span><span class="layer-note">Solid dots are this grip; faint dots are its other 0–15 fret inversions.</span>`;
+
+    document.querySelectorAll("[data-chord-map-mode]").forEach((button) =>
+      button.classList.toggle("active", button.getAttribute("data-chord-map-mode") === state.modeId));
+    $("chordMapTonicSel").value = state.tonic;
+    renderChordMapRoad();
+    $("chordMapDegrees").innerHTML = selected.chords.map((item, index) => `<button data-chord-degree="${index}" class="chord-degree${index === state.chordMap.degree ? " active" : ""}">
+      <span><i>${index + 1}</i><strong>${escapeHtml(item.roman)}</strong></span><b>${escapeHtml(item.symbol)}</b><small>${item.notes.map((note) => escapeHtml(note.name)).join(" · ")}</small><em>${item.prominence.mapsUsed}/${item.prominence.totalMaps} Song Maps</em>
+    </button>`).join("");
+    renderChordMapComparison();
+
+    const shapeCopy = selected.shape && selected.shape.placements
+      ? `${selected.shape.inversionName || "compact grip"} · frets ${Math.min(...selected.shape.placements.map((placement) => placement.fret))}–${Math.max(...selected.shape.placements.map((placement) => placement.fret))}`
+      : "compact grip";
+    const specialQuality = chord.quality === "dim"
+      ? "This diminished triad is the truthful stacked result. Treat it as tension and voice-leading material; its usage count tells you whether a documented Song Map currently asks for it."
+      : chord.quality === "aug"
+        ? "This augmented triad is the truthful stacked result. Hear the raised 5th as colour before trying to make it a default comping chord."
+        : "Root locates the harmony, the 3rd names its major/minor colour, and the 5th stabilizes or alters the shape.";
+    const variants = chord.prominence.variants.length
+      ? `Map versions: ${chord.prominence.variants.map((variant) => escapeHtml(variant.symbol)).join(" · ")}.`
+      : "No current Song Map prescribes this degree; it remains visible because it is genuinely inside the selected collection.";
+    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${escapeHtml(chord.roman)}</span><span class="ro-symbol">${escapeHtml(chord.symbol)}</span><span class="ro-key">${escapeHtml(mode.name)} on ${escapeHtml(state.tonic)}</span></div>
+      <div class="chord-map-evidence"><b>${escapeHtml(chord.prominence.label)}</b><span>Used in ${chord.prominence.mapsUsed} of ${chord.prominence.totalMaps} documented Song Maps · ${chord.prominence.occurrences} appearance${chord.prominence.occurrences === 1 ? "" : "s"}</span></div>
+      <div class="chord-target-sequence"><span>Target sequence · not a predicted melody</span>${chord.notes.map((note, index) => `<button data-chord-target="${index}" class="${index === targetIndex ? "active" : index === nextTargetIndex ? "next" : ""}" data-group="${note.colorGroup}"><i>${escapeHtml(note.roleLabel)}</i><b>${escapeHtml(note.name)}</b><small>${index === targetIndex ? "hear now" : index === nextTargetIndex ? "then" : "after"}</small></button>`).join("")}</div>
+      <p class="chord-target-cue"><b>Hear now:</b> ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}. <b>Then:</b> ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)}. Sing it before touching the highlighted fret.</p>
+      <div class="chord-map-actions"><button data-hear-chord>Hear chord</button><button data-hear-target>Hear ${escapeHtml(target.roleLabel)}</button><button data-hear-triad>Hear R → 3rd → 5th</button><button data-next-chord-shape${selected.shapes.length < 2 ? " disabled" : ""}>Next position · ${selected.shapes.length ? state.chordMap.shapeIndex + 1 : 1}/${Math.max(1, selected.shapes.length)}</button></div>
+      <div class="tri-tags"><span class="tri-set">${escapeHtml(window.Tuning.current().name)}</span><span class="tri-fret">${escapeHtml(shapeCopy)}</span></div>
+      <div class="ro-foot"><b>${escapeHtml(specialQuality)}</b> ${variants}${chord.practiceNote ? ` <span class="chord-practice-note">${escapeHtml(chord.practiceNote)}</span>` : ""}</div>`;
+
+    document.querySelectorAll("[data-chord-degree]").forEach((button) => button.onclick = () => {
+      const comparisonMode = button.getAttribute("data-compare-mode");
+      if (comparisonMode) {
+        state.modeId = comparisonMode;
+        if (!M.PROGRESSIONS[state.modeId].some((progression) => progression.id === state.progId)) state.progId = M.PROGRESSIONS[state.modeId][0].id;
+      }
+      selectChordMapDegree(button.getAttribute("data-chord-degree"), true);
+    });
+    $("readout").querySelectorAll("[data-chord-target]").forEach((button) => button.onclick = () => {
+      state.chordMap.targetIndex = +button.getAttribute("data-chord-target"); renderChordMap();
+    });
+    $("readout").querySelector("[data-hear-chord]").onclick = () => auditionChordMap("strum");
+    $("readout").querySelector("[data-hear-target]").onclick = () => AU.playSequence([target], 0.3);
+    $("readout").querySelector("[data-hear-triad]").onclick = () => AU.playSequence(chord.notes, 0.38);
+    $("readout").querySelector("[data-next-chord-shape]").onclick = () => {
+      if (selected.shapes.length < 2) return;
+      state.chordMap.shapeIndex = (state.chordMap.shapeIndex + 1) % selected.shapes.length;
+      renderChordMap(); auditionChordMap("block");
+    };
   }
 
   function stepProg(delta) {
@@ -1032,9 +1173,18 @@
     return { freq: 440 * Math.pow(2, (midi - 69) / 12) };
   }
 
-  function playEarTonic() {
+  function earAudioStatus(message, stateName) {
+    const status = $("earAudioStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.className = `ear-audio-status${stateName ? ` ${stateName}` : ""}`;
+  }
+
+  async function playEarTonic() {
     stopPlay();
-    AU.playChord([earTonicNote()], "block", undefined, "guitar");
+    earAudioStatus(AU.studioStatus() === "ready" ? `Playing ${state.ear.tonic} home pitch` : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playReferenceChord([earTonicNote()], "block");
+    if (played) earAudioStatus(`Home pitch: ${state.ear.tonic} · sampled studio piano · Stop anytime`, "playing");
   }
 
   function renderEarReference() {
@@ -1053,6 +1203,8 @@
       if (state.ear.locked && id === state.ear.answer) button.classList.add("right");
       else if (state.ear.locked && id === state.ear.guess) button.classList.add("wrong");
     });
+    $("btnEarHint").disabled = state.ear.locked;
+    $("btnEarCheck").disabled = state.ear.locked;
   }
 
   function newEarQuestion() {
@@ -1066,6 +1218,9 @@
     state.ear.guess = null;
     state.ear.hintLevel = 0;
     state.ear.locked = false;
+    $("earReveal").classList.add("hidden");
+    $("earReveal").innerHTML = "";
+    $("btnEarNew").textContent = "Next question";
     $("earFeedback").className = "ear-feedback";
     $("earFeedback").textContent = `Reference tonic: ${state.ear.tonic}. Listen to the chord cadence twice. Choose a map, ask for a hint if needed, then check.`;
     renderColourChoices();
@@ -1074,12 +1229,15 @@
     renderEarScore();
   }
 
-  function playEarPrompt() {
+  async function playEarPrompt() {
     stopPlay();
     const id = state.ear.answer;
+    if (!id) return;
     const prog = M.PROGRESSIONS[id][0];
     const { chords } = M.buildProgression(state.ear.tonic, id, prog.id);
-    AU.playProgressionPrompt(chords, state.bpm);
+    earAudioStatus(AU.studioStatus() === "ready" ? "Playing the cadence twice…" : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playProgressionPrompt(chords, state.bpm, "studio");
+    if (played && id === state.ear.answer) earAudioStatus("Cadence playing twice · chords only · Stop anytime", "playing");
   }
 
   function selectColourGuess(guess) {
@@ -1118,11 +1276,42 @@
     renderColourChoices();
     const answer = { tonic: state.ear.tonic, modeId: state.ear.answer, progressionId: M.PROGRESSIONS[state.ear.answer][0].id };
     const detail = E ? E.explanation(answer) : { label: M.MODES[state.ear.answer].name, signature: "signature tones", scale: "" };
+    const built = M.buildProgression(answer.tonic, answer.modeId, answer.progressionId);
     const fb = $("earFeedback");
     fb.className = "ear-feedback " + (correct ? "ok" : "no");
     fb.innerHTML = (correct ? "✓ Correct — " : "✗ It was ") +
       `<b>${detail.label}</b> (${detail.category || "map"}). Signature: <b>${detail.signature}</b>. Scale: <b>${detail.scale}</b>.`;
+    renderEarReveal("earReveal", answer, built, {
+      summary: `You chose ${M.MODES[state.ear.guess].name}; the played answer was ${detail.label}.`,
+      progression: detail.progression,
+      why: detail.why
+    });
     renderEarScore();
+  }
+
+  function renderEarReveal(rootId, answer, built, copy) {
+    const root = $(rootId);
+    const scale = M.scaleOf(answer.tonic, answer.modeId);
+    root.classList.remove("hidden");
+    root.innerHTML = `<header><span>Exactly what played</span><h3>${escapeHtml(E ? E.answerLabel(answer) : `${answer.tonic} ${M.MODES[answer.modeId].name}`)}</h3><p>${escapeHtml(copy.summary)}</p></header>
+      <div class="ear-reveal-context"><span><b>Scale</b>${scale.map((note) => `${escapeHtml(note.name)} <i>${escapeHtml(note.degree)}</i>`).join(" · ")}</span><span><b>Boxes</b>${escapeHtml(copy.progression || built.prog.label)}</span></div>
+      <div class="ear-played-chords">${built.chords.map((chord, index) => `<button data-ear-reveal-chord="${index}" aria-label="Play chord ${index + 1}: ${escapeHtml(chord.degreeLabel)} ${escapeHtml(chord.symbol)}"><span>${index + 1} · ${escapeHtml(chord.degreeLabel)}</span><b>${escapeHtml(chord.symbol)}</b><small>${chord.notes.map((note) => `${escapeHtml(note.name)} (${escapeHtml(note.roleLabel)})`).join(" · ")}</small><em>♪ hear this chord</em></button>`).join('<i aria-hidden="true">→</i>')}</div>
+      <p class="ear-reveal-why"><b>Why it belongs:</b> ${escapeHtml(copy.why || "The chord tones and scale collection agree with the named map.")}</p>
+      <div class="ear-reveal-actions"><button data-ear-reveal-replay>↻ Replay this exact sequence</button><button data-ear-reveal-map>Open it in Song Map</button></div>`;
+    root.querySelectorAll("[data-ear-reveal-chord]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const chord = built.chords[+button.getAttribute("data-ear-reveal-chord")];
+      earAudioStatus(`Playing ${chord.degreeLabel} · ${chord.symbol} · Stop anytime`, "playing");
+      AU.playReferenceChord(chord.notes, "block");
+    });
+    root.querySelector("[data-ear-reveal-replay]").onclick = () => {
+      stopPlay();
+      earAudioStatus("Replaying the exact revealed sequence twice…", "playing");
+      AU.playProgressionPrompt(built.chords, state.bpm, "studio");
+    };
+    root.querySelector("[data-ear-reveal-map]").onclick = () => {
+      state.tonic = answer.tonic; state.modeId = answer.modeId; state.progId = answer.progressionId; state.progStep = 0; setView("prog");
+    };
   }
 
   function earMapLabel(answer) {
@@ -1152,6 +1341,9 @@
     map.keyOptions = map.homePreset === "random" ? selectEarMapChoices(map.answer) : [tonic];
     map.keyGuess = map.homePreset === "random" ? null : tonic;
     map.familyGuess = null; map.progressionGuess = null; map.hintLevel = 0; map.locked = false;
+    $("earMapReveal").classList.add("hidden");
+    $("earMapReveal").innerHTML = "";
+    $("btnEarMapNew").textContent = "Next map";
     $("earMapFeedback").className = "ear-feedback";
     $("earMapFeedback").textContent = map.homePreset === "random"
       ? "Listen twice. Choose the home, then the harmonic/dromos family and its change boxes."
@@ -1160,20 +1352,24 @@
     playEarMapPrompt();
   }
 
-  function playEarMapPrompt() {
+  async function playEarMapPrompt() {
     stopPlay();
     const answer = state.ear.map.answer;
     if (!answer) return;
     const { chords } = M.buildProgression(answer.tonic, answer.modeId, answer.progressionId);
-    AU.playProgressionPrompt(chords, state.bpm);
+    earAudioStatus(AU.studioStatus() === "ready" ? "Playing the map twice…" : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playProgressionPrompt(chords, state.bpm, "studio");
+    if (played && answer === state.ear.map.answer) earAudioStatus("Map playing twice · Stop anytime", "playing");
   }
 
-  function playEarMapHome() {
+  async function playEarMapHome() {
     stopPlay();
     const answer = state.ear.map.answer;
     if (!answer || state.ear.map.homePreset === "random") return;
     const chord = E ? E.homeChord(answer) : M.buildProgression(answer.tonic, answer.modeId, answer.progressionId).chords.slice(-1)[0];
-    AU.playChord(chord.notes, "block", undefined, "guitar");
+    earAudioStatus(AU.studioStatus() === "ready" ? `Playing ${answer.tonic} home chord` : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playReferenceChord(chord.notes, "block");
+    if (played) earAudioStatus(`Home chord: ${chord.symbol} · Stop anytime`, "playing");
   }
 
   function renderEarMap() {
@@ -1183,16 +1379,18 @@
     homeSelect.innerHTML = `<option value="random">Random — test the home</option>` + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic} — known home</option>`).join("");
     homeSelect.value = map.homePreset;
     $("btnEarMapHome").disabled = map.homePreset === "random";
+    $("btnEarMapHint").disabled = map.locked;
+    $("btnEarMapCheck").disabled = map.locked;
     $("btnEarMapHome").textContent = map.homePreset === "random" ? "Home hidden · train blind" : `♪ Hear ${map.answer.tonic} home chord`;
     $("earKeyChoices").innerHTML = map.homePreset === "random"
-      ? map.keyOptions.map((tonic) => `<button data-ear-key="${tonic}"${map.keyGuess === tonic ? " class=\"selected\"" : ""}>${tonic}</button>`).join("")
+      ? map.keyOptions.map((tonic) => `<button data-ear-key="${tonic}" class="${map.keyGuess === tonic ? "selected " : ""}${map.locked && tonic === map.answer.tonic ? "right" : map.locked && tonic === map.keyGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}>${tonic}</button>`).join("")
       : `<div class="ear-home-anchor"><b>${map.answer.tonic}</b><span>Known training home. Use ♪ Hear ${map.answer.tonic} if you need to reset your ear.</span></div>`;
     $("earFamilyChoices").innerHTML = (E ? E.families() : M.MODE_ORDER.map((id) => ({ id, label: M.MODES[id].name, signature: "signature tones" }))).map((item) =>
-      `<button data-ear-family="${item.id}"${map.familyGuess === item.id ? " class=\"selected\"" : ""}${map.locked ? " disabled" : ""}><b>${item.label}</b><span>${item.signature}</span></button>`
+      `<button data-ear-family="${item.id}" class="${map.familyGuess === item.id ? "selected " : ""}${map.locked && item.id === map.answer.modeId ? "right" : map.locked && item.id === map.familyGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}><b>${item.label}</b><span>${item.signature}</span></button>`
     ).join("");
     const progressions = map.familyGuess ? (E ? E.progressions(map.familyGuess) : M.PROGRESSIONS[map.familyGuess]) : [];
     $("earProgressionChoices").innerHTML = progressions.length
-      ? progressions.map((progression) => `<button data-ear-prog="${progression.id}"${map.progressionGuess === progression.id ? " class=\"selected\"" : ""}${map.locked ? " disabled" : ""}><b>${progression.label}</b><span>${progression.chords.map((chord) => M.DEGREE_LABEL[chord[0]]).join(" → ")}</span></button>`).join("")
+      ? progressions.map((progression) => `<button data-ear-prog="${progression.id}" class="${map.progressionGuess === progression.id ? "selected " : ""}${map.locked && map.familyGuess === map.answer.modeId && progression.id === map.answer.progressionId ? "right" : map.locked && progression.id === map.progressionGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}><b>${progression.label}</b><span>${progression.chords.map((chord) => M.DEGREE_LABEL[chord[0]]).join(" → ")}</span></button>`).join("")
       : `<p class="ear-choice-empty">Choose the map family first; the progression choices will then use its own Roman-numeral language.</p>`;
     $("earKeyChoices").querySelectorAll("[data-ear-key]").forEach((button) => button.onclick = () => {
       if (map.locked) return;
@@ -1236,15 +1434,22 @@
     renderPlayerProfiles(false);
     const detail = E ? E.explanation(map.answer) : null;
     const progression = E ? E.progression(map.answer.modeId, map.answer.progressionId) : M.PROGRESSIONS[map.answer.modeId].find((item) => item.id === map.answer.progressionId);
-    const chords = E ? detail.chords.map((symbol) => ({ symbol })) : M.buildProgression(map.answer.tonic, map.answer.modeId, map.answer.progressionId).chords;
+    const built = M.buildProgression(map.answer.tonic, map.answer.modeId, map.answer.progressionId);
+    const chords = built.chords;
     const feedback = $("earMapFeedback");
     feedback.className = "ear-feedback " + (correct ? "ok" : "no");
     feedback.innerHTML = (correct ? "✓ You heard the whole map. " : "✗ Check the map. ") +
       `Home/map: <b>${earMapLabel(map.answer)}</b> (${detail ? detail.category : "map"}). Scale: <b>${detail ? detail.scale : ""}</b>. Boxes: <b>${progression.label}</b> · ${chords.map((chord) => `<b>${chord.symbol}</b>`).join(" → ")}. ${detail ? detail.why : ""}`;
+    renderEarReveal("earMapReveal", map.answer, built, {
+      summary: `You chose ${map.keyGuess} ${M.MODES[map.familyGuess].name} · ${(E ? E.progression(map.familyGuess, map.progressionGuess) : null)?.label || map.progressionGuess}; the played map is shown below.`,
+      progression: progression.label,
+      why: detail ? detail.why : ""
+    });
     renderEarMap(); renderEarScore();
   }
 
   function setEarDrill(drill) {
+    stopPlay();
     state.ear.drill = drill;
     $("earColour").classList.toggle("hidden", drill !== "colour");
     $("earMap").classList.toggle("hidden", drill !== "map");
@@ -1252,6 +1457,12 @@
       button.classList.toggle("active", button.getAttribute("data-ear-drill") === drill));
     document.querySelector(".ear-reference").classList.toggle("hidden", drill !== "colour");
     renderEarReference();
+    const studioState = AU.studioStatus();
+    earAudioStatus(studioState === "ready"
+      ? "Sampled studio piano ready · Start, replay, or stop without changing your answer"
+      : studioState === "fallback"
+        ? "Warm-keys fallback ready · Start, replay, or stop without changing your answer"
+        : "Studio piano loads on first play · Stop always keeps your answer choices", studioState === "ready" ? "ready" : "");
     if (drill === "map" && !state.ear.map.answer) newEarMap();
     renderEarScore();
   }
@@ -1641,7 +1852,7 @@
     const progressions = M.PROGRESSIONS[state.modeId];
     const { chords } = currentProgression();
     root.innerHTML = `
-      <div class="solo-map-head"><div><b>${mode.name} on ${state.tonic}</b><span>${mode.greek} · ${window.Tuning.current().name}</span></div>
+      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key / home ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}</span></div>
         <label>Home <select id="soloTonic">${M.TONICS.map((tonic) =>
           `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label></div>
       <div class="solo-mode-grid">${M.MODE_ORDER.map((modeId) => {
@@ -1942,6 +2153,7 @@
   function renderSoloLayerChips() {
     const root = $("stageLayers");
     if (!root) return;
+    if (state.view === "chordmap") return;
     if (state.view !== "solo" || state.solo.section !== "targets") { root.innerHTML = ""; return; }
     const layers = state.solo.layers;
     const chip = (id, on, swatch, label) => `<button data-solo-layer="${id}" class="layer-chip${on ? " on" : ""}" aria-pressed="${on}"><span class="layer-swatch ${swatch}"></span>${label}</button>`;
@@ -2222,6 +2434,8 @@
 
   // ============================ playback =================================
   let pb = null;
+  let playbackStartRequest = 0;
+  let playbackLoading = false;
   // Prefer the bare roman function; degreeLabel is the display fallback and
   // scaleDegree last (it is numeric, "1"/"2", and must never win over romans).
   function functionTag(c) { return String((c && (c.fn || c.degreeLabel || c.scaleDegree)) || ""); }
@@ -2334,10 +2548,18 @@
     AU.playChord(notes, "block", barStart + 2 * (60 / state.bpm), chordReferenceVoice(), Math.min(1.4, 2 * (60 / state.bpm)));
   }
 
-  function startPlay() {
+  async function startPlay() {
+    const request = ++playbackStartRequest;
     cancelTaximiBridge();
     cancelSoloDrone();
     AU.ensure();
+    if (chordReferenceVoice() === "studio" && AU.studioStatus() !== "ready") {
+      playbackLoading = true;
+      setPlayingUI(true, "■ Stop loading");
+      await AU.prepareStudioPiano();
+      if (request !== playbackStartRequest) return;
+      playbackLoading = false;
+    }
     const pulse = currentPulse();
     if (state.view === "cycle" && state.cycleComping.focus === "chords") {
       const { chords } = currentProgression();
@@ -2375,7 +2597,6 @@
           pb.started = true;
           const idx = pb.seq[pb.pos];
           const chord = cycle[idx];
-          const routeShape = pb.route[idx];
           pb.barsLeft = barsFor(chord) - 1;
           setTimeout(() => setCycleIndex(idx), delay);
           const nextIndex = pb.seq[(pb.pos + 1) % pb.seq.length];
@@ -2433,13 +2654,13 @@
     setPlayingUI(true);
   }
 
-  function stopPlay() { AU.stopAll(); setPlayingUI(false); }
-  function setPlayingUI(p) {
+  function stopPlay() { playbackStartRequest++; playbackLoading = false; AU.stopAll(); setPlayingUI(false); }
+  function setPlayingUI(p, label) {
     const b = $("btnPlay");
-    b.textContent = p ? "⏸ Pause" : "▶ Play";
+    b.textContent = label || (p ? "⏸ Pause" : "▶ Play");
     b.classList.toggle("playing", p);
   }
-  function togglePlay() { AU.isPlaying() ? stopPlay() : startPlay(); }
+  function togglePlay() { AU.isPlaying() || playbackLoading ? stopPlay() : startPlay(); }
 
   function auditionCurrent(style) {
     AU.ensure();
@@ -2452,6 +2673,7 @@
         if (shape) AU.playChord(shapeAudioNotes(shape), style || state.strumStyle, undefined, chordReferenceVoice());
       }
     }
+    else if (state.view === "chordmap") auditionChordMap(style);
     else if (state.view === "prog" || state.view === "solo") auditionProg();
     else if (state.view === "triads") auditionTriad();
   }
@@ -2478,7 +2700,7 @@
     if ($("harmonyTabs")) $("harmonyTabs").classList.toggle("hidden", nav !== "harmony");
     if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
     syncHarmonyTabs();
-    ["panelToday", "panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
+    ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
     $("stage").classList.toggle("hidden", v === "ear" || v === "video" || v === "styles" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
@@ -2487,6 +2709,7 @@
     $("changeGuide").classList.toggle("hidden", v !== "cycle" && v !== "prog");
     if (v === "cycle") { $("panelCycle").classList.remove("hidden"); renderCycle(); }
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
+    else if (v === "chordmap") { $("panelChordMap").classList.remove("hidden"); renderChordMap(); }
     else if (v === "triads") { $("panelTriads").classList.remove("hidden"); syncTriadControls(); renderTriads(); }
     else if (v === "solo") { $("panelSolo").classList.remove("hidden"); setSoloSection(state.solo.section); }
     else if (v === "video") { $("panelVideo").classList.remove("hidden"); if (V) V.render(); }
@@ -2529,6 +2752,7 @@
     if ($("voiceSel")) $("voiceSel").onchange = (event) => {
       state.chordVoice = event.target.value;
       saveUiPreferences();
+      if (state.chordVoice === "studio") AU.prepareStudioPiano();
     };
     if ($("tglPickup")) $("tglPickup").onchange = (event) => {
       state.pickupV2 = event.target.checked;
@@ -2539,6 +2763,7 @@
     $("btnPrev").onclick = () => {
       stopPlay();
       if (state.view === "cycle") state.cycleComping.focus === "chords" ? stepCycleComping(-1) : stepCycle(-1);
+      else if (state.view === "chordmap") { selectChordMapDegree((state.chordMap.degree + 6) % 7, false); }
       else if (state.view === "prog" || state.view === "solo") stepProg(-1);
       else if (state.view === "triads") stepTriad(-1);
       else return;
@@ -2547,6 +2772,7 @@
     $("btnNext").onclick = () => {
       stopPlay();
       if (state.view === "cycle") state.cycleComping.focus === "chords" ? stepCycleComping(1) : stepCycle(1);
+      else if (state.view === "chordmap") { selectChordMapDegree((state.chordMap.degree + 1) % 7, false); }
       else if (state.view === "prog" || state.view === "solo") stepProg(1);
       else if (state.view === "triads") stepTriad(1);
       else return;
@@ -2559,6 +2785,7 @@
       const wasPlaying = AU.isPlaying();
       stopPlay(); cancelTaximiBridge();
       state.gym.keys = +button.getAttribute("data-gym-keys");
+      state.gym.anchor = Math.floor(state.index / 3) * 3;
       saveUiPreferences();
       renderCycle();
       if (wasPlaying) startPlay();
@@ -2608,6 +2835,13 @@
 
     document.querySelectorAll("[data-modeid]").forEach((el) =>
       el.onclick = () => selectMode(el.getAttribute("data-modeid")));
+    document.querySelectorAll("[data-chord-map-mode]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      state.modeId = button.getAttribute("data-chord-map-mode");
+      if (!M.PROGRESSIONS[state.modeId].some((progression) => progression.id === state.progId)) state.progId = M.PROGRESSIONS[state.modeId][0].id;
+      state.chordMap.degree = 0; state.chordMap.targetIndex = 1; state.chordMap.shapeIndex = 0;
+      persistPreferences(); renderChordMap(); auditionChordMap("strum");
+    });
 
     document.querySelectorAll("[data-solo-section]").forEach((button) =>
       button.onclick = () => setSoloSection(button.getAttribute("data-solo-section")));
@@ -2672,6 +2906,12 @@
       if (state.view === "prog") renderProg();
       else if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
       else if (state.view === "triads") renderTriads();
+    };
+    const chordMapTonic = $("chordMapTonicSel");
+    chordMapTonic.innerHTML = M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}</option>`).join("");
+    chordMapTonic.onchange = (event) => {
+      stopPlay(); state.tonic = event.target.value; state.chordMap.degree = 0; state.chordMap.targetIndex = 1; state.chordMap.shapeIndex = 0;
+      persistPreferences(); renderChordMap(); auditionChordMap("strum");
     };
 
     const tuneSel = $("tuningSel");
@@ -2770,6 +3010,7 @@
     $("btnEarTonic").onclick = playEarTonic;
     $("btnEarNew").onclick = newEarQuestion;
     $("btnEarReplay").onclick = () => { if (state.ear.answer) playEarPrompt(); else newEarQuestion(); };
+    $("btnEarStop").onclick = () => { stopPlay(); earAudioStatus("Stopped · your answer choices are unchanged", "stopped"); };
     $("btnEarHint").onclick = hintColour;
     $("btnEarCheck").onclick = checkColourGuess;
     $("earMapHomeSel").onchange = (event) => {
@@ -2779,6 +3020,7 @@
     $("btnEarMapNew").onclick = newEarMap;
     $("btnEarMapHome").onclick = playEarMapHome;
     $("btnEarMapReplay").onclick = () => { if (state.ear.map.answer) playEarMapPrompt(); else newEarMap(); };
+    $("btnEarMapStop").onclick = () => { stopPlay(); earAudioStatus("Stopped · your map choices are unchanged", "stopped"); };
     $("btnEarMapHint").onclick = hintEarMap;
     $("btnEarMapCheck").onclick = checkEarMap;
     document.querySelectorAll("[data-ear-drill]").forEach((button) =>
@@ -2791,6 +3033,7 @@
       if (e.code === "Space") {
         e.preventDefault();
         if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : playEarPrompt();
+        else if (state.view === "chordmap") auditionChordMap("strum");
         else if (state.view === "solo" && ["path", "phrase", "cell"].includes(state.solo.section)) $("btnLabPlay").click();
         else if (state.view !== "styles" && state.view !== "video" && state.view !== "analyze" && state.view !== "concepts" && state.view !== "coach" && state.view !== "today" && state.view !== "progress") togglePlay();
       }
@@ -2815,6 +3058,7 @@
   function rerender() {
     if (state.view === "cycle") renderCycle();
     else if (state.view === "prog") renderProg();
+    else if (state.view === "chordmap") renderChordMap();
     else if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
     else if (state.view === "triads") { syncTriadControls(); renderTriads(); }
     else if (state.view === "ear") setEarDrill(state.ear.drill);
@@ -2827,7 +3071,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

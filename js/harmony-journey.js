@@ -31,6 +31,17 @@
     return cycle.map((_, itemIndex) => itemIndex);
   }
 
+  // A Changes Gym key is one ii-V-I group. Keeping this slice in the shared
+  // journey model makes the visible next chord and the scheduled audio wrap at
+  // exactly the same boundary for the 1-, 3-, and 6-key drills.
+  function sequenceForKeyCount(index, cycle, keyCount) {
+    const length = cycle.length;
+    if (!length) return [];
+    const start = Math.floor(mod(index, length) / 3) * 3;
+    const count = Math.min(Math.max(Number(keyCount) || 1, 1), Math.floor(length / 3));
+    return Array.from({ length: count * 3 }, (_, offset) => mod(start + offset, length));
+  }
+
   function item(chord, sourceIndex, holdI) {
     return {
       id: `${sourceIndex}:${chord.symbol}`,
@@ -74,7 +85,9 @@
     let cursorSource;
     if (kind === "cycle") {
       const cycle = input.cycle || [];
-      const indices = sequenceForCycle(input.mode || "full", input.index || 0, cycle);
+      const indices = input.mode === "full" && input.keyCount != null
+        ? sequenceForKeyCount(input.startIndex == null ? input.index || 0 : input.startIndex, cycle, input.keyCount)
+        : sequenceForCycle(input.mode || "full", input.index || 0, cycle);
       source = indices.map((sourceIndex) => item(cycle[sourceIndex], sourceIndex, input.holdI));
       cursorSource = mod(input.index || 0, cycle.length);
     } else {
@@ -105,6 +118,8 @@
     add("full cycle contains 18 unique chord items", full.items.length === 18 && new Set(full.items.map((entry) => entry.sourceIndex)).size === 18);
     const single = buildJourney({ kind: "cycle", cycle, mode: "iiVI", index: 4, loop: true });
     add("single drill stays inside one ii-V-I group", single.items.map((entry) => entry.sourceIndex).join(",") === "3,4,5");
+    const threeKeys = buildJourney({ kind: "cycle", cycle, mode: "full", startIndex: 0, index: 8, keyCount: 3, loop: true });
+    add("three-key gym wraps its guide with its audio", threeKeys.items.length === 9 && threeKeys.now.sourceIndex === 8 && threeKeys.next === threeKeys.items[0]);
     [0, 1, 2, 3, 17].forEach((index) => {
       const pivot = buildJourney({ kind: "cycle", cycle, mode: "pivot", index, loop: true });
       add(`pivot at ${index} is adjacent I to ii`, pivot.items.length === 2 && pivot.items[0].chord.fn === "I" && pivot.items[1].chord.fn === "ii" && mod(pivot.items[0].sourceIndex + 1, cycle.length) === pivot.items[1].sourceIndex);
@@ -115,5 +130,5 @@
     return { ok: results.every((result) => result.pass), results };
   }
 
-  window.HarmonyJourney = { sequenceForCycle, buildJourney, selfTest };
+  window.HarmonyJourney = { sequenceForCycle, sequenceForKeyCount, buildJourney, selfTest };
 })();

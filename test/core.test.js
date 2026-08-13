@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -92,12 +92,27 @@ test("the Changes Gym is four 4/4 bars per key: ii · V · I · I, then the pivo
   assert.equal(StyleLibrary.beatMap(hasapiko).length, 4, "four beats to the bar");
 });
 
+test("Changes Gym key counts share one audio and guide boundary", () => {
+  const { Theory, HarmonyJourney } = loadCore();
+  const cycle = Theory.buildCycle();
+  [1, 3, 6].forEach((keyCount) => {
+    const sequence = HarmonyJourney.sequenceForKeyCount(0, cycle, keyCount);
+    const journey = HarmonyJourney.buildJourney({ kind: "cycle", cycle, mode: keyCount === 1 ? "iiVI" : "full", keyCount, startIndex: 0, index: sequence[sequence.length - 1], loop: true });
+    assert.deepEqual(Array.from(journey.items, (entry) => entry.sourceIndex), Array.from(sequence), `${keyCount}-key guide matches audio sequence`);
+    assert.equal(journey.next.sourceIndex, sequence[0], `${keyCount}-key guide wraps to its own first chord`);
+  });
+});
+
 test("the Piraeus tier leads the minor bank and Ousak breathes without breaking its strict map", () => {
   const { Modes } = loadCore();
   const minor = Modes.PROGRESSIONS.minor;
   assert.equal(minor[0].id, "i-III-i", "the documented Piraeus i–III oscillation must lead the minor bank");
   assert.equal(Modes.buildProgression("D", "minor", "i-III-i").chords.map((c) => c.symbol).join(" "), "Dm F Dm");
-  assert.ok(minor.every((p) => p.group === "Piraeus · modal"), "the minor bank is the modal tier");
+  assert.ok(minor.every((p) => p.tier === "Piraeus · modal"), "the minor bank is the modal tier");
+  assert.deepEqual(Array.from(new Set(minor.map((p) => p.group))), ["Home loops", "Modal motion", "Lift into home"],
+    "the progression job is an axis separate from its historical layer");
+  assert.ok(Modes.PROGRESSIONS.ousak.every((p) => p.tier === "Equal-tempered Ousak practice"),
+    "Ousak harmony must remain labelled as the app's fixed-fret practice model");
   const mobile = Modes.mobileTonesOf("D", "ousak");
   assert.equal(mobile.map((m) => m.name).join(" "), "E B", "Ousak sharpens its 2nd and 6th on the way up");
   assert.ok(mobile.every((m) => m.mobile), "mobile tones must be marked as such for the hollow-dot render");
@@ -142,6 +157,50 @@ test("the pentatonic frame preserves each dromos identity", () => {
   );
 });
 
+test("Chord Map derives all 60 harmonic maps and a playable triad on every tuning", () => {
+  const { Modes, ChordMap, Tuning, Fretboard, Triads } = loadCore();
+  const restore = Tuning.currentId();
+  let mapsChecked = 0;
+  let gripsChecked = 0;
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    const chords = ChordMap.harmonize(tonic, modeId);
+    const scale = Modes.scaleOf(tonic, modeId);
+    assert.equal(chords.length, 7, `${tonic} ${modeId} has seven derived degrees`);
+    assert.equal(new Set(scale.map((note) => note.pc)).size, 7, `${tonic} ${modeId} keeps seven distinct pitch classes`);
+    assert.ok(scale.every((note) => /^[A-G]/.test(note.name)), `${tonic} ${modeId} uses the app's readable diatonic spelling policy`);
+    chords.forEach((chord, degreeIndex) => {
+      assert.equal(chord.rootPc, scale[degreeIndex].pc, `${tonic} ${modeId} degree ${degreeIndex + 1} roots on its scale note`);
+      assert.ok(["maj", "min", "dim", "aug"].includes(chord.quality), `${chord.symbol} has a supported triad quality`);
+      assert.equal(Triads.TRIAD_OF[chord.quality], chord.quality, `${chord.symbol} maps to its truthful triad family`);
+    });
+    Tuning.TUNINGS.forEach((tuning) => {
+      Tuning.set(tuning.id);
+      chords.forEach((chord) => {
+        assert.ok(Fretboard.findGrip(chord.notes, 5), `${tonic} ${modeId} ${chord.symbol} needs a grip on ${tuning.name}`);
+        assert.ok(Triads.allShapes(chord.rootPc, chord.quality, null).some((shape) => shape.placements.every((placement) => placement.fret <= 15)),
+          `${tonic} ${modeId} ${chord.symbol} needs a truthful adjacent-string triad at fret 15 or below on ${tuning.name}`);
+        gripsChecked++;
+      });
+    });
+    mapsChecked++;
+  }));
+  Tuning.set(restore);
+  assert.equal(mapsChecked, 60);
+  assert.equal(gripsChecked, 2100);
+});
+
+test("Chord Map labels prominence as trainer evidence, not a genre claim", () => {
+  const { ChordMap } = loadCore();
+  const hijaz = ChordMap.harmonize("D", "hijaz");
+  assert.equal(hijaz[0].prominence.mapsUsed, 4);
+  assert.equal(hijaz[0].prominence.totalMaps, 4);
+  assert.deepEqual(Array.from(hijaz[0].prominence.mapIds), ["I-bII-I", "I-iv-I", "I-iv-bVII-I", "bII-I"]);
+  assert.equal(hijaz[2].prominence.mapsUsed, 0, "derived iii° is shown honestly even though the trainer maps do not prescribe it");
+  const ousakSecond = ChordMap.harmonize("D", "ousak")[1];
+  assert.equal(ousakSecond.symbol, "E♭");
+  assert.match(ousakSecond.practiceNote, /fixed-fret harmony/i);
+});
+
 test("Recall separates natural minor, harmonic minor, and the strict Ousak map", () => {
   const { EarDrills } = loadCore();
   const harmonic = { tonic: "D", modeId: "harmonicMinor", progressionId: "iio-V-i" };
@@ -154,8 +213,38 @@ test("Recall separates natural minor, harmonic minor, and the strict Ousak map",
   assert.match(EarDrills.hint(harmonic, 1), /raised 7/i);
 });
 
+test("every displayed progression chord name and interval agrees with its sounding pitch", () => {
+  const { Modes } = loadCore();
+  const intervalByRole = { R: 0, b3: 3, 3: 4, b5: 6, 5: 7, "#5": 8, b7: 10, 7: 11 };
+  const labelByRole = { R: "R", b3: "♭3", 3: "3", b5: "♭5", 5: "5", "#5": "♯5", b7: "♭7", 7: "7" };
+  let checked = 0;
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    Modes.PROGRESSIONS[modeId].forEach((progression) => {
+      const built = Modes.buildProgression(tonic, modeId, progression.id);
+      const roman = progression.label.split(/\s+–\s+/);
+      assert.equal(built.chords.length, roman.length, `${tonic} ${progression.id} has one Roman label per sounding chord`);
+      built.chords.forEach((chord, index) => {
+        assert.equal(chord.degreeLabel, roman[index], `${chord.symbol} displays the progression's exact Roman function`);
+        assert.equal(chord.symbol, chord.rootName + Modes.QUALITY[chord.quality].sym, `${chord.symbol} symbol matches its quality`);
+        chord.notes.forEach((note) => {
+          const soundingInterval = ((note.pc - chord.rootPc) % 12 + 12) % 12;
+          assert.equal(soundingInterval, intervalByRole[note.role], `${chord.symbol} ${note.name} sounds at ${note.role}`);
+          assert.equal(note.roleLabel, labelByRole[note.role], `${chord.symbol} uses the correct rendered interval glyph`);
+          assert.equal(Modes.parseName(note.name).pc, note.pc, `${note.name} spelling matches its sounding pitch`);
+          checked++;
+        });
+      });
+    });
+  }));
+  assert.ok(checked > 2000, `audited ${checked} displayed/sounding chord tones`);
+  const respelled = Modes.buildChord("E♭", "ousak", 1, "maj");
+  assert.equal(respelled.symbol, "E");
+  assert.equal(respelled.notes.map((note) => note.name).join(" "), "E G♯ B",
+    "when F♭ is simplified to E, the major 3rd must be respelled from E as G♯, never A♭");
+});
+
 test("Solo Road keeps the tetrachord split and number patterns playable", () => {
-  const { Modes, Practice, Tuning, Triads } = loadCore();
+  const { Modes, Practice, Tuning, Triads, Fretboard } = loadCore();
   const road = Modes.tetrachordsOf("D", "hijaz");
   assert.deepEqual(Array.from(road.lower, (note) => note.name), ["D", "E♭", "F♯", "G"]);
   assert.deepEqual(Array.from(road.upper, (note) => note.name), ["A", "B♭", "C", "D"]);
@@ -173,6 +262,10 @@ test("Solo Road keeps the tetrachord split and number patterns playable", () => 
   assert.equal(Practice.MELODIC_ROUTES.length, 6, "five classic routes plus the Greek sweet 2→3 lean");
   assert.equal(new Set(Practice.MELODIC_ROUTES.map((route) => route.id)).size, Practice.MELODIC_ROUTES.length);
   assert.ok(Practice.MELODIC_ROUTES.every((route) => route.budget && route.path && route.hear && route.think));
+  assert.deepEqual({ ...Fretboard.neckLayout(24, true) }, { folded: true, fretsPerRow: 12, rows: 2 },
+    "a phone gets the full 24-fret road as two readable 12-fret rows");
+  assert.deepEqual({ ...Fretboard.neckLayout(24, false) }, { folded: false, fretsPerRow: 24, rows: 1 },
+    "tablet and desktop keep one continuous 24-fret road");
 });
 
 test("practical guitar vocabulary keeps full forms at fret 15 or below", () => {

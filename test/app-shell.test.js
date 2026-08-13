@@ -17,6 +17,12 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-view="concepts"/);
   assert.match(html, /data-view="coach"/);
   assert.match(html, /data-view="video"/);
+  assert.match(html, /data-view="chordmap"/);
+  assert.match(html, /id="panelChordMap"/);
+  assert.match(html, /id="chordMapRoad"/);
+  assert.match(html, /id="chordMapDegrees"/);
+  assert.match(html, /id="chordMapCompare"/);
+  assert.match(html, /js\/chord-map\.js\?v=15/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -68,8 +74,12 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/practice.js"), /MELODIC_ROUTES/);
   assert.match(read("js/app.js"), /function renderSoloTimingMatrix/);
   assert.match(read("js/audio.js"), /function playGrooveBeat/);
-  assert.match(read("js/audio.js"), /playChord\(chord\.notes, "strum", t, "guitar"\)/,
-    "ear checks must use the same warm chord reference independent of the visual instrument");
+  assert.match(read("js/audio.js"), /scheduleProgressionPrompt\(chords, bpm, voice\)/,
+    "ear checks must use one explicit reference voice independent of the visual instrument");
+  assert.match(read("js/audio.js"), /STUDIO_PIANO_SAMPLES/,
+    "ear checks need the sampled studio-piano reference instead of a synthesized instrument default");
+  assert.match(html, /id="btnEarStop"/);
+  assert.match(html, /id="earReveal"/);
   assert.doesNotMatch(read("js/app.js"), /filter\(\(i\) => cycle\[i\]\.fn !== "V"\)/,
     "the pivot drill must never create misleading ii-to-I jumps by deleting dominants");
   assert.match(read("css/styles.css"), /prefers-reduced-motion: reduce/);
@@ -79,18 +89,32 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/app.js"), /function checkEarMap/);
   assert.match(read("js/ear-drills.js"), /harmonicMinor/);
   assert.match(read("js/app.js"), /function renderPageGuide/);
-  assert.match(read("js/app.js"), /function stopPlay\(\) \{ AU\.stopAll\(\);/,
+  assert.match(read("js/app.js"), /function renderChordMap/);
+  assert.match(read("js/app.js"), /targetNowPcs: \[target\.pc\]/,
+    "Chord Map must render the current R/3/5 target from the same derived chord used by audio");
+  assert.match(read("js/app.js"), /AU\.playSequence\(chord\.notes, 0\.38\)/,
+    "the visible R→3rd→5th sequence must be audible");
+  assert.match(read("js/app.js"), /function stopPlay\(\) \{[^}]*AU\.stopAll\(\);/,
     "changing a drill must clear path timers and ringing voices as well as transport");
   assert.match(read("js/audio.js"), /function stopAll\(\)/);
   assert.match(read("sw.js"), /fetch\(event\.request\)[\s\S]*caches\.match\(event\.request\)/,
     "online sessions must prefer the deployed app and use cache only as an offline fallback");
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
+  assert.match(read("sw.js"), /js\/chord-map\.js\?v=15/, "Chord Map must work in the offline shell");
+  assert.match(read("api/release.js"), /appVersion: "16"/,
+    "the public deployment identity must match the current offline shell release");
+  assert.match(read("css/styles.css"), /\.chord-compare-scroll \{[^}]*overflow-x: auto/,
+    "the five-dromos comparison must scroll internally instead of widening the page");
 });
 
-test("phone layout contains wide fretboards instead of widening the page", () => {
+test("the full fretboard never widens the page and folds on phones", () => {
   const css = read("css/styles.css");
   assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(css, /\.stage \{ position: relative; min-width: 0; \}/);
   assert.match(css, /\.fretboard-wrap \{[\s\S]*max-width: 100%;/);
+  assert.match(css, /\.fretboard-wrap \{[\s\S]*overflow: hidden/);
+  assert.doesNotMatch(css, /#fretboard[^{}]*\{[^}]*min-width:/);
+  assert.match(read("js/fretboard.js"), /matchMedia\("\(max-width: 620px\)"\)/);
+  assert.match(read("js/fretboard.js"), /data-neck-layout/);
 });

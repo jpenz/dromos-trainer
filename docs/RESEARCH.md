@@ -124,6 +124,58 @@ scale fluency, then approach notes and chord-scale material become meaningful.
 That ordering is especially important for intermediate players with gaps in their
 fretboard map.
 
+### 7. Keep a derived Chord Map explicit about its limits
+
+Additional review on 2026-08-13 sharpened the boundary between a useful fixed-fret
+practice model and historical modal behaviour. Delegos's study of interwar rebetiko
+argues for the analytical usefulness of **equal-tempered makam** and
+**idiosyncratic harmonisation** in a hybrid musical setting; it does not support
+presenting every stacked scale chord as a universal rule of a dromos. Polyzoidis
+likewise distinguishes modal dromoi from Western pentatonic systems, notes their
+non-equal-tempered ancestry and practical life on fretted instruments, and reports
+chromatic movement and arpeggio-based phrasing as important working vocabulary.
+
+**Product consequence:** Chord Map stacks thirds from the app's declared
+equal-tempered collection and labels that operation plainly. It shows every
+result—including diminished and augmented triads—but calls a chord “used” only by
+counting appearances in the app's documented Song Maps. Ousak degree 2 carries a
+specific practice-compromise note. The visible `1–4 / 5–8` split is called a
+four-note practice lens, not a universal historical analysis. The current chord's
+root, 3rd and 5th are independent visual layers so “target now” and “target next”
+never masquerade as a transcribed melody.
+
+Context still matters for the actual hand shape. A 2024 chord-diagram suggestion
+study found that previous-chord context materially improved diagram selection for
+Western popular-music data. Dromos Trainer therefore keeps the comparison map as a
+reference view, while progression practice continues to use its whole-path
+voice-leading solver rather than choosing each grip in isolation.
+
+- [Spiros Delegos — *A Modal Heterotopia: Rethinking Makam Modality and Chordal Harmony in Interwar Rebetiko* (2024)](https://taju.uniarts.fi/items/59d0008a-fd31-4bbb-a4e8-23f6084017df)
+- [Nassos Polyzoidis — *Fingerstyle Rebetiko: the revival of a lost technique* (2019)](https://dialnet.unirioja.es/descarga/articulo/7693555.pdf)
+- [*Guitar Chord Diagram Suggestion for Western Popular Music* (2024)](https://arxiv.org/abs/2407.14260)
+
+### 8. Use one pitch-stable reference voice for scored ear checks
+
+The ear trainer should not change timbral identity when the player changes the
+visual instrument. Tone.js's `Sampler` documentation validates the underlying
+browser pattern—map real recordings to pitches and transpose nearby notes—but a
+framework was unnecessary for Dromos Trainer's small reference range. The app now
+uses native Web Audio with 17 self-hosted notes from Alexander Holm's Salamander
+Grand Piano V3, sampled every minor third from C2–C6. Any teaching-range note is
+repitched by no more than two semitones. The 1.2 MB subset is cached by the service
+worker, cancelled safely when the player presses Stop or changes drills, and falls
+back to the existing additive keys if decoding is unavailable.
+
+This is deliberately a neutral **reference piano**, not a claim that a piano should
+replace bouzouki, guitar or laouto in stylistic practice. A future paid plucked-
+instrument library should be considered only after blind A/B listening on iPad and
+should remain separate from the consistent scored-ear voice.
+
+- [Tone.js Sampler documentation](https://tonejs.github.io/docs/15.1.22/classes/Sampler.html)
+- [Salamander Grand Piano V3 source and CC BY 3.0 license](https://github.com/sfzinstruments/SalamanderGrandPiano)
+- [Tone.js Salamander browser conversions](https://tonejs.github.io/audio/salamander/)
+- [smplr sample-instrument library](https://github.com/danigb/smplr) — reviewed but not added; its pre-1.0 API and default online sample delivery would add avoidable runtime risk here
+
 ## Books and methods worth using alongside the app
 
 | Resource | Why it belongs beside Dromos Trainer |

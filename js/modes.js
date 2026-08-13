@@ -105,7 +105,7 @@
       scale: [0, 1, 3, 5, 7, 8, 10],          // Phrygian
       flavour: [1, 3],
       signature: "♭2 + ♭3",
-      blurb: "Phrygian in equal temperament (the true 2nd is neutral — which is why no chord is built on it). The ♭2 lives in the melody; this trainer's strict ear maps keep every displayed chord tone inside the selected collection."
+      blurb: "A fixed-fret, equal-tempered Ousak practice collection. Its ♭II chord is an explicit harmonisation compromise; it does not turn Ousak's mobile melodic 2nd into an ordinary Western chord-scale degree."
     },
     hijaz: {
       id: "hijaz", name: "Hijaz", greek: "Χιτζάζ",
@@ -135,16 +135,16 @@
   // table MI-07; do not edit chords without updating that table + the tests.
   const PROGRESSIONS = {
     major: [
-      { id: "ii-V-I", label: "ii – V – I", tag: "core", group: "Laiko · Westernized", earSafe: true,
+      { id: "ii-V-I", label: "ii – V – I", tag: "core", tier: "Laiko · Westernized", group: "Cadences", earSafe: true,
         chords: [[2, "m7"], [7, "dom7"], [0, "maj7"]],
         why: "The engine of the Westernized laiko layer. Everything else is a variation." },
-      { id: "I-vi-ii-V", label: "I – vi – ii – V", tag: "core", group: "Laiko · Westernized", earSafe: true,
+      { id: "I-vi-ii-V", label: "I – vi – ii – V", tag: "core", tier: "Laiko · Westernized", group: "Turnarounds", earSafe: true,
         chords: [[0, "maj7"], [9, "m7"], [2, "m7"], [7, "dom7"]],
         why: "Loops forever — the best ear-training vamp there is." },
-      { id: "IV-V-I", label: "IV – V – I", tag: "folk", group: "Song endings", earSafe: true,
+      { id: "IV-V-I", label: "IV – V – I", tag: "folk", tier: "Modal / folk practice", group: "Song endings", earSafe: true,
         chords: [[5, "maj"], [7, "maj"], [0, "maj"]],
         why: "No leading-tone 7th. The dimotiko cadence, not the jazz one." },
-      { id: "bVII-I", label: "♭VII – I", tag: "modal", group: "Modal motion", earSafe: false,
+      { id: "bVII-I", label: "♭VII – I", tag: "modal", tier: "Modal / folk practice", group: "Modal motion", earSafe: false,
         chords: [[10, "maj"], [0, "maj"]],
         why: "Modal brightening. All over modern laïko and entechno." }
     ],
@@ -152,52 +152,52 @@
       // "Piraeus · modal" vs "Laiko · Westernized" is the documented historical
       // layering of rebetiko harmony (Pennanen): modal loops first, functional
       // V-based cadences as the later Westernized layer.
-      { id: "i-III-i", label: "i – III – i", tag: "piraeus", group: "Piraeus · modal", earSafe: true,
+      { id: "i-III-i", label: "i – III – i", tag: "piraeus", tier: "Piraeus · modal", group: "Home loops", earSafe: true,
         chords: [[0, "min"], [3, "maj"], [0, "min"]],
         why: "The Piraeus backbone: minor home and its relative major answering each other. The single most documented progression of early rebetiko." },
-      { id: "i-bVII-i", label: "i – ♭VII – i", tag: "core", group: "Piraeus · modal", earSafe: true,
+      { id: "i-bVII-i", label: "i – ♭VII – i", tag: "core", tier: "Piraeus · modal", group: "Home loops", earSafe: true,
         chords: [[0, "min"], [10, "maj"], [0, "min"]],
         why: "Natural minor home loop. The ♭7 stays natural: no leading-tone pull is implied." },
-      { id: "iv-bVII-i", label: "iv – ♭VII – i", tag: "modal", group: "Piraeus · modal", earSafe: true,
+      { id: "iv-bVII-i", label: "iv – ♭VII – i", tag: "modal", tier: "Piraeus · modal", group: "Modal motion", earSafe: true,
         chords: [[5, "min"], [10, "maj"], [0, "min"]],
         why: "Natural minor. Softer, no leading tone, more folk." },
-      { id: "bVI-bVII-i", label: "♭VI – ♭VII – i", tag: "modal", group: "Piraeus · modal", earSafe: true,
+      { id: "bVI-bVII-i", label: "♭VI – ♭VII – i", tag: "modal", tier: "Piraeus · modal", group: "Lift into home", earSafe: true,
         chords: [[8, "maj"], [10, "maj"], [0, "min"]],
         why: "A natural-minor lift into home: ♭VI → ♭VII → i." }
     ],
     harmonicMinor: [
-      { id: "iio-V-i", label: "iiø – V7 – i", tag: "core", group: "Laiko · Westernized", earSafe: true,
+      { id: "iio-V-i", label: "iiø – V7 – i", tag: "core", tier: "Laiko · Westernized", group: "Cadences", earSafe: true,
         chords: [[2, "m7b5"], [7, "dom7"], [0, "min"]],
         why: "Functional harmonic-minor cadence. The raised 7 in V7 resolves to the tonic; the final i stays a triad so every chord tone matches the map." },
-      { id: "iv-V-i", label: "iv – V7 – i", tag: "core", group: "Laiko · Westernized", earSafe: true,
+      { id: "iv-V-i", label: "iv – V7 – i", tag: "core", tier: "Laiko · Westernized", group: "Cadences", earSafe: true,
         chords: [[5, "min"], [7, "dom7"], [0, "min"]],
         why: "Hear the dominant's 3rd as the leading tone that wants to resolve up to 1." },
-      { id: "bVI-ii-V-i", label: "♭VI – iiø – V7 – i", tag: "gateway", group: "Laiko · Westernized", earSafe: true,
+      { id: "bVI-ii-V-i", label: "♭VI – iiø – V7 – i", tag: "gateway", tier: "Laiko · Westernized", group: "Long cadences", earSafe: true,
         chords: [[8, "maj"], [2, "m7b5"], [7, "dom7"], [0, "min"]],
         why: "A longer functional-minor sentence: colour, predominant, dominant, home." }
     ],
     ousak: [
-      { id: "i-bVII-i", label: "i – ♭VIIm – i", tag: "core", group: "Home loops", earSafe: true,
+      { id: "i-bVII-i", label: "i – ♭VIIm – i", tag: "core", tier: "Equal-tempered Ousak practice", group: "Home loops", earSafe: true,
         chords: [[0, "min"], [10, "min"], [0, "min"]],
         why: "Strict practice map: the ♭VII is minor so every chord tone agrees with the equal-tempered Ousak collection." },
-      { id: "bII-i", label: "♭II – i", tag: "cadence", group: "Cadences", earSafe: true,
+      { id: "bII-i", label: "♭II – i", tag: "cadence", tier: "Equal-tempered Ousak practice", group: "Cadences", earSafe: true,
         chords: [[1, "maj"], [0, "min"]],
         why: "Hear the ♭II colour falling directly into the minor home." },
-      { id: "bII-bVII-i", label: "♭II – ♭VIIm – i", tag: "modal", group: "Modal motion", earSafe: true,
+      { id: "bII-bVII-i", label: "♭II – ♭VIIm – i", tag: "modal", tier: "Equal-tempered Ousak practice", group: "Modal motion", earSafe: true,
         chords: [[1, "maj"], [10, "min"], [0, "min"]],
         why: "A strict Ousak colour route: ♭II and minor ♭VII both stay inside this practice collection." }
     ],
     hijaz: [
-      { id: "I-bII-I", label: "I – ♭II – I", tag: "core", group: "Home loops", earSafe: true,
+      { id: "I-bII-I", label: "I – ♭II – I", tag: "core", tier: "Equal-tempered Hijaz practice", group: "Home loops", earSafe: true,
         chords: [[0, "maj"], [1, "maj"], [0, "maj"]],
         why: "The signature. If you play one Hijaz move, play this." },
-      { id: "I-iv-I", label: "I – iv – I", tag: "core", group: "Home loops", earSafe: true,
+      { id: "I-iv-I", label: "I – iv – I", tag: "core", tier: "Equal-tempered Hijaz practice", group: "Home loops", earSafe: true,
         chords: [[0, "maj"], [5, "min"], [0, "maj"]],
         why: "Major tonic pulling against a minor subdominant." },
-      { id: "I-iv-bVII-I", label: "I – iv – ♭VII – I", tag: "core", group: "Long routes", earSafe: true,
+      { id: "I-iv-bVII-I", label: "I – iv – ♭VII – I", tag: "core", tier: "Equal-tempered Hijaz practice", group: "Long routes", earSafe: true,
         chords: [[0, "maj"], [5, "min"], [10, "min"], [0, "maj"]],
         why: "The 1–4–7–1. Note the ♭VII is MINOR — that is Hijaz, not minor." },
-      { id: "bII-I", label: "♭II – I", tag: "cadence", group: "Cadences", earSafe: true,
+      { id: "bII-I", label: "♭II – I", tag: "cadence", tier: "Equal-tempered Hijaz practice", group: "Cadences", earSafe: true,
         chords: [[1, "maj"], [0, "maj"]],
         why: "The cadence on its own. Drill it until it is reflex." }
     ]
@@ -285,6 +285,11 @@
     const idxInScale = mode.scale.indexOf(degOff);
     const rootLetter = t.letterIdx + (idxInScale >= 0 ? idxInScale : DEFAULT_STEP[degOff]);
     const rootName = simplify(nameFor(rootLetter, rootPc));
+    // If the readability policy respells a theoretical root (F♭ -> E or C♭
+    // -> B), spell the chord from that displayed root as well. Otherwise an
+    // E-major triad derived from an F♭ scale degree can misleadingly display
+    // E–A♭–B even though its labelled 3rd is G♯.
+    const chordRootLetter = parseName(rootName).letterIdx;
 
     // place bottom note near the previous chord (simple register continuity)
     let bottom;
@@ -311,7 +316,7 @@
         midi, pc, role,
         roleLabel: ROLE_LABEL[role],
         colorGroup: ROLE_GROUP[role],
-        name: simplify(nameFor(rootLetter + q.steps[i], pc)),
+        name: simplify(nameFor(chordRootLetter + q.steps[i], pc)),
         freq: 440 * Math.pow(2, (midi - 69) / 12)
       };
     });
