@@ -661,9 +661,12 @@ body[data-view="solo"] #fretboard { min-width: 1280px; }
 
 /* progression list */
 .prog-list { display: flex; flex-direction: column; gap: 10px; }
-.progression-group { display: grid; gap: 7px; }
-.progression-group + .progression-group { padding-top: 8px; border-top: 1px solid var(--line); }
-.progression-group h3 { margin: 0; color: var(--faint); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+.progression-tier { display: grid; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.progression-tier > header { display: flex; align-items: baseline; gap: 8px; }
+.progression-tier > header span { color: var(--aegean); font-size: 9px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.progression-tier > header h3 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: 16px; font-weight: 500; }
+.progression-job { display: grid; gap: 7px; }
+.progression-job h4 { margin: 4px 0 0; color: var(--faint); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .prog-item { display: grid; grid-template-columns: minmax(100px, 0.45fr) minmax(130px, 0.55fr); gap: 5px 12px; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; color: var(--text); transition: all var(--t-fast) var(--ease); }
 .prog-item:hover { border-color: var(--line-strong); background: var(--panel2); }
 .prog-item.active { border-color: var(--terracotta); background: var(--terracotta-soft); }

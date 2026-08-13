@@ -97,7 +97,11 @@ test("the Piraeus tier leads the minor bank and Ousak breathes without breaking 
   const minor = Modes.PROGRESSIONS.minor;
   assert.equal(minor[0].id, "i-III-i", "the documented Piraeus i–III oscillation must lead the minor bank");
   assert.equal(Modes.buildProgression("D", "minor", "i-III-i").chords.map((c) => c.symbol).join(" "), "Dm F Dm");
-  assert.ok(minor.every((p) => p.group === "Piraeus · modal"), "the minor bank is the modal tier");
+  assert.ok(minor.every((p) => p.tier === "Piraeus · modal"), "the minor bank is the modal tier");
+  assert.deepEqual(Array.from(new Set(minor.map((p) => p.group))), ["Home loops", "Modal motion", "Lift into home"],
+    "the progression job is an axis separate from its historical layer");
+  assert.ok(Modes.PROGRESSIONS.ousak.every((p) => p.tier === "Equal-tempered Ousak practice"),
+    "Ousak harmony must remain labelled as the app's fixed-fret practice model");
   const mobile = Modes.mobileTonesOf("D", "ousak");
   assert.equal(mobile.map((m) => m.name).join(" "), "E B", "Ousak sharpens its 2nd and 6th on the way up");
   assert.ok(mobile.every((m) => m.mobile), "mobile tones must be marked as such for the hollow-dot render");

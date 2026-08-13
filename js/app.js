@@ -750,22 +750,26 @@
     document.querySelectorAll("[data-modeid]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-modeid") === state.modeId));
     const list = M.PROGRESSIONS[state.modeId];
-    const groups = [];
+    const tiers = [];
     list.forEach((progression) => {
-      const name = progression.group || "Core maps";
-      let group = groups.find((item) => item.name === name);
-      if (!group) { group = { name, items: [] }; groups.push(group); }
-      group.items.push(progression);
+      const tierName = progression.tier || "Practice maps";
+      let tier = tiers.find((item) => item.name === tierName);
+      if (!tier) { tier = { name: tierName, jobs: [] }; tiers.push(tier); }
+      const jobName = progression.group || "Core maps";
+      let job = tier.jobs.find((item) => item.name === jobName);
+      if (!job) { job = { name: jobName, items: [] }; tier.jobs.push(job); }
+      job.items.push(progression);
     });
-    $("progList").innerHTML = groups.map((group) => `<section class="progression-group">
-      <h3>${group.name}</h3>
-      ${group.items.map((progression) => {
+    $("progList").innerHTML = tiers.map((tier) => `<section class="progression-tier">
+      <header><span>Layer</span><h3>${tier.name}</h3></header>
+      ${tier.jobs.map((job) => `<div class="progression-job"><h4>${job.name}</h4>
+      ${job.items.map((progression) => {
         const symbols = M.buildProgression(state.tonic, state.modeId, progression.id).chords.map((chord) => chord.symbol).join(" → ");
         return `<button class="prog-item${progression.id === state.progId ? " active" : ""}" data-prog="${progression.id}">
           <span class="prog-function"><b>${progression.label}</b><i>${progression.tag}</i></span>
           <span class="prog-symbols">${symbols}</span>
           <span class="prog-why">${progression.why}</span></button>`;
-      }).join("")}
+      }).join("")}</div>`).join("")}
     </section>`).join("");
     $("progList").querySelectorAll("[data-prog]").forEach((b) => {
       b.onclick = () => {
