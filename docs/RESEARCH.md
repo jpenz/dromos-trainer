@@ -124,6 +124,36 @@ scale fluency, then approach notes and chord-scale material become meaningful.
 That ordering is especially important for intermediate players with gaps in their
 fretboard map.
 
+### 7. Keep a derived Chord Map explicit about its limits
+
+Additional review on 2026-08-13 sharpened the boundary between a useful fixed-fret
+practice model and historical modal behaviour. Delegos's study of interwar rebetiko
+argues for the analytical usefulness of **equal-tempered makam** and
+**idiosyncratic harmonisation** in a hybrid musical setting; it does not support
+presenting every stacked scale chord as a universal rule of a dromos. Polyzoidis
+likewise distinguishes modal dromoi from Western pentatonic systems, notes their
+non-equal-tempered ancestry and practical life on fretted instruments, and reports
+chromatic movement and arpeggio-based phrasing as important working vocabulary.
+
+**Product consequence:** Chord Map stacks thirds from the app's declared
+equal-tempered collection and labels that operation plainly. It shows every
+result—including diminished and augmented triads—but calls a chord “used” only by
+counting appearances in the app's documented Song Maps. Ousak degree 2 carries a
+specific practice-compromise note. The visible `1–4 / 5–8` split is called a
+four-note practice lens, not a universal historical analysis. The current chord's
+root, 3rd and 5th are independent visual layers so “target now” and “target next”
+never masquerade as a transcribed melody.
+
+Context still matters for the actual hand shape. A 2024 chord-diagram suggestion
+study found that previous-chord context materially improved diagram selection for
+Western popular-music data. Dromos Trainer therefore keeps the comparison map as a
+reference view, while progression practice continues to use its whole-path
+voice-leading solver rather than choosing each grip in isolation.
+
+- [Spiros Delegos — *A Modal Heterotopia: Rethinking Makam Modality and Chordal Harmony in Interwar Rebetiko* (2024)](https://taju.uniarts.fi/items/59d0008a-fd31-4bbb-a4e8-23f6084017df)
+- [Nassos Polyzoidis — *Fingerstyle Rebetiko: the revival of a lost technique* (2019)](https://dialnet.unirioja.es/descarga/articulo/7693555.pdf)
+- [*Guitar Chord Diagram Suggestion for Western Popular Music* (2024)](https://arxiv.org/abs/2407.14260)
+
 ## Books and methods worth using alongside the app
 
 | Resource | Why it belongs beside Dromos Trainer |

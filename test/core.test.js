@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -155,6 +155,50 @@ test("the pentatonic frame preserves each dromos identity", () => {
     Array.from(Modes.pentatonicOf("D", "ousak"), (note) => note.name),
     ["D", "F", "G", "A", "C"]
   );
+});
+
+test("Chord Map derives all 60 harmonic maps and a playable triad on every tuning", () => {
+  const { Modes, ChordMap, Tuning, Fretboard, Triads } = loadCore();
+  const restore = Tuning.currentId();
+  let mapsChecked = 0;
+  let gripsChecked = 0;
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    const chords = ChordMap.harmonize(tonic, modeId);
+    const scale = Modes.scaleOf(tonic, modeId);
+    assert.equal(chords.length, 7, `${tonic} ${modeId} has seven derived degrees`);
+    assert.equal(new Set(scale.map((note) => note.pc)).size, 7, `${tonic} ${modeId} keeps seven distinct pitch classes`);
+    assert.ok(scale.every((note) => /^[A-G]/.test(note.name)), `${tonic} ${modeId} uses the app's readable diatonic spelling policy`);
+    chords.forEach((chord, degreeIndex) => {
+      assert.equal(chord.rootPc, scale[degreeIndex].pc, `${tonic} ${modeId} degree ${degreeIndex + 1} roots on its scale note`);
+      assert.ok(["maj", "min", "dim", "aug"].includes(chord.quality), `${chord.symbol} has a supported triad quality`);
+      assert.equal(Triads.TRIAD_OF[chord.quality], chord.quality, `${chord.symbol} maps to its truthful triad family`);
+    });
+    Tuning.TUNINGS.forEach((tuning) => {
+      Tuning.set(tuning.id);
+      chords.forEach((chord) => {
+        assert.ok(Fretboard.findGrip(chord.notes, 5), `${tonic} ${modeId} ${chord.symbol} needs a grip on ${tuning.name}`);
+        assert.ok(Triads.allShapes(chord.rootPc, chord.quality, null).some((shape) => shape.placements.every((placement) => placement.fret <= 15)),
+          `${tonic} ${modeId} ${chord.symbol} needs a truthful adjacent-string triad at fret 15 or below on ${tuning.name}`);
+        gripsChecked++;
+      });
+    });
+    mapsChecked++;
+  }));
+  Tuning.set(restore);
+  assert.equal(mapsChecked, 60);
+  assert.equal(gripsChecked, 2100);
+});
+
+test("Chord Map labels prominence as trainer evidence, not a genre claim", () => {
+  const { ChordMap } = loadCore();
+  const hijaz = ChordMap.harmonize("D", "hijaz");
+  assert.equal(hijaz[0].prominence.mapsUsed, 4);
+  assert.equal(hijaz[0].prominence.totalMaps, 4);
+  assert.deepEqual(Array.from(hijaz[0].prominence.mapIds), ["I-bII-I", "I-iv-I", "I-iv-bVII-I", "bII-I"]);
+  assert.equal(hijaz[2].prominence.mapsUsed, 0, "derived iii° is shown honestly even though the trainer maps do not prescribe it");
+  const ousakSecond = ChordMap.harmonize("D", "ousak")[1];
+  assert.equal(ousakSecond.symbol, "E♭");
+  assert.match(ousakSecond.practiceNote, /fixed-fret harmony/i);
 });
 
 test("Recall separates natural minor, harmonic minor, and the strict Ousak map", () => {

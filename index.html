@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=14" />
+  <link rel="stylesheet" href="css/styles.css?v=15" />
 </head>
 <body>
   <div class="app">
@@ -96,6 +96,7 @@
           <nav id="harmonyTabs" class="mode-tabs hidden" aria-label="Harmony workspace mode">
             <button data-harmony-mode="pivot">Changes Gym</button>
             <button data-view="prog">Song Map</button>
+            <button data-view="chordmap">Chord Map</button>
             <button data-view="triads">Comp</button>
           </nav>
           <p id="modePurpose" class="mode-purpose hidden" aria-live="polite"></p>
@@ -212,6 +213,47 @@
               <span class="panel-label">Common song maps</span>
               <p class="workbench-note">Choose by musical job first—home loop, cadence, turnaround, or modal motion. Roman numerals stay constant while the chord names follow your selected home.</p>
               <div id="progList" class="prog-list"></div>
+            </div>
+
+            <!-- Dromos chord map -->
+            <div id="panelChordMap" class="panel chord-map-panel hidden">
+              <header class="chord-map-intro">
+                <span class="panel-label">Dromos chord map</span>
+                <h2>See every triad inside the road.</h2>
+                <p>These seven chords are stacked from the selected equal-tempered collection. Usage counts come only from this trainer’s documented Song Maps—not from an unsupported claim about an entire style.</p>
+              </header>
+              <div class="chord-map-controls">
+                <label for="chordMapTonicSel">Tonic<select id="chordMapTonicSel"></select></label>
+                <div class="grow">
+                  <span class="panel-label">Dromos</span>
+                  <div class="seg seg-5 chord-map-modes" aria-label="Dromos for chord map">
+                    <button data-chord-map-mode="major">Major</button>
+                    <button data-chord-map-mode="minor">Natural minor</button>
+                    <button data-chord-map-mode="harmonicMinor">Harmonic minor</button>
+                    <button data-chord-map-mode="ousak">Ousak</button>
+                    <button data-chord-map-mode="hijaz">Hijaz</button>
+                  </div>
+                </div>
+              </div>
+              <section class="chord-road-section" aria-labelledby="chordRoadTitle">
+                <div class="chord-map-section-head">
+                  <div><span class="panel-label">Scale construction</span><h3 id="chordRoadTitle">Lower 1–4 · upper 5–8</h3></div>
+                  <p>Four-note practice lens—not a claim that every dromos has one fixed historical tetrachord analysis.</p>
+                </div>
+                <div id="chordMapRoad" class="chord-road"></div>
+              </section>
+              <section aria-labelledby="chordDegreesTitle">
+                <div class="chord-map-section-head">
+                  <div><span class="panel-label">Derived harmony</span><h3 id="chordDegreesTitle">Choose one degree</h3></div>
+                  <p>Tap a chord to hear it and place its practical triad on your current instrument.</p>
+                </div>
+                <div id="chordMapDegrees" class="chord-degree-grid"></div>
+              </section>
+              <details class="chord-compare">
+                <summary>Compare all five dromoi on this tonic</summary>
+                <p>Read down one degree or across one dromos. Diminished and augmented triads stay visible even when no documented Song Map currently uses them.</p>
+                <div id="chordMapCompare" class="chord-compare-scroll"></div>
+              </details>
             </div>
 
             <!-- Triads / comp -->
@@ -489,10 +531,11 @@
   </div>
 
   <script src="js/tuning.js?v=14"></script>
-  <script src="js/profiles.js?v=14"></script>
+  <script src="js/profiles.js?v=15"></script>
   <script src="js/theory.js?v=14"></script>
-  <script src="js/harmony-journey.js?v=14"></script>
-  <script src="js/modes.js?v=14"></script>
+  <script src="js/harmony-journey.js?v=15"></script>
+  <script src="js/modes.js?v=15"></script>
+  <script src="js/chord-map.js?v=15"></script>
   <script src="js/ear-drills.js?v=14"></script>
   <script src="js/styles.js?v=14"></script>
   <script src="js/analysis.js?v=14"></script>
@@ -506,7 +549,7 @@
   <script src="js/fretboard.js?v=14"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=14"></script>
-  <script src="js/app.js?v=14"></script>
+  <script src="js/app.js?v=15"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

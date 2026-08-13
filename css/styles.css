@@ -676,6 +676,78 @@ body[data-view="solo"] #fretboard { min-width: 1280px; }
 .prog-symbols { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 12px; text-align: right; }
 .prog-why { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
 
+/* dromos chord map */
+.chord-map-panel { gap: 20px; }
+.chord-map-intro { display: grid; gap: 5px; }
+.chord-map-intro h2 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: clamp(23px, 2.4vw, 31px); font-weight: 500; }
+.chord-map-intro p, .chord-map-section-head p, .chord-compare > p { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+.chord-map-controls { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; align-items: end; }
+.chord-map-controls > label { display: grid; gap: 5px; color: var(--aegean); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.chord-map-controls select { width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-family: var(--font-mono); font-size: 13px; }
+.chord-map-section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.chord-map-section-head > div { display: grid; gap: 2px; }
+.chord-map-section-head h3 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: 18px; font-weight: 500; }
+.chord-map-section-head p { max-width: 390px; text-align: right; }
+.chord-road-section { min-width: 0; }
+.chord-road { display: grid; gap: 7px; min-width: 0; }
+.chord-road-lane { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.chord-road-lane > span { color: var(--faint); font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.chord-road-lane > div { display: flex; align-items: center; min-width: 0; overflow-x: auto; padding-bottom: 2px; }
+.road-note { flex: 0 0 66px; display: grid; grid-template-columns: auto 1fr; gap: 1px 6px; align-items: baseline; min-height: 48px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--raised); color: var(--text); text-align: left; transition: all var(--t-fast) var(--ease); }
+.road-note b { color: var(--faint); font-family: var(--font-mono); font-size: 10px; }
+.road-note strong { font-family: var(--font-mono); font-size: 14px; }
+.road-note.flavour { border-color: rgba(228, 184, 91, 0.45); }
+.road-note.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.chord-road-lane i { flex: 0 0 34px; display: grid; place-items: center; color: var(--faint); font-style: normal; line-height: 1; }
+.chord-road-lane i::before { content: ""; grid-area: 1 / 1; width: 100%; border-top: 1px solid var(--line-strong); }
+.chord-road-lane i span { z-index: 1; grid-area: 1 / 1; padding: 2px 4px; border-radius: 5px; background: var(--panel); font-family: var(--font-mono); font-size: 10px; }
+.chord-road-lane i small { margin-top: 3px; font-size: 7px; letter-spacing: 0.05em; text-transform: uppercase; }
+.chord-degree-grid { display: grid; grid-template-columns: repeat(7, minmax(84px, 1fr)); gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.chord-degree { display: grid; gap: 4px; min-width: 84px; min-height: 118px; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); color: var(--text); text-align: left; transition: all var(--t-fast) var(--ease); }
+.chord-degree > span { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.chord-degree i { color: var(--faint); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
+.chord-degree strong { color: var(--terracotta-bright); font-family: var(--font-display); font-size: 14px; }
+.chord-degree > b { font-family: var(--font-mono); font-size: 15px; }
+.chord-degree small { color: var(--muted); font-family: var(--font-mono); font-size: 9.5px; line-height: 1.35; }
+.chord-degree em { align-self: end; color: var(--faint); font-size: 8px; font-style: normal; letter-spacing: 0.04em; text-transform: uppercase; }
+.chord-degree:hover { border-color: var(--line-strong); background: var(--panel2); }
+.chord-degree.active { border-color: var(--terracotta); background: var(--terracotta-soft); box-shadow: inset 0 2px 0 var(--terracotta); }
+.chord-compare { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.chord-compare summary { cursor: pointer; color: var(--text); font-family: var(--font-display); font-size: 16px; }
+.chord-compare > p { margin: 8px 0 10px; }
+.chord-compare-scroll { max-width: 100%; overflow-x: auto; }
+.chord-compare table { width: 100%; min-width: 760px; border-collapse: separate; border-spacing: 4px; }
+.chord-compare th { padding: 5px; color: var(--faint); font-size: 9px; letter-spacing: 0.06em; text-align: left; text-transform: uppercase; }
+.chord-compare tbody th { color: var(--aegean); font-family: var(--font-mono); text-align: center; }
+.chord-compare td { padding: 0; }
+.chord-compare td button { display: grid; grid-template-columns: auto 1fr; gap: 2px 7px; width: 100%; min-height: 54px; padding: 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--raised); color: var(--text); text-align: left; }
+.chord-compare td button span { color: var(--terracotta-bright); font-family: var(--font-display); font-size: 12px; }
+.chord-compare td button b { font-family: var(--font-mono); font-size: 12px; }
+.chord-compare td button small { grid-column: 1 / -1; color: var(--faint); font-family: var(--font-mono); font-size: 8.5px; }
+.chord-compare td button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.chord-map-evidence { display: grid; gap: 2px; margin-top: 13px; padding: 10px; border-left: 2px solid var(--aegean); background: var(--aegean-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.chord-map-evidence b { color: var(--text); font-size: 12px; }
+.chord-map-evidence span { color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.chord-target-sequence { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 13px; }
+.chord-target-sequence > span { grid-column: 1 / -1; color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.chord-target-sequence button { position: relative; display: grid; grid-template-columns: 24px 1fr; gap: 2px 7px; align-items: center; min-height: 55px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel2); color: var(--text); text-align: left; }
+.chord-target-sequence button::before { content: ""; position: absolute; inset: -1px; border: 2px solid transparent; border-radius: inherit; pointer-events: none; }
+.chord-target-sequence button.active::before { border-color: var(--terracotta); }
+.chord-target-sequence button.next::before { border-color: var(--turquoise); border-style: dashed; }
+.chord-target-sequence i { grid-row: 1 / span 2; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: #14110F; font-family: var(--font-mono); font-size: 10px; font-style: normal; font-weight: 700; }
+.chord-target-sequence [data-group="root"] i { background: var(--c-root); }
+.chord-target-sequence [data-group="third"] i { background: var(--c-third); }
+.chord-target-sequence [data-group="fifth"] i { background: var(--c-fifth); }
+.chord-target-sequence b { font-family: var(--font-mono); font-size: 14px; }
+.chord-target-sequence small { color: var(--faint); font-size: 8.5px; text-transform: uppercase; }
+.chord-target-cue { margin: 9px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+.chord-target-cue b { color: var(--text); }
+.chord-map-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+.chord-map-actions button { min-height: 38px; padding: 7px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); font-size: 10.5px; }
+.chord-map-actions button:hover:not(:disabled) { border-color: var(--terracotta); color: var(--text); background: var(--terracotta-soft); }
+.chord-map-actions button:disabled { opacity: 0.45; cursor: default; }
+.chord-practice-note { display: block; margin-top: 8px; padding: 8px; border: 1px solid rgba(228, 184, 91, 0.35); border-radius: var(--r-sm); background: var(--amber-soft); color: var(--text); }
+
 /* ear trainer */
 #panelEar { gap: 14px; }
 .ear-hint { font-size: 12.5px; color: var(--muted); margin: 0; line-height: 1.5; }
@@ -1158,6 +1230,7 @@ body[data-view="solo"] #fretboard { min-width: 1280px; }
 
 /* ========================= Per-view visibility ========================= */
 body[data-view="ear"] .journey-band,
+body[data-view="chordmap"] .journey-band,
 body[data-view="video"] .journey-band,
 body[data-view="styles"] .journey-band,
 body[data-view="analyze"] .journey-band,
@@ -1167,6 +1240,7 @@ body[data-view="today"] .journey-band,
 body[data-view="progress"] .journey-band { display: none; }
 
 body[data-view="ear"] .transport-bar,
+body[data-view="chordmap"] .transport-bar,
 body[data-view="video"] .transport-bar,
 body[data-view="styles"] .transport-bar,
 body[data-view="analyze"] .transport-bar,
@@ -1204,6 +1278,8 @@ body[data-view="today"] .panel,
 body[data-view="progress"] .panel { border: 0; background: transparent; padding: 0; }
 
 body[data-view="solo"] #btnShift { display: none; }
+body[data-view="chordmap"] .next-shape-key,
+body[data-view="chordmap"] .legend-note { display: none; }
 body[data-view="ear"] main, body[data-view="video"] main, body[data-view="styles"] main,
 body[data-view="analyze"] main, body[data-view="concepts"] main, body[data-view="coach"] main,
 body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px; }
@@ -1312,4 +1388,9 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
   .mode-tabs { gap: 16px; }
   .seg-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .seg-5 button:nth-child(n+4) { border-top: 1px solid var(--line); }
+  .chord-map-controls { grid-template-columns: 1fr; }
+  .chord-map-section-head { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .chord-map-section-head p { text-align: left; }
+  .chord-road-lane { grid-template-columns: 1fr; }
+  .chord-degree-grid { grid-template-columns: repeat(7, 100px); }
 }

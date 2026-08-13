@@ -17,6 +17,12 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-view="concepts"/);
   assert.match(html, /data-view="coach"/);
   assert.match(html, /data-view="video"/);
+  assert.match(html, /data-view="chordmap"/);
+  assert.match(html, /id="panelChordMap"/);
+  assert.match(html, /id="chordMapRoad"/);
+  assert.match(html, /id="chordMapDegrees"/);
+  assert.match(html, /id="chordMapCompare"/);
+  assert.match(html, /js\/chord-map\.js\?v=15/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -79,6 +85,11 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/app.js"), /function checkEarMap/);
   assert.match(read("js/ear-drills.js"), /harmonicMinor/);
   assert.match(read("js/app.js"), /function renderPageGuide/);
+  assert.match(read("js/app.js"), /function renderChordMap/);
+  assert.match(read("js/app.js"), /targetNowPcs: \[target\.pc\]/,
+    "Chord Map must render the current R/3/5 target from the same derived chord used by audio");
+  assert.match(read("js/app.js"), /AU\.playSequence\(chord\.notes, 0\.38\)/,
+    "the visible R→3rd→5th sequence must be audible");
   assert.match(read("js/app.js"), /function stopPlay\(\) \{ AU\.stopAll\(\);/,
     "changing a drill must clear path timers and ringing voices as well as transport");
   assert.match(read("js/audio.js"), /function stopAll\(\)/);
@@ -86,6 +97,9 @@ test("the installable app shell links its offline assets", () => {
     "online sessions must prefer the deployed app and use cache only as an offline fallback");
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
+  assert.match(read("sw.js"), /js\/chord-map\.js\?v=15/, "Chord Map must work in the offline shell");
+  assert.match(read("css/styles.css"), /\.chord-compare-scroll \{[^}]*overflow-x: auto/,
+    "the five-dromos comparison must scroll internally instead of widening the page");
 });
 
 test("phone layout contains wide fretboards instead of widening the page", () => {

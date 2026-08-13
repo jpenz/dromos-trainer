@@ -15,6 +15,7 @@ test("the v14 shell exposes the eight primary destinations and shared chrome", (
   // Full Cycle and ii–V–I folded into the Changes Gym as key-count settings;
   // "pivot" is the one remaining harmony mode.
   assert.match(html, /data-harmony-mode="pivot"/);
+  assert.match(html, /data-view="chordmap"/, "Chord Map belongs beside the other during-practice Harmony tools");
   assert.doesNotMatch(html, /data-harmony-mode="full"/, "Full Cycle must not survive as a separate tab");
   assert.doesNotMatch(html, /data-harmony-mode="iiVI"/, "ii–V–I must not survive as a separate tab");
   assert.match(html, /data-gym-keys="1"/, "the gym needs the 1-key on-ramp");
@@ -46,6 +47,8 @@ test("playback speaks the redesigned musical language", () => {
   assert.match(app, /function taximiBridge/, "the taximi bridge must exist");
   assert.match(app, /function startDrone/, "an unmetered tonic drone must exist");
   assert.match(app, /function gymSequence/, "the gym must chain keys*3 chords from the current group");
+  assert.match(app, /view: "chordmap", label: "2b · Harmonize"/,
+    "Chord Map needs its own visible training cue instead of inheriting Song Map instructions");
   assert.doesNotMatch(app, /referenceVoice: "guitar"/, "playback must not hardcode the chord voice");
   assert.match(read("js/audio.js"), /function playPianoNoteAt/, "a piano reference voice must exist");
   assert.match(read("js/practice.js"), /sweet-lean/, "the sweet 2→3 melodic route must exist");
