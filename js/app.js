@@ -30,7 +30,10 @@
     // --- triads ---
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true },
     // --- solo lab ---
-    solo: { section: "road", focus: "sweet", lens: "full", phraseId: "outline", routeId: "sweet-lean", matrixBeat: 0, matrixPlan: [] },
+    solo: { section: "road", focus: "sweet", lens: "full", phraseId: "outline", routeId: "sweet-lean", matrixBeat: 0, matrixPlan: [],
+      // visual layers on the Changes map: the scale road and the targets are
+      // meant to be seen TOGETHER, so both default on.
+      layers: { scale: true, pentatonic: false, triads: true, next: true } },
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
     // --- transparent analysis ---
@@ -1343,12 +1346,12 @@
     const next = chords[(index + 1) % chords.length];
     const curTargets = soloTargets(cur, state.solo.focus);
     const nextTargets = soloTargets(next, state.solo.focus);
-    const targetPcs = curTargets.concat(nextTargets).map((note) => note.pc);
     FB.render(svg(), {
       path: path.nodes, pathIndex: L.pathIndex,
       labelMode: state.labelMode, lefty: state.lefty,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
-      targetPcs,
+      targetNowPcs: curTargets.map((note) => note.pc),
+      targetNextPcs: nextTargets.map((note) => note.pc),
       showStrokes: true
     });
     svg().setAttribute("aria-label", window.Tuning.current().name + " picking path");
@@ -1809,6 +1812,41 @@
     updateSoloMatrixJourney(state.solo.matrixBeat);
   }
 
+  // Layer chips live directly above the fretboard so the player can stack
+  // the scale road, the pentatonic frame, triad shapes, and the now/next
+  // landing targets without ever covering the neck.
+  function renderSoloLayerChips() {
+    const root = $("stageLayers");
+    if (!root) return;
+    if (state.view !== "solo" || state.solo.section !== "targets") { root.innerHTML = ""; return; }
+    const layers = state.solo.layers;
+    const chip = (id, on, swatch, label) => `<button data-solo-layer="${id}" class="layer-chip${on ? " on" : ""}" aria-pressed="${on}"><span class="layer-swatch ${swatch}"></span>${label}</button>`;
+    root.innerHTML = `
+      ${chip("scale", layers.scale, "lc-scale", "Scale road")}
+      ${chip("pentatonic", layers.pentatonic, "lc-penta", "Pentatonic")}
+      ${chip("triads", layers.triads, "lc-triad", "Triad shapes")}
+      <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Now targets</span>
+      ${chip("next", layers.next, "lc-next", "Next targets")}
+      <span class="layer-note">now = terracotta ring · next = dashed turquoise</span>`;
+    root.querySelectorAll("[data-solo-layer]").forEach((button) => {
+      button.onclick = () => {
+        const key = button.getAttribute("data-solo-layer");
+        state.solo.layers[key] = !state.solo.layers[key];
+        renderSolo();
+      };
+    });
+  }
+
+  function triadSeatHtml(cur, curTargets) {
+    const seatRoles = [["R"], ["3", "b3"], ["5", "b5", "#5"]];
+    const targetPcSet = new Set(curTargets.map((note) => note.pc));
+    const seats = seatRoles.map((roles) => cur.notes.find((note) => roles.includes(note.role))).filter(Boolean);
+    const outside = curTargets.filter((note) => !cur.notes.some((tone) => tone.pc === note.pc));
+    return `<div class="triad-seat"><span>Triad of ${escapeHtml(cur.symbol)}</span>
+      ${seats.map((note) => `<b class="${targetPcSet.has(note.pc) ? "seat-target" : ""}">${escapeHtml(note.roleLabel)}<i>${escapeHtml(note.name)}</i></b>`).join("")}
+      ${outside.length ? `<em>${outside.map((note) => escapeHtml(note.name)).join(" · ")} sits outside the triad — it leans in and resolves</em>` : `<em>every target sits inside the shape under your hand</em>`}</div>`;
+  }
+
   function renderSolo() {
     const { chords } = currentProgression();
     const idx = Math.min(state.progStep, chords.length - 1);
@@ -1834,18 +1872,22 @@
     const overlayRange = { from: 0, to: FB.N_FRETS };
     const pentatonic = M.pentatonicOf(state.tonic, state.modeId);
 
+    const layers = state.solo.layers;
     FB.render(svg(), {
       grip: activeGrip,
-      otherShapes: state.solo.section === "targets" ? allTriads : [],
-      pentatonicNotes: state.solo.section === "targets" ? pentatonic : null,
+      otherShapes: state.solo.section === "targets" ? allTriads.filter(() => layers.triads) : [],
+      pentatonicNotes: state.solo.section === "targets" && layers.pentatonic ? pentatonic : null,
+      scaleNotes: state.solo.section === "targets" && layers.scale ? M.scaleOf(state.tonic, state.modeId) : null,
       targetNotes: state.solo.section === "targets" ? targetNotes : null,
-      targetPcs: targetNotes.map((note) => note.pc),
+      targetNowPcs: curTargets.map((note) => note.pc),
+      targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],
       overlayRange,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       labelMode: state.labelMode,
       lefty: state.lefty
     });
     svg().setAttribute("aria-label", window.Tuning.current().name + " soloing map");
+    renderSoloLayerChips();
 
     const frame = M.PENTATONIC[state.modeId];
     const targetLabel = soloTargetLabel;
@@ -1876,6 +1918,7 @@
     }).join("")}</div>` : "";
     $("soloRecipe").innerHTML = `
       <div class="solo-frame"><b>${frame.name}</b><span>${pentatonic.map((note) => note.name).join(" · ")}</span></div>
+      ${triadSeatHtml(cur, curTargets)}
       <div class="triad-landscape-key"><span class="landscape-solid">solid</span> nearest ${cur.symbol} triad · <span class="landscape-faint">faint</span> other ${cur.symbol} inversions · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
       <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
       <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
@@ -1941,6 +1984,7 @@
     if (state.solo.section === "road") renderSoloRoad();
     else if (state.solo.section === "targets") renderSolo();
     else renderLab();
+    renderSoloLayerChips();
   }
 
   function setSoloSection(section) {
@@ -2047,7 +2091,9 @@
     let bottom = 48 + rootPc;                 // keep the pickup mid-register
     while (bottom < 50) bottom += 12;
     const notes = [0, 4, 7, 10].map((off) => ({ freq: 440 * Math.pow(2, ((bottom + off) - 69) / 12) }));
-    AU.playChord(notes, "block", barStart + 2 * (60 / state.bpm), chordReferenceVoice());
+    // Ring for roughly the remaining two beats so the pickup leads into the
+    // next downbeat without sustaining over the new ii chord.
+    AU.playChord(notes, "block", barStart + 2 * (60 / state.bpm), chordReferenceVoice(), Math.min(1.4, 2 * (60 / state.bpm)));
   }
 
   function startPlay() {
@@ -2205,6 +2251,7 @@
     // renderCycle rightfully decides whether the pivot explanation is visible;
     // no other practice area should inherit that explanation from a prior view.
     if (v !== "cycle") $("pivotBanner").classList.remove("show");
+    renderSoloLayerChips();
     renderPracticePath();
     renderPageGuide();
     renderCoachCue();

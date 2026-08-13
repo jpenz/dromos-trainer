@@ -7,9 +7,7 @@
   <meta name="description" content="A serious ear-training and fretboard curriculum for Greek modal harmony on guitar, bouzouki, and laouto." />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="css/fonts.css?v=14" />
   <link rel="stylesheet" href="css/styles.css?v=14" />
 </head>
 <body>
@@ -129,6 +127,7 @@
 
         <!-- ================= Instrument stage ================= -->
         <section id="stage" class="stage">
+          <div id="stageLayers" class="stage-layers" aria-label="Fretboard layers"></div>
           <div class="fretboard-wrap">
             <svg id="fretboard" role="img" aria-label="instrument fretboard"></svg>
           </div>

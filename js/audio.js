@@ -109,18 +109,21 @@
     out.gain.exponentialRampToValueAtTime(level, t + 0.004);
     out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.9, Math.min(dur, 2.4)));
     out.connect(tone); tone.connect(master);
+    // Higher notes decay faster, like real strings; slight inharmonic stretch
+    // on the upper partials keeps the tone from sounding like an organ.
+    const bodyDecay = Math.max(0.6, Math.min(1.8, 1.9 - freq / 700));
     [
       { ratio: 1, level: 1, type: "sine" },
-      { ratio: 2, level: 0.34, type: "sine" },
-      { ratio: 3, level: 0.12, type: "sine" },
-      { ratio: 4.01, level: 0.05, type: "sine" }
-    ].forEach((partial) => {
+      { ratio: 2.001, level: 0.34, type: "sine" },
+      { ratio: 3.004, level: 0.12, type: "sine" },
+      { ratio: 4.012, level: 0.05, type: "sine" }
+    ].forEach((partial, index) => {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = partial.type;
       osc.frequency.setValueAtTime(freq * partial.ratio, t);
       g.gain.setValueAtTime(partial.level, t);
-      g.gain.exponentialRampToValueAtTime(Math.max(0.0001, partial.level * 0.08), t + Math.min(dur, 1.6));
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0001, partial.level * 0.08), t + Math.min(dur, bodyDecay * (1 - index * 0.15)));
       osc.connect(g); g.connect(out);
       activeSources.push(osc);
       osc.onended = () => { activeSources = activeSources.filter((source) => source !== osc); };
@@ -169,11 +172,13 @@
     fundamental.stop(when + Math.min(dur, 0.8));
   }
 
-  // Strum a chord (array of {freq}). style: "strum" | "arp" | "block"
-  function playChord(notes, style, when, referenceVoice) {
+  // Strum a chord (array of {freq}). style: "strum" | "arp" | "block".
+  // `duration` lets short gestures (like a beat-3 pickup) ring briefly
+  // instead of sustaining over the next downbeat.
+  function playChord(notes, style, when, referenceVoice, duration) {
     ensure();
     const t0 = when == null ? ctx.currentTime + 0.01 : when;
-    const dur = 2.2;
+    const dur = duration == null ? 2.2 : Math.max(0.3, duration);
     const spread = style === "arp" ? 0.14 : style === "block" ? 0 : 0.035;
     const level = voiceGain(notes.length, "chord");
     notes.forEach((n, i) => {

@@ -214,6 +214,11 @@
     // helper to place a dot
     const flavourSet = opts.flavourPcs ? new Set(opts.flavourPcs) : null;
     const targetSet = opts.targetPcs ? new Set(opts.targetPcs) : null;
+    // Now/next landing targets are separate layers: the CURRENT chord's
+    // targets read solid (terracotta ring), the NEXT chord's read as a
+    // preview (dashed turquoise ring). A pc in both reads as "now".
+    const nowSet = opts.targetNowPcs ? new Set(opts.targetNowPcs) : null;
+    const nextSet = opts.targetNextPcs ? new Set(opts.targetNextPcs) : null;
     function dot(p, kind) {
       const sIdx = p.stringIndex;
       const rowFromTop = LAST - sIdx;
@@ -221,7 +226,10 @@
       const cy = yForString(rowFromTop);
       const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
       const isTarget = targetSet ? targetSet.has(p.note.pc) : false;
+      const isNow = nowSet ? nowSet.has(p.note.pc) : false;
+      const isNext = !isNow && (nextSet ? nextSet.has(p.note.pc) : false);
       const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
+        (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
         (p.note.isTonic ? " tonic" : "");
       const gg = el("g", { class: cls, "data-group": p.note.colorGroup, "data-pc": p.note.pc });
       if (opts.lefty) {
@@ -234,6 +242,11 @@
       }
       if (isTarget && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-target-ring" }));
+      }
+      if (isNow && kind !== "ghost") {
+        gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-now-ring" }));
+      } else if (isNext && kind !== "ghost") {
+        gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-next-ring" }));
       }
       gg.appendChild(el("circle", { cx, cy, r, class: "dot-bg" }));
       let label = p.note.roleLabel || p.note.degree;
@@ -278,15 +291,20 @@
       opts.path.forEach((n, i) => {
         const isCur = i === upto;
         const isTarget = targetSet ? targetSet.has(n.note.pc) : false;
+        const isNow = nowSet ? nowSet.has(n.note.pc) : false;
+        const isNext = !isNow && (nextSet ? nextSet.has(n.note.pc) : false);
         const gg = el("g", {
           class: "fb-dot path" + (isCur ? " current" : "") + (i < upto ? " played" : "") +
-                 (n.note.isFlavour ? " flavour" : "") + (isTarget ? " target" : ""),
+                 (n.note.isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
+                 (isNow ? " target-now" : "") + (isNext ? " target-next" : ""),
           "data-group": n.note.colorGroup,
           "data-pc": n.note.pc
         });
         if (opts.lefty) gg.setAttribute("transform", `translate(${2 * cx(n)},0) scale(-1,1)`);
         if (n.note.isFlavour) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: 16, class: "dot-flavour-ring" }));
         if (isTarget) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-target-ring" }));
+        if (isNow) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-now-ring" }));
+        else if (isNext) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-next-ring" }));
         gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 15 : 12, class: "dot-bg" }));
         const label = opts.labelMode === "note" ? n.note.name : n.note.degree;
         gg.appendChild(el("text", { x: cx(n), y: cy(n) + 4, "text-anchor": "middle", class: "dot-label" }, label));

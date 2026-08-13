@@ -347,6 +347,38 @@ main {
 
 /* ========================= Instrument stage ========================= */
 .stage { position: relative; min-width: 0; }
+.stage-layers { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.stage-layers:not(:empty) { margin-bottom: 10px; }
+.layer-chip {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 5px 12px;
+  border: 1px solid var(--line); border-radius: 999px; background: transparent;
+  color: var(--faint); font-size: 12px; font-weight: 500;
+  transition: all var(--t-fast) var(--ease);
+}
+.layer-chip:hover:not(.is-static) { color: var(--text); border-color: var(--line-strong); }
+.layer-chip.on { color: var(--text); background: rgba(242, 237, 227, 0.06); border-color: var(--line-strong); }
+.layer-chip.is-static { cursor: default; }
+.layer-swatch { width: 10px; height: 10px; border-radius: 50%; border: 2px solid transparent; }
+.lc-scale { background: #4E463B; }
+.lc-penta { background: #574E41; }
+.lc-triad { background: var(--c-third); }
+.lc-now { background: transparent; border-color: var(--terracotta); }
+.lc-next { background: transparent; border-color: var(--turquoise); border-style: dashed; }
+.layer-chip:not(.on) .layer-swatch { opacity: 0.4; }
+.layer-note { margin-left: auto; color: var(--faint); font-size: 11px; }
+
+/* now/next landing targets */
+.dot-now-ring { fill: none; stroke: var(--terracotta); stroke-width: 2.5; }
+.dot-next-ring { fill: none; stroke: var(--turquoise); stroke-width: 2; stroke-dasharray: 4 3; opacity: 0.85; }
+.fb-dot.target-now .dot-bg { stroke: var(--terracotta); stroke-width: 2; }
+.fb-dot.target-next .dot-bg { stroke: var(--turquoise); stroke-width: 1.5; }
+.fb-dot.target-next { opacity: 0.82; }
+@media (prefers-reduced-motion: no-preference) {
+  .fb-dot.target-now { animation: target-arrive 0.7s var(--ease) 1; transform-box: fill-box; transform-origin: center; }
+  .fb-dot.target-next .dot-next-ring, .dot-next-ring { animation: next-ring-breathe 2.4s ease-in-out 2; }
+}
+@keyframes target-arrive { 0% { transform: scale(0.82); } 55% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@keyframes next-ring-breathe { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.85; } }
 .fretboard-wrap {
   min-width: 0;
   max-width: 100%;
@@ -710,6 +742,13 @@ body[data-view="solo"] #fretboard { min-width: 1280px; }
 .road-practice ol { margin: 5px 0 0 17px; padding: 0; }
 .road-practice strong { color: var(--text); }
 .solo-recipe { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 13px; }
+.triad-seat { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 11px; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel2); }
+.triad-seat > span { color: var(--faint); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.triad-seat b { display: flex; flex-direction: column; align-items: center; min-width: 42px; padding: 5px 8px; border-radius: var(--r-sm); border: 1px solid var(--line); color: var(--muted); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.triad-seat b i { font-style: normal; font-size: 11px; color: var(--text); }
+.triad-seat b.seat-target { border-color: var(--terracotta); background: var(--terracotta-soft); color: var(--terracotta-bright); }
+.triad-seat b.seat-target i { color: var(--terracotta-bright); }
+.triad-seat em { flex: 1 1 160px; color: var(--faint); font-size: 11px; font-style: italic; line-height: 1.35; }
 .solo-frame { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .solo-frame b { color: var(--terracotta-bright); font-size: 13px; }
 .solo-frame span { color: var(--text); font-family: var(--font-mono); font-size: 12px; }
