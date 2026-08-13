@@ -6,7 +6,7 @@
   const open = () => window.Tuning.open();
   const openNames = () => window.Tuning.names();
   const nStrings = () => window.Tuning.count();
-  const N_FRETS = 15;
+  const nFrets = () => window.Tuning.frets();
   // Every ascending choice of n strings out of 6. Contiguous sets are preferred by
   // the scorer, but string-skipping is genuinely idiomatic for drop voicings — and
   // some voicings (e.g. a close-position dom7 with the 5th in the bass) are simply
@@ -27,8 +27,8 @@
     for (let i = 1; i < set.length; i++) gaps += set[i] - set[i - 1] - 1;
     return gaps;
   }
-  const MARKERS = [3, 5, 7, 9, 15];
-  const DOUBLE_MARKERS = [12];
+  const MARKERS = [3, 5, 7, 9, 15, 17, 19, 21];
+  const DOUBLE_MARKERS = [12, 24];
 
   // Find a compact, playable grip for a voicing.
   // voicing: array of note objects (low->high) each with {pc, role, ...}.
@@ -41,7 +41,7 @@
 
     stringSets(n).forEach((set) => {
       const skips = skipPenalty(set);
-      for (let basePos = 0; basePos <= N_FRETS - maxSpan; basePos++) {
+      for (let basePos = 0; basePos <= nFrets() - maxSpan; basePos++) {
         const frets = [];
         let prevPitch = -Infinity;
         let ok = true;
@@ -117,7 +117,7 @@
     voicing.forEach((n) => { byPc[n.pc] = n; });
     const out = [];
     for (let s = 0; s < OPEN.length; s++) {
-      for (let f = 0; f <= N_FRETS; f++) {
+      for (let f = 0; f <= nFrets(); f++) {
         const pc = ((OPEN[s] + f) % 12 + 12) % 12;
         if (byPc[pc]) out.push({ stringIndex: s, fret: f, note: byPc[pc] });
       }
@@ -150,6 +150,7 @@
     const NSTR = OPEN.length;    // MI-12: string count is dynamic
     const LAST = NSTR - 1;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const N_FRETS = nFrets();
     const width = GEO.padL + GEO.nutW + N_FRETS * GEO.fretW + GEO.padR;
     const height = GEO.padT + LAST * GEO.stringGap + GEO.padB;
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -167,10 +168,10 @@
     }));
 
     // inlays
-    MARKERS.forEach((f) => {
+    MARKERS.filter((f) => f <= N_FRETS).forEach((f) => {
       g.appendChild(el("circle", { cx: xForFret(f), cy: yForString((NSTR - 1) / 2), r: 6, class: "fb-inlay" }));
     });
-    DOUBLE_MARKERS.forEach((f) => {
+    DOUBLE_MARKERS.filter((f) => f <= N_FRETS).forEach((f) => {
       g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.max(0,(NSTR-1)/2 - 1)), r: 6, class: "fb-inlay" }));
       g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.min(LAST,(NSTR-1)/2 + 1)), r: 6, class: "fb-inlay" }));
     });
@@ -200,7 +201,7 @@
     // fret numbers + string labels (kept upright even when lefty)
     const overlay = el("g", {});
     svg.appendChild(overlay);
-    MARKERS.concat(DOUBLE_MARKERS).forEach((f) => {
+    MARKERS.concat(DOUBLE_MARKERS).filter((f) => f <= N_FRETS).forEach((f) => {
       const cx = opts.lefty ? width - xForFret(f) : xForFret(f);
       overlay.appendChild(el("text", { x: cx, y: height - 8, class: "fb-fretnum", "text-anchor": "middle" }, String(f)));
     });
@@ -212,26 +213,45 @@
 
     // helper to place a dot
     const flavourSet = opts.flavourPcs ? new Set(opts.flavourPcs) : null;
+    const targetSet = opts.targetPcs ? new Set(opts.targetPcs) : null;
+    // Now/next landing targets are separate layers: the CURRENT chord's
+    // targets read solid (terracotta ring), the NEXT chord's read as a
+    // preview (dashed turquoise ring). A pc in both reads as "now".
+    const nowSet = opts.targetNowPcs ? new Set(opts.targetNowPcs) : null;
+    const nextSet = opts.targetNextPcs ? new Set(opts.targetNextPcs) : null;
     function dot(p, kind) {
       const sIdx = p.stringIndex;
       const rowFromTop = LAST - sIdx;
       const cx = p.fret === 0 ? GEO.padL - 0 : xForFret(p.fret);
       const cy = yForString(rowFromTop);
       const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
-      const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "");
-      const gg = el("g", { class: cls, "data-group": p.note.colorGroup });
+      const isTarget = targetSet ? targetSet.has(p.note.pc) : false;
+      const isNow = nowSet ? nowSet.has(p.note.pc) : false;
+      const isNext = !isNow && (nextSet ? nextSet.has(p.note.pc) : false);
+      const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
+        (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
+        (p.note.isTonic ? " tonic" : "");
+      const gg = el("g", { class: cls, "data-group": p.note.colorGroup, "data-pc": p.note.pc });
       if (opts.lefty) {
         // counter-flip text so labels read normally
         gg.setAttribute("transform", `translate(${2 * cx},0) scale(-1,1)`);
       }
-      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : 14;
+      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : kind === "road" ? 12 : kind === "next-shape" ? 16 : 14;
       if (isFlavour && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 4, class: "dot-flavour-ring" }));
+      }
+      if (isTarget && kind !== "ghost") {
+        gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-target-ring" }));
+      }
+      if (isNow && kind !== "ghost") {
+        gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-now-ring" }));
+      } else if (isNext && kind !== "ghost") {
+        gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-next-ring" }));
       }
       gg.appendChild(el("circle", { cx, cy, r, class: "dot-bg" }));
       let label = p.note.roleLabel || p.note.degree;
       if (opts.labelMode === "note") label = p.note.name;
-      else if (kind === "scale") label = p.note.degree || p.note.name;
+      else if (kind === "scale" || kind === "pentatonic") label = p.note.degree || p.note.name;
       const t = el("text", { x: cx, y: cy + 4, "text-anchor": "middle", class: "dot-label" }, label);
       gg.appendChild(t);
       // downward arrow badge on moved notes
@@ -270,13 +290,21 @@
 
       opts.path.forEach((n, i) => {
         const isCur = i === upto;
+        const isTarget = targetSet ? targetSet.has(n.note.pc) : false;
+        const isNow = nowSet ? nowSet.has(n.note.pc) : false;
+        const isNext = !isNow && (nextSet ? nextSet.has(n.note.pc) : false);
         const gg = el("g", {
           class: "fb-dot path" + (isCur ? " current" : "") + (i < upto ? " played" : "") +
-                 (n.note.isFlavour ? " flavour" : ""),
-          "data-group": n.note.colorGroup
+                 (n.note.isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
+                 (isNow ? " target-now" : "") + (isNext ? " target-next" : ""),
+          "data-group": n.note.colorGroup,
+          "data-pc": n.note.pc
         });
         if (opts.lefty) gg.setAttribute("transform", `translate(${2 * cx(n)},0) scale(-1,1)`);
         if (n.note.isFlavour) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: 16, class: "dot-flavour-ring" }));
+        if (isTarget) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-target-ring" }));
+        if (isNow) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-now-ring" }));
+        else if (isNext) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-next-ring" }));
         gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 15 : 12, class: "dot-bg" }));
         const label = opts.labelMode === "note" ? n.note.name : n.note.degree;
         gg.appendChild(el("text", { x: cx(n), y: cy(n) + 4, "text-anchor": "middle", class: "dot-label" }, label));
@@ -290,33 +318,63 @@
       });
     }
 
-    // scale / mode overlay: every occurrence of each mode degree on the neck
-    if (opts.scaleNotes && opts.scaleNotes.length) {
+    // Degree overlays: every occurrence of a selected note set on the neck.
+    // The pentatonic frame is intentionally quieter than the current triad so
+    // the player sees "safe notes" and "landing notes" at the same time.
+    function renderOverlay(notes, kind) {
       const byPc = {};
-      opts.scaleNotes.forEach((n) => { byPc[n.pc] = n; });
+      notes.forEach((n) => { byPc[n.pc] = n; });
+      const range = opts.overlayRange || { from: 0, to: N_FRETS };
+      const fromFret = Math.max(0, range.from == null ? 0 : range.from);
+      const toFret = Math.min(N_FRETS, range.to == null ? N_FRETS : range.to);
       const active = new Set(
         (opts.grip ? opts.grip.placements : []).map((p) => p.stringIndex + ":" + p.fret)
       );
       for (let s = 0; s < NSTR; s++) {
-        for (let f = 0; f <= N_FRETS; f++) {
+        for (let f = fromFret; f <= toFret; f++) {
           const pc = (((OPEN[s] + f) % 12) + 12) % 12;
           const sn = byPc[pc];
           if (!sn) continue;
           if (active.has(s + ":" + f)) continue;
-          const group = sn.isTonic ? "tonic" : sn.isFlavour ? "flavourdeg" : "scaledeg";
+          const group = kind === "pentatonic" ? "pentatonic" : kind === "target" ? "target" :
+            kind === "road" ? (sn.road === "upper" ? "upper-tetra" : "lower-tetra") :
+              (sn.isTonic ? "tonic" : sn.isFlavour ? "flavourdeg" : "scaledeg");
           g.appendChild(dot(
-            { stringIndex: s, fret: f, note: { pc, degree: sn.degree, name: sn.name, colorGroup: group, isFlavour: sn.isFlavour } },
-            "scale"
+            { stringIndex: s, fret: f, note: {
+              pc, degree: sn.degree, roleLabel: sn.roleLabel, name: sn.name,
+              colorGroup: group, isFlavour: sn.isFlavour, isTonic: sn.isTonic
+            } },
+            kind
           ));
         }
       }
     }
+
+    if (opts.pentatonicNotes && opts.pentatonicNotes.length) renderOverlay(opts.pentatonicNotes, "pentatonic");
+    if (opts.targetNotes && opts.targetNotes.length) renderOverlay(opts.targetNotes, "target");
+    if (opts.scaleNotes && opts.scaleNotes.length) renderOverlay(opts.scaleNotes, "scale");
+    if (opts.roadNotes && opts.roadNotes.length) renderOverlay(opts.roadNotes, "road");
 
     if (opts.ghosts && opts.allPositions) {
       const active = new Set(opts.grip.placements.map((p) => p.stringIndex + ":" + p.fret));
       opts.allPositions.forEach((p) => {
         if (active.has(p.stringIndex + ":" + p.fret)) return;
         g.appendChild(dot(p, "ghost"));
+      });
+    }
+
+    // The destination grip is a static outline behind the current notes. It
+    // previews a real playable shape without animating dots across strings,
+    // which would imply a fingering or glissando that the player never makes.
+    if (opts.nextGrip && opts.nextGrip.placements) {
+      const currentPlacements = opts.grip && opts.grip.placements ? opts.grip.placements : [];
+      const currentPcs = new Set(currentPlacements.map((placement) => placement.note.pc));
+      const currentPositions = new Set(currentPlacements.map((placement) => `${placement.stringIndex}:${placement.fret}`));
+      opts.nextGrip.placements.forEach((placement) => {
+        const node = dot(placement, "next-shape");
+        if (currentPcs.has(placement.note.pc)) node.classList.add("held-next");
+        if (currentPositions.has(`${placement.stringIndex}:${placement.fret}`)) node.classList.add("overlap");
+        g.appendChild(node);
       });
     }
 
@@ -328,5 +386,5 @@
     }
   }
 
-  window.Fretboard = { N_FRETS, stringSets, findGrip, allTonePositions, render };
+  window.Fretboard = { get N_FRETS() { return nFrets(); }, stringSets, findGrip, allTonePositions, render };
 })();

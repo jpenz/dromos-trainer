@@ -12,7 +12,7 @@
   // Neck comes from window.Tuning (MI-12) — a bouzouki has four courses.
   const open = () => window.Tuning.open();
   const nStrings = () => window.Tuning.count();
-  const MAX_FRET = 15;
+  const maxFret = () => window.Tuning.frets();
   const midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
   // ---- MI-11: inside vs outside picking -----------------------------------
@@ -73,7 +73,7 @@
       if (k > 0 && k % nps === 0) s++;
       if (s >= OPEN.length) return null;
       const fret = pitches[k] - OPEN[s];
-      if (fret < 0 || fret > MAX_FRET) return null;
+      if (fret < 0 || fret > maxFret()) return null;
       nodes.push({ stringIndex: s, fret, midi: pitches[k] });
     }
     // reject silly stretches
@@ -93,7 +93,7 @@
     const nodes = [];
     for (let s = 0; s < OPEN.length; s++) {
       for (let f = position; f <= position + 4; f++) {
-        if (f < 0 || f > MAX_FRET) continue;
+        if (f < 0 || f > maxFret()) continue;
         const pc = (((OPEN[s] + f) % 12) + 12) % 12;
         if (pcs.indexOf(pc) >= 0) nodes.push({ stringIndex: s, fret: f, midi: OPEN[s] + f });
       }
@@ -111,7 +111,7 @@
     const offs = M.MODES[modeId].scale;
     const pcs = offs.map((o) => (t.pc + o) % 12);
     const nodes = [];
-    for (let f = fromFret; f <= MAX_FRET && nodes.length < count; f++) {
+    for (let f = fromFret; f <= maxFret() && nodes.length < count; f++) {
       const pc = (((OPEN[stringIndex] + f) % 12) + 12) % 12;
       if (pcs.indexOf(pc) >= 0) nodes.push({ stringIndex, fret: f, midi: OPEN[stringIndex] + f });
     }
@@ -155,7 +155,7 @@
       outer:
       for (let ss = o.startString; ss <= maxStart && !asc; ss++) {
         const starts = [];
-        for (let f = 0; f <= MAX_FRET; f++) {
+        for (let f = 0; f <= maxFret(); f++) {
           if ((((OPEN[ss] + f) % 12) + 12) % 12 === startPc) starts.push(f);
         }
         starts.sort((a, b) => Math.abs(a - o.position) - Math.abs(b - o.position));
@@ -224,6 +224,154 @@
     return out.filter((x) => { if (seen.has(x.lowFret)) return false; seen.add(x.lowFret); return true; });
   }
 
+  // These are number patterns, not borrowed licks. The player supplies the
+  // rhythm, articulation, and local style; the pattern supplies a small,
+  // singable contour and a clear harmonic job. That keeps a mode map from
+  // becoming a collection of anonymous scale runs.
+  const PHRASE_PATTERNS = [
+    { id: "outline", label: "1 – 3 – 5 – 3", degrees: [1, 3, 5, 3],
+      job: "Outline the home triad; use it as a short answer after a vocal-shaped phrase.",
+      cycle: "Repeat one octave higher, then finish on 1 when the harmony settles." },
+    { id: "ladder", label: "1 – 2 – 3 – 5", degrees: [1, 2, 3, 5],
+      job: "Build a small upward sentence; let 3 say the colour and 5 leave room to continue.",
+      cycle: "Answer with 5 – 3 – 2 – 1, or move the same cell to the next chord tone." },
+    { id: "thirds", label: "1–3 · 2–4 · 3–5", degrees: [1, 3, 2, 4, 3, 5],
+      job: "Hear the scale as linked thirds instead of a straight line.",
+      cycle: "Keep the rhythm identical for two passes, then leave a beat of space." },
+    { id: "turn", label: "5 – 4 – 2 – 1", degrees: [5, 4, 2, 1],
+      job: "A compact return: tension above, then a deliberate resolution on the tonic.",
+      cycle: "Use it at a phrase ending; do not fill every bar with it." },
+    { id: "answer", label: "1 – 2 – 3 – 2 – 1", degrees: [1, 2, 3, 2, 1],
+      job: "A call-and-response contour that makes room for phrasing and ornament.",
+      cycle: "Play the second answer in a different register or on a different string set." }
+  ];
+
+  // A route is a compositional constraint, not a stock lick. The constraints
+  // deliberately progress from clear harmony to a little more connective
+  // freedom: target first, then scale material, then optional approach tone,
+  // then motif and silence. They work on a guitar, bouzouki, or laouto because
+  // they describe the note's job rather than a fixed fingering.
+  //
+  // "One approach" means one non-dromos note only when the song's language
+  // supports it. It belongs on a weak part of the pulse and must resolve by
+  // step into the named target. It is never a claim that chromaticism is a
+  // substitute for the dromos or an automatic rule in Greek repertoire.
+  const MELODIC_ROUTES = [
+    {
+      id: "sweet-lean",
+      label: "Sweet 2 → 3",
+      budget: "2–3 notes",
+      path: "Scale 2nd (or ♭2) leans on a weak pulse → chord 3rd on the arrival",
+      hear: "The 2nd is tension you can sing; the 3rd is the sweetness that resolves it. In Ousak and Hijaz the ♭2 makes this lean even stronger.",
+      think: "This is the classic Greek melody-finding move: sit on the 2nd, let it fall (or rise) into the 3rd exactly when the chord arrives. One lean per phrase is enough."
+    },
+    {
+      id: "triad-first",
+      label: "Triad first",
+      budget: "3–4 notes",
+      path: "R–3–5 (or an inversion) → nearest target of the next chord",
+      hear: "The line should still reveal the chord if the accompaniment disappears.",
+      think: "Choose the destination before the first note. Keep the whole group in one register."
+    },
+    {
+      id: "three-plus-target",
+      label: "3 + landing",
+      budget: "3 connectors + 1 target",
+      path: "Three notes from the pentatonic frame → chord target on the change",
+      hear: "The first three notes are motion; the last note makes the harmony turn.",
+      think: "Use one direction or one small contour. Do not turn the connector notes into a scale run."
+    },
+    {
+      id: "nearest-link",
+      label: "Nearest link",
+      budget: "1 target + 1–2 connectors",
+      path: "Current colour tone → nearest next colour / guide target",
+      hear: "Listen for the smallest audible pull between the two chord colours.",
+      think: "Change position only when the next target cannot be reached cleanly in the current area."
+    },
+    {
+      id: "approach-resolve",
+      label: "Approach → resolve",
+      budget: "2–3 inside notes + approach + target",
+      path: "Dromos notes → optional one-step approach on a weak pulse → target",
+      hear: "The outside note should feel like a door opening into the target, never like the new home.",
+      think: "Use at most one approach note. Resolve it immediately by semitone or whole step; skip it when the style asks for a cleaner modal line."
+    },
+    {
+      id: "motif-space",
+      label: "Motif + space",
+      budget: "3–5 note motif, then rest",
+      path: "Repeat a small number contour → leave space → answer on a target",
+      hear: "The silence is part of the answer; a listener should recognize the shape when it returns.",
+      think: "Keep rhythm and contour the same before changing register, ending, or articulation."
+    }
+  ];
+
+  function phrasePattern(id) {
+    return PHRASE_PATTERNS.find((pattern) => pattern.id === id) || PHRASE_PATTERNS[0];
+  }
+
+  function melodicRoute(id) {
+    return MELODIC_ROUTES.find((route) => route.id === id) || MELODIC_ROUTES[0];
+  }
+
+  function buildPhrase(tonicName, modeId, patternId, opts) {
+    const o = Object.assign({ position: 5, firstStroke: "down" }, opts || {});
+    const pattern = phrasePattern(patternId);
+    const OPEN = open();
+    const scale = M.scaleOf(tonicName, modeId);
+    const tonicPc = M.parseName(tonicName).pc;
+    const centre = OPEN[Math.floor(OPEN.length / 2)] + o.position;
+    let rootMidi = tonicPc;
+    while (rootMidi < centre - 6) rootMidi += 12;
+    while (rootMidi - 12 >= centre - 6) rootMidi -= 12;
+    let previous = null;
+
+    const nodes = pattern.degrees.map((degree, index) => {
+      const note = scale[(degree - 1) % scale.length];
+      const desiredMidi = rootMidi + note.off;
+      const candidates = [];
+      for (let stringIndex = 0; stringIndex < OPEN.length; stringIndex++) {
+        for (let fret = 0; fret <= maxFret(); fret++) {
+          const midi = OPEN[stringIndex] + fret;
+          if (((midi % 12) + 12) % 12 === note.pc) candidates.push({ stringIndex, fret, midi });
+        }
+      }
+      candidates.sort((a, b) => {
+        const cost = (candidate) => Math.abs(candidate.midi - desiredMidi) * 2 +
+          Math.abs(candidate.fret - o.position) * 0.35 +
+          (previous ? Math.abs(candidate.stringIndex - previous.stringIndex) * 1.5 +
+            Math.abs(candidate.midi - previous.midi) * 0.12 : 0);
+        return cost(a) - cost(b) || a.stringIndex - b.stringIndex || a.fret - b.fret;
+      });
+      const chosen = candidates[0];
+      if (!chosen) return null;
+      const stroke = ((index % 2 === 0) === (o.firstStroke === "down")) ? "down" : "up";
+      const node = {
+        stringIndex: chosen.stringIndex, fret: chosen.fret, midi: chosen.midi,
+        freq: midiToFreq(chosen.midi), order: index + 1, stroke,
+        note: {
+          pc: note.pc, name: note.name, degree: note.degree, roleLabel: String(degree),
+          isFlavour: note.isFlavour, isTonic: note.isTonic,
+          colorGroup: note.isTonic ? "tonic" : note.isFlavour ? "flavourdeg" : "scaledeg"
+        }
+      };
+      if (previous) node.crossing = crossingType(previous.stringIndex, node.stringIndex, previous.stroke);
+      previous = node;
+      return node;
+    }).filter(Boolean);
+
+    return {
+      pattern,
+      nodes,
+      meta: {
+        lowFret: Math.min.apply(null, nodes.map((node) => node.fret)),
+        highFret: Math.max.apply(null, nodes.map((node) => node.fret)),
+        position: o.position
+      }
+    };
+  }
+
   // ---- expanding / contracting cells (audiation) --------------------------
   // 3 notes, add one at a time to the octave (8), then take one away back to 3.
   // The TARGET is always the last note of the cell — the one you pre-hear and
@@ -262,7 +410,7 @@
       let best = null;
       for (let s = 0; s < OPEN.length; s++) {
         const fret = n.midi - OPEN[s];
-        if (fret < 0 || fret > MAX_FRET) continue;
+        if (fret < 0 || fret > maxFret()) continue;
         const d = Math.abs(fret - position);
         if (!best || d < best.d) best = { stringIndex: s, fret, d };
       }
@@ -321,7 +469,7 @@
           const p = buildPath(t, m, { layout: L, position: 5 });
           if (!p) { misses.push(tun.id + "/" + L + "/" + m + "/" + t); return; }
           p.nodes.forEach((n) => {
-            if (n.fret < 0 || n.fret > MAX_FRET || n.stringIndex < 0 || n.stringIndex >= nStrings()) {
+            if (n.fret < 0 || n.fret > maxFret() || n.stringIndex < 0 || n.stringIndex >= nStrings()) {
               misses.push(tun.id + "/" + L + "/" + m + "/" + t + " offneck");
             }
           });
@@ -340,11 +488,31 @@
     const oct = cells.find((c) => c.isOctave);
     add("octave cell spans 12 semitones", 12, oct.notes[7].midi - oct.notes[0].midi);
 
+    const phraseMisses = [];
+    window.Tuning.TUNINGS.forEach((tun) => {
+      window.Tuning.set(tun.id);
+      M.MODE_ORDER.forEach((modeId) => M.TONICS.forEach((tonicName) => PHRASE_PATTERNS.forEach((pattern) => {
+        const phrase = buildPhrase(tonicName, modeId, pattern.id, { position: 5 });
+        if (phrase.nodes.length !== pattern.degrees.length || phrase.nodes.some((node) =>
+          node.fret < 0 || node.fret > maxFret() || node.stringIndex < 0 || node.stringIndex >= nStrings())) {
+          phraseMisses.push(tun.id + "/" + modeId + "/" + tonicName + "/" + pattern.id);
+        }
+      })));
+    });
+    add("Solo Road number patterns fit every tuning", "0 misses",
+      phraseMisses.length ? phraseMisses.length + " misses: " + phraseMisses.slice(0, 3).join(", ") : "0 misses");
+
+    const routeIds = MELODIC_ROUTES.map((route) => route.id);
+    add("melodic route ids are unique", routeIds.length, new Set(routeIds).size);
+    add("melodic routes provide a target, ear, and thought cue", true,
+      MELODIC_ROUTES.every((route) => route.path && route.hear && route.think && route.budget));
+
     window.Tuning.set(restoreTuning);
     return { ok, results };
   }
 
   window.Practice = {
+    PHRASE_PATTERNS, MELODIC_ROUTES, phrasePattern, melodicRoute, buildPhrase,
     crossingType, buildPath, buildCells, layCell, positionsFor, scalePitches, selfTest
   };
 })();

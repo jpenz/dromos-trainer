@@ -1,0 +1,17 @@
+{
+  "name": "Dromos Trainer",
+  "short_name": "Dromos",
+  "description": "Hear harmonic movement, map the neck, and practise comping and soloing in the dromoi.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0e1116",
+  "theme_color": "#0e1116",
+  "icons": [
+    {
+      "src": "assets/dromos-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
