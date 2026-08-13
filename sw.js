@@ -1,4 +1,4 @@
-const CACHE = "dromos-trainer-v14.1";
+const CACHE = "dromos-trainer-v14.2";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./css/styles.css?v=14", "./css/fonts.css?v=14",
   "./assets/fonts/fraunces-normal-300-600-latin.woff2", "./assets/fonts/fraunces-normal-300-600-latin-ext.woff2",

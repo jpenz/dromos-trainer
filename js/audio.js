@@ -415,6 +415,9 @@
   window.AudioEngine = {
     ensure, prime, voiceGain, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
     startTransport, stopTransport, isPlaying,
+    // Absolute audio-clock time, for callers that schedule multi-part gestures
+    // (e.g. the "hear the lean" demo) with sample-accurate downbeats.
+    now: () => { ensure(); return ctx.currentTime; },
     setBpm: (v) => transport && transport.setBpm(v),
     setMetronome: (v) => transport && transport.setMetronome(v),
     selfTest

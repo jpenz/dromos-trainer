@@ -1723,6 +1723,48 @@
     return notes.find((note) => ["3", "b3", "7", "b7"].includes(note.role)) || notes[0];
   }
 
+  // ---- "Hear the lean" — the audible half of the landing-lens drill ------
+  // One bar of the current chord with the lean sung above it, then the next
+  // chord arrives and the melody resolves exactly on the downbeat. Hearing
+  // the resolution before playing it is the entire point of the lens.
+  function melodyMidiAbove(pc, chord) {
+    const top = chord.notes[chord.notes.length - 1].midi;
+    let midi = top + (((pc - top) % 12) + 12) % 12;
+    if (midi <= top) midi += 12;
+    return midi;
+  }
+
+  function playLeanDemo(cur, next, curTargets, nextTargets) {
+    AU.ensure();
+    stopPlay();
+    AU.stopAll();
+    const spb = 60 / state.bpm;
+    const t0 = AU.now() + 0.12;
+    const voice = chordReferenceVoice();
+    const lean = state.solo.focus === "sweet" ? curTargets[0] : preferredSoloTarget(curTargets);
+    const landing = preferredSoloTarget(nextTargets);
+    const leanMidi = melodyMidiAbove(lean.pc, cur);
+    // resolve by the nearest step so a 2 falls/rises into the 3rd instead of
+    // leaping registers; the one-note lens collapses to the same pitch.
+    let landMidi = leanMidi + (((landing.pc - leanMidi) % 12) + 12) % 12;
+    if (landMidi - leanMidi > 6) landMidi -= 12;
+    // bar 1 — state the chord, sit on the lean (beat 2, again on the and-of-3)
+    AU.playChord(cur.notes, "strum", t0, voice, 4 * spb);
+    AU.playSequence([{ freq: T.midiToFreq(leanMidi) }], 0, t0 + spb);
+    AU.playSequence([{ freq: T.midiToFreq(leanMidi) }], 0, t0 + 2.5 * spb);
+    // bar 2 — the change arrives and the lean resolves on the downbeat
+    const t1 = t0 + 4 * spb;
+    AU.playChord(next.notes, "strum", t1, voice, 4 * spb);
+    AU.playSequence([{ freq: T.midiToFreq(landMidi) }], 0, t1);
+    return (t1 - t0) + 2.4 * spb; // seconds until the demo has rung out
+  }
+
+  function leanDemoLabel(focus) {
+    return focus === "sweet" ? "♪ Hear the lean (2 → 3)"
+      : focus === "pedal" ? "♪ Hear the one note re-named"
+        : "♪ Hear the landing";
+  }
+
   // This is a timing / target map, not a generated solo. It makes the job of
   // each pulse visible so the player can hear a destination, choose a small
   // connector, and leave enough space for the chord change to register.
@@ -1936,9 +1978,23 @@
         <li><b>Hear:</b> sing ${targetLabel(nextTargets)} before the chord moves. If you cannot sing it, stay on the current triad.</li>
         <li><b>Think:</b> ${route.path}</li>
         <li><b>Play:</b> ${route.budget}. ${route.think}</li>
-      </ol><p>${focusSentence}</p><button class="solo-open-route" data-open-solo-path>Practise this route in Shape →</button></section>
+      </ol><p>${focusSentence}</p><div class="solo-actions">
+        <button class="solo-hear-lean" data-hear-lean>${leanDemoLabel(focus)}</button>
+        <button class="solo-open-route" data-open-solo-path>Practise this route in Shape →</button>
+      </div></section>
       <section id="soloTimingMatrix" class="solo-timing-matrix"></section>`;
     $("soloRecipe").querySelector("[data-open-solo-path]").onclick = () => setSoloSection("path");
+    const leanBtn = $("soloRecipe").querySelector("[data-hear-lean]");
+    leanBtn.onclick = () => {
+      const seconds = playLeanDemo(cur, next, curTargets, nextTargets);
+      leanBtn.disabled = true;
+      leanBtn.textContent = "listening…";
+      setTimeout(() => {
+        if (!leanBtn.isConnected) return;
+        leanBtn.disabled = false;
+        leanBtn.textContent = leanDemoLabel(state.solo.focus);
+      }, Math.round(seconds * 1000));
+    };
     renderSoloTimingMatrix(cur, next, curTargets, nextTargets);
 
     $("readout").innerHTML = `

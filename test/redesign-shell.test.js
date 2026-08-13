@@ -30,6 +30,8 @@ test("playback speaks the redesigned musical language", () => {
   assert.match(app, /function schedulePickup/, "five-of-two pickup scheduling must exist");
   assert.match(app, /chordReferenceVoice/, "chord voice selection must drive playback");
   assert.match(app, /function commonTone/, "the one-note drill needs a common-tone finder");
+  assert.match(app, /function playLeanDemo/, "the audible lean demo must exist");
+  assert.match(app, /data-hear-lean/, "the lean demo must be reachable from the Solo recipe");
   assert.match(app, /Pivot wheel: play ii–V–I–I/, "the pivot drill must explain the reinterpretation");
   assert.doesNotMatch(app, /referenceVoice: "guitar"/, "playback must not hardcode the chord voice");
   assert.match(read("js/audio.js"), /function playPianoNoteAt/, "a piano reference voice must exist");
