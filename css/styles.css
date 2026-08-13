@@ -382,6 +382,32 @@ main {
 .layer-chip:not(.on) .layer-swatch { opacity: 0.4; }
 .layer-note { margin-left: auto; color: var(--faint); font-size: 11px; }
 
+/* Solo Follow Changes is the primary performance map. The harmonic target
+   sits above the neck so the eye reads destination → fretboard, not a hidden
+   explanation below the fold. */
+.solo-neck-hud { flex: 1 0 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 0.72fr) minmax(0, 1fr); gap: 9px; }
+.solo-hud-card, .solo-hud-motion { min-width: 0; padding: 11px 13px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
+.solo-hud-card { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; border-left: 3px solid var(--terracotta); }
+.solo-hud-card.next { border-left-color: var(--turquoise); border-style: solid solid solid dashed; background: var(--turquoise-soft); }
+.solo-hud-card span, .solo-hud-motion span { grid-column: 1 / -1; color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.solo-hud-card strong { color: var(--text); font-family: var(--font-display); font-size: clamp(23px, 2.3vw, 34px); font-weight: 550; line-height: 1.05; }
+.solo-hud-card b { align-self: end; color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 13px; text-align: right; }
+.solo-hud-card.next b { color: var(--turquoise); }
+.solo-hud-card small { grid-column: 1 / -1; color: var(--muted); font-size: 10px; }
+.solo-hud-motion { display: grid; place-content: center; gap: 2px; text-align: center; background: var(--panel); }
+.solo-hud-motion b { color: var(--text); font-family: var(--font-mono); font-size: 12px; }
+.solo-hud-motion small { color: var(--faint); font-size: 9.5px; line-height: 1.35; }
+.solo-layer-row { flex: 1 0 100%; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .solo-hud-card.now { animation: solo-hud-arrive 0.65s var(--ease) both; }
+  .solo-hud-card.next { animation: solo-hud-next 2.4s ease-in-out 2; }
+}
+.solo-neck-hud.lean-phase .solo-hud-card.next,
+.solo-neck-hud.arrive-phase .solo-hud-card.next { border-color: var(--turquoise); box-shadow: 0 0 0 2px rgba(82, 168, 157, 0.2); opacity: 1; }
+.solo-neck-hud.arrive-phase .solo-hud-card.now { opacity: 0.58; }
+@keyframes solo-hud-arrive { from { transform: translateY(5px); opacity: 0.55; } to { transform: none; opacity: 1; } }
+@keyframes solo-hud-next { 0%, 100% { opacity: 0.76; } 50% { opacity: 1; } }
+
 /* now/next landing targets */
 .dot-now-ring { fill: none; stroke: var(--terracotta); stroke-width: 2.5; }
 .dot-next-ring { fill: none; stroke: var(--turquoise); stroke-width: 2; stroke-dasharray: 4 3; opacity: 0.85; }
@@ -1394,6 +1420,13 @@ body[data-view="today"] .panel,
 body[data-view="progress"] .panel { border: 0; background: transparent; padding: 0; }
 
 body[data-view="solo"] #btnShift { display: none; }
+body[data-view="solo"][data-solo-section="targets"] main { width: min(1360px, 100%); }
+body[data-view="solo"][data-solo-section="targets"] .stage { padding: 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); }
+body[data-view="solo"][data-solo-section="targets"] .workbench { grid-template-columns: minmax(0, 1fr); }
+body[data-view="solo"][data-solo-section="targets"] .readout { display: none; }
+body[data-view="solo"][data-solo-section="targets"] .fretboard-wrap { padding: 16px 18px; }
+body[data-view="solo"][data-solo-section="targets"] .next-shape-key,
+body[data-view="solo"][data-solo-section="targets"] .legend-note { display: none; }
 body[data-view="chordmap"] .next-shape-key,
 body[data-view="chordmap"] .legend-note { display: none; }
 body[data-view="chordmap"] main { width: min(1320px, 100%); }
@@ -1487,6 +1520,12 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
   .tbtn { width: 40px; height: 40px; }
   .voice-pick select, .audition .mini { min-height: 36px; }
   .fretboard-wrap { padding: 12px; }
+  .solo-neck-hud { grid-template-columns: 1fr 1fr; }
+  .solo-hud-motion { grid-column: 1 / -1; grid-row: 2; padding: 8px 10px; }
+  .solo-hud-card { padding: 9px; }
+  .solo-hud-card strong { font-size: 22px; }
+  .solo-hud-card b { font-size: 11px; }
+  .solo-hud-card small, .solo-hud-motion small { display: none; }
   .legend { gap: 10px; }
   .legend-note { margin-left: 0; }
   .guess-grid, .ear-family-choices { grid-template-columns: 1fr; }

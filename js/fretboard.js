@@ -1,4 +1,6 @@
-/* fretboard.js — grip finding + SVG rendering. Exposes window.Fretboard. */
+/* fretboard.js — grip finding + SVG rendering. Exposes window.Fretboard.
+ * FR-57: the primary Solo journey gets a large, complete, non-scrolling neck.
+ */
 (function () {
   "use strict";
 
@@ -153,13 +155,22 @@
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     const N_FRETS = nFrets();
     // A phone-sized neck folds after fret 12 instead of becoming a tiny 24-
-    // fret thumbnail or requiring horizontal scrolling. Tablet/desktop keeps
-    // one continuous row and scales into the available stage width.
-    const fold = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 620px)").matches;
+    // fret thumbnail or requiring horizontal scrolling. The Solo Follow
+    // Changes view also requests the large-neck contract: fold whenever the
+    // available stage cannot give 24 frets at least 56 CSS pixels each. That
+    // recovers the readable early Solo map without reintroducing a sideways
+    // scroll on laptops and iPads.
+    const phoneFold = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 620px)").matches;
+    const availableWidth = svg.parentElement ? svg.parentElement.clientWidth : svg.clientWidth;
+    const focusFold = !!opts.largeNeck && N_FRETS > 12 && availableWidth > 0 && availableWidth < N_FRETS * 56;
+    const fold = phoneFold || focusFold;
     const layout = neckLayout(N_FRETS, fold);
     const FRETS_PER_ROW = layout.fretsPerRow;
     const ROWS = layout.rows;
-    const rowHeight = GEO.padT + LAST * GEO.stringGap + GEO.padB + (fold ? 18 : 0);
+    const PAD_T = opts.largeNeck ? 36 : GEO.padT;
+    const PAD_B = opts.largeNeck ? 32 : GEO.padB;
+    const STRING_GAP = opts.largeNeck ? 42 : GEO.stringGap;
+    const rowHeight = PAD_T + LAST * STRING_GAP + PAD_B + (fold ? 20 : 0);
     const width = GEO.padL + GEO.nutW + Math.min(FRETS_PER_ROW, N_FRETS) * GEO.fretW + GEO.padR;
     const height = ROWS * rowHeight - (fold ? 18 : 0);
     const fretRow = (fret) => fret === 0 ? 0 : Math.floor((fret - 1) / FRETS_PER_ROW);
@@ -167,10 +178,11 @@
     const rowTop = (row) => row * rowHeight;
     const xForFret = (fret) => GEO.padL + GEO.nutW + (localFret(fret) - 0.5) * GEO.fretW;
     const xForLine = (fret) => GEO.padL + GEO.nutW + localFret(fret) * GEO.fretW;
-    const yForString = (sIdxFromTop, fret) => rowTop(fretRow(fret)) + GEO.padT + sIdxFromTop * GEO.stringGap;
+    const yForString = (sIdxFromTop, fret) => rowTop(fretRow(fret)) + PAD_T + sIdxFromTop * STRING_GAP;
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     svg.setAttribute("data-neck-layout", fold ? "folded" : "continuous");
+    svg.setAttribute("data-neck-emphasis", opts.largeNeck ? "large" : "standard");
 
     const g = el("g", {});
     if (opts.lefty) g.setAttribute("transform", `translate(${width},0) scale(-1,1)`);
@@ -182,8 +194,8 @@
       const count = last - first + 1;
       const top = rowTop(row);
       g.appendChild(el("rect", {
-        x: GEO.padL + GEO.nutW, y: top + GEO.padT - 6,
-        width: count * GEO.fretW, height: LAST * GEO.stringGap + 12,
+        x: GEO.padL + GEO.nutW, y: top + PAD_T - 7,
+        width: count * GEO.fretW, height: LAST * STRING_GAP + 14,
         rx: 4, class: "fb-face"
       }));
       MARKERS.filter((f) => f >= first && f <= last).forEach((f) => {
@@ -195,13 +207,13 @@
       });
       if (row === 0) {
         g.appendChild(el("rect", {
-          x: GEO.padL, y: top + GEO.padT - 6, width: GEO.nutW,
-          height: LAST * GEO.stringGap + 12, class: "fb-nut"
+          x: GEO.padL, y: top + PAD_T - 7, width: GEO.nutW,
+          height: LAST * STRING_GAP + 14, class: "fb-nut"
         }));
       }
       for (let f = first; f <= last; f++) {
         g.appendChild(el("line", {
-          x1: xForLine(f), y1: top + GEO.padT - 6, x2: xForLine(f), y2: top + GEO.padT + LAST * GEO.stringGap + 6, class: "fb-fret"
+          x1: xForLine(f), y1: top + PAD_T - 7, x2: xForLine(f), y2: top + PAD_T + LAST * STRING_GAP + 7, class: "fb-fret"
         }));
       }
       for (let i = 0; i < NSTR; i++) {
@@ -220,7 +232,7 @@
       .filter((f) => f > 0 && f <= N_FRETS);
     numberedFrets.forEach((f) => {
       const cx = opts.lefty ? width - xForFret(f) : xForFret(f);
-      const y = rowTop(fretRow(f)) + GEO.padT + LAST * GEO.stringGap + GEO.padB - 8;
+      const y = rowTop(fretRow(f)) + PAD_T + LAST * STRING_GAP + PAD_B - 8;
       overlay.appendChild(el("text", { x: cx, y, class: "fb-fretnum", "text-anchor": "middle" }, String(f)));
     });
     for (let row = 0; row < ROWS; row++) {
@@ -247,8 +259,14 @@
       const cy = yForString(rowFromTop, p.fret);
       const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
       const isTarget = targetSet ? targetSet.has(p.note.pc) : false;
-      const isNow = nowSet ? nowSet.has(p.note.pc) : false;
-      const isNext = !isNow && (nextSet ? nextSet.has(p.note.pc) : false);
+      // When a dedicated target overlay exists, passive scale/frame dots stay
+      // quiet underneath it. Otherwise they would duplicate the target rings
+      // and could paint a scale degree (for example 4) over the next chord's
+      // functional role (3). Grips and shapes still carry target rings.
+      const passiveOverlay = kind === "scale" || kind === "pentatonic" || kind === "road";
+      const ownsTargetTiming = !(opts.targetNotes && opts.targetNotes.length && passiveOverlay);
+      const isNow = ownsTargetTiming && nowSet ? nowSet.has(p.note.pc) : false;
+      const isNext = !isNow && ownsTargetTiming && (nextSet ? nextSet.has(p.note.pc) : false);
       const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
         (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
         (p.note.mobile ? " mobile" : "") +
@@ -258,7 +276,8 @@
         // counter-flip text so labels read normally
         gg.setAttribute("transform", `translate(${2 * cx},0) scale(-1,1)`);
       }
-      const r = kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : kind === "road" ? 12 : kind === "next-shape" ? 16 : 14;
+      const sizeLift = opts.largeNeck ? 2 : 0;
+      const r = (kind === "ghost" ? 9 : (kind === "scale" || kind === "shape") ? 11 : kind === "road" ? 12 : kind === "next-shape" ? 16 : 14) + sizeLift;
       if (isFlavour && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 4, class: "dot-flavour-ring" }));
       }
@@ -378,10 +397,12 @@
       }
     }
 
-    if (opts.pentatonicNotes && opts.pentatonicNotes.length) renderOverlay(opts.pentatonicNotes, "pentatonic");
-    if (opts.targetNotes && opts.targetNotes.length) renderOverlay(opts.targetNotes, "target");
+    // Context first, decision last: target dots sit above the scale/frame so
+    // their chord-role labels remain the visible source of truth.
     if (opts.scaleNotes && opts.scaleNotes.length) renderOverlay(opts.scaleNotes, "scale");
+    if (opts.pentatonicNotes && opts.pentatonicNotes.length) renderOverlay(opts.pentatonicNotes, "pentatonic");
     if (opts.roadNotes && opts.roadNotes.length) renderOverlay(opts.roadNotes, "road");
+    if (opts.targetNotes && opts.targetNotes.length) renderOverlay(opts.targetNotes, "target");
 
     // The lean tracer: when the current landing tone resolves to the next
     // chord's landing tone by a step, draw that half/whole-step move on every

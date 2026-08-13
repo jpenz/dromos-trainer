@@ -33,6 +33,10 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
+  assert.ok(html.indexOf('data-solo-section="targets"') < html.indexOf('data-solo-section="road"'),
+    "Follow Changes must be the first Solo activity");
+  assert.match(html, /data-solo-section="targets" class="active"/,
+    "Solo opens on the harmony journey instead of burying it behind another activity");
   assert.match(html, /id="soloMapControls"/);
   assert.match(html, /id="phrasePatternGrid"/);
   assert.match(html, /id="pathTargetFocus"/);
@@ -109,10 +113,37 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "17"/,
+  assert.match(read("api/release.js"), /appVersion: "18"/,
     "the public deployment identity must match the current offline shell release");
+  assert.match(html, /css\/styles\.css\?v=18/);
+  assert.match(html, /js\/fretboard\.js\?v=18/);
+  assert.match(html, /js\/app\.js\?v=18/);
+  assert.match(read("sw.js"), /dromos-trainer-v18/);
   assert.match(read("css/styles.css"), /\.harmony-matrix-scroll \{[^}]*overflow-x: auto/,
     "the five-dromos matrix must scroll internally instead of widening the page");
+});
+
+test("Solo Follow Changes is a full-neck current-to-next harmony journey", () => {
+  const app = read("js/app.js");
+  const fretboard = read("js/fretboard.js");
+  const css = read("css/styles.css");
+  assert.match(app, /solo: \{ section: "targets", focus: "third"/,
+    "the first Solo experience must target each chord's actual 3rd");
+  assert.match(app, /class="solo-neck-hud"/);
+  assert.match(app, /Now · \$\{escapeHtml\(cur\.degreeLabel\)\}/);
+  assert.match(app, /Next · \$\{escapeHtml\(next\.degreeLabel\)\}/);
+  assert.match(app, /largeNeck: true/);
+  assert.match(app, /return note\.roleLabel \|\| note\.degree \|\| phase/,
+    "target dots must keep 3/flat-3 and use rings—not replacement text—for timing");
+  assert.match(fretboard, /focusFold = !!opts\.largeNeck/);
+  assert.match(fretboard, /data-neck-emphasis/);
+  assert.match(fretboard, /const passiveOverlay = kind === "scale" \|\| kind === "pentatonic" \|\| kind === "road"/,
+    "the scale layer must not repaint a scale degree over a chord-role target");
+  assert.ok(fretboard.indexOf('renderOverlay(opts.scaleNotes, "scale")') < fretboard.indexOf('renderOverlay(opts.targetNotes, "target")'),
+    "the dedicated target layer must render above the full scale");
+  assert.match(css, /body\[data-view="solo"\]\[data-solo-section="targets"\] main \{ width: min\(1360px, 100%\)/);
+  assert.match(css, /\.solo-neck-hud\.lean-phase/,
+    "the next target must receive a visible pre-arrival state");
 });
 
 test("the full fretboard never widens the page and folds on phones", () => {
