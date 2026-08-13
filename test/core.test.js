@@ -201,6 +201,74 @@ test("Chord Map labels prominence as trainer evidence, not a genre claim", () =>
   assert.match(ousakSecond.practiceNote, /fixed-fret harmony/i);
 });
 
+test("Harmony Matrix derives truthful seventh chords for all 60 key-scale rows", () => {
+  const { Modes, ChordMap, Tuning, Fretboard } = loadCore();
+  const intervalByRole = { R: 0, b3: 3, 3: 4, b5: 6, 5: 7, "#5": 8, bb7: 9, b7: 10, 7: 11 };
+  const restore = Tuning.currentId();
+  let rows = 0;
+  let tones = 0;
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    const chords = ChordMap.harmonize(tonic, modeId, "seventh");
+    assert.equal(chords.length, 7);
+    chords.forEach((chord) => {
+      assert.equal(chord.notes.length, 4, `${tonic} ${modeId} ${chord.roman} is a real seventh chord`);
+      assert.ok(Modes.QUALITY[chord.quality], `${chord.symbol} uses a declared quality`);
+      chord.notes.forEach((note) => {
+        assert.equal(((note.pc - chord.rootPc) % 12 + 12) % 12, intervalByRole[note.role], `${chord.symbol} ${note.name} matches ${note.role}`);
+        assert.equal(Modes.parseName(note.name).pc, note.pc, `${chord.symbol} spells ${note.name} at its sounding pitch`);
+        tones++;
+      });
+    });
+    Tuning.TUNINGS.forEach((tuning) => {
+      Tuning.set(tuning.id);
+      chords.forEach((chord) => assert.ok(Fretboard.findGrip(chord.notes, 5), `${chord.symbol} needs a compact ${tuning.name} grip`));
+    });
+    rows++;
+  }));
+  Tuning.set(restore);
+  assert.equal(rows, 60);
+  assert.equal(tones, 1680);
+});
+
+test("Harmony Matrix separates working roles from derived harmony", () => {
+  const { ChordMap } = loadCore();
+  const major = ChordMap.harmonize("D", "major");
+  assert.equal(major[0].workingRole.id, "home");
+  assert.equal(major[1].workingRole.id, "primary", "ii is a primary working chord but not the cadence into home");
+  assert.equal(major[4].workingRole.id, "cadence", "V is explicitly heard resolving into I");
+  assert.equal(major[2].workingRole.id, "derived", "iii stays visible without being promoted to a documented working chord");
+  const naturalMinor = ChordMap.harmonize("D", "minor");
+  assert.equal(naturalMinor[6].workingRole.id, "cadence", "natural-minor ♭VII resolves into i in the verified maps");
+});
+
+test("Harmony Matrix scale doors state exact, parallel, and cycle evidence", () => {
+  const { ChordMap } = loadCore();
+  const relative = ChordMap.relationships("D", "minor").exact.find((item) => item.tonic === "F" && item.modeId === "major");
+  assert.equal(relative.label, "Relative major");
+  assert.equal(relative.shared, 7);
+  assert.ok(relative.doorMaps.includes("i-III-i"), "the verified Piraeus loop supplies the relative-major door");
+
+  const harmonicDoor = ChordMap.relationships("D", "harmonicMinor").exact.find((item) => item.tonic === "A" && item.modeId === "hijaz");
+  assert.equal(harmonicDoor.label, "Hijaz on V");
+  assert.equal(harmonicDoor.shared, 7);
+  assert.ok(harmonicDoor.doorMaps.includes("iio-V-i"));
+
+  const cadenceSwitch = ChordMap.relationships("D", "minor").parallel[0];
+  assert.equal(cadenceSwitch.modeId, "harmonicMinor");
+  assert.equal(cadenceSwitch.shared, 6);
+  assert.match(cadenceSwitch.why, /C.*C♯/);
+
+  const colourSwitch = ChordMap.relationships("D", "ousak").parallel[0];
+  assert.equal(colourSwitch.modeId, "hijaz");
+  assert.equal(colourSwitch.shared, 6);
+  assert.match(colourSwitch.why, /F.*F♯/);
+
+  const cycleDoor = ChordMap.relationships("D", "major").transitions[0];
+  assert.equal(cycleDoor.tonic, "C");
+  assert.equal(cycleDoor.modeId, "major");
+  assert.match(cycleDoor.why, /D I becomes C ii/);
+});
+
 test("Recall separates natural minor, harmonic minor, and the strict Ousak map", () => {
   const { EarDrills } = loadCore();
   const harmonic = { tonic: "D", modeId: "harmonicMinor", progressionId: "iio-V-i" };

@@ -18,11 +18,18 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-view="coach"/);
   assert.match(html, /data-view="video"/);
   assert.match(html, /data-view="chordmap"/);
+  assert.match(html, /data-nav="matrix"/);
   assert.match(html, /id="panelChordMap"/);
   assert.match(html, /id="chordMapRoad"/);
   assert.match(html, /id="chordMapDegrees"/);
   assert.match(html, /id="chordMapCompare"/);
-  assert.match(html, /js\/chord-map\.js\?v=15/);
+  assert.match(html, /data-chord-map-depth="triad"/);
+  assert.match(html, /data-chord-map-depth="seventh"/);
+  assert.match(html, /id="matrixProgressions"/);
+  assert.match(html, /id="matrixRelationships"/);
+  assert.match(html, /Returns directly to home/,
+    "the working-role legend must describe a direct return without overclaiming a formal cadence");
+  assert.match(html, /js\/chord-map\.js\?v=17/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -101,11 +108,11 @@ test("the installable app shell links its offline assets", () => {
     "online sessions must prefer the deployed app and use cache only as an offline fallback");
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
-  assert.match(read("sw.js"), /js\/chord-map\.js\?v=15/, "Chord Map must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "16"/,
+  assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
+  assert.match(read("api/release.js"), /appVersion: "17"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(read("css/styles.css"), /\.chord-compare-scroll \{[^}]*overflow-x: auto/,
-    "the five-dromos comparison must scroll internally instead of widening the page");
+  assert.match(read("css/styles.css"), /\.harmony-matrix-scroll \{[^}]*overflow-x: auto/,
+    "the five-dromos matrix must scroll internally instead of widening the page");
 });
 
 test("the full fretboard never widens the page and folds on phones", () => {

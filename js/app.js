@@ -25,7 +25,7 @@
     progId: "ii-V-I",
     progStep: 0,
     scaleOverlay: false,
-    chordMap: { degree: 0, targetIndex: 1, shapeIndex: 0 },
+    chordMap: { depth: "triad", degree: 0, targetIndex: 1, shapeIndex: 0 },
     // --- ear trainer ---
     ear: {
       drill: "colour", tonic: "D", answer: null, guess: null, hintLevel: 0, score: 0, total: 0, streak: 0, best: 0, locked: false,
@@ -209,17 +209,17 @@
   }
 
   // ====================== primary navigation model ======================
-  // Eight destinations; implementation-level views hang underneath them.
-  const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", harmony: "cycle", solo: "solo", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
-  const VIEW_NAV = { today: "today", ear: "hear", cycle: "harmony", prog: "harmony", chordmap: "harmony", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", concepts: "learn", coach: "coach", progress: "progress" };
-  const NAV_TITLES = { today: "Today", hear: "Hear", harmony: "Harmony", solo: "Solo", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
+  // Nine destinations; implementation-level views hang underneath them.
+  const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", harmony: "cycle", matrix: "chordmap", solo: "solo", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
+  const VIEW_NAV = { today: "today", ear: "hear", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", concepts: "learn", coach: "coach", progress: "progress" };
+  const NAV_TITLES = { today: "Today", hear: "Hear", harmony: "Harmony", matrix: "Harmony Matrix", solo: "Solo", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
 
   // One sentence per workspace answering "what is this FOR" — the purposes the
   // pedagogy research settled on, in the player's language.
   const MODE_PURPOSE = {
     cycle: "Land the 3rd of every chord as the keys fall. This is the muscle that keeps your solo inside the song on stage.",
     prog: "Real Greek progressions for each dromos — Piraeus modal loops first, the Westernized laiko layer second. Drills end here.",
-    chordmap: "The reference layer: see which triad lives on every degree, then hear its root, 3rd, and 5th on your instrument.",
+    chordmap: "One key across five verified roads: compare every numbered chord, see the working routes, then open a defensible sister scale.",
     triads: "The accompanist's seat: keep the changes close with the nearest shape when the harmony moves.",
     solo: "One neck, three layers: the road, the frame inside it, and the little cells that hit every chord's 3rd."
   };
@@ -229,7 +229,7 @@
     if (!el) return;
     const copy = MODE_PURPOSE[state.view];
     el.textContent = copy || "";
-    el.classList.toggle("hidden", !copy || VIEW_NAV[state.view] !== "harmony" && state.view !== "solo");
+    el.classList.toggle("hidden", !copy || !["harmony", "matrix", "solo"].includes(VIEW_NAV[state.view]));
   }
 
   function syncHarmonyTabs() {
@@ -241,7 +241,7 @@
   const PRACTICE_STEPS = [
     { view: "cycle", label: "1 · Hear", detail: "Follow the ii–V–I pivot until the next key feels inevitable." },
     { view: "prog", label: "2 · Map", detail: "Name the dromos, progression, and chord function before you play." },
-    { view: "chordmap", label: "2b · Harmonize", detail: "Stack the road into triads, then sing R → 3rd → 5th before you locate the shape." },
+    { view: "chordmap", label: "Matrix · Reference", detail: "Compare the five verified roads by number, then open a working progression or a justified sister scale." },
     { view: "ear", label: "3 · Recall", detail: "Hear a colour or a full cadence, then name its home and change boxes." },
     { view: "triads", label: "4 · Comp", detail: "Keep the changes close with three-note shapes and clear inversions." },
     { view: "solo", label: "5 · Solo", detail: "Use a pentatonic frame, then land on chord tones at each change." },
@@ -261,7 +261,7 @@
   const PAGE_GUIDES = {
     cycle: { purpose: "Hear harmonic gravity", title: "Train the ii–V–I pivot before you touch a shape.", steps: ["Press Play and follow the highlighted chord.", "Say its function: ii, V, or I.", "Notice when the old I becomes the next ii."] },
     prog: { purpose: "Name the map", title: "Choose a dromos, home, and progression—then hear each box clearly.", steps: ["Pick the dromos and tonic.", "Choose one progression; its Roman numerals are the map.", "Step each chord and say its function before you play it."] },
-    chordmap: { purpose: "Harmonize the road", title: "Connect scale construction, chord quality, and a practical triad shape.", steps: ["Choose one tonic and dromos.", "Read the lower 1–4 and upper 5–8 road before selecting a chord.", "Hear R → 3rd → 5th, then find the highlighted shape on your instrument."] },
+    chordmap: { purpose: "Compare harmony by number", title: "Pick one key, read all five roads, then follow a justified door into the next scale.", steps: ["Read across one scale or down one degree.", "Use role colour and map counts to separate working chords from derived-only chords.", "Open a sister scale only after reading whether it shares seven notes, changes one colour, or uses a documented progression door."] },
     ear: { purpose: "Recall without the neck", title: "First identify colour; then identify the home and the change boxes by ear.", steps: ["Use Dromos colour to isolate the 2nd and 3rd.", "Use Key & changes to choose both the home and progression.", "After checking, open Song Map and find the same boxes."] },
     triads: { purpose: "Comp with voice leading", title: "See the nearest useful triad instead of hunting for a large chord.", steps: ["Choose a Song Map progression.", "Follow the highlighted low-travel triad.", "Change inversion only when it serves the next chord."] },
     solo: { purpose: "Make a line explain the song", title: "Road → shape → numbers → change → ear is the soloing order.", steps: ["Start with the full Solo Road, not a random box.", "Choose a shape/position, then speak a number contour.", "Land the final note on the current chord target."] },
@@ -796,7 +796,7 @@
     });
   }
 
-  // ======================= DROMOS CHORD MAP ============================
+  // ======================= HARMONY MATRIX ==============================
   function chordMapShapes(chord) {
     const preferred = state.position == null ? 5 : state.position;
     return TR.allShapes(chord.rootPc, chord.quality, spellPc)
@@ -805,10 +805,10 @@
   }
 
   function currentChordMapSelection() {
-    const chords = CM.harmonize(state.tonic, state.modeId);
+    const chords = CM.harmonize(state.tonic, state.modeId, state.chordMap.depth);
     state.chordMap.degree = Math.max(0, Math.min(6, state.chordMap.degree));
     const chord = chords[state.chordMap.degree];
-    const shapes = chordMapShapes(chord);
+    const shapes = state.chordMap.depth === "triad" ? chordMapShapes(chord) : [];
     state.chordMap.shapeIndex = shapes.length ? state.chordMap.shapeIndex % shapes.length : 0;
     return { chords, chord, shapes, shape: shapes[state.chordMap.shapeIndex] || FB.findGrip(chord.notes, state.position) };
   }
@@ -837,13 +837,79 @@
     $("chordMapRoad").innerHTML = laneHtml("Lower road · 1–4", lanes.lower) + laneHtml("Upper road · 5–8", lanes.upper);
   }
 
+  const MATRIX_TRIAD_QUALITY = { maj: "maj", min: "min", dim: "dim", aug: "aug", maj7: "maj", dom7: "maj", m7: "min", m7b5: "dim", dim7: "dim", mMaj7: "min", maj7sharp5: "aug" };
+  function matrixProgressionChords(modeId, progression) {
+    if (state.chordMap.depth === "seventh") return M.buildProgression(state.tonic, modeId, progression.id).chords;
+    let previous = null;
+    return progression.chords.map(([offset, quality]) => {
+      const chord = M.buildChord(state.tonic, modeId, offset, MATRIX_TRIAD_QUALITY[quality] || quality, previous);
+      previous = chord.bottomMidi;
+      return chord;
+    });
+  }
+
+  function matrixProgressionCopy(modeId, progression) {
+    const symbols = matrixProgressionChords(modeId, progression).map((chord) => chord.symbol).join(" → ");
+    return { symbols, label: progression.label, why: progression.why, group: progression.group || "Working route" };
+  }
+
   function renderChordMapComparison() {
-    const columns = CM.comparison(state.tonic);
-    $("chordMapCompare").innerHTML = `<table><thead><tr><th scope="col">Degree</th>${columns.map((column) => `<th scope="col">${escapeHtml(column.mode.name)}</th>`).join("")}</tr></thead><tbody>${Array.from({ length: 7 }, (_, degree) => `<tr><th scope="row">${degree + 1}</th>${columns.map((column) => {
-      const chord = column.chords[degree];
-      const active = column.modeId === state.modeId && degree === state.chordMap.degree;
-      return `<td><button class="${active ? "active" : ""}" data-compare-mode="${column.modeId}" data-chord-degree="${degree}"><span>${escapeHtml(chord.roman)}</span><b>${escapeHtml(chord.symbol)}</b><small>${chord.notes.map((note) => escapeHtml(note.name)).join(" · ")}</small></button></td>`;
-    }).join("")}</tr>`).join("")}</tbody></table>`;
+    const rows = CM.comparison(state.tonic, state.chordMap.depth);
+    $("chordMapCompare").innerHTML = `<table class="harmony-matrix"><thead><tr><th scope="col">Scale / dromos</th>${Array.from({ length: 7 }, (_, degree) => `<th scope="col"><b>${degree + 1}</b><span>degree</span></th>`).join("")}</tr></thead><tbody>${rows.map((row) => {
+      const selectedRow = row.modeId === state.modeId;
+      const scaleNames = row.scale.map((note) => note.name).join(" · ");
+      const chordCells = row.chords.map((chord, degree) => {
+        const active = selectedRow && degree === state.chordMap.degree;
+        const evidence = `${chord.prominence.mapsUsed}/${chord.prominence.totalMaps} maps`;
+        return `<td class="matrix-cell role-${chord.workingRole.id}"><button class="${active ? "active" : ""}" data-compare-mode="${row.modeId}" data-chord-degree="${degree}" aria-label="${escapeHtml(row.mode.name)} degree ${degree + 1}, ${chord.roman}, ${chord.symbol}, ${chord.workingRole.label}, used in ${evidence}"><span class="matrix-cell-top"><i>${escapeHtml(chord.roman)}</i><em>${escapeHtml(chord.workingRole.label)}</em></span><b>${escapeHtml(chord.symbol)}</b><small>${chord.notes.map((note) => escapeHtml(note.name)).join(" · ")}</small><strong>${escapeHtml(evidence)}</strong></button></td>`;
+      }).join("");
+      const routes = row.progressions.map((progression) => {
+        const copy = matrixProgressionCopy(row.modeId, progression);
+        return `<button data-matrix-prog="${progression.id}" data-matrix-mode="${row.modeId}" title="${escapeHtml(copy.why)}"><b>${escapeHtml(copy.label)}</b><span>${escapeHtml(copy.symbols)}</span></button>`;
+      }).join("");
+      return `<tr class="matrix-scale-row${selectedRow ? " selected" : ""}"><th scope="row"><button data-matrix-mode="${row.modeId}"><span>${escapeHtml(row.mode.name)}</span><b>${escapeHtml(row.mode.greek)}</b><small>${escapeHtml(row.mode.signature)}</small><em>${escapeHtml(scaleNames)}</em></button></th>${chordCells}</tr><tr class="matrix-route-row${selectedRow ? " selected" : ""}"><td colspan="8"><div><span>Working routes</span>${routes}</div></td></tr>`;
+    }).join("")}</tbody></table>`;
+  }
+
+  function renderMatrixProgressions() {
+    $("matrixProgressions").innerHTML = M.PROGRESSIONS[state.modeId].map((progression) => {
+      const copy = matrixProgressionCopy(state.modeId, progression);
+      return `<button data-matrix-prog="${progression.id}" data-matrix-mode="${state.modeId}"><span><i>${escapeHtml(copy.group)}</i><b>${escapeHtml(copy.label)}</b></span><strong>${escapeHtml(copy.symbols)}</strong><small>${escapeHtml(copy.why)}</small><em>▶ hear and compare</em></button>`;
+    }).join("");
+  }
+
+  function renderMatrixRelationships() {
+    const groups = CM.relationships(state.tonic, state.modeId);
+    const relationships = groups.exact.concat(groups.parallel, groups.transitions);
+    $("matrixRelationships").innerHTML = relationships.length ? relationships.map((relationship) => {
+      const targetMode = M.MODES[relationship.modeId];
+      const evidence = relationship.doorMaps.length ? `Door: ${relationship.doorMaps.join(" · ")}` : relationship.kind === "exact" ? "Same seven notes" : "Theory comparison";
+      return `<button data-matrix-relation-mode="${relationship.modeId}" data-matrix-relation-tonic="${relationship.tonic}"><span><i>${escapeHtml(relationship.label)}</i><b>${escapeHtml(relationship.tonic)} ${escapeHtml(targetMode.name)}</b></span><strong>${relationship.shared}/7 notes shared</strong><small>${escapeHtml(relationship.why)}</small><em>${escapeHtml(evidence)} · open scale →</em></button>`;
+    }).join("") : `<p>No verified sister-scale door is available from this row yet.</p>`;
+  }
+
+  function selectMatrixMode(modeId, shouldPlay) {
+    stopPlay();
+    state.modeId = modeId;
+    state.progId = M.PROGRESSIONS[modeId][0].id;
+    state.chordMap.degree = 0;
+    state.chordMap.targetIndex = 1;
+    state.chordMap.shapeIndex = 0;
+    persistPreferences();
+    renderChordMap();
+    if (shouldPlay) auditionChordMap("strum");
+  }
+
+  function playMatrixProgression(modeId, progressionId) {
+    stopPlay();
+    state.modeId = modeId;
+    state.progId = progressionId;
+    state.chordMap.degree = 0;
+    const progression = M.PROGRESSIONS[modeId].find((item) => item.id === progressionId) || M.PROGRESSIONS[modeId][0];
+    const chords = matrixProgressionChords(modeId, progression);
+    persistPreferences();
+    renderChordMap();
+    AU.playProgressionPrompt(chords, state.bpm, chordReferenceVoice());
   }
 
   function renderChordMap() {
@@ -867,33 +933,33 @@
       lefty: state.lefty
     });
     svg().setAttribute("aria-label", `${window.Tuning.current().name} ${state.tonic} ${mode.name} chord map: ${chord.roman} ${chord.symbol}; ${target.roleLabel} ${target.name} is the current target and ${nextTarget.roleLabel} ${nextTarget.name} is next in the target sequence`);
-    $("stageLayers").innerHTML = `<span class="layer-chip on is-static"><i class="layer-swatch lc-scale"></i>full scale</span><span class="layer-chip on is-static"><i class="layer-swatch lc-triad"></i>${escapeHtml(chord.roman)} triad</span><span class="layer-chip on is-static"><i class="layer-swatch lc-now"></i>target now · ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</span><span class="layer-chip on is-static"><i class="layer-swatch lc-next"></i>then · ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)}</span><span class="layer-note">Solid dots are this grip; faint dots are its other 0–15 fret inversions.</span>`;
+    $("stageLayers").innerHTML = `<span class="layer-chip on is-static"><i class="layer-swatch lc-scale"></i>full scale</span><span class="layer-chip on is-static"><i class="layer-swatch lc-triad"></i>${escapeHtml(chord.roman)} ${state.chordMap.depth === "seventh" ? "7th chord" : "triad"}</span><span class="layer-chip on is-static"><i class="layer-swatch lc-now"></i>target now · ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</span><span class="layer-chip on is-static"><i class="layer-swatch lc-next"></i>then · ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)}</span><span class="layer-note">${state.chordMap.depth === "triad" ? "Solid dots are this grip; faint dots are its other 0–15 fret inversions." : "The compact grip preserves the most useful available voices on the selected tuning."}</span>`;
 
-    document.querySelectorAll("[data-chord-map-mode]").forEach((button) =>
-      button.classList.toggle("active", button.getAttribute("data-chord-map-mode") === state.modeId));
+    document.querySelectorAll("[data-chord-map-depth]").forEach((button) =>
+      button.classList.toggle("active", button.getAttribute("data-chord-map-depth") === state.chordMap.depth));
     $("chordMapTonicSel").value = state.tonic;
-    renderChordMapRoad();
-    $("chordMapDegrees").innerHTML = selected.chords.map((item, index) => `<button data-chord-degree="${index}" class="chord-degree${index === state.chordMap.degree ? " active" : ""}">
-      <span><i>${index + 1}</i><strong>${escapeHtml(item.roman)}</strong></span><b>${escapeHtml(item.symbol)}</b><small>${item.notes.map((note) => escapeHtml(note.name)).join(" · ")}</small><em>${item.prominence.mapsUsed}/${item.prominence.totalMaps} Song Maps</em>
-    </button>`).join("");
     renderChordMapComparison();
+    $("chordMapDegrees").innerHTML = `<span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)}</b><small>${scale.map((note) => escapeHtml(note.name)).join(" · ")}</small></span><span><i>Selected ${state.chordMap.depth}</i><b>${escapeHtml(chord.roman)} · ${escapeHtml(chord.symbol)}</b><small>${escapeHtml(chord.workingRole.label)} · ${chord.prominence.mapsUsed}/${chord.prominence.totalMaps} working maps</small></span>`;
+    renderChordMapRoad();
+    renderMatrixProgressions();
+    renderMatrixRelationships();
 
     const shapeCopy = selected.shape && selected.shape.placements
       ? `${selected.shape.inversionName || "compact grip"} · frets ${Math.min(...selected.shape.placements.map((placement) => placement.fret))}–${Math.max(...selected.shape.placements.map((placement) => placement.fret))}`
       : "compact grip";
-    const specialQuality = chord.quality === "dim"
-      ? "This diminished triad is the truthful stacked result. Treat it as tension and voice-leading material; its usage count tells you whether a documented Song Map currently asks for it."
-      : chord.quality === "aug"
-        ? "This augmented triad is the truthful stacked result. Hear the raised 5th as colour before trying to make it a default comping chord."
-        : "Root locates the harmony, the 3rd names its major/minor colour, and the 5th stabilizes or alters the shape.";
+    const specialQuality = chord.quality === "dim" || chord.quality === "dim7" || chord.quality === "m7b5"
+      ? "This diminished-family result is truthful scale stacking. Treat it as tension and voice-leading material; its working-map count says whether the curriculum actually asks for it."
+      : chord.quality === "aug" || chord.quality === "maj7sharp5"
+        ? "This augmented-family result is truthful scale stacking. Hear the raised 5th as colour before treating it as a default comping chord."
+        : "Root locates the harmony, the 3rd names its colour, the 5th stabilizes or alters it, and the optional 7th sharpens its function.";
     const variants = chord.prominence.variants.length
       ? `Map versions: ${chord.prominence.variants.map((variant) => escapeHtml(variant.symbol)).join(" · ")}.`
       : "No current Song Map prescribes this degree; it remains visible because it is genuinely inside the selected collection.";
     $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${escapeHtml(chord.roman)}</span><span class="ro-symbol">${escapeHtml(chord.symbol)}</span><span class="ro-key">${escapeHtml(mode.name)} on ${escapeHtml(state.tonic)}</span></div>
-      <div class="chord-map-evidence"><b>${escapeHtml(chord.prominence.label)}</b><span>Used in ${chord.prominence.mapsUsed} of ${chord.prominence.totalMaps} documented Song Maps · ${chord.prominence.occurrences} appearance${chord.prominence.occurrences === 1 ? "" : "s"}</span></div>
+      <div class="chord-map-evidence"><b>${escapeHtml(chord.workingRole.label)} · ${escapeHtml(chord.prominence.label)}</b><span>Used in ${chord.prominence.mapsUsed} of ${chord.prominence.totalMaps} documented Song Maps · ${chord.prominence.occurrences} appearance${chord.prominence.occurrences === 1 ? "" : "s"}. The role badge and the usage count are separate evidence.</span></div>
       <div class="chord-target-sequence"><span>Target sequence · not a predicted melody</span>${chord.notes.map((note, index) => `<button data-chord-target="${index}" class="${index === targetIndex ? "active" : index === nextTargetIndex ? "next" : ""}" data-group="${note.colorGroup}"><i>${escapeHtml(note.roleLabel)}</i><b>${escapeHtml(note.name)}</b><small>${index === targetIndex ? "hear now" : index === nextTargetIndex ? "then" : "after"}</small></button>`).join("")}</div>
       <p class="chord-target-cue"><b>Hear now:</b> ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}. <b>Then:</b> ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)}. Sing it before touching the highlighted fret.</p>
-      <div class="chord-map-actions"><button data-hear-chord>Hear chord</button><button data-hear-target>Hear ${escapeHtml(target.roleLabel)}</button><button data-hear-triad>Hear R → 3rd → 5th</button><button data-next-chord-shape${selected.shapes.length < 2 ? " disabled" : ""}>Next position · ${selected.shapes.length ? state.chordMap.shapeIndex + 1 : 1}/${Math.max(1, selected.shapes.length)}</button></div>
+      <div class="chord-map-actions"><button data-hear-chord>Hear chord</button><button data-hear-target>Hear ${escapeHtml(target.roleLabel)}</button><button data-hear-triad>Hear ${chord.notes.map((note) => escapeHtml(note.roleLabel)).join(" → ")}</button><button data-next-chord-shape${selected.shapes.length < 2 ? " disabled" : ""}>${state.chordMap.depth === "triad" ? `Next position · ${selected.shapes.length ? state.chordMap.shapeIndex + 1 : 1}/${Math.max(1, selected.shapes.length)}` : "Compact 7th grip"}</button></div>
       <div class="tri-tags"><span class="tri-set">${escapeHtml(window.Tuning.current().name)}</span><span class="tri-fret">${escapeHtml(shapeCopy)}</span></div>
       <div class="ro-foot"><b>${escapeHtml(specialQuality)}</b> ${variants}${chord.practiceNote ? ` <span class="chord-practice-note">${escapeHtml(chord.practiceNote)}</span>` : ""}</div>`;
 
@@ -904,6 +970,20 @@
         if (!M.PROGRESSIONS[state.modeId].some((progression) => progression.id === state.progId)) state.progId = M.PROGRESSIONS[state.modeId][0].id;
       }
       selectChordMapDegree(button.getAttribute("data-chord-degree"), true);
+    });
+    document.querySelectorAll("[data-matrix-mode]").forEach((button) => {
+      if (button.hasAttribute("data-matrix-prog")) return;
+      button.onclick = () => selectMatrixMode(button.getAttribute("data-matrix-mode"), false);
+    });
+    document.querySelectorAll("[data-matrix-prog]").forEach((button) => button.onclick = () =>
+      playMatrixProgression(button.getAttribute("data-matrix-mode"), button.getAttribute("data-matrix-prog")));
+    document.querySelectorAll("[data-matrix-relation-mode]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      state.tonic = button.getAttribute("data-matrix-relation-tonic");
+      state.modeId = button.getAttribute("data-matrix-relation-mode");
+      state.progId = M.PROGRESSIONS[state.modeId][0].id;
+      state.chordMap.degree = 0; state.chordMap.targetIndex = 1; state.chordMap.shapeIndex = 0;
+      persistPreferences(); renderChordMap(); auditionChordMap("strum");
     });
     $("readout").querySelectorAll("[data-chord-target]").forEach((button) => button.onclick = () => {
       state.chordMap.targetIndex = +button.getAttribute("data-chord-target"); renderChordMap();
@@ -2748,6 +2828,16 @@
       syncHarmonyTabs();
       if (wasPlaying) startPlay();
     });
+
+    document.querySelectorAll("[data-chord-map-depth]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      state.chordMap.depth = button.getAttribute("data-chord-map-depth") === "seventh" ? "seventh" : "triad";
+      state.chordMap.targetIndex = 1;
+      state.chordMap.shapeIndex = 0;
+      renderChordMap();
+      auditionChordMap("strum");
+    });
+    $("btnMatrixStop").onclick = stopPlay;
 
     if ($("voiceSel")) $("voiceSel").onchange = (event) => {
       state.chordVoice = event.target.value;

@@ -27,7 +27,8 @@
   // an A major triad. Sevenths are colour on top of a triad.
   const TRIAD_OF = {
     maj: "maj", min: "min", dim: "dim", aug: "aug",
-    maj7: "maj", dom7: "maj", m7: "min", m7b5: "dim"
+    maj7: "maj", dom7: "maj", m7: "min", m7b5: "dim",
+    dim7: "dim", mMaj7: "min", maj7sharp5: "aug"
   };
 
   const INVERSION_NAME = ["root position", "1st inversion", "2nd inversion"];
