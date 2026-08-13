@@ -94,8 +94,47 @@
     return buf;
   }
 
+  // A clean, decaying piano-like tone built from a few harmonics. It is a
+  // practice reference voice, not a sampled instrument: fast attack, warm
+  // rolloff, no pick noise — useful when the plucked model feels rough.
+  function playPianoNoteAt(freq, when, dur, gain) {
+    const t = when == null ? ctx.currentTime + 0.01 : when;
+    const level = gain == null ? 0.24 : gain;
+    const out = ctx.createGain();
+    const tone = ctx.createBiquadFilter();
+    tone.type = "lowpass";
+    tone.frequency.value = Math.min(6200, freq * 9);
+    tone.Q.value = 0.4;
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(level, t + 0.004);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.9, Math.min(dur, 2.4)));
+    out.connect(tone); tone.connect(master);
+    // Higher notes decay faster, like real strings; slight inharmonic stretch
+    // on the upper partials keeps the tone from sounding like an organ.
+    const bodyDecay = Math.max(0.6, Math.min(1.8, 1.9 - freq / 700));
+    [
+      { ratio: 1, level: 1, type: "sine" },
+      { ratio: 2.001, level: 0.34, type: "sine" },
+      { ratio: 3.004, level: 0.12, type: "sine" },
+      { ratio: 4.012, level: 0.05, type: "sine" }
+    ].forEach((partial, index) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = partial.type;
+      osc.frequency.setValueAtTime(freq * partial.ratio, t);
+      g.gain.setValueAtTime(partial.level, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0001, partial.level * 0.08), t + Math.min(dur, bodyDecay * (1 - index * 0.15)));
+      osc.connect(g); g.connect(out);
+      activeSources.push(osc);
+      osc.onended = () => { activeSources = activeSources.filter((source) => source !== osc); };
+      osc.start(t);
+      osc.stop(t + Math.min(dur, 2.4) + 0.05);
+    });
+  }
+
   function playNoteAt(freq, when, dur, gain, referenceVoice) {
     const voice = referenceVoice || instrumentVoice();
+    if (voice === "piano") { playPianoNoteAt(freq, when, dur, gain); return; }
     const b = pluckBuffer(freq, dur, voice);
     const src = ctx.createBufferSource();
     src.buffer = b;
@@ -133,11 +172,13 @@
     fundamental.stop(when + Math.min(dur, 0.8));
   }
 
-  // Strum a chord (array of {freq}). style: "strum" | "arp" | "block"
-  function playChord(notes, style, when, referenceVoice) {
+  // Strum a chord (array of {freq}). style: "strum" | "arp" | "block".
+  // `duration` lets short gestures (like a beat-3 pickup) ring briefly
+  // instead of sustaining over the next downbeat.
+  function playChord(notes, style, when, referenceVoice, duration) {
     ensure();
     const t0 = when == null ? ctx.currentTime + 0.01 : when;
-    const dur = 2.2;
+    const dur = duration == null ? 2.2 : Math.max(0.3, duration);
     const spread = style === "arp" ? 0.14 : style === "block" ? 0 : 0.035;
     const level = voiceGain(notes.length, "chord");
     notes.forEach((n, i) => {
@@ -374,6 +415,9 @@
   window.AudioEngine = {
     ensure, prime, voiceGain, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
     startTransport, stopTransport, isPlaying,
+    // Absolute audio-clock time, for callers that schedule multi-part gestures
+    // (e.g. the "hear the lean" demo) with sample-accurate downbeats.
+    now: () => { ensure(); return ctx.currentTime; },
     setBpm: (v) => transport && transport.setBpm(v),
     setMetronome: (v) => transport && transport.setMetronome(v),
     selfTest

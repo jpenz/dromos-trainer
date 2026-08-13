@@ -1,8 +1,12 @@
-const CACHE = "dromos-trainer-v13";
+const CACHE = "dromos-trainer-v14.2";
 const APP_SHELL = [
-  "./", "./index.html", "./manifest.webmanifest", "./css/styles.css?v=13",
-  "./js/tuning.js?v=13", "./js/profiles.js?v=13", "./js/theory.js?v=13", "./js/harmony-journey.js?v=13", "./js/modes.js?v=13", "./js/ear-drills.js?v=13", "./js/styles.js?v=13", "./js/analysis.js?v=13", "./js/studies.js?v=13", "./js/musicxml.js?v=13", "./js/resources.js?v=13", "./js/video.js?v=13", "./js/coach.js?v=13", "./js/practice.js?v=13",
-  "./js/triads.js?v=13", "./js/fretboard.js?v=13", "./js/guitar-voicings.js?v=13", "./js/audio.js?v=13", "./js/app.js?v=13",
+  "./", "./index.html", "./manifest.webmanifest", "./css/styles.css?v=14", "./css/fonts.css?v=14",
+  "./assets/fonts/fraunces-normal-300-600-latin.woff2", "./assets/fonts/fraunces-normal-300-600-latin-ext.woff2",
+  "./assets/fonts/fraunces-italic-300-500-latin.woff2", "./assets/fonts/fraunces-italic-300-500-latin-ext.woff2",
+  "./assets/fonts/inter-normal-400-700-latin.woff2", "./assets/fonts/inter-normal-400-700-latin-ext.woff2", "./assets/fonts/inter-normal-400-700-greek.woff2",
+  "./assets/fonts/plexmono-normal-400-latin.woff2", "./assets/fonts/plexmono-normal-500-latin.woff2", "./assets/fonts/plexmono-normal-600-latin.woff2",
+  "./js/tuning.js?v=14", "./js/profiles.js?v=14", "./js/theory.js?v=14", "./js/harmony-journey.js?v=14", "./js/modes.js?v=14", "./js/ear-drills.js?v=14", "./js/styles.js?v=14", "./js/analysis.js?v=14", "./js/studies.js?v=14", "./js/musicxml.js?v=14", "./js/resources.js?v=14", "./js/video.js?v=14", "./js/coach.js?v=14", "./js/practice.js?v=14",
+  "./js/triads.js?v=14", "./js/fretboard.js?v=14", "./js/guitar-voicings.js?v=14", "./js/audio.js?v=14", "./js/app.js?v=14",
   "./assets/dromos-mark.svg"
 ];
 
