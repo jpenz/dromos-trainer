@@ -70,6 +70,28 @@ test("progression chords carry the bare roman function that playback holds and p
   assert.notEqual(majorJourney.transition.kind, "pivot", "same-key loops must not claim a pivot reinterpretation");
 });
 
+test("the Changes Gym is four 4/4 bars per key: ii · V · I · I, then the pivot", () => {
+  const { Theory, HarmonyJourney, StyleLibrary } = loadCore();
+  const cycle = Theory.buildCycle();
+  const journey = HarmonyJourney.buildJourney({ kind: "cycle", cycle, mode: "full", index: 0, loop: true, holdI: true });
+  const firstKey = journey.items.slice(0, 3);
+  assert.equal(firstKey.map((i) => i.chord.fn).join(" "), "ii V I");
+  assert.equal(firstKey.map((i) => i.durationBars).join(" "), "1 1 2", "the tonic holds two bars, so the key is 4 bars long");
+  assert.equal(firstKey.reduce((sum, i) => sum + i.durationBars, 0), 4, "one key = one 4-bar phrase");
+  // The chord AFTER the held tonic is the next key's ii — the pivot lands on
+  // the downbeat of bar 5, not somewhere inside the tonic's two bars.
+  const pivotTarget = journey.items[3];
+  assert.equal(pivotTarget.chord.fn, "ii");
+  assert.notEqual(pivotTarget.chord.key, firstKey[2].chord.key, "the pivot must actually change key");
+  assert.equal(pivotTarget.chord.rootPc, firstKey[2].chord.rootPc, "same root: the old I IS the new ii");
+  // Every key in the wheel is the same 4-bar shape, so the drill stays in 4/4.
+  const bars = journey.items.reduce((sum, i) => sum + i.durationBars, 0);
+  assert.equal(bars, 24, "six keys x 4 bars");
+  const hasapiko = StyleLibrary.byId("hasapiko");
+  assert.equal(hasapiko.meter, "4/4", "the default Greek pulse is 4/4, so the gym practises in 4/4");
+  assert.equal(StyleLibrary.beatMap(hasapiko).length, 4, "four beats to the bar");
+});
+
 test("the Piraeus tier leads the minor bank and Ousak breathes without breaking its strict map", () => {
   const { Modes } = loadCore();
   const minor = Modes.PROGRESSIONS.minor;
@@ -169,6 +191,20 @@ test("practical guitar vocabulary keeps full forms at fret 15 or below", () => {
       });
     });
   });
+});
+
+test("plucked notes decay like strings and never leave a synth drone under the chord", () => {
+  const audio = readFileSync(path.join(root, "js/audio.js"), "utf8");
+  // The fundamental oscillator is an attack thump. When it sustained (it once
+  // rang for up to 0.8s) it was audible as a sine drone after every chord.
+  const thump = audio.match(/const thump = Math\.min\(dur, ([\d.]+)\)/);
+  assert.ok(thump, "the fundamental must be bounded by an explicit thump length");
+  assert.ok(+thump[1] <= 0.15, `fundamental thump ${thump[1]}s is long enough to drone`);
+  assert.doesNotMatch(audio, /fundamental\.stop\(when \+ Math\.min\(dur, 0\.8\)\)/, "the sustaining fundamental must not come back");
+  // Chords must still be ringing when the next bar lands.
+  assert.match(audio, /beatsPerBar \* secPerBeat\(\) \* 1\.08/, "transport chords must ring for the whole bar");
+  const fallback = audio.match(/duration == null \? ([\d.]+) :/);
+  assert.ok(fallback && +fallback[1] >= 3, "the default chord ring must outlast a slow 4/4 bar");
 });
 
 test("audio mix reduces polyphonic gain before the master limiter", () => {
