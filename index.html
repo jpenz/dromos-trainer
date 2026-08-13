@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=15" />
+  <link rel="stylesheet" href="css/styles.css?v=16" />
 </head>
 <body>
   <div class="app">
@@ -120,7 +120,10 @@
           <section id="changeGuide" class="change-guide" aria-label="Current and next chord" aria-live="off"></section>
           <div id="journeyAnnouncement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
           <div id="pivotBanner" class="pivot-banner"></div>
-          <div id="keymapWrap" class="keymap-wrap"><div id="keymap" class="keymap"></div></div>
+          <section id="keymapWrap" class="keymap-wrap" aria-labelledby="keymapTitle">
+            <header><div><span>Moving key centers</span><b id="keymapTitle">Old I becomes the next ii</b></div><p>Tap a key to jump to its ii and hear that starting chord. “Next” marks a role change, not another chord.</p></header>
+            <div id="keymap" class="keymap"></div>
+          </section>
           <div id="progStrip" class="prog-strip hidden"></div>
           <div id="triadStrip" class="prog-strip hidden"></div>
         </section>
@@ -194,22 +197,24 @@
 
             <!-- Song map -->
             <div id="panelProg" class="panel hidden">
-              <div class="row">
-                <div class="grow">
-                  <span class="panel-label">Dromos</span>
-                  <div class="seg seg-5">
-                    <button data-modeid="major" class="active">Major</button>
-                    <button data-modeid="minor">Natural minor</button>
-                    <button data-modeid="harmonicMinor">Harmonic minor</button>
-                    <button data-modeid="ousak">Ousak</button>
-                    <button data-modeid="hijaz">Hijaz</button>
+              <section class="music-context music-context-stack" aria-label="Song Map key and scale">
+                <div class="row">
+                  <div class="grow">
+                    <span class="panel-label">Scale / dromos</span>
+                    <div class="seg seg-5">
+                      <button data-modeid="major" class="active">Major</button>
+                      <button data-modeid="minor">Natural minor</button>
+                      <button data-modeid="harmonicMinor">Harmonic minor</button>
+                      <button data-modeid="ousak">Ousak</button>
+                      <button data-modeid="hijaz">Hijaz</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="row tonic-row">
-                <label for="tonicSel">Tonic</label>
-                <select id="tonicSel"></select>
-              </div>
+                <div class="row tonic-row">
+                  <label for="tonicSel">Key / home</label>
+                  <select id="tonicSel"></select>
+                </div>
+              </section>
               <span class="panel-label">Common song maps</span>
               <p class="workbench-note">Choose by musical job first—home loop, cadence, turnaround, or modal motion. Roman numerals stay constant while the chord names follow your selected home.</p>
               <div id="progList" class="prog-list"></div>
@@ -222,10 +227,10 @@
                 <h2>See every triad inside the road.</h2>
                 <p>These seven chords are stacked from the selected equal-tempered collection. Usage counts come only from this trainer’s documented Song Maps—not from an unsupported claim about an entire style.</p>
               </header>
-              <div class="chord-map-controls">
-                <label for="chordMapTonicSel">Tonic<select id="chordMapTonicSel"></select></label>
+              <div class="chord-map-controls music-context">
+                <label for="chordMapTonicSel">Key / home<select id="chordMapTonicSel"></select></label>
                 <div class="grow">
-                  <span class="panel-label">Dromos</span>
+                  <span class="panel-label">Scale / dromos</span>
                   <div class="seg seg-5 chord-map-modes" aria-label="Dromos for chord map">
                     <button data-chord-map-mode="major">Major</button>
                     <button data-chord-map-mode="minor">Natural minor</button>
@@ -377,21 +382,32 @@
 
             <!-- Ear trainer -->
             <div id="panelEar" class="panel hidden">
-              <div class="solo-title"><span class="panel-label">Ear checks</span><span>listen → name → map</span></div>
+              <header class="ear-start">
+                <span class="panel-label">Ear training</span>
+                <h2>Hear it. Name it. See exactly what sounded.</h2>
+                <p>Fast start: choose a home, press Start, then answer. Nothing is scored until you check, and every answer reveals the exact Roman numerals, chord names, and chord tones that played.</p>
+                <div class="ear-start-steps" aria-label="Ear training quick start"><span><b>1</b>Set home</span><span><b>2</b>Listen twice</span><span><b>3</b>Check + inspect</span></div>
+              </header>
               <div class="seg" aria-label="Ear check type">
                 <button data-ear-drill="colour" class="active">1 · Colour ID</button>
                 <button data-ear-drill="map">2 · Home + changes</button>
               </div>
-              <div class="row tonic-row ear-reference">
-                <label for="earTonicSel">Reference tonic</label>
+              <div id="earAudioStatus" class="ear-audio-status" role="status" aria-live="polite">Studio piano loads on first play · Stop is always available</div>
+              <div class="row tonic-row ear-reference music-context">
+                <label for="earTonicSel">Training home</label>
                 <select id="earTonicSel"></select>
                 <button id="btnEarTonic" class="mini">♪ Hear D</button>
               </div>
               <section id="earColour" class="sub">
-                <p class="ear-hint">You hear only a coherent chord cadence in the chosen reference tonic, twice, through one consistent warm-guitar reference.
+                <p class="ear-hint">You hear one scale-and-harmony-coherent cadence twice through the same sampled studio piano.
                   <b>Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers:</b> identify the chord qualities and their pull toward home.</p>
-                <div class="ear-voice-note"><span>Reference voice</span><b>Warm guitar chords · no scale run, bass, or drums</b></div>
-                <div id="earFeedback" class="ear-feedback">Press <b>New question</b> to begin.</div>
+                <div class="ear-voice-note"><span>Reference voice</span><b>Sampled grand piano · chords only · no answer-leaking scale run</b></div>
+                <div class="ear-primary-actions">
+                  <button id="btnEarNew" class="mini primary-mini grow">▶ Start question</button>
+                  <button id="btnEarReplay" class="mini grow">↻ Replay (Space)</button>
+                  <button id="btnEarStop" class="mini">■ Stop</button>
+                </div>
+                <div id="earFeedback" class="ear-feedback">Press <b>Start question</b> to begin.</div>
                 <div class="guess-grid">
                   <button class="guess-btn" data-guess="major">Major</button>
                   <button class="guess-btn" data-guess="minor">Natural minor</button>
@@ -400,26 +416,29 @@
                   <button class="guess-btn" data-guess="hijaz">Hijaz</button>
                 </div>
                 <div class="row">
-                  <button id="btnEarReplay" class="mini grow">↻ Replay (Space)</button>
-                  <button id="btnEarHint" class="mini">Hint</button>
-                  <button id="btnEarCheck" class="mini primary-mini">Check answer</button>
-                  <button id="btnEarNew" class="mini grow">New question</button>
+                  <button id="btnEarHint" class="mini grow">Give one hint</button>
+                  <button id="btnEarCheck" class="mini primary-mini grow">Check + reveal</button>
                 </div>
+                <div id="earReveal" class="ear-reveal hidden" aria-live="polite"></div>
               </section>
               <section id="earMap" class="sub hidden">
                 <p class="ear-hint">Train blind, or select a known home first. Then identify the <b>harmonic/dromos family</b> and the <b>functional boxes</b>. Choosing is reversible; only <b>Check map</b> scores it.</p>
-                <div class="row tonic-row ear-map-home-control"><label for="earMapHomeSel">Home to train</label><select id="earMapHomeSel"></select></div>
+                <div class="row tonic-row ear-map-home-control music-context"><label for="earMapHomeSel">Training home</label><select id="earMapHomeSel"></select></div>
                 <button id="btnEarMapHome" class="mini ear-home-button">♪ Hear the known home</button>
-                <div id="earMapFeedback" class="ear-feedback">Press <b>New map</b>, listen, then commit to the map.</div>
+                <div class="ear-primary-actions">
+                  <button id="btnEarMapNew" class="mini primary-mini grow">▶ Start map</button>
+                  <button id="btnEarMapReplay" class="mini grow">↻ Replay changes</button>
+                  <button id="btnEarMapStop" class="mini">■ Stop</button>
+                </div>
+                <div id="earMapFeedback" class="ear-feedback">Press <b>Start map</b>, listen, then commit to the map.</div>
                 <div class="ear-map-prompt"><span>1 · Home key</span><div id="earKeyChoices" class="ear-key-choices"></div></div>
                 <div class="ear-map-prompt"><span>2 · Harmonic / dromos family</span><div id="earFamilyChoices" class="ear-family-choices"></div></div>
                 <div class="ear-map-prompt"><span>3 · Change boxes</span><div id="earProgressionChoices" class="ear-progression-choices"></div></div>
                 <div class="row">
-                  <button id="btnEarMapReplay" class="mini grow">↻ Replay changes</button>
-                  <button id="btnEarMapHint" class="mini">Hint</button>
-                  <button id="btnEarMapCheck" class="mini primary-mini">Check map</button>
-                  <button id="btnEarMapNew" class="mini grow">New map</button>
+                  <button id="btnEarMapHint" class="mini grow">Give one hint</button>
+                  <button id="btnEarMapCheck" class="mini primary-mini grow">Check + reveal map</button>
                 </div>
+                <div id="earMapReveal" class="ear-reveal hidden" aria-live="polite"></div>
               </section>
               <div id="earScore" class="ear-score"></div>
             </div>
@@ -515,8 +534,9 @@
           </div>
           <label class="voice-pick" for="voiceSel">Chord voice
             <select id="voiceSel" aria-label="Chord sound">
-              <option value="clean" selected>Clean guitar</option>
-              <option value="piano">Piano</option>
+              <option value="studio" selected>Studio piano · sampled</option>
+              <option value="clean">Clean guitar · modeled</option>
+              <option value="piano">Warm keys · offline fallback</option>
               <option value="auto">Match instrument</option>
             </select>
           </label>
@@ -534,7 +554,7 @@
   <script src="js/profiles.js?v=15"></script>
   <script src="js/theory.js?v=14"></script>
   <script src="js/harmony-journey.js?v=15"></script>
-  <script src="js/modes.js?v=15"></script>
+  <script src="js/modes.js?v=16"></script>
   <script src="js/chord-map.js?v=15"></script>
   <script src="js/ear-drills.js?v=14"></script>
   <script src="js/styles.js?v=14"></script>
@@ -546,10 +566,10 @@
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
   <script src="js/triads.js?v=14"></script>
-  <script src="js/fretboard.js?v=14"></script>
+  <script src="js/fretboard.js?v=16"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=14"></script>
-  <script src="js/app.js?v=15"></script>
+  <script src="js/audio.js?v=16"></script>
+  <script src="js/app.js?v=16"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

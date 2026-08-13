@@ -154,6 +154,28 @@ voice-leading solver rather than choosing each grip in isolation.
 - [Nassos Polyzoidis — *Fingerstyle Rebetiko: the revival of a lost technique* (2019)](https://dialnet.unirioja.es/descarga/articulo/7693555.pdf)
 - [*Guitar Chord Diagram Suggestion for Western Popular Music* (2024)](https://arxiv.org/abs/2407.14260)
 
+### 8. Use one pitch-stable reference voice for scored ear checks
+
+The ear trainer should not change timbral identity when the player changes the
+visual instrument. Tone.js's `Sampler` documentation validates the underlying
+browser pattern—map real recordings to pitches and transpose nearby notes—but a
+framework was unnecessary for Dromos Trainer's small reference range. The app now
+uses native Web Audio with 17 self-hosted notes from Alexander Holm's Salamander
+Grand Piano V3, sampled every minor third from C2–C6. Any teaching-range note is
+repitched by no more than two semitones. The 1.2 MB subset is cached by the service
+worker, cancelled safely when the player presses Stop or changes drills, and falls
+back to the existing additive keys if decoding is unavailable.
+
+This is deliberately a neutral **reference piano**, not a claim that a piano should
+replace bouzouki, guitar or laouto in stylistic practice. A future paid plucked-
+instrument library should be considered only after blind A/B listening on iPad and
+should remain separate from the consistent scored-ear voice.
+
+- [Tone.js Sampler documentation](https://tonejs.github.io/docs/15.1.22/classes/Sampler.html)
+- [Salamander Grand Piano V3 source and CC BY 3.0 license](https://github.com/sfzinstruments/SalamanderGrandPiano)
+- [Tone.js Salamander browser conversions](https://tonejs.github.io/audio/salamander/)
+- [smplr sample-instrument library](https://github.com/danigb/smplr) — reviewed but not added; its pre-1.0 API and default online sample delivery would add avoidable runtime risk here
+
 ## Books and methods worth using alongside the app
 
 | Resource | Why it belongs beside Dromos Trainer |

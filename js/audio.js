@@ -10,7 +10,22 @@
   let compressor = null;
   let output = null;
   const bufCache = new Map();
+  const studioBuffers = new Map();
   let activeSources = [];
+  let playbackGeneration = 0;
+  let studioLoadPromise = null;
+  let studioLoadState = "idle";
+
+  // One velocity layer sampled every minor 3rd is enough for a stable ear-
+  // training reference without shipping a full piano ROM. Adjacent notes are
+  // repitched by at most two semitones. The original Salamander recordings and
+  // attribution live beside these self-hosted files.
+  const STUDIO_PIANO_SAMPLES = [
+    [36, "C2"], [39, "Ds2"], [42, "Fs2"], [45, "A2"],
+    [48, "C3"], [51, "Ds3"], [54, "Fs3"], [57, "A3"],
+    [60, "C4"], [63, "Ds4"], [66, "Fs4"], [69, "A4"],
+    [72, "C5"], [75, "Ds5"], [78, "Fs5"], [81, "A5"], [84, "C6"]
+  ].map(([midi, name]) => ({ midi, name, url: `assets/audio/salamander/${name}.mp3` }));
 
   function instrumentVoice() {
     const id = window.Tuning && window.Tuning.currentId ? window.Tuning.currentId() : "guitar";
@@ -134,8 +149,68 @@
     });
   }
 
+  function decodeAudio(arrayBuffer) {
+    return new Promise((resolve, reject) => {
+      const result = ctx.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
+      if (result && typeof result.then === "function") result.then(resolve, reject);
+    });
+  }
+
+  function nearestStudioSample(midi) {
+    return STUDIO_PIANO_SAMPLES.reduce((best, sample) =>
+      !best || Math.abs(sample.midi - midi) < Math.abs(best.midi - midi) ? sample : best, null);
+  }
+
+  function prepareStudioPiano() {
+    ensure();
+    if (studioLoadState === "ready") return Promise.resolve(true);
+    if (studioLoadPromise) return studioLoadPromise;
+    if (typeof fetch !== "function" || typeof location !== "undefined" && location.protocol === "file:") {
+      studioLoadState = "fallback";
+      return Promise.resolve(false);
+    }
+    studioLoadState = "loading";
+    studioLoadPromise = Promise.all(STUDIO_PIANO_SAMPLES.map((sample) =>
+      fetch(sample.url).then((response) => {
+        if (!response.ok) throw new Error(`Piano sample ${response.status}`);
+        return response.arrayBuffer();
+      }).then(decodeAudio).then((buffer) => studioBuffers.set(sample.midi, buffer)).catch(() => null)
+    )).then(() => {
+      studioLoadState = studioBuffers.size >= 8 ? "ready" : "fallback";
+      return studioLoadState === "ready";
+    });
+    return studioLoadPromise;
+  }
+
+  function playStudioPianoNoteAt(freq, when, dur, gain) {
+    const midi = 69 + 12 * Math.log2(freq / 440);
+    const sample = nearestStudioSample(midi);
+    const buffer = sample && studioBuffers.get(sample.midi);
+    if (!buffer) { playPianoNoteAt(freq, when, dur, gain); return; }
+    const t = when == null ? ctx.currentTime + 0.01 : when;
+    const src = ctx.createBufferSource();
+    const g = ctx.createGain();
+    const cleanup = ctx.createBiquadFilter();
+    const rate = Math.pow(2, (midi - sample.midi) / 12);
+    src.buffer = buffer;
+    src.playbackRate.setValueAtTime(rate, t);
+    cleanup.type = "highpass";
+    cleanup.frequency.value = 38;
+    cleanup.Q.value = 0.35;
+    const level = Math.max(0.08, (gain == null ? 0.22 : gain) * 0.92);
+    const releaseAt = t + Math.max(0.35, Math.min(dur * 0.82, 2.6));
+    g.gain.setValueAtTime(level, t);
+    g.gain.setTargetAtTime(0.0001, releaseAt, 0.32);
+    src.connect(cleanup); cleanup.connect(g); g.connect(master);
+    activeSources.push(src);
+    src.onended = () => { activeSources = activeSources.filter((source) => source !== src); };
+    src.start(t);
+    src.stop(t + Math.min(buffer.duration / rate, dur + 1.2));
+  }
+
   function playNoteAt(freq, when, dur, gain, referenceVoice) {
     const voice = referenceVoice || instrumentVoice();
+    if (voice === "studio") { playStudioPianoNoteAt(freq, when, dur, gain); return; }
     if (voice === "piano") { playPianoNoteAt(freq, when, dur, gain); return; }
     const b = pluckBuffer(freq, dur, voice);
     const src = ctx.createBufferSource();
@@ -183,6 +258,19 @@
   // instead of sustaining over the next downbeat.
   function playChord(notes, style, when, referenceVoice, duration) {
     ensure();
+    // Immediate Studio-piano auditions wait for their real samples instead of
+    // quietly playing the synthesized fallback on the first click. Scheduled
+    // transport chords are preloaded by the controller before it starts.
+    if (referenceVoice === "studio" && studioLoadState !== "ready" && when == null) {
+      if (studioLoadState === "fallback") referenceVoice = "piano";
+      else {
+        const generation = playbackGeneration;
+        prepareStudioPiano().then((ready) => {
+          if (generation === playbackGeneration) playChord(notes, style, undefined, ready ? "studio" : "piano", duration);
+        });
+        return;
+      }
+    }
     const t0 = when == null ? ctx.currentTime + 0.01 : when;
     const dur = duration == null ? 3.4 : Math.max(0.3, duration);
     const spread = style === "arp" ? 0.14 : style === "block" ? 0 : 0.035;
@@ -215,14 +303,36 @@
   // Harmony-first prompt for the "name the map" ear drill. Repeating the
   // cadence gives the player a second chance to feel the home and the boxes
   // without revealing their labels.
-  function playProgressionPrompt(chords, bpm) {
-    ensure();
+  function scheduleProgressionPrompt(chords, bpm, referenceVoice) {
     const spb = 60 / (bpm || 84);
     let t = ctx.currentTime + 0.08;
     for (let pass = 0; pass < 2; pass++) {
-      chords.forEach((chord) => { playChord(chord.notes, "strum", t, "guitar"); t += spb * 1.5; });
+      chords.forEach((chord) => { playChord(chord.notes, "strum", t, referenceVoice, spb * 1.42); t += spb * 1.5; });
       t += spb * 0.45;
     }
+  }
+
+  function playProgressionPrompt(chords, bpm, referenceVoice) {
+    ensure();
+    const voice = referenceVoice || "studio";
+    const generation = playbackGeneration;
+    const start = () => {
+      if (generation !== playbackGeneration) return false;
+      scheduleProgressionPrompt(chords, bpm, voice);
+      return true;
+    };
+    return voice === "studio" && studioLoadState !== "ready"
+      ? prepareStudioPiano().then(start) : Promise.resolve(start());
+  }
+
+  function playReferenceChord(notes, style) {
+    ensure();
+    const generation = playbackGeneration;
+    return prepareStudioPiano().then(() => {
+      if (generation !== playbackGeneration) return false;
+      playChord(notes, style || "block", undefined, "studio");
+      return true;
+    });
   }
 
   // Play a path/cell note-by-note with UI sync. `silentFrom` leaves a gap where
@@ -254,6 +364,7 @@
   // ringing sample voices as well as the transport. This prevents a previous
   // Solo Road/path prompt from continuing underneath a new page or ear test.
   function stopAll() {
+    playbackGeneration++;
     stopTransport();
     stopPath();
     activeSources.forEach((source) => { try { source.stop(); } catch { /* already ended */ } });
@@ -412,6 +523,8 @@
     add("six-note chord is quieter per voice than triad", true, voiceGain(6, "chord") < voiceGain(3, "chord"));
     add("single path note remains speaker-safe", true, voiceGain(1, "path") <= 0.3);
     add("gain floor preserves quiet chord audibility", true, voiceGain(8, "chord") >= 0.15);
+    add("studio samples never repitch more than two semitones in the teaching range", true,
+      Array.from({ length: 49 }, (_, index) => 36 + index).every((midi) => Math.abs(nearestStudioSample(midi).midi - midi) <= 2));
     return { ok, results };
   }
 
@@ -421,8 +534,9 @@
   }
 
   window.AudioEngine = {
-    ensure, prime, voiceGain, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
+    ensure, prime, voiceGain, prepareStudioPiano, playReferenceChord, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
     startTransport, stopTransport, isPlaying,
+    studioStatus: () => studioLoadState,
     // Absolute audio-clock time, for callers that schedule multi-part gestures
     // (e.g. the "hear the lean" demo) with sample-accurate downbeats.
     now: () => { ensure(); return ctx.currentTime; },

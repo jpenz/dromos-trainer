@@ -59,8 +59,8 @@
     holdI: true,
     loop: true,
     strumStyle: "strum",
-    // chord reference voice: "clean" (guitar) | "piano" | "auto" (match instrument)
-    chordVoice: "clean",
+    // chord reference voice: sampled studio piano is the pitch-stable default.
+    chordVoice: "studio",
     // optional "five of two": a dominant pickup on beat 3 of the phrase's
     // last bar that pulls the ear back to the ii chord (A7 -> Dm7 in C).
     pickupV2: false,
@@ -79,7 +79,7 @@
   function loadUiPreferences() {
     try {
       const raw = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || "{}");
-      if (["clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
+      if (["studio", "clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
       if (typeof raw.pickupV2 === "boolean") state.pickupV2 = raw.pickupV2;
       if ([1, 3, 6].includes(raw.gymKeys)) state.gym.keys = raw.gymKeys;
       if (typeof raw.gymSkeleton === "boolean") state.gym.skeleton = raw.gymSkeleton;
@@ -88,10 +88,10 @@
   function saveUiPreferences() {
     try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickupV2: state.pickupV2, gymKeys: state.gym.keys, gymSkeleton: state.gym.skeleton })); } catch { /* private mode */ }
   }
-  // "clean" is a warm plucked guitar reference; "piano" is a clean additive
-  // piano; "auto" matches the selected instrument (bouzouki/laouto/guitar).
+  // "studio" is a real sampled piano reference; "piano" is the zero-network
+  // additive fallback; "auto" matches the selected instrument.
   function chordReferenceVoice() {
-    return state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
+    return state.chordVoice === "studio" ? "studio" : state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
   }
   const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -637,10 +637,20 @@
   }
 
   function renderKeymap(cur) {
-    const keys = ["C", "B♭", "A♭", "G♭", "E", "D"];
-    $("keymap").innerHTML = keys.map((k) =>
-      `<span class="key-node${k === cur.key ? " active" : ""}">${k}</span>`
-    ).join('<span class="key-arrow">→</span>');
+    const journey = cycleJourney();
+    const keys = [];
+    journey.items.forEach((entry) => {
+      if (keys.some((item) => item.key === entry.keyLabel)) return;
+      keys.push({ key: entry.keyLabel, sourceIndex: entry.sourceIndex });
+    });
+    const active = keys.findIndex((item) => item.key === cur.key);
+    $("keymapTitle").textContent = `${keys.length}-key loop · old I becomes the next ii`;
+    $("keymap").innerHTML = keys.map((item, index) =>
+      `<button data-cycle-key="${item.sourceIndex}" class="key-node${index === active ? " active" : ""}${index === (active + 1) % keys.length && keys.length > 1 ? " next" : ""}"><span>${index === active ? "Now" : index === (active + 1) % keys.length && keys.length > 1 ? "Next" : `Key ${index + 1}`}</span><b>${escapeHtml(item.key)}</b><small>ii · V · I · I</small></button>`
+    ).join("");
+    $("keymap").querySelectorAll("[data-cycle-key]").forEach((button) => button.onclick = () => {
+      stopPlay(); setCycleIndex(+button.getAttribute("data-cycle-key")); auditionCurrent("block");
+    });
   }
 
   function stepCycle(delta) {
@@ -1163,9 +1173,18 @@
     return { freq: 440 * Math.pow(2, (midi - 69) / 12) };
   }
 
-  function playEarTonic() {
+  function earAudioStatus(message, stateName) {
+    const status = $("earAudioStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.className = `ear-audio-status${stateName ? ` ${stateName}` : ""}`;
+  }
+
+  async function playEarTonic() {
     stopPlay();
-    AU.playChord([earTonicNote()], "block", undefined, "guitar");
+    earAudioStatus(AU.studioStatus() === "ready" ? `Playing ${state.ear.tonic} home pitch` : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playReferenceChord([earTonicNote()], "block");
+    if (played) earAudioStatus(`Home pitch: ${state.ear.tonic} · sampled studio piano · Stop anytime`, "playing");
   }
 
   function renderEarReference() {
@@ -1184,6 +1203,8 @@
       if (state.ear.locked && id === state.ear.answer) button.classList.add("right");
       else if (state.ear.locked && id === state.ear.guess) button.classList.add("wrong");
     });
+    $("btnEarHint").disabled = state.ear.locked;
+    $("btnEarCheck").disabled = state.ear.locked;
   }
 
   function newEarQuestion() {
@@ -1197,6 +1218,9 @@
     state.ear.guess = null;
     state.ear.hintLevel = 0;
     state.ear.locked = false;
+    $("earReveal").classList.add("hidden");
+    $("earReveal").innerHTML = "";
+    $("btnEarNew").textContent = "Next question";
     $("earFeedback").className = "ear-feedback";
     $("earFeedback").textContent = `Reference tonic: ${state.ear.tonic}. Listen to the chord cadence twice. Choose a map, ask for a hint if needed, then check.`;
     renderColourChoices();
@@ -1205,12 +1229,15 @@
     renderEarScore();
   }
 
-  function playEarPrompt() {
+  async function playEarPrompt() {
     stopPlay();
     const id = state.ear.answer;
+    if (!id) return;
     const prog = M.PROGRESSIONS[id][0];
     const { chords } = M.buildProgression(state.ear.tonic, id, prog.id);
-    AU.playProgressionPrompt(chords, state.bpm);
+    earAudioStatus(AU.studioStatus() === "ready" ? "Playing the cadence twice…" : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playProgressionPrompt(chords, state.bpm, "studio");
+    if (played && id === state.ear.answer) earAudioStatus("Cadence playing twice · chords only · Stop anytime", "playing");
   }
 
   function selectColourGuess(guess) {
@@ -1249,11 +1276,42 @@
     renderColourChoices();
     const answer = { tonic: state.ear.tonic, modeId: state.ear.answer, progressionId: M.PROGRESSIONS[state.ear.answer][0].id };
     const detail = E ? E.explanation(answer) : { label: M.MODES[state.ear.answer].name, signature: "signature tones", scale: "" };
+    const built = M.buildProgression(answer.tonic, answer.modeId, answer.progressionId);
     const fb = $("earFeedback");
     fb.className = "ear-feedback " + (correct ? "ok" : "no");
     fb.innerHTML = (correct ? "✓ Correct — " : "✗ It was ") +
       `<b>${detail.label}</b> (${detail.category || "map"}). Signature: <b>${detail.signature}</b>. Scale: <b>${detail.scale}</b>.`;
+    renderEarReveal("earReveal", answer, built, {
+      summary: `You chose ${M.MODES[state.ear.guess].name}; the played answer was ${detail.label}.`,
+      progression: detail.progression,
+      why: detail.why
+    });
     renderEarScore();
+  }
+
+  function renderEarReveal(rootId, answer, built, copy) {
+    const root = $(rootId);
+    const scale = M.scaleOf(answer.tonic, answer.modeId);
+    root.classList.remove("hidden");
+    root.innerHTML = `<header><span>Exactly what played</span><h3>${escapeHtml(E ? E.answerLabel(answer) : `${answer.tonic} ${M.MODES[answer.modeId].name}`)}</h3><p>${escapeHtml(copy.summary)}</p></header>
+      <div class="ear-reveal-context"><span><b>Scale</b>${scale.map((note) => `${escapeHtml(note.name)} <i>${escapeHtml(note.degree)}</i>`).join(" · ")}</span><span><b>Boxes</b>${escapeHtml(copy.progression || built.prog.label)}</span></div>
+      <div class="ear-played-chords">${built.chords.map((chord, index) => `<button data-ear-reveal-chord="${index}" aria-label="Play chord ${index + 1}: ${escapeHtml(chord.degreeLabel)} ${escapeHtml(chord.symbol)}"><span>${index + 1} · ${escapeHtml(chord.degreeLabel)}</span><b>${escapeHtml(chord.symbol)}</b><small>${chord.notes.map((note) => `${escapeHtml(note.name)} (${escapeHtml(note.roleLabel)})`).join(" · ")}</small><em>♪ hear this chord</em></button>`).join('<i aria-hidden="true">→</i>')}</div>
+      <p class="ear-reveal-why"><b>Why it belongs:</b> ${escapeHtml(copy.why || "The chord tones and scale collection agree with the named map.")}</p>
+      <div class="ear-reveal-actions"><button data-ear-reveal-replay>↻ Replay this exact sequence</button><button data-ear-reveal-map>Open it in Song Map</button></div>`;
+    root.querySelectorAll("[data-ear-reveal-chord]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const chord = built.chords[+button.getAttribute("data-ear-reveal-chord")];
+      earAudioStatus(`Playing ${chord.degreeLabel} · ${chord.symbol} · Stop anytime`, "playing");
+      AU.playReferenceChord(chord.notes, "block");
+    });
+    root.querySelector("[data-ear-reveal-replay]").onclick = () => {
+      stopPlay();
+      earAudioStatus("Replaying the exact revealed sequence twice…", "playing");
+      AU.playProgressionPrompt(built.chords, state.bpm, "studio");
+    };
+    root.querySelector("[data-ear-reveal-map]").onclick = () => {
+      state.tonic = answer.tonic; state.modeId = answer.modeId; state.progId = answer.progressionId; state.progStep = 0; setView("prog");
+    };
   }
 
   function earMapLabel(answer) {
@@ -1283,6 +1341,9 @@
     map.keyOptions = map.homePreset === "random" ? selectEarMapChoices(map.answer) : [tonic];
     map.keyGuess = map.homePreset === "random" ? null : tonic;
     map.familyGuess = null; map.progressionGuess = null; map.hintLevel = 0; map.locked = false;
+    $("earMapReveal").classList.add("hidden");
+    $("earMapReveal").innerHTML = "";
+    $("btnEarMapNew").textContent = "Next map";
     $("earMapFeedback").className = "ear-feedback";
     $("earMapFeedback").textContent = map.homePreset === "random"
       ? "Listen twice. Choose the home, then the harmonic/dromos family and its change boxes."
@@ -1291,20 +1352,24 @@
     playEarMapPrompt();
   }
 
-  function playEarMapPrompt() {
+  async function playEarMapPrompt() {
     stopPlay();
     const answer = state.ear.map.answer;
     if (!answer) return;
     const { chords } = M.buildProgression(answer.tonic, answer.modeId, answer.progressionId);
-    AU.playProgressionPrompt(chords, state.bpm);
+    earAudioStatus(AU.studioStatus() === "ready" ? "Playing the map twice…" : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playProgressionPrompt(chords, state.bpm, "studio");
+    if (played && answer === state.ear.map.answer) earAudioStatus("Map playing twice · Stop anytime", "playing");
   }
 
-  function playEarMapHome() {
+  async function playEarMapHome() {
     stopPlay();
     const answer = state.ear.map.answer;
     if (!answer || state.ear.map.homePreset === "random") return;
     const chord = E ? E.homeChord(answer) : M.buildProgression(answer.tonic, answer.modeId, answer.progressionId).chords.slice(-1)[0];
-    AU.playChord(chord.notes, "block", undefined, "guitar");
+    earAudioStatus(AU.studioStatus() === "ready" ? `Playing ${answer.tonic} home chord` : "Loading the sampled studio piano…", "playing");
+    const played = await AU.playReferenceChord(chord.notes, "block");
+    if (played) earAudioStatus(`Home chord: ${chord.symbol} · Stop anytime`, "playing");
   }
 
   function renderEarMap() {
@@ -1314,16 +1379,18 @@
     homeSelect.innerHTML = `<option value="random">Random — test the home</option>` + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic} — known home</option>`).join("");
     homeSelect.value = map.homePreset;
     $("btnEarMapHome").disabled = map.homePreset === "random";
+    $("btnEarMapHint").disabled = map.locked;
+    $("btnEarMapCheck").disabled = map.locked;
     $("btnEarMapHome").textContent = map.homePreset === "random" ? "Home hidden · train blind" : `♪ Hear ${map.answer.tonic} home chord`;
     $("earKeyChoices").innerHTML = map.homePreset === "random"
-      ? map.keyOptions.map((tonic) => `<button data-ear-key="${tonic}"${map.keyGuess === tonic ? " class=\"selected\"" : ""}>${tonic}</button>`).join("")
+      ? map.keyOptions.map((tonic) => `<button data-ear-key="${tonic}" class="${map.keyGuess === tonic ? "selected " : ""}${map.locked && tonic === map.answer.tonic ? "right" : map.locked && tonic === map.keyGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}>${tonic}</button>`).join("")
       : `<div class="ear-home-anchor"><b>${map.answer.tonic}</b><span>Known training home. Use ♪ Hear ${map.answer.tonic} if you need to reset your ear.</span></div>`;
     $("earFamilyChoices").innerHTML = (E ? E.families() : M.MODE_ORDER.map((id) => ({ id, label: M.MODES[id].name, signature: "signature tones" }))).map((item) =>
-      `<button data-ear-family="${item.id}"${map.familyGuess === item.id ? " class=\"selected\"" : ""}${map.locked ? " disabled" : ""}><b>${item.label}</b><span>${item.signature}</span></button>`
+      `<button data-ear-family="${item.id}" class="${map.familyGuess === item.id ? "selected " : ""}${map.locked && item.id === map.answer.modeId ? "right" : map.locked && item.id === map.familyGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}><b>${item.label}</b><span>${item.signature}</span></button>`
     ).join("");
     const progressions = map.familyGuess ? (E ? E.progressions(map.familyGuess) : M.PROGRESSIONS[map.familyGuess]) : [];
     $("earProgressionChoices").innerHTML = progressions.length
-      ? progressions.map((progression) => `<button data-ear-prog="${progression.id}"${map.progressionGuess === progression.id ? " class=\"selected\"" : ""}${map.locked ? " disabled" : ""}><b>${progression.label}</b><span>${progression.chords.map((chord) => M.DEGREE_LABEL[chord[0]]).join(" → ")}</span></button>`).join("")
+      ? progressions.map((progression) => `<button data-ear-prog="${progression.id}" class="${map.progressionGuess === progression.id ? "selected " : ""}${map.locked && map.familyGuess === map.answer.modeId && progression.id === map.answer.progressionId ? "right" : map.locked && progression.id === map.progressionGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}><b>${progression.label}</b><span>${progression.chords.map((chord) => M.DEGREE_LABEL[chord[0]]).join(" → ")}</span></button>`).join("")
       : `<p class="ear-choice-empty">Choose the map family first; the progression choices will then use its own Roman-numeral language.</p>`;
     $("earKeyChoices").querySelectorAll("[data-ear-key]").forEach((button) => button.onclick = () => {
       if (map.locked) return;
@@ -1367,15 +1434,22 @@
     renderPlayerProfiles(false);
     const detail = E ? E.explanation(map.answer) : null;
     const progression = E ? E.progression(map.answer.modeId, map.answer.progressionId) : M.PROGRESSIONS[map.answer.modeId].find((item) => item.id === map.answer.progressionId);
-    const chords = E ? detail.chords.map((symbol) => ({ symbol })) : M.buildProgression(map.answer.tonic, map.answer.modeId, map.answer.progressionId).chords;
+    const built = M.buildProgression(map.answer.tonic, map.answer.modeId, map.answer.progressionId);
+    const chords = built.chords;
     const feedback = $("earMapFeedback");
     feedback.className = "ear-feedback " + (correct ? "ok" : "no");
     feedback.innerHTML = (correct ? "✓ You heard the whole map. " : "✗ Check the map. ") +
       `Home/map: <b>${earMapLabel(map.answer)}</b> (${detail ? detail.category : "map"}). Scale: <b>${detail ? detail.scale : ""}</b>. Boxes: <b>${progression.label}</b> · ${chords.map((chord) => `<b>${chord.symbol}</b>`).join(" → ")}. ${detail ? detail.why : ""}`;
+    renderEarReveal("earMapReveal", map.answer, built, {
+      summary: `You chose ${map.keyGuess} ${M.MODES[map.familyGuess].name} · ${(E ? E.progression(map.familyGuess, map.progressionGuess) : null)?.label || map.progressionGuess}; the played map is shown below.`,
+      progression: progression.label,
+      why: detail ? detail.why : ""
+    });
     renderEarMap(); renderEarScore();
   }
 
   function setEarDrill(drill) {
+    stopPlay();
     state.ear.drill = drill;
     $("earColour").classList.toggle("hidden", drill !== "colour");
     $("earMap").classList.toggle("hidden", drill !== "map");
@@ -1383,6 +1457,12 @@
       button.classList.toggle("active", button.getAttribute("data-ear-drill") === drill));
     document.querySelector(".ear-reference").classList.toggle("hidden", drill !== "colour");
     renderEarReference();
+    const studioState = AU.studioStatus();
+    earAudioStatus(studioState === "ready"
+      ? "Sampled studio piano ready · Start, replay, or stop without changing your answer"
+      : studioState === "fallback"
+        ? "Warm-keys fallback ready · Start, replay, or stop without changing your answer"
+        : "Studio piano loads on first play · Stop always keeps your answer choices", studioState === "ready" ? "ready" : "");
     if (drill === "map" && !state.ear.map.answer) newEarMap();
     renderEarScore();
   }
@@ -1772,7 +1852,7 @@
     const progressions = M.PROGRESSIONS[state.modeId];
     const { chords } = currentProgression();
     root.innerHTML = `
-      <div class="solo-map-head"><div><b>${mode.name} on ${state.tonic}</b><span>${mode.greek} · ${window.Tuning.current().name}</span></div>
+      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key / home ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}</span></div>
         <label>Home <select id="soloTonic">${M.TONICS.map((tonic) =>
           `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label></div>
       <div class="solo-mode-grid">${M.MODE_ORDER.map((modeId) => {
@@ -2354,6 +2434,8 @@
 
   // ============================ playback =================================
   let pb = null;
+  let playbackStartRequest = 0;
+  let playbackLoading = false;
   // Prefer the bare roman function; degreeLabel is the display fallback and
   // scaleDegree last (it is numeric, "1"/"2", and must never win over romans).
   function functionTag(c) { return String((c && (c.fn || c.degreeLabel || c.scaleDegree)) || ""); }
@@ -2466,10 +2548,18 @@
     AU.playChord(notes, "block", barStart + 2 * (60 / state.bpm), chordReferenceVoice(), Math.min(1.4, 2 * (60 / state.bpm)));
   }
 
-  function startPlay() {
+  async function startPlay() {
+    const request = ++playbackStartRequest;
     cancelTaximiBridge();
     cancelSoloDrone();
     AU.ensure();
+    if (chordReferenceVoice() === "studio" && AU.studioStatus() !== "ready") {
+      playbackLoading = true;
+      setPlayingUI(true, "■ Stop loading");
+      await AU.prepareStudioPiano();
+      if (request !== playbackStartRequest) return;
+      playbackLoading = false;
+    }
     const pulse = currentPulse();
     if (state.view === "cycle" && state.cycleComping.focus === "chords") {
       const { chords } = currentProgression();
@@ -2564,13 +2654,13 @@
     setPlayingUI(true);
   }
 
-  function stopPlay() { AU.stopAll(); setPlayingUI(false); }
-  function setPlayingUI(p) {
+  function stopPlay() { playbackStartRequest++; playbackLoading = false; AU.stopAll(); setPlayingUI(false); }
+  function setPlayingUI(p, label) {
     const b = $("btnPlay");
-    b.textContent = p ? "⏸ Pause" : "▶ Play";
+    b.textContent = label || (p ? "⏸ Pause" : "▶ Play");
     b.classList.toggle("playing", p);
   }
-  function togglePlay() { AU.isPlaying() ? stopPlay() : startPlay(); }
+  function togglePlay() { AU.isPlaying() || playbackLoading ? stopPlay() : startPlay(); }
 
   function auditionCurrent(style) {
     AU.ensure();
@@ -2662,6 +2752,7 @@
     if ($("voiceSel")) $("voiceSel").onchange = (event) => {
       state.chordVoice = event.target.value;
       saveUiPreferences();
+      if (state.chordVoice === "studio") AU.prepareStudioPiano();
     };
     if ($("tglPickup")) $("tglPickup").onchange = (event) => {
       state.pickupV2 = event.target.checked;
@@ -2919,6 +3010,7 @@
     $("btnEarTonic").onclick = playEarTonic;
     $("btnEarNew").onclick = newEarQuestion;
     $("btnEarReplay").onclick = () => { if (state.ear.answer) playEarPrompt(); else newEarQuestion(); };
+    $("btnEarStop").onclick = () => { stopPlay(); earAudioStatus("Stopped · your answer choices are unchanged", "stopped"); };
     $("btnEarHint").onclick = hintColour;
     $("btnEarCheck").onclick = checkColourGuess;
     $("earMapHomeSel").onchange = (event) => {
@@ -2928,6 +3020,7 @@
     $("btnEarMapNew").onclick = newEarMap;
     $("btnEarMapHome").onclick = playEarMapHome;
     $("btnEarMapReplay").onclick = () => { if (state.ear.map.answer) playEarMapPrompt(); else newEarMap(); };
+    $("btnEarMapStop").onclick = () => { stopPlay(); earAudioStatus("Stopped · your map choices are unchanged", "stopped"); };
     $("btnEarMapHint").onclick = hintEarMap;
     $("btnEarMapCheck").onclick = checkEarMap;
     document.querySelectorAll("[data-ear-drill]").forEach((button) =>

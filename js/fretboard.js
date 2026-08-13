@@ -139,9 +139,10 @@
     fretW: 66, stringGap: 34, nutW: 8
   };
 
-  function xForFret(f) { return GEO.padL + GEO.nutW + (f - 0.5) * GEO.fretW; }   // center of fret slot
-  function xForLine(f) { return GEO.padL + GEO.nutW + f * GEO.fretW; }            // the wire
-  function yForString(sIdxFromTop) { return GEO.padT + sIdxFromTop * GEO.stringGap; }
+  function neckLayout(nFrets, folded) {
+    const fretsPerRow = folded ? Math.min(12, nFrets) : nFrets;
+    return { folded: !!folded, fretsPerRow, rows: Math.ceil(nFrets / fretsPerRow) };
+  }
 
   // render into svg element. opts: { grip, ghosts, labelMode, keyAcc, lefty }
   function render(svg, opts) {
@@ -151,64 +152,84 @@
     const LAST = NSTR - 1;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     const N_FRETS = nFrets();
-    const width = GEO.padL + GEO.nutW + N_FRETS * GEO.fretW + GEO.padR;
-    const height = GEO.padT + LAST * GEO.stringGap + GEO.padB;
+    // A phone-sized neck folds after fret 12 instead of becoming a tiny 24-
+    // fret thumbnail or requiring horizontal scrolling. Tablet/desktop keeps
+    // one continuous row and scales into the available stage width.
+    const fold = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 620px)").matches;
+    const layout = neckLayout(N_FRETS, fold);
+    const FRETS_PER_ROW = layout.fretsPerRow;
+    const ROWS = layout.rows;
+    const rowHeight = GEO.padT + LAST * GEO.stringGap + GEO.padB + (fold ? 18 : 0);
+    const width = GEO.padL + GEO.nutW + Math.min(FRETS_PER_ROW, N_FRETS) * GEO.fretW + GEO.padR;
+    const height = ROWS * rowHeight - (fold ? 18 : 0);
+    const fretRow = (fret) => fret === 0 ? 0 : Math.floor((fret - 1) / FRETS_PER_ROW);
+    const localFret = (fret) => fret === 0 ? 0 : (fret - 1) % FRETS_PER_ROW + 1;
+    const rowTop = (row) => row * rowHeight;
+    const xForFret = (fret) => GEO.padL + GEO.nutW + (localFret(fret) - 0.5) * GEO.fretW;
+    const xForLine = (fret) => GEO.padL + GEO.nutW + localFret(fret) * GEO.fretW;
+    const yForString = (sIdxFromTop, fret) => rowTop(fretRow(fret)) + GEO.padT + sIdxFromTop * GEO.stringGap;
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.setAttribute("data-neck-layout", fold ? "folded" : "continuous");
 
     const g = el("g", {});
     if (opts.lefty) g.setAttribute("transform", `translate(${width},0) scale(-1,1)`);
     svg.appendChild(g);
 
-    // fretboard face
-    g.appendChild(el("rect", {
-      x: GEO.padL + GEO.nutW, y: GEO.padT - 6,
-      width: N_FRETS * GEO.fretW, height: LAST * GEO.stringGap + 12,
-      rx: 4, class: "fb-face"
-    }));
-
-    // inlays
-    MARKERS.filter((f) => f <= N_FRETS).forEach((f) => {
-      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString((NSTR - 1) / 2), r: 6, class: "fb-inlay" }));
-    });
-    DOUBLE_MARKERS.filter((f) => f <= N_FRETS).forEach((f) => {
-      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.max(0,(NSTR-1)/2 - 1)), r: 6, class: "fb-inlay" }));
-      g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.min(LAST,(NSTR-1)/2 + 1)), r: 6, class: "fb-inlay" }));
-    });
-
-    // nut
-    g.appendChild(el("rect", {
-      x: GEO.padL, y: GEO.padT - 6, width: GEO.nutW,
-      height: LAST * GEO.stringGap + 12, class: "fb-nut"
-    }));
-
-    // frets
-    for (let f = 1; f <= N_FRETS; f++) {
-      g.appendChild(el("line", {
-        x1: xForLine(f), y1: GEO.padT - 6, x2: xForLine(f), y2: GEO.padT + LAST * GEO.stringGap + 6, class: "fb-fret"
+    for (let row = 0; row < ROWS; row++) {
+      const first = row * FRETS_PER_ROW + 1;
+      const last = Math.min(N_FRETS, first + FRETS_PER_ROW - 1);
+      const count = last - first + 1;
+      const top = rowTop(row);
+      g.appendChild(el("rect", {
+        x: GEO.padL + GEO.nutW, y: top + GEO.padT - 6,
+        width: count * GEO.fretW, height: LAST * GEO.stringGap + 12,
+        rx: 4, class: "fb-face"
       }));
-    }
-
-    // strings (draw high E at top for a player's-eye view)
-    for (let i = 0; i < NSTR; i++) {
-      const sIdx = LAST - i; // top row = high E (index5)
-      g.appendChild(el("line", {
-        x1: GEO.padL, y1: yForString(i), x2: xForLine(N_FRETS), y2: yForString(i),
-        class: "fb-string", "stroke-width": 1 + (LAST - sIdx) * 0.25
-      }));
+      MARKERS.filter((f) => f >= first && f <= last).forEach((f) => {
+        g.appendChild(el("circle", { cx: xForFret(f), cy: yForString((NSTR - 1) / 2, f), r: 6, class: "fb-inlay" }));
+      });
+      DOUBLE_MARKERS.filter((f) => f >= first && f <= last).forEach((f) => {
+        g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.max(0,(NSTR-1)/2 - 1), f), r: 6, class: "fb-inlay" }));
+        g.appendChild(el("circle", { cx: xForFret(f), cy: yForString(Math.min(LAST,(NSTR-1)/2 + 1), f), r: 6, class: "fb-inlay" }));
+      });
+      if (row === 0) {
+        g.appendChild(el("rect", {
+          x: GEO.padL, y: top + GEO.padT - 6, width: GEO.nutW,
+          height: LAST * GEO.stringGap + 12, class: "fb-nut"
+        }));
+      }
+      for (let f = first; f <= last; f++) {
+        g.appendChild(el("line", {
+          x1: xForLine(f), y1: top + GEO.padT - 6, x2: xForLine(f), y2: top + GEO.padT + LAST * GEO.stringGap + 6, class: "fb-fret"
+        }));
+      }
+      for (let i = 0; i < NSTR; i++) {
+        const sIdx = LAST - i;
+        g.appendChild(el("line", {
+          x1: GEO.padL, y1: yForString(i, first), x2: GEO.padL + GEO.nutW + count * GEO.fretW, y2: yForString(i, first),
+          class: "fb-string", "stroke-width": 1 + (LAST - sIdx) * 0.25
+        }));
+      }
     }
 
     // fret numbers + string labels (kept upright even when lefty)
     const overlay = el("g", {});
     svg.appendChild(overlay);
-    MARKERS.concat(DOUBLE_MARKERS).filter((f) => f <= N_FRETS).forEach((f) => {
+    const numberedFrets = Array.from(new Set(MARKERS.concat(DOUBLE_MARKERS, Array.from({ length: ROWS }, (_, row) => Math.min(N_FRETS, (row + 1) * FRETS_PER_ROW)))))
+      .filter((f) => f > 0 && f <= N_FRETS);
+    numberedFrets.forEach((f) => {
       const cx = opts.lefty ? width - xForFret(f) : xForFret(f);
-      overlay.appendChild(el("text", { x: cx, y: height - 8, class: "fb-fretnum", "text-anchor": "middle" }, String(f)));
+      const y = rowTop(fretRow(f)) + GEO.padT + LAST * GEO.stringGap + GEO.padB - 8;
+      overlay.appendChild(el("text", { x: cx, y, class: "fb-fretnum", "text-anchor": "middle" }, String(f)));
     });
-    for (let i = 0; i < NSTR; i++) {
-      const sIdx = LAST - i;
-      const lx = opts.lefty ? width - (GEO.padL - 14) : GEO.padL - 14;
-      overlay.appendChild(el("text", { x: lx, y: yForString(i) + 4, class: "fb-openname", "text-anchor": "middle" }, OPEN_NAMES[sIdx]));
+    for (let row = 0; row < ROWS; row++) {
+      for (let i = 0; i < NSTR; i++) {
+        const sIdx = LAST - i;
+        const lx = opts.lefty ? width - (GEO.padL - 14) : GEO.padL - 14;
+        const rowFret = row * FRETS_PER_ROW + 1;
+        overlay.appendChild(el("text", { x: lx, y: yForString(i, rowFret) + 4, class: "fb-openname", "text-anchor": "middle" }, OPEN_NAMES[sIdx]));
+      }
     }
 
     // helper to place a dot
@@ -223,7 +244,7 @@
       const sIdx = p.stringIndex;
       const rowFromTop = LAST - sIdx;
       const cx = p.fret === 0 ? GEO.padL - 0 : xForFret(p.fret);
-      const cy = yForString(rowFromTop);
+      const cy = yForString(rowFromTop, p.fret);
       const isFlavour = flavourSet ? flavourSet.has(p.note.pc) : !!p.note.isFlavour;
       const isTarget = targetSet ? targetSet.has(p.note.pc) : false;
       const isNow = nowSet ? nowSet.has(p.note.pc) : false;
@@ -278,7 +299,7 @@
     // ---- practice path: connectors, stroke marks, order numbers ----------
     if (opts.path && opts.path.length) {
       const cx = (n) => (n.fret === 0 ? GEO.padL : xForFret(n.fret));
-      const cy = (n) => yForString(LAST - n.stringIndex);
+      const cy = (n) => yForString(LAST - n.stringIndex, n.fret);
       const upto = opts.pathIndex == null ? opts.path.length - 1 : opts.pathIndex;
 
       // connectors first so dots sit on top
@@ -286,7 +307,9 @@
         const a = opts.path[i - 1], b = opts.path[i];
         const cls = "path-link" + (b.crossing ? " x-" + b.crossing : "") +
                     (i <= upto ? " done" : "");
-        g.appendChild(el("line", { x1: cx(a), y1: cy(a), x2: cx(b), y2: cy(b), class: cls }));
+        if (fretRow(a.fret) === fretRow(b.fret)) {
+          g.appendChild(el("line", { x1: cx(a), y1: cy(a), x2: cx(b), y2: cy(b), class: cls }));
+        }
       }
 
       opts.path.forEach((n, i) => {
@@ -379,7 +402,8 @@
           }
         }
         if (!best) continue;
-        const y = yForString(LAST - s) - 20;
+        if (fretRow(best.fa) !== fretRow(best.fb)) continue;
+        const y = yForString(LAST - s, best.fa) - 20;
         const xa = best.fa === 0 ? GEO.padL : xForFret(best.fa);
         const xb = best.fb === 0 ? GEO.padL : xForFret(best.fb);
         const x1 = opts.lefty ? width - xa : xa;
@@ -420,5 +444,5 @@
     }
   }
 
-  window.Fretboard = { get N_FRETS() { return nFrets(); }, stringSets, findGrip, allTonePositions, render };
+  window.Fretboard = { get N_FRETS() { return nFrets(); }, stringSets, findGrip, allTonePositions, neckLayout, render };
 })();

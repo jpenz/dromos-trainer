@@ -213,8 +213,38 @@ test("Recall separates natural minor, harmonic minor, and the strict Ousak map",
   assert.match(EarDrills.hint(harmonic, 1), /raised 7/i);
 });
 
+test("every displayed progression chord name and interval agrees with its sounding pitch", () => {
+  const { Modes } = loadCore();
+  const intervalByRole = { R: 0, b3: 3, 3: 4, b5: 6, 5: 7, "#5": 8, b7: 10, 7: 11 };
+  const labelByRole = { R: "R", b3: "♭3", 3: "3", b5: "♭5", 5: "5", "#5": "♯5", b7: "♭7", 7: "7" };
+  let checked = 0;
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    Modes.PROGRESSIONS[modeId].forEach((progression) => {
+      const built = Modes.buildProgression(tonic, modeId, progression.id);
+      const roman = progression.label.split(/\s+–\s+/);
+      assert.equal(built.chords.length, roman.length, `${tonic} ${progression.id} has one Roman label per sounding chord`);
+      built.chords.forEach((chord, index) => {
+        assert.equal(chord.degreeLabel, roman[index], `${chord.symbol} displays the progression's exact Roman function`);
+        assert.equal(chord.symbol, chord.rootName + Modes.QUALITY[chord.quality].sym, `${chord.symbol} symbol matches its quality`);
+        chord.notes.forEach((note) => {
+          const soundingInterval = ((note.pc - chord.rootPc) % 12 + 12) % 12;
+          assert.equal(soundingInterval, intervalByRole[note.role], `${chord.symbol} ${note.name} sounds at ${note.role}`);
+          assert.equal(note.roleLabel, labelByRole[note.role], `${chord.symbol} uses the correct rendered interval glyph`);
+          assert.equal(Modes.parseName(note.name).pc, note.pc, `${note.name} spelling matches its sounding pitch`);
+          checked++;
+        });
+      });
+    });
+  }));
+  assert.ok(checked > 2000, `audited ${checked} displayed/sounding chord tones`);
+  const respelled = Modes.buildChord("E♭", "ousak", 1, "maj");
+  assert.equal(respelled.symbol, "E");
+  assert.equal(respelled.notes.map((note) => note.name).join(" "), "E G♯ B",
+    "when F♭ is simplified to E, the major 3rd must be respelled from E as G♯, never A♭");
+});
+
 test("Solo Road keeps the tetrachord split and number patterns playable", () => {
-  const { Modes, Practice, Tuning, Triads } = loadCore();
+  const { Modes, Practice, Tuning, Triads, Fretboard } = loadCore();
   const road = Modes.tetrachordsOf("D", "hijaz");
   assert.deepEqual(Array.from(road.lower, (note) => note.name), ["D", "E♭", "F♯", "G"]);
   assert.deepEqual(Array.from(road.upper, (note) => note.name), ["A", "B♭", "C", "D"]);
@@ -232,6 +262,10 @@ test("Solo Road keeps the tetrachord split and number patterns playable", () => 
   assert.equal(Practice.MELODIC_ROUTES.length, 6, "five classic routes plus the Greek sweet 2→3 lean");
   assert.equal(new Set(Practice.MELODIC_ROUTES.map((route) => route.id)).size, Practice.MELODIC_ROUTES.length);
   assert.ok(Practice.MELODIC_ROUTES.every((route) => route.budget && route.path && route.hear && route.think));
+  assert.deepEqual({ ...Fretboard.neckLayout(24, true) }, { folded: true, fretsPerRow: 12, rows: 2 },
+    "a phone gets the full 24-fret road as two readable 12-fret rows");
+  assert.deepEqual({ ...Fretboard.neckLayout(24, false) }, { folded: false, fretsPerRow: 24, rows: 1 },
+    "tablet and desktop keep one continuous 24-fret road");
 });
 
 test("practical guitar vocabulary keeps full forms at fret 15 or below", () => {

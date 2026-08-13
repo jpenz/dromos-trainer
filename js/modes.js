@@ -285,6 +285,11 @@
     const idxInScale = mode.scale.indexOf(degOff);
     const rootLetter = t.letterIdx + (idxInScale >= 0 ? idxInScale : DEFAULT_STEP[degOff]);
     const rootName = simplify(nameFor(rootLetter, rootPc));
+    // If the readability policy respells a theoretical root (F♭ -> E or C♭
+    // -> B), spell the chord from that displayed root as well. Otherwise an
+    // E-major triad derived from an F♭ scale degree can misleadingly display
+    // E–A♭–B even though its labelled 3rd is G♯.
+    const chordRootLetter = parseName(rootName).letterIdx;
 
     // place bottom note near the previous chord (simple register continuity)
     let bottom;
@@ -311,7 +316,7 @@
         midi, pc, role,
         roleLabel: ROLE_LABEL[role],
         colorGroup: ROLE_GROUP[role],
-        name: simplify(nameFor(rootLetter + q.steps[i], pc)),
+        name: simplify(nameFor(chordRootLetter + q.steps[i], pc)),
         freq: 440 * Math.pow(2, (midi - 69) / 12)
       };
     });
