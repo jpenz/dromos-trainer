@@ -70,6 +70,8 @@ the same view.
   that names the actual chord and current/next target.
 - Local static-server `/api/session` 501 and `/api/release` 404 responses remain
   expected. The production coach configuration was intentionally not changed.
+- Preview deployment identity is asserted against shell release 15, so the
+  public release endpoint cannot silently report a stale application version.
 
 ## Known boundary
 

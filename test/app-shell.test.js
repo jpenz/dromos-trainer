@@ -98,6 +98,8 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=15/, "Chord Map must work in the offline shell");
+  assert.match(read("api/release.js"), /appVersion: "15"/,
+    "the public deployment identity must match the current offline shell release");
   assert.match(read("css/styles.css"), /\.chord-compare-scroll \{[^}]*overflow-x: auto/,
     "the five-dromos comparison must scroll internally instead of widening the page");
 });
