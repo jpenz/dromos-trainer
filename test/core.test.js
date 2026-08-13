@@ -92,6 +92,17 @@ test("the Changes Gym is four 4/4 bars per key: ii · V · I · I, then the pivo
   assert.equal(StyleLibrary.beatMap(hasapiko).length, 4, "four beats to the bar");
 });
 
+test("Changes Gym key counts share one audio and guide boundary", () => {
+  const { Theory, HarmonyJourney } = loadCore();
+  const cycle = Theory.buildCycle();
+  [1, 3, 6].forEach((keyCount) => {
+    const sequence = HarmonyJourney.sequenceForKeyCount(0, cycle, keyCount);
+    const journey = HarmonyJourney.buildJourney({ kind: "cycle", cycle, mode: keyCount === 1 ? "iiVI" : "full", keyCount, startIndex: 0, index: sequence[sequence.length - 1], loop: true });
+    assert.deepEqual(Array.from(journey.items, (entry) => entry.sourceIndex), Array.from(sequence), `${keyCount}-key guide matches audio sequence`);
+    assert.equal(journey.next.sourceIndex, sequence[0], `${keyCount}-key guide wraps to its own first chord`);
+  });
+});
+
 test("the Piraeus tier leads the minor bank and Ousak breathes without breaking its strict map", () => {
   const { Modes } = loadCore();
   const minor = Modes.PROGRESSIONS.minor;

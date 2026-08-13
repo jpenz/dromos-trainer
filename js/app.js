@@ -17,7 +17,7 @@
     cycleMode: "pivot",        // the Changes Gym; "full"/"iiVI" survive only as legacy preference values
     // Changes Gym settings: how many keys the wheel chains, the whole-note
     // skeleton drill, and the unmetered taximi bridge between keys.
-    gym: { keys: 6, skeleton: false, bridging: false, bridgeTimer: null },
+    gym: { keys: 6, anchor: 0, skeleton: false, bridging: false, bridgeTimer: null },
     cycleComping: { focus: "hear", step: 0, kind: "full", voicingIndex: 0, stringSet: null, zone: "mid" },
     // --- progression view ---
     tonic: "D",
@@ -126,6 +126,7 @@
     state.cycleMode = "pivot";
     if (preferences.cycleMode === "iiVI") state.gym.keys = 1;
     state.index = 0;
+    state.gym.anchor = 0;
     state.cycleComping.zone = preferences.cycleZone;
     state.triads.zone = preferences.triadZone;
     state.labelMode = preferences.labelMode;
@@ -388,10 +389,9 @@
   function cycleJourney() {
     // The Changes Gym plays ii-V-I-(I) and then the old I is reinterpreted as
     // the new ii a whole step down. Keys=1 stays inside one group (the
-    // on-ramp); keys=3/6 chain groups. The journey uses the full-cycle order —
-    // at a 3-key wrap the guide previews the 4th key while the audio loops,
-    // an accepted edge over duplicating the journey model.
-    const journey = HJ.buildJourney({ kind: "cycle", cycle, mode: state.gym.keys === 1 ? "iiVI" : "full", index: state.index, loop: state.loop, holdI: state.holdI });
+    // on-ramp); keys=3/6 chain groups. The shared journey model owns the key
+    // count so the visible look-ahead wraps on the same chord as the audio.
+    const journey = HJ.buildJourney({ kind: "cycle", cycle, mode: state.gym.keys === 1 ? "iiVI" : "full", keyCount: state.gym.keys, startIndex: state.gym.anchor, index: state.index, loop: state.loop, holdI: state.holdI });
     journey.label = "Changes Gym";
     return journey;
   }
@@ -399,8 +399,7 @@
   // The gym's playable sequence: keys*3 chords starting at the current key
   // group, wrapping around the six-key wheel.
   function gymSequence(idx) {
-    const start = Math.floor((((idx % N) + N) % N) / 3) * 3;
-    return Array.from({ length: Math.min(state.gym.keys, 6) * 3 }, (_, n) => (start + n) % N);
+    return HJ.sequenceForKeyCount(state.gym.anchor == null ? idx : state.gym.anchor, cycle, state.gym.keys);
   }
 
   function songJourney(chords, step) {
@@ -656,6 +655,7 @@
   function stepPivotPair(delta) {
     const pair = sequenceFor("pivot", state.index);
     state.index = (pair[0] + delta * 3 + N) % N;
+    state.gym.anchor = state.index;
     renderCycle();
   }
 
@@ -2563,6 +2563,7 @@
       const wasPlaying = AU.isPlaying();
       stopPlay(); cancelTaximiBridge();
       state.gym.keys = +button.getAttribute("data-gym-keys");
+      state.gym.anchor = Math.floor(state.index / 3) * 3;
       saveUiPreferences();
       renderCycle();
       if (wasPlaying) startPlay();
