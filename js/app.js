@@ -647,13 +647,19 @@
     renderChordReadout(cur.symbol, cur.degreeLabel, mode.name + " on " + state.tonic,
       cur.notes, moveClass, prog.why);
 
-    // progression strip
+    // progression strip — one chip per bar, so a held tonic shows its second
+    // bar explicitly (ii · V · I · I) instead of hiding it in the audio.
     const nextIndex = journey.next ? journey.next.sourceIndex : -1;
-    $("progStrip").innerHTML = chords.map((c, i) =>
-      `<button class="pchip${i < idx ? " played" : ""}${i === idx ? " active" : ""}${i === nextIndex ? " is-next" : ""}" data-step="${i}">
+    $("progStrip").innerHTML = chords.map((c, i) => {
+      const main = `<button class="pchip${i < idx ? " played" : ""}${i === idx ? " active" : ""}${i === nextIndex ? " is-next" : ""}" data-step="${i}">
          <span class="pchip-deg">${c.degreeLabel}</span>
-         <span class="pchip-sym">${c.symbol}</span></button>`
-    ).join('<span class="pchip-arrow">→</span>');
+         <span class="pchip-sym">${c.symbol}</span></button>`;
+      const held = barsFor(c) > 1 ? `<button class="pchip pchip-held${i === idx ? " active" : ""}" data-step="${i}" data-held-for="${i}" aria-label="${c.symbol} holds for a second bar">
+         <span class="pchip-deg">${c.degreeLabel}</span>
+         <span class="pchip-sym">${c.symbol}</span>
+         <span class="pchip-hold">hold</span></button>` : "";
+      return main + held;
+    }).join('<span class="pchip-arrow">→</span>');
     $("progStrip").querySelectorAll("[data-step]").forEach((b) => {
       b.onclick = () => { state.progStep = +b.getAttribute("data-step"); renderProg(); auditionProg(); };
     });
@@ -1606,9 +1612,11 @@
       <div class="solo-progression-list">${progressions.map((progression) =>
         `<button data-solo-prog="${progression.id}" class="${progression.id === state.progId ? "active" : ""}"><b>${progression.label}</b><span>${progression.tag}</span></button>`
       ).join("")}</div>
-      <div class="solo-current-change"><span>Now playing</span>${chords.map((chord, index) =>
-        `<button data-solo-step="${index}" class="${index === state.progStep ? "active" : ""}"><i>${chord.degreeLabel}</i><b>${chord.symbol}</b></button>`
-      ).join('<em>→</em>')}</div>`;
+      <div class="solo-current-change"><span>Now playing</span>${chords.map((chord, index) => {
+        const main = `<button data-solo-step="${index}" class="${index === state.progStep ? "active" : ""}"><i>${chord.degreeLabel}</i><b>${chord.symbol}</b></button>`;
+        const held = barsFor(chord) > 1 ? `<button data-solo-step="${index}" data-held-for="${index}" class="held${index === state.progStep ? " active" : ""}" aria-label="${chord.symbol} holds for a second bar"><i>${chord.degreeLabel}</i><b>${chord.symbol}</b><u>hold</u></button>` : "";
+        return main + held;
+      }).join('<em>→</em>')}</div>`;
 
     $("soloTonic").onchange = (event) => {
       stopPlay();
@@ -2131,11 +2139,31 @@
 
   // ============================ playback =================================
   let pb = null;
-  function functionTag(c) { return String((c && (c.fn || c.scaleDegree || c.degreeLabel)) || ""); }
+  // Prefer the bare roman function; degreeLabel is the display fallback and
+  // scaleDegree last (it is numeric, "1"/"2", and must never win over romans).
+  function functionTag(c) { return String((c && (c.fn || c.degreeLabel || c.scaleDegree)) || ""); }
   // Every phrase is ii · V · I · I by default: the tonic holds for two bars,
   // then the phrase resets (loop) or pivots to the next key (pivot wheel).
-  function barsFor(c) { return state.holdI && functionTag(c).toLowerCase() === "i" ? 2 : 1; }
-  function isTowardIi(c) { return functionTag(c).toLowerCase() === "ii"; }
+  function barsFor(c) { return state.holdI && /^i$/i.test(functionTag(c)) ? 2 : 1; }
+  function isTowardIi(c) { return /^ii(?![iv])/i.test(functionTag(c)); }
+
+  // The strips render one chip per BAR (a held tonic gets a second "hold"
+  // chip), so the moving highlight can show ii · V · I · I literally.
+  function markHeldBar(index) {
+    document.querySelectorAll("[data-held-for]").forEach((el) => {
+      el.classList.toggle("held-sounding", +el.getAttribute("data-held-for") === index);
+    });
+  }
+
+  function updateProgStripCursor() {
+    markHeldBar(-1);
+    document.querySelectorAll("#progStrip [data-step]").forEach((el) => {
+      el.classList.toggle("active", +el.getAttribute("data-step") === state.progStep);
+    });
+    document.querySelectorAll(".solo-current-change [data-solo-step]").forEach((el) => {
+      el.classList.toggle("active", +el.getAttribute("data-solo-step") === state.progStep);
+    });
+  }
 
   // "Five of two": on beat 3 of the phrase's final bar, sound the dominant of
   // the upcoming ii (A7 -> Dm7 in C). A pickup, not a new harmony lane.
@@ -2179,7 +2207,9 @@
             pb.barsLeft--;
             setTimeout(animateChangeGuide, delay);
             if (pb.barsLeft === 0) schedulePickup(cycle[pb.seq[(pb.pos + 1) % pb.seq.length]], when);
-            return { hold: true };
+            // Held bars still comp: the pulse stays solid through the long tonic.
+            const held = cycle[pb.seq[pb.pos]];
+            return { hold: true, notes: held.notes, referenceVoice: chordReferenceVoice() };
           }
           if (pb.started) {
             const next = pb.pos + 1;
@@ -2201,11 +2231,15 @@
         if (pb.barsLeft > 0) {
           pb.barsLeft--;
           setTimeout(animateChangeGuide, delay);
+          const heldPos = pb.pos;
+          setTimeout(() => markHeldBar(heldPos), delay);
+          const heldChords = currentProgression().chords;
           if (pb.barsLeft === 0) {
-            const heldChords = currentProgression().chords;
             schedulePickup(heldChords[(pb.pos + 1) % heldChords.length], when);
           }
-          return { hold: true };
+          // Held bars still comp: the pulse stays solid through the long tonic.
+          const held = heldChords[pb.pos];
+          return { hold: true, notes: held ? held.notes : null, referenceVoice: chordReferenceVoice() };
         }
         if (pb.started) {
           const next = pb.pos + 1;
@@ -2225,6 +2259,7 @@
             state.progStep = pb.pos;
             state.solo.matrixBeat = 0;
             state.view === "solo" ? renderSoloSection() : renderProg();
+            updateProgStripCursor();
           }
         }, delay);
         pb.barsLeft = barsFor(c) - 1;

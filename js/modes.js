@@ -310,6 +310,10 @@
       const c = buildChord(tonicName, modeId, deg, q, prevBottom);
       c.scaleDegree = c.degreeLabel;
       c.degreeLabel = functionLabels[index] || c.degreeLabel;
+      // Bare roman function ("iiø" -> "ii", "V7" -> "V", "♭VIIm" -> "♭VII") so
+      // playback can hold the tonic and place the five-of-two pickup by
+      // function, exactly as it does for the theory cycle.
+      c.fn = (functionLabels[index] || "").replace(/[^ivIV♭]/g, "");
       prevBottom = c.bottomMidi;
       return c;
     });

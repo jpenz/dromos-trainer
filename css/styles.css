@@ -344,6 +344,12 @@ main {
 .pchip-deg { font-family: var(--font-display); font-size: 13px; }
 .pchip-sym { font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
 .pchip-arrow { color: var(--faint); opacity: 0.5; }
+/* The held-tonic bar gets its own chip so ii · V · I · I is visible, not implied. */
+.pchip.pchip-held { border-style: dashed; opacity: 0.75; }
+.pchip.pchip-held.active:not(.held-sounding) { opacity: 0.6; }
+.pchip-hold { color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.pchip.pchip-held.held-sounding { border-color: var(--terracotta); border-style: solid; background: var(--terracotta-soft); opacity: 1; }
+.pchip.pchip-held.held-sounding .pchip-hold { color: var(--terracotta-bright); }
 
 /* ========================= Instrument stage ========================= */
 .stage { position: relative; min-width: 0; }
@@ -709,6 +715,11 @@ body[data-view="solo"] #fretboard { min-width: 1280px; }
 .solo-current-change button i { color: var(--terracotta-bright); font-family: var(--font-display); font-size: 11px; font-style: normal; }
 .solo-current-change button b { font-family: var(--font-mono); font-size: 11.5px; }
 .solo-current-change button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.solo-current-change button.held { grid-template-columns: auto auto auto; border-style: dashed; opacity: 0.75; }
+.solo-current-change button.held u { color: var(--faint); font-size: 8px; font-weight: 700; letter-spacing: 0.07em; text-decoration: none; text-transform: uppercase; }
+.solo-current-change button.held.active:not(.held-sounding) { opacity: 0.6; }
+.solo-current-change button.held.held-sounding { border-color: var(--terracotta); border-style: solid; background: var(--terracotta-soft); opacity: 1; }
+.solo-current-change button.held.held-sounding u { color: var(--terracotta-bright); }
 .solo-current-change em { color: var(--faint); font-style: normal; opacity: 0.55; }
 .solo-section-nav { display: flex; gap: 4px; overflow-x: auto; padding: 2px; border-bottom: 1px solid var(--line); }
 .solo-section-nav button { flex: 0 0 auto; min-height: 40px; border: 0; background: transparent; color: var(--muted); padding: 7px 10px; border-radius: 7px 7px 0 0; font-size: 12px; font-weight: 600; border-bottom: 2px solid transparent; }
