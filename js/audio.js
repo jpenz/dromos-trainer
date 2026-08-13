@@ -94,8 +94,44 @@
     return buf;
   }
 
+  // A clean, decaying piano-like tone built from a few harmonics. It is a
+  // practice reference voice, not a sampled instrument: fast attack, warm
+  // rolloff, no pick noise — useful when the plucked model feels rough.
+  function playPianoNoteAt(freq, when, dur, gain) {
+    const t = when == null ? ctx.currentTime + 0.01 : when;
+    const level = gain == null ? 0.24 : gain;
+    const out = ctx.createGain();
+    const tone = ctx.createBiquadFilter();
+    tone.type = "lowpass";
+    tone.frequency.value = Math.min(6200, freq * 9);
+    tone.Q.value = 0.4;
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(level, t + 0.004);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.9, Math.min(dur, 2.4)));
+    out.connect(tone); tone.connect(master);
+    [
+      { ratio: 1, level: 1, type: "sine" },
+      { ratio: 2, level: 0.34, type: "sine" },
+      { ratio: 3, level: 0.12, type: "sine" },
+      { ratio: 4.01, level: 0.05, type: "sine" }
+    ].forEach((partial) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = partial.type;
+      osc.frequency.setValueAtTime(freq * partial.ratio, t);
+      g.gain.setValueAtTime(partial.level, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0001, partial.level * 0.08), t + Math.min(dur, 1.6));
+      osc.connect(g); g.connect(out);
+      activeSources.push(osc);
+      osc.onended = () => { activeSources = activeSources.filter((source) => source !== osc); };
+      osc.start(t);
+      osc.stop(t + Math.min(dur, 2.4) + 0.05);
+    });
+  }
+
   function playNoteAt(freq, when, dur, gain, referenceVoice) {
     const voice = referenceVoice || instrumentVoice();
+    if (voice === "piano") { playPianoNoteAt(freq, when, dur, gain); return; }
     const b = pluckBuffer(freq, dur, voice);
     const src = ctx.createBufferSource();
     src.buffer = b;

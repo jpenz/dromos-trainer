@@ -118,7 +118,7 @@ test("Solo Road keeps the tetrachord split and number patterns playable", () => 
     const triads = Triads.allShapes(2, "maj", null);
     assert.ok(triads.some((shape) => shape.lowFret > 15), `${tuning.name} exposes upper-neck triad inversions`);
   });
-  assert.equal(Practice.MELODIC_ROUTES.length, 5);
+  assert.equal(Practice.MELODIC_ROUTES.length, 6, "five classic routes plus the Greek sweet 2→3 lean");
   assert.equal(new Set(Practice.MELODIC_ROUTES.map((route) => route.id)).size, Practice.MELODIC_ROUTES.length);
   assert.ok(Practice.MELODIC_ROUTES.every((route) => route.budget && route.path && route.hear && route.think));
 });

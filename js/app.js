@@ -30,7 +30,7 @@
     // --- triads ---
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true },
     // --- solo lab ---
-    solo: { section: "road", focus: "third", lens: "full", phraseId: "outline", routeId: "three-plus-target", matrixBeat: 0, matrixPlan: [] },
+    solo: { section: "road", focus: "sweet", lens: "full", phraseId: "outline", routeId: "sweet-lean", matrixBeat: 0, matrixPlan: [] },
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
     // --- transparent analysis ---
@@ -52,6 +52,11 @@
     holdI: true,
     loop: true,
     strumStyle: "strum",
+    // chord reference voice: "clean" (guitar) | "piano" | "auto" (match instrument)
+    chordVoice: "clean",
+    // optional "five of two": a dominant pickup on beat 3 of the phrase's
+    // last bar that pulls the ear back to the ii chord (A7 -> Dm7 in C).
+    pickupV2: false,
     // The pulse is deliberately a practice ensemble: grouped timing and
     // functional roots, not a substitute for a real rhythm section or a
     // claim that one generic pattern represents a whole Greek style.
@@ -60,13 +65,34 @@
 
   const $ = (id) => document.getElementById(id);
   const svg = () => $("fretboard");
+
+  // UI-only preferences (voice, pickup) live outside the validated player
+  // profile document so the profile schema and its tests stay untouched.
+  const UI_PREFS_KEY = "dromos-ui-v14";
+  function loadUiPreferences() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || "{}");
+      if (["clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
+      if (typeof raw.pickupV2 === "boolean") state.pickupV2 = raw.pickupV2;
+    } catch { /* first run or blocked storage */ }
+  }
+  function saveUiPreferences() {
+    try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickupV2: state.pickupV2 })); } catch { /* private mode */ }
+  }
+  // "clean" is a warm plucked guitar reference; "piano" is a clean additive
+  // piano; "auto" matches the selected instrument (bouzouki/laouto/guitar).
+  function chordReferenceVoice() {
+    return state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
+  }
   const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   }[character]));
 
+  const PERSISTED_VIEWS = ["cycle", "prog", "ear", "triads", "solo", "styles", "video", "analyze", "concepts", "coach"];
+
   function stablePreferences() {
     return {
-      tuningId: window.Tuning.currentId(), view: state.view, tonic: state.tonic,
+      tuningId: window.Tuning.currentId(), view: PERSISTED_VIEWS.includes(state.view) ? state.view : "cycle", tonic: state.tonic,
       modeId: state.modeId, progressionId: state.progId, bpm: state.bpm,
       cycleMode: state.cycleMode, cycleZone: state.cycleComping.zone,
       triadZone: state.triads.zone, labelMode: state.labelMode,
@@ -88,7 +114,7 @@
       ? preferences.progressionId : M.PROGRESSIONS[state.modeId][0].id;
     state.bpm = preferences.bpm;
     state.cycleMode = preferences.cycleMode;
-    state.index = state.cycleMode === "pivot" ? HJ.sequenceForCycle("pivot", 0, cycle)[0] : 0;
+    state.index = 0;
     state.cycleComping.zone = preferences.cycleZone;
     state.triads.zone = preferences.triadZone;
     state.labelMode = preferences.labelMode;
@@ -151,7 +177,11 @@
     if ($("tglLabel")) $("tglLabel").checked = state.labelMode === "note";
     if ($("tglLefty")) $("tglLefty").checked = state.lefty;
     if ($("tglLoop")) $("tglLoop").checked = state.loop;
+    if ($("tglHoldI")) $("tglHoldI").checked = state.holdI;
+    if ($("voiceSel")) $("voiceSel").value = state.chordVoice;
+    if ($("tglPickup")) $("tglPickup").checked = state.pickupV2;
     document.querySelectorAll("[data-mode]").forEach((button) => button.classList.toggle("active", button.getAttribute("data-mode") === state.cycleMode));
+    syncHarmonyTabs();
   }
 
   function switchPlayer(profileId) {
@@ -163,6 +193,17 @@
     syncPersistentControls(); renderPlayerProfiles(false);
     if (C && C.switchProfile) C.switchProfile(profile.id);
     setView(profile.preferences.view);
+  }
+
+  // ====================== primary navigation model ======================
+  // Eight destinations; implementation-level views hang underneath them.
+  const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", harmony: "cycle", solo: "solo", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
+  const VIEW_NAV = { today: "today", ear: "hear", cycle: "harmony", prog: "harmony", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", concepts: "learn", coach: "coach", progress: "progress" };
+  const NAV_TITLES = { today: "Today", hear: "Hear", harmony: "Harmony", solo: "Solo", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
+
+  function syncHarmonyTabs() {
+    document.querySelectorAll("[data-harmony-mode]").forEach((button) =>
+      button.classList.toggle("active", state.view === "cycle" && button.getAttribute("data-harmony-mode") === state.cycleMode));
   }
 
   const PRACTICE_STEPS = [
@@ -194,7 +235,9 @@
     video: { purpose: "Study a real motion deliberately", title: "Loop a public lesson briefly, then turn observation into understanding.", steps: ["Set A–B around one small physical/musical event.", "Slow it down and watch only one hand at a time.", "Name the home, target, and function in Song Map before borrowing the idea."] },
     analyze: { purpose: "Explain a part you own", title: "Turn written chord symbols and notes into a transparent practice decision.", steps: ["Enter your own chord map or MusicXML score.", "Read the strong targets and possible harmonic readings.", "Take one recommendation to Triads or Solo Road."] },
     concepts: { purpose: "Keep causes separate", title: "Solve the right musical problem: time, map, route, or touch.", steps: ["Read the answer-first pyramid.", "Choose the one layer that is actually weak.", "Use its small drill; do not solve every problem with another scale."] },
-    coach: { purpose: "Ask for a precise next step", title: "The coach knows your selected map and can open one specific exercise.", steps: ["Ask a concrete question about a chord, phrase, or practice obstacle.", "Use the returned action only if it fits what you hear.", "The coach advises; your ear and score remain the source of truth."] }
+    coach: { purpose: "Ask for a precise next step", title: "The coach knows your selected map and can open one specific exercise.", steps: ["Ask a concrete question about a chord, phrase, or practice obstacle.", "Use the returned action only if it fits what you hear.", "The coach advises; your ear and score remain the source of truth."] },
+    today: { purpose: "Start where it matters", title: "One session, in order: hear it, name it, then find it on the neck.", steps: ["Pick the first step you have not done today.", "Play each phrase as ii · V · I · I, then let it reset.", "Stop while your ear is still ahead of your hands."] },
+    progress: { purpose: "Honest local progress", title: "Scores, streaks, and players live only on this device.", steps: ["Check the colour and map percentages, not just the streak.", "Switch players from the top bar; each keeps separate settings.", "A falling percentage means slow the tempo, not add more theory."] }
   };
 
   function renderPageGuide() {
@@ -202,11 +245,12 @@
       ? { purpose: "Comp with usable shapes", title: "Choose the smallest chord shape that makes the function clear.", steps: ["Set dromos and progression before choosing a grip.", "Try Full 6 for open/barre vocabulary, then Triad 3 or Compact 4 for moving changes.", "Keep a common tone when possible; listen for the 3rd and 7th when the harmony changes."] }
       : PAGE_GUIDES[state.view] || PAGE_GUIDES.cycle;
     const current = state.view === "solo" ? `Current road: ${M.MODES[state.modeId].name} on ${state.tonic} · ${currentProgression().prog.label}.` : "";
-    $("pageGuide").innerHTML = `<details><summary><span>${guide.purpose}</span><b>Purpose &amp; three-step guide</b></summary>
-      <h2>${guide.title}</h2><ol>${guide.steps.map((step) => `<li>${step}</li>`).join("")}</ol>${current ? `<p>${current}</p>` : ""}</details>`;
+    $("pageGuide").innerHTML = `<details><summary><span>${guide.purpose}</span><b>${guide.title}</b></summary>
+      <ol>${guide.steps.map((step) => `<li>${step}</li>`).join("")}</ol>${current ? `<p>${current}</p>` : ""}</details>`;
   }
 
   function renderCoachCue() {
+    if (state.view === "today" || state.view === "progress") { $("coachCue").innerHTML = ""; return; }
     const step = PRACTICE_STEPS.find((item) => item.view === state.view);
     const specialStep = state.view === "styles" || state.view === "video";
     if (!step && !specialStep) return;
@@ -304,7 +348,8 @@
     guide.innerHTML = `<article class="change-card now"><span>Now · ${escapeHtml(journey.label)} · ${journey.cursor + 1}/${journey.items.length}</span><strong>${escapeHtml(now.functionLabel)}</strong><b>${escapeHtml(now.symbol)}${now.keyLabel ? ` · ${escapeHtml(now.keyLabel)}` : ""}</b><small>${escapeHtml(nowDetail)}</small></article>
       <div class="change-motion"><b>${escapeHtml(movement)}</b><span>→</span><small>${escapeHtml(held)}</small></div>
       <article class="change-card next"><span>Next${next && journey.transition && journey.transition.kind === "pivot" ? " · new role" : ""}</span><strong>${next ? escapeHtml(next.functionLabel) : "End"}</strong><b>${next ? `${escapeHtml(next.symbol)}${next.keyLabel ? ` · ${escapeHtml(next.keyLabel)}` : ""}` : "Loop is off"}</b><small>${next ? escapeHtml(nextDetail) : "Let the home settle"}</small></article>
-      <p class="change-ear-cue"><span>Hear / think</span>${escapeHtml(transition ? transition.cue : `Let ${now.symbol} finish before you move.`)}</p>`;
+      <p class="change-ear-cue"><span>Hear / think</span>${escapeHtml(transition ? transition.cue : `Let ${now.symbol} finish before you move.`)}</p>
+      ${state.pickupV2 && next && isTowardIi(next.chord) ? `<p class="change-pickup">Pickup: <b>${escapeHtml(T.spell((rootPcOf(next.chord) + 7) % 12, next.chord.keyAcc || "flat"))}7</b> on beat 3 of the last bar → ${escapeHtml(next.symbol)} · the “five of two”</p>` : ""}`;
     $("journeyAnnouncement").textContent = next
       ? `Now ${now.functionLabel}, ${now.symbol}${now.keyLabel ? ` in ${now.keyLabel}` : ""}. Next ${next.functionLabel}, ${next.symbol}${next.keyLabel ? ` in ${next.keyLabel}` : ""}.`
       : `Now ${now.functionLabel}, ${now.symbol}. Next, end.`;
@@ -312,7 +357,13 @@
   }
 
   function cycleJourney() {
-    return HJ.buildJourney({ kind: "cycle", cycle, mode: state.cycleMode, index: state.index, loop: state.cycleMode === "pivot" ? false : state.loop, holdI: state.holdI });
+    // The pivot drill plays the WHOLE modulation wheel: ii-V-I-(I), then the
+    // old I is reinterpreted as the new ii a whole step down, six keys around
+    // and back home. Musically that is the full cycle with the pivot moment
+    // made explicit, so it shares the full sequence.
+    const journey = HJ.buildJourney({ kind: "cycle", cycle, mode: state.cycleMode === "pivot" ? "full" : state.cycleMode, index: state.index, loop: state.loop, holdI: state.holdI });
+    if (state.cycleMode === "pivot") journey.label = "Pivot cycle";
+    return journey;
   }
 
   function songJourney(chords, step) {
@@ -483,10 +534,19 @@
 
     renderKeymap(cur.chord);
     renderChangeGuide(journey, cur, nextShape);
-    // The shared guide describes the forward transition. Do not add a second
-    // banner about the chord we just left; past/future messages compete at the
-    // exact moment a learner needs one clear destination.
-    $("pivotBanner").classList.remove("show");
+    if (state.cycleMode === "pivot") {
+      // In the pivot drill the modulation IS the lesson, so the reinterpretation
+      // is spelled out: play ii-V-I-I, then the old I becomes the new ii.
+      const pair = sequenceFor("pivot", state.index);
+      const oldI = cycle[pair[0]], newIi = cycle[pair[1]];
+      $("pivotBanner").innerHTML = `Pivot wheel: play ii–V–I–I, then <b>${oldI.symbol}</b> (I of ${oldI.key}) becomes <b>${newIi.symbol}</b> (ii of ${newIi.key}) — a whole step down. Six keys, then you are home.`;
+      $("pivotBanner").classList.add("show");
+    } else {
+      // The shared guide describes the forward transition. Do not add a second
+      // banner about the chord we just left; past/future messages compete at the
+      // exact moment a learner needs one clear destination.
+      $("pivotBanner").classList.remove("show");
+    }
     pulseMoved();
   }
 
@@ -515,9 +575,12 @@
   function renderCycle() {
     const pivotPair = sequenceFor("pivot", state.index);
     $("pivotPairNav").classList.toggle("hidden", state.cycleMode !== "pivot");
-    if (state.cycleMode === "pivot") $("pivotPairLabel").innerHTML = `<b>${cycle[pivotPair[0]].symbol}</b> I <span>→</span> <b>${cycle[pivotPair[1]].symbol}</b> ii`;
-    $("btnPrev").disabled = state.cycleMode === "pivot" && state.index === pivotPair[0];
-    $("btnNext").disabled = state.cycleMode === "pivot" && state.index === pivotPair[1];
+    if (state.cycleMode === "pivot") {
+      const oldI = cycle[pivotPair[0]], newIi = cycle[pivotPair[1]];
+      $("pivotPairLabel").innerHTML = `<b>${oldI.symbol}</b> I of ${oldI.key} <span>→</span> <b>${newIi.symbol}</b> ii of ${newIi.key}`;
+    }
+    $("btnPrev").disabled = false;
+    $("btnNext").disabled = false;
     $("keymapWrap").classList.toggle("hidden", state.cycleComping.focus === "chords");
     document.querySelectorAll("[data-cycle-focus]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-cycle-focus") === state.cycleComping.focus));
@@ -535,13 +598,8 @@
   }
 
   function stepCycle(delta) {
-    const seq = sequenceFor(state.cycleMode, state.index);
+    const seq = sequenceFor(state.cycleMode === "pivot" ? "full" : state.cycleMode, state.index);
     let pos = seq.indexOf(state.index); if (pos < 0) pos = 0;
-    if (state.cycleMode === "pivot") {
-      const next = pos + delta;
-      if (next < 0 || next >= seq.length) return;
-      setCycleIndex(seq[next]); return;
-    }
     setCycleIndex(seq[(pos + delta + seq.length) % seq.length]);
   }
   function stepCycleComping(delta) {
@@ -678,7 +736,7 @@
   }
   function auditionProg() {
     const { chords } = currentProgression();
-    AU.playChord(chords[Math.min(state.progStep, chords.length - 1)].notes, state.strumStyle);
+    AU.playChord(chords[Math.min(state.progStep, chords.length - 1)].notes, state.strumStyle, undefined, chordReferenceVoice());
   }
 
   // ====================== FOUNDATION & STYLE LAB ========================
@@ -1170,7 +1228,35 @@
   function landingLensName(focus) {
     if (focus === "triad") return "triad tones";
     if (focus === "guide") return "guide tones";
+    if (focus === "sweet") return "sweet 2→3 leans";
+    if (focus === "pedal") return "one common note";
     return "colour 3rds";
+  }
+
+  // ---- "one note over everything" (common-tone / pedal drill) ----------
+  // Find the single pitch that sits best inside EVERY chord of the current
+  // progression, name what it becomes over each chord, and let the last
+  // chord resolve it. Interval labels are relative to each chord's root.
+  const PEDAL_LABEL = { 0: "R", 1: "♭9", 2: "9", 3: "♭3", 4: "3", 5: "11", 6: "♯11", 7: "5", 8: "♭13", 9: "13", 10: "♭7", 11: "7" };
+  const PEDAL_SCORE = { 0: 3, 3: 3, 4: 3, 7: 3, 10: 2.5, 11: 2.5, 2: 2, 9: 2, 5: 1, 6: 0.5, 1: 0.4, 8: 0.4 };
+  function pedalRole(pc, chord) {
+    const off = (((pc - rootPcOf(chord)) % 12) + 12) % 12;
+    return { off, label: PEDAL_LABEL[off], score: PEDAL_SCORE[off] || 0 };
+  }
+  function commonTone() {
+    const { chords } = currentProgression();
+    let best = null;
+    for (let pc = 0; pc < 12; pc++) {
+      const roles = chords.map((chord) => pedalRole(pc, chord));
+      const minScore = Math.min(...roles.map((role) => role.score));
+      // reward a strong resolution on the final chord: the pedal must land home
+      const total = roles.reduce((sum, role) => sum + role.score, 0) + (roles[roles.length - 1].score >= 3 ? 1.5 : 0);
+      if (!best || minScore > best.minScore || (minScore === best.minScore && total > best.total)) {
+        best = { pc, minScore, total };
+      }
+    }
+    if (!best) return null;
+    return { pc: best.pc, name: spellPc(best.pc), role: "pedal", roleLabel: "●", degree: "●" };
   }
 
   function targetRoleLabel(note, phase, focus) {
@@ -1186,6 +1272,8 @@
     if (!focusRoot || !routeRoot || !hintRoot) return;
 
     focusRoot.innerHTML = [
+      ["sweet", "Sweet 2→3", "the 2 leans into the chord's 3rd"],
+      ["pedal", "One note", "a single note that fits every chord"],
       ["third", "Colour 3rd", "the chord's defining colour"],
       ["triad", "Triad", "R, 3/♭3, 5"],
       ["guide", "Guides", "3rd + 7th, or 3rd + root"]
@@ -1474,7 +1562,7 @@
     const cur = path[Math.min(state.triads.step, path.length - 1)];
     if (!cur) return;
     AU.ensure();
-    AU.playChord(cur.placements.map((p) => ({ freq: 440 * Math.pow(2, (p.midi - 69) / 12) })), "strum");
+    AU.playChord(cur.placements.map((p) => ({ freq: 440 * Math.pow(2, (p.midi - 69) / 12) })), "strum", undefined, chordReferenceVoice());
   }
 
   function stepTriad(d) {
@@ -1601,6 +1689,20 @@
 
   function soloTargets(chord, focus) {
     const third = chordTone(chord, "3") || chordTone(chord, "b3");
+    if (focus === "sweet") {
+      // The practical Greek "sweet" move: the scale's 2nd (or ♭2 in Ousak and
+      // Hijaz) leaning into the chord's 3rd exactly when the change arrives.
+      const scale = M.scaleOf(state.tonic, state.modeId);
+      const lean = scale[1];
+      const sweet = [];
+      if (lean) sweet.push({ pc: lean.pc, name: lean.name, role: "2", roleLabel: lean.degree, degree: lean.degree });
+      if (third) sweet.push(third);
+      return sweet.length ? sweet : chord.notes.slice(0, 1);
+    }
+    if (focus === "pedal") {
+      const tone = commonTone();
+      return tone ? [tone] : chord.notes.slice(0, 1);
+    }
     if (focus === "triad") {
       return chord.notes.filter((note) => ["R", "3", "b3", "5", "b5", "#5"].includes(note.role));
     }
@@ -1643,6 +1745,14 @@
       if (route.id === "nearest-link") {
         const note = index % 2 ? currentTarget : nextTarget;
         return { beat, role: "link", note, label: "Link", why: "Keep the move small" };
+      }
+      if (route.id === "sweet-lean") {
+        const scale = M.scaleOf(state.tonic, state.modeId);
+        const lean = scale[1] || frame[0];
+        const note = index % 2 ? { pc: lean.pc, name: lean.name, roleLabel: lean.degree } : currentTarget;
+        return { beat, role: index % 2 ? "approach" : "link", note,
+          label: index % 2 ? "Lean" : "Sweet",
+          why: index % 2 ? `${lean.name} leans toward the 3rd` : `the sweet colour of ${cur.symbol}` };
       }
       if (route.id === "approach-resolve" && index === pulse.beats.length - 2) {
         return {
@@ -1748,17 +1858,37 @@
       ? "The solid shape is the closest voice-led triad; its faint neighbours are every other practical inversion. The quieter dots are the pentatonic frame, and the rings are the current/next triad tones."
       : focus === "guide"
         ? "The solid shape is the closest voice-led triad; the rings narrow the next landing decision to the clearest guide relationship."
-        : "The solid shape is the closest voice-led triad; use its 3rd as the chord's colour, while the pentatonic dots supply a restrained way to travel there.";
+        : focus === "sweet"
+          ? "The rings mark the 2nd and each chord's 3rd everywhere on the neck: sit on the 2, then let it fall or rise into the 3rd exactly when the harmony moves. That lean is where Greek melodies live."
+          : focus === "pedal"
+            ? "Every ring is the SAME note. Hold it through the whole progression and listen to the harmony re-name it under your finger; the last chord finally lets it rest."
+            : "The solid shape is the closest voice-led triad; use its 3rd as the chord's colour, while the pentatonic dots supply a restrained way to travel there.";
+    const pedalInfo = focus === "pedal" ? commonTone() : null;
+    const pedalTable = pedalInfo ? `<div class="pedal-table">${chords.map((chordItem, chordIndex) => {
+      const role = pedalRole(pedalInfo.pc, chordItem);
+      const last = chordIndex === chords.length - 1;
+      const meaning = last
+        ? "resolution — the one note finally sounds at home"
+        : role.score >= 3 ? "chord tone: fully inside"
+          : role.score >= 2 ? "colour tone: it re-flavours the chord"
+            : "tension: hold it with intent, do not apologise for it";
+      return `<div class="pedal-row${last ? " resolve" : ""}"><b>${escapeHtml(chordItem.symbol)}</b><i>${escapeHtml(pedalInfo.name)} = ${escapeHtml(role.label)}</i><span>${meaning}</span></div>`;
+    }).join("")}</div>` : "";
     $("soloRecipe").innerHTML = `
       <div class="solo-frame"><b>${frame.name}</b><span>${pentatonic.map((note) => note.name).join(" · ")}</span></div>
       <div class="triad-landscape-key"><span class="landscape-solid">solid</span> nearest ${cur.symbol} triad · <span class="landscape-faint">faint</span> other ${cur.symbol} inversions · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
       <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
       <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
+      ${pedalTable}
       <p>${focus === "third"
         ? "Treat the pentatonic as the sentence and the 3rd as the punctuation: arrive on it when the chord changes."
         : focus === "triad"
           ? "Treat the triad as the map of meaning: root feels settled, 3rd names the colour, and 5th keeps the line open. Connect only as much scale material as you need to reach the next triad."
-          : guideInstruction}</p>
+          : focus === "sweet"
+            ? "Sing the 2nd over the chord, then resolve it into the 3rd on the change. In Ousak and Hijaz the ♭2 leans even harder — one lean per phrase, placed exactly on the arrival, is the whole trick."
+            : focus === "pedal"
+              ? `One note over everything: hold ${pedalInfo ? pedalInfo.name : "the common tone"} through the full progression. Each chord re-names it (see the table), and the final chord resolves it — that is how a single note explains a whole song.`
+              : guideInstruction}</p>
       <section class="solo-thinking"><span>Hear · think · play</span><ol>
         <li><b>Hear:</b> sing ${targetLabel(nextTargets)} before the chord moves. If you cannot sing it, stay on the current triad.</li>
         <li><b>Think:</b> ${route.path}</li>
@@ -1834,6 +1964,52 @@
   }
 
   // ======================= shared chord readout ==========================
+  // ============================ TODAY VIEW ===============================
+  function renderToday() {
+    const root = $("todayApp");
+    if (!root) return;
+    const active = PP ? PP.active() : null;
+    const name = active ? active.displayName : "Player";
+    const e = state.ear;
+    const pct = e.total ? Math.round((e.score / e.total) * 100) : null;
+    root.innerHTML = `
+      <div class="today-hero"><span>Today's session</span>
+        <h2>Καλή πρόβα, ${escapeHtml(name)}.</h2>
+        <p>Work the loop in order: hear the change, name it, then find it on the ${escapeHtml(window.Tuning.current().name)}. Every phrase runs ii · V · I · I, then resets.</p></div>
+      <div class="today-grid">${PRACTICE_STEPS.map((step) => {
+        const guide = PAGE_GUIDES[step.view];
+        return `<button class="today-card" data-today-view="${step.view}"><i>${escapeHtml(step.label)}</i><b>${escapeHtml(guide ? guide.purpose : step.label)}</b><p>${escapeHtml(step.detail)}</p></button>`;
+      }).join("")}</div>
+      <div class="today-stats">
+        <span>Ear colour <b>${e.score}/${e.total}</b>${pct == null ? "" : ` (${pct}%)`}</span>
+        <span>Home + changes <b>${e.map.score}/${e.map.total}</b></span>
+        <span>Streak <b>${state.ear.drill === "map" ? e.map.streak : e.streak}</b></span>
+        <span>Instrument <b>${escapeHtml(window.Tuning.current().name)}</b></span>
+      </div>`;
+    root.querySelectorAll("[data-today-view]").forEach((button) => {
+      button.onclick = () => setView(button.getAttribute("data-today-view"));
+    });
+  }
+
+  // =========================== PROGRESS VIEW =============================
+  function renderProgress() {
+    const root = $("progressApp");
+    if (!root || !PP) return;
+    const active = PP.active();
+    root.innerHTML = `
+      <div class="progress-head"><h2>Profiles on this device</h2>
+        <p>Separate instrument settings, ear scores, and coach history per player. Stored only in this browser — these are local profiles, not cloud accounts.</p></div>
+      <div class="progress-list">${PP.list().map((profile) => {
+        const colour = profile.progress.earColour, map = profile.progress.earMap;
+        return `<div class="progress-card${profile.id === active.id ? " active" : ""}">
+          <span class="player-avatar">${escapeHtml(profile.displayName.slice(0, 1).toUpperCase())}</span>
+          <b>${escapeHtml(profile.displayName)}${profile.id === active.id ? " · active" : ""}</b>
+          <small>${escapeHtml(instrumentShortName(profile.preferences.tuningId))} · last practice ${profile.progress.lastPracticedAt ? escapeHtml(String(profile.progress.lastPracticedAt).slice(0, 10)) : "—"}</small>
+          <span class="progress-scores"><span><b>${colour.correct}/${colour.attempts}</b>colour</span><span><b>${map.correct}/${map.attempts}</b>map</span><span><b>${Math.max(colour.best, map.best)}</b>best streak</span></span>
+        </div>`;
+      }).join("")}</div>`;
+  }
+
   function renderChordReadout(symbol, badge, sub, notes, moveClass, foot) {
     const fnClass = { ii: "fn-ii", V: "fn-v", I: "fn-i" }[badge] || "fn-deg";
     let html = `<div class="ro-head">
@@ -1855,7 +2031,24 @@
 
   // ============================ playback =================================
   let pb = null;
-  function barsFor(c) { return state.holdI && c.fn === "I" ? 2 : 1; }
+  function functionTag(c) { return String((c && (c.fn || c.scaleDegree || c.degreeLabel)) || ""); }
+  // Every phrase is ii · V · I · I by default: the tonic holds for two bars,
+  // then the phrase resets (loop) or pivots to the next key (pivot wheel).
+  function barsFor(c) { return state.holdI && functionTag(c).toLowerCase() === "i" ? 2 : 1; }
+  function isTowardIi(c) { return functionTag(c).toLowerCase() === "ii"; }
+
+  // "Five of two": on beat 3 of the phrase's final bar, sound the dominant of
+  // the upcoming ii (A7 -> Dm7 in C). A pickup, not a new harmony lane.
+  function schedulePickup(nextChord, barStart) {
+    if (!state.pickupV2 || !nextChord || !isTowardIi(nextChord)) return;
+    const iiRoot = rootPcOf(nextChord);
+    if (iiRoot == null) return;
+    const rootPc = (iiRoot + 7) % 12;
+    let bottom = 48 + rootPc;                 // keep the pickup mid-register
+    while (bottom < 50) bottom += 12;
+    const notes = [0, 4, 7, 10].map((off) => ({ freq: 440 * Math.pow(2, ((bottom + off) - 69) / 12) }));
+    AU.playChord(notes, "block", barStart + 2 * (60 / state.bpm), chordReferenceVoice());
+  }
 
   function startPlay() {
     AU.ensure();
@@ -1864,7 +2057,7 @@
       const { chords } = currentProgression();
       pb = { kind: "comping", len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
     } else if (state.view === "cycle") {
-      const seq = sequenceFor(state.cycleMode, state.index);
+      const seq = sequenceFor(state.cycleMode === "pivot" ? "full" : state.cycleMode, state.index);
       pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
     } else if (state.view === "prog" || state.view === "solo") {
       const { chords } = currentProgression();
@@ -1883,11 +2076,12 @@
           if (pb.barsLeft > 0) {
             pb.barsLeft--;
             setTimeout(animateChangeGuide, delay);
+            if (pb.barsLeft === 0) schedulePickup(cycle[pb.seq[(pb.pos + 1) % pb.seq.length]], when);
             return { hold: true };
           }
           if (pb.started) {
             const next = pb.pos + 1;
-            if (next >= pb.seq.length && (!state.loop || state.cycleMode === "pivot")) return null;
+            if (next >= pb.seq.length && !state.loop) return null;
             pb.pos = next % pb.seq.length;
           }
           pb.started = true;
@@ -1898,12 +2092,17 @@
           setTimeout(() => setCycleIndex(idx), delay);
           const nextIndex = pb.seq[(pb.pos + 1) % pb.seq.length];
           const nextChord = cycle[nextIndex] || chord;
-          return { notes: chord.notes, referenceVoice: "guitar", bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
+          if (pb.barsLeft === 0) schedulePickup(nextChord, when);
+          return { notes: chord.notes, referenceVoice: chordReferenceVoice(), bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
         }
         // progression playback
         if (pb.barsLeft > 0) {
           pb.barsLeft--;
           setTimeout(animateChangeGuide, delay);
+          if (pb.barsLeft === 0) {
+            const heldChords = currentProgression().chords;
+            schedulePickup(heldChords[(pb.pos + 1) % heldChords.length], when);
+          }
           return { hold: true };
         }
         if (pb.started) {
@@ -1927,7 +2126,8 @@
           }
         }, delay);
         pb.barsLeft = barsFor(c) - 1;
-        return { notes: c.notes, referenceVoice: "guitar", bass: { rootPc: rootPcOf(c), nextRootPc: rootPcOf(nextChord) } };
+        if (pb.barsLeft === 0) schedulePickup(nextChord, when);
+        return { notes: c.notes, referenceVoice: chordReferenceVoice(), bass: { rootPc: rootPcOf(c), nextRootPc: rootPcOf(nextChord) } };
       },
       onBeat: (bar, beatInBar, pulseBeat, event, when, now) => {
         if (state.view !== "solo" || state.solo.section !== "targets") return;
@@ -1953,10 +2153,10 @@
     if (state.view === "cycle") {
       if (state.cycleComping.focus === "chords") {
         const chord = currentProgression().chords[state.cycleComping.step];
-        AU.playChord(chord.notes, style || state.strumStyle);
+        AU.playChord(chord.notes, style || state.strumStyle, undefined, chordReferenceVoice());
       } else {
         const shape = cycleTriadPath()[state.index];
-        if (shape) AU.playChord(shapeAudioNotes(shape), style || state.strumStyle);
+        if (shape) AU.playChord(shapeAudioNotes(shape), style || state.strumStyle, undefined, chordReferenceVoice());
       }
     }
     else if (state.view === "prog" || state.view === "solo") auditionProg();
@@ -1975,8 +2175,16 @@
     $("btnPrev").disabled = false; $("btnNext").disabled = false;
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
-    ["panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelAnalyze", "panelConcepts", "panelCoach"].forEach((id) => $(id).classList.add("hidden"));
-    $("stage").classList.toggle("hidden", v === "ear" || v === "video" || v === "styles" || v === "analyze" || v === "concepts" || v === "coach");
+    const nav = VIEW_NAV[v] || "harmony";
+    document.body.setAttribute("data-nav", nav);
+    document.querySelectorAll("[data-nav]").forEach((b) =>
+      b.classList.toggle("active", b.getAttribute("data-nav") === nav));
+    if ($("pageTitle")) $("pageTitle").textContent = NAV_TITLES[nav] || "";
+    if ($("harmonyTabs")) $("harmonyTabs").classList.toggle("hidden", nav !== "harmony");
+    if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
+    syncHarmonyTabs();
+    ["panelToday", "panelCycle", "panelProg", "panelEar", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
+    $("stage").classList.toggle("hidden", v === "ear" || v === "video" || v === "styles" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
@@ -1991,6 +2199,8 @@
     else if (v === "analyze") { $("panelAnalyze").classList.remove("hidden"); syncAnalysisControls(); renderAnalyzer(); }
     else if (v === "concepts") { $("panelConcepts").classList.remove("hidden"); renderConcepts(); }
     else if (v === "coach") { $("panelCoach").classList.remove("hidden"); C.render(); }
+    else if (v === "today") { $("panelToday").classList.remove("hidden"); renderToday(); }
+    else if (v === "progress") { $("panelProgress").classList.remove("hidden"); renderProgress(); }
     else { $("panelEar").classList.remove("hidden"); setEarDrill(state.ear.drill); }
     // renderCycle rightfully decides whether the pivot explanation is visible;
     // no other practice area should inherit that explanation from a prior view.
@@ -2005,6 +2215,30 @@
   function wire() {
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.onclick = () => setView(b.getAttribute("data-view")));
+
+    document.querySelectorAll("[data-nav]").forEach((b) =>
+      b.onclick = () => setView(NAV_DEFAULT_VIEW[b.getAttribute("data-nav")] || "cycle"));
+
+    document.querySelectorAll("[data-harmony-mode]").forEach((el) => el.onclick = () => {
+      const wasPlaying = AU.isPlaying();
+      stopPlay();
+      state.cycleMode = el.getAttribute("data-harmony-mode");
+      persistPreferences();
+      if (state.view !== "cycle") setView("cycle");
+      else renderCycle();
+      syncHarmonyTabs();
+      if (wasPlaying) startPlay();
+    });
+
+    if ($("voiceSel")) $("voiceSel").onchange = (event) => {
+      state.chordVoice = event.target.value;
+      saveUiPreferences();
+    };
+    if ($("tglPickup")) $("tglPickup").onchange = (event) => {
+      state.pickupV2 = event.target.checked;
+      saveUiPreferences();
+      rerender();
+    };
 
     $("btnPrev").onclick = () => {
       stopPlay();
@@ -2238,22 +2472,22 @@
         e.preventDefault();
         if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : playEarPrompt();
         else if (state.view === "solo" && ["path", "phrase", "cell"].includes(state.solo.section)) $("btnLabPlay").click();
-        else if (state.view !== "styles" && state.view !== "video" && state.view !== "analyze" && state.view !== "concepts" && state.view !== "coach") togglePlay();
+        else if (state.view !== "styles" && state.view !== "video" && state.view !== "analyze" && state.view !== "concepts" && state.view !== "coach" && state.view !== "today" && state.view !== "progress") togglePlay();
       }
       else if (e.code === "ArrowRight" && state.view === "triads") { e.preventDefault(); stepTriad(1); }
       else if (e.code === "ArrowLeft" && state.view === "triads") { e.preventDefault(); stepTriad(-1); }
       else if (e.code === "ArrowRight") { e.preventDefault(); state.view === "solo" && ["path", "phrase", "cell"].includes(state.solo.section) ? (state.lab.drill === "cell" ? stepCell(1) : shiftPosition(1)) : $("btnNext").click(); }
       else if (e.code === "ArrowLeft") { e.preventDefault(); state.view === "solo" && ["path", "phrase", "cell"].includes(state.solo.section) ? (state.lab.drill === "cell" ? stepCell(-1) : shiftPosition(-1)) : $("btnPrev").click(); }
-      else if (e.key === "1") setView("cycle");
-      else if (e.key === "2") setView("prog");
-      else if (e.key === "3") setView("ear");
-      else if (e.key === "4") setView("triads");
-      else if (e.key === "5") setView("solo");
+      else if (e.key === "1") setView("today");
+      else if (e.key === "2") setView("ear");
+      else if (e.key === "3") setView("cycle");
+      else if (e.key === "4") setView("solo");
+      else if (e.key === "5") setView("analyze");
       else if (e.key === "6") setView("styles");
-      else if (e.key === "7") setView("video");
-      else if (e.key === "8") setView("analyze");
-      else if (e.key === "9") setView("concepts");
-      else if (e.key === "0") setView("coach");
+      else if (e.key === "7") setView("coach");
+      else if (e.key === "8") setView("progress");
+      else if (e.key === "9") setView("prog");
+      else if (e.key === "0") setView("triads");
       else if (e.key.toLowerCase() === "r" && state.view === "solo" && state.solo.section === "cell") $("btnReveal").click();
     });
   }
@@ -2268,6 +2502,8 @@
     else if (state.view === "analyze") renderAnalyzer();
     else if (state.view === "concepts") renderConcepts();
     else if (state.view === "coach") C.render();
+    else if (state.view === "today") renderToday();
+    else if (state.view === "progress") renderProgress();
   }
 
   function showTestBadge() {
@@ -2295,6 +2531,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     const player = PP.bootstrap();
     applyPlayerProfile(player);
+    loadUiPreferences();
     wire();
     syncPersistentControls();
     renderPlayerProfiles(false);

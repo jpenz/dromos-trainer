@@ -258,6 +258,14 @@
   // substitute for the dromos or an automatic rule in Greek repertoire.
   const MELODIC_ROUTES = [
     {
+      id: "sweet-lean",
+      label: "Sweet 2 → 3",
+      budget: "2–3 notes",
+      path: "Scale 2nd (or ♭2) leans on a weak pulse → chord 3rd on the arrival",
+      hear: "The 2nd is tension you can sing; the 3rd is the sweetness that resolves it. In Ousak and Hijaz the ♭2 makes this lean even stronger.",
+      think: "This is the classic Greek melody-finding move: sit on the 2nd, let it fall (or rise) into the 3rd exactly when the chord arrives. One lean per phrase is enough."
+    },
+    {
       id: "triad-first",
       label: "Triad first",
       budget: "3–4 notes",
