@@ -14,7 +14,10 @@
     view: "cycle",             // cycle | prog | ear | triads | solo | styles | video | analyze | concepts | coach
     // --- cycle view ---
     index: 0,
-    cycleMode: "full",         // full | iiVI | pivot
+    cycleMode: "pivot",        // the Changes Gym; "full"/"iiVI" survive only as legacy preference values
+    // Changes Gym settings: how many keys the wheel chains, the whole-note
+    // skeleton drill, and the unmetered taximi bridge between keys.
+    gym: { keys: 6, skeleton: false, bridging: false, bridgeTimer: null },
     cycleComping: { focus: "hear", step: 0, kind: "full", voicingIndex: 0, stringSet: null, zone: "mid" },
     // --- progression view ---
     tonic: "D",
@@ -30,7 +33,7 @@
     // --- triads ---
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true },
     // --- solo lab ---
-    solo: { section: "road", focus: "sweet", lens: "full", phraseId: "outline", routeId: "sweet-lean", matrixBeat: 0, matrixPlan: [],
+    solo: { section: "road", focus: "sweet", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "sweet-lean", matrixBeat: 0, matrixPlan: [],
       // visual layers on the Changes map: the scale road and the targets are
       // meant to be seen TOGETHER, so both default on.
       layers: { scale: true, pentatonic: false, triads: true, next: true } },
@@ -77,10 +80,12 @@
       const raw = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || "{}");
       if (["clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
       if (typeof raw.pickupV2 === "boolean") state.pickupV2 = raw.pickupV2;
+      if ([1, 3, 6].includes(raw.gymKeys)) state.gym.keys = raw.gymKeys;
+      if (typeof raw.gymSkeleton === "boolean") state.gym.skeleton = raw.gymSkeleton;
     } catch { /* first run or blocked storage */ }
   }
   function saveUiPreferences() {
-    try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickupV2: state.pickupV2 })); } catch { /* private mode */ }
+    try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickupV2: state.pickupV2, gymKeys: state.gym.keys, gymSkeleton: state.gym.skeleton })); } catch { /* private mode */ }
   }
   // "clean" is a warm plucked guitar reference; "piano" is a clean additive
   // piano; "auto" matches the selected instrument (bouzouki/laouto/guitar).
@@ -116,7 +121,10 @@
     state.progId = (M.PROGRESSIONS[state.modeId] || []).some((item) => item.id === preferences.progressionId)
       ? preferences.progressionId : M.PROGRESSIONS[state.modeId][0].id;
     state.bpm = preferences.bpm;
-    state.cycleMode = preferences.cycleMode;
+    // Legacy modes fold into the gym: "full" was the 6-key wheel, "iiVI" the
+    // single-key on-ramp. Both are now key-count settings of one exercise.
+    state.cycleMode = "pivot";
+    if (preferences.cycleMode === "iiVI") state.gym.keys = 1;
     state.index = 0;
     state.cycleComping.zone = preferences.cycleZone;
     state.triads.zone = preferences.triadZone;
@@ -204,9 +212,27 @@
   const VIEW_NAV = { today: "today", ear: "hear", cycle: "harmony", prog: "harmony", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", concepts: "learn", coach: "coach", progress: "progress" };
   const NAV_TITLES = { today: "Today", hear: "Hear", harmony: "Harmony", solo: "Solo", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
 
+  // One sentence per workspace answering "what is this FOR" — the purposes the
+  // pedagogy research settled on, in the player's language.
+  const MODE_PURPOSE = {
+    cycle: "Land the 3rd of every chord as the keys fall. This is the muscle that keeps your solo inside the song on stage.",
+    prog: "Real Greek progressions for each dromos — Piraeus modal loops first, the Westernized laiko layer second. Drills end here.",
+    triads: "The accompanist's seat: keep the changes close with the nearest shape when the harmony moves.",
+    solo: "One neck, three layers: the road, the frame inside it, and the little cells that hit every chord's 3rd."
+  };
+
+  function renderModePurpose() {
+    const el = $("modePurpose");
+    if (!el) return;
+    const copy = MODE_PURPOSE[state.view];
+    el.textContent = copy || "";
+    el.classList.toggle("hidden", !copy || VIEW_NAV[state.view] !== "harmony" && state.view !== "solo");
+  }
+
   function syncHarmonyTabs() {
     document.querySelectorAll("[data-harmony-mode]").forEach((button) =>
       button.classList.toggle("active", state.view === "cycle" && button.getAttribute("data-harmony-mode") === state.cycleMode));
+    renderModePurpose();
   }
 
   const PRACTICE_STEPS = [
@@ -360,13 +386,21 @@
   }
 
   function cycleJourney() {
-    // The pivot drill plays the WHOLE modulation wheel: ii-V-I-(I), then the
-    // old I is reinterpreted as the new ii a whole step down, six keys around
-    // and back home. Musically that is the full cycle with the pivot moment
-    // made explicit, so it shares the full sequence.
-    const journey = HJ.buildJourney({ kind: "cycle", cycle, mode: state.cycleMode === "pivot" ? "full" : state.cycleMode, index: state.index, loop: state.loop, holdI: state.holdI });
-    if (state.cycleMode === "pivot") journey.label = "Pivot cycle";
+    // The Changes Gym plays ii-V-I-(I) and then the old I is reinterpreted as
+    // the new ii a whole step down. Keys=1 stays inside one group (the
+    // on-ramp); keys=3/6 chain groups. The journey uses the full-cycle order —
+    // at a 3-key wrap the guide previews the 4th key while the audio loops,
+    // an accepted edge over duplicating the journey model.
+    const journey = HJ.buildJourney({ kind: "cycle", cycle, mode: state.gym.keys === 1 ? "iiVI" : "full", index: state.index, loop: state.loop, holdI: state.holdI });
+    journey.label = "Changes Gym";
     return journey;
+  }
+
+  // The gym's playable sequence: keys*3 chords starting at the current key
+  // group, wrapping around the six-key wheel.
+  function gymSequence(idx) {
+    const start = Math.floor((((idx % N) + N) % N) / 3) * 3;
+    return Array.from({ length: Math.min(state.gym.keys, 6) * 3 }, (_, n) => (start + n) % N);
   }
 
   function songJourney(chords, step) {
@@ -542,7 +576,11 @@
       // is spelled out: play ii-V-I-I, then the old I becomes the new ii.
       const pair = sequenceFor("pivot", state.index);
       const oldI = cycle[pair[0]], newIi = cycle[pair[1]];
-      $("pivotBanner").innerHTML = `Pivot wheel: play ii–V–I–I, then <b>${oldI.symbol}</b> (I of ${oldI.key}) becomes <b>${newIi.symbol}</b> (ii of ${newIi.key}) — a whole step down. Six keys, then you are home.`;
+      const oldThird = chordTone(oldI, "3");
+      const newThird = chordTone(newIi, "b3");
+      $("pivotBanner").innerHTML = state.gym.bridging
+        ? $("pivotBanner").innerHTML
+        : `<b>Same chord, new job.</b> Its 3rd drops one fret${oldThird && newThird ? ` (${escapeHtml(oldThird.name)} → ${escapeHtml(newThird.name)})` : ""} and your I becomes the next key's ii: <b>${oldI.symbol}</b> (I of ${oldI.key}) → <b>${newIi.symbol}</b> (ii of ${newIi.key}), a whole step down.`;
       $("pivotBanner").classList.add("show");
     } else {
       // The shared guide describes the forward transition. Do not add a second
@@ -587,6 +625,7 @@
     $("keymapWrap").classList.toggle("hidden", state.cycleComping.focus === "chords");
     document.querySelectorAll("[data-cycle-focus]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-cycle-focus") === state.cycleComping.focus));
+    syncGymControls();
     syncCyclePathControls();
     renderCycleCompingControls();
     if (state.cycleComping.focus === "chords") { $("pivotBanner").classList.remove("show"); renderCycleComping(); return; }
@@ -601,7 +640,7 @@
   }
 
   function stepCycle(delta) {
-    const seq = sequenceFor(state.cycleMode === "pivot" ? "full" : state.cycleMode, state.index);
+    const seq = gymSequence(state.index);
     let pos = seq.indexOf(state.index); if (pos < 0) pos = 0;
     setCycleIndex(seq[(pos + delta + seq.length) % seq.length]);
   }
@@ -1659,11 +1698,17 @@
     const lower = road.lower;
     const upper = road.upper;
     const lens = state.solo.lens;
-    const roadNotes = lens === "lower" ? lower : lens === "upper" ? upper : lower.concat(upper.slice(0, -1));
+    // Mobile ascending tones render as hollow road dots (Ousak's sharpened
+    // 2nd/6th); the 2nd lives in the lower cell, the 6th in the upper.
+    const mobile = M.mobileTonesOf(state.tonic, state.modeId)
+      .map((note) => Object.assign({}, note, { road: note.off < 6 ? "lower" : "upper" }))
+      .filter((note) => lens === "full" || (lens === "lower" ? note.road === "lower" : note.road === "upper"));
+    const roadNotes = (lens === "lower" ? lower : lens === "upper" ? upper : lower.concat(upper.slice(0, -1))).concat(mobile);
     const focusTargets = soloTargets(current, state.solo.focus);
 
     FB.render(svg(), {
       roadNotes,
+      roadString: state.solo.oneCourse ? "top" : null,
       targetPcs: focusTargets.map((note) => note.pc),
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       labelMode: state.labelMode, lefty: state.lefty,
@@ -1677,7 +1722,9 @@
         <button data-road-lens="full" class="${lens === "full" ? "active" : ""}"><b>Whole road</b><span>1 → 8</span></button>
         <button data-road-lens="lower" class="${lens === "lower" ? "active" : ""}"><b>Lower cell</b><span>1 → 4</span></button>
         <button data-road-lens="upper" class="${lens === "upper" ? "active" : ""}"><b>Upper cell</b><span>5 → 8</span></button>
+        <button data-road-one-course class="${state.solo.oneCourse ? "active" : ""}" aria-pressed="${state.solo.oneCourse}"><b>One course</b><span>a single string</span></button>
       </div>
+      ${state.modeId === "ousak" ? '<p class="road-mobile-hint">Hollow dots sharpen on the way up. Ousak breathes.</p>' : ""}
       <div class="tetra-matrix">
         <section class="tetra-card lower"><div><b>First part</b><span>lower tetrachord · 1–4</span></div><div>${noteMatrix(lower, "lower")}</div></section>
         <section class="tetra-card upper"><div><b>Second part</b><span>upper tetrachord · 5–8</span></div><div>${noteMatrix(upper, "upper")}</div></section>
@@ -1686,6 +1733,8 @@
     $("soloRoad").querySelectorAll("[data-road-lens]").forEach((button) => {
       button.onclick = () => { state.solo.lens = button.getAttribute("data-road-lens"); renderSoloRoad(); };
     });
+    const oneCourse = $("soloRoad").querySelector("[data-road-one-course]");
+    if (oneCourse) oneCourse.onclick = () => { state.solo.oneCourse = !state.solo.oneCourse; renderSoloRoad(); };
 
     $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${current.degreeLabel}</span>
       <span class="ro-symbol" style="font-size:22px">${current.symbol}</span><span class="ro-key">current box · ${M.MODES[state.modeId].name} on ${state.tonic}</span></div>
@@ -1729,6 +1778,24 @@
 
   function preferredSoloTarget(notes) {
     return notes.find((note) => ["3", "b3", "7", "b7"].includes(note.role)) || notes[0];
+  }
+
+  // The nearest melodic thread between this chord's landing tones and the next
+  // chord's: the smallest real move (a step or a small leap, up to a minor
+  // 3rd) that a hand can make without shifting. Returns null when the closest
+  // available move is a genuine leap — the app should not draw a line that
+  // implies a connection the player cannot hear.
+  function soloLandingThread(curTargets, nextTargets) {
+    let best = null;
+    (curTargets || []).forEach((from) => {
+      (nextTargets || []).forEach((to) => {
+        const raw = (((to.pc - from.pc) % 12) + 12) % 12;
+        const distance = Math.min(raw, 12 - raw);
+        if (!distance || distance > 3) return;
+        if (!best || distance < best.distance) best = { from, to, distance };
+      });
+    });
+    return best;
   }
 
   // ---- "Hear the lean" — the audible half of the landing-lens drill ------
@@ -1838,6 +1905,13 @@
     if (now) now.innerHTML = `<b>${step.label}</b> · ${step.note.name} (${step.note.roleLabel || step.note.degree || "frame"}) — ${step.why}`;
     svg().querySelectorAll(".fb-dot.journey-active").forEach((dot) => dot.classList.remove("journey-active"));
     svg().querySelectorAll(`.fb-dot[data-pc="${step.note.pc}"]`).forEach((dot) => dot.classList.add("journey-active"));
+    // Choreograph the change: on the lean/approach pulse the NEXT chord's
+    // rings glow as a preview; on the arrival they ignite while the old
+    // target collapses back to ghost. Pure CSS phases — nothing jumps.
+    const lastStep = index === plan.length - 1;
+    const leanStep = !lastStep && (step.role === "approach" || index >= plan.length - 2);
+    svg().classList.toggle("lean-phase", leanStep);
+    svg().classList.toggle("arrive-phase", lastStep);
   }
 
   function renderSoloTimingMatrix(cur, next, curTargets, nextTargets) {
@@ -1923,6 +1997,11 @@
     const pentatonic = M.pentatonicOf(state.tonic, state.modeId);
 
     const layers = state.solo.layers;
+    // The landing thread. Not every change has a stepwise lean (in D major the
+    // sweet 2→3 is E→C♯, a minor 3rd), so the tracer connects the NEAREST pair
+    // of now/next targets rather than a fixed pair, and stays silent when the
+    // closest move is a leap. Nearest-tone connection is the whole lesson.
+    const thread = soloLandingThread(curTargets, nextTargets);
     FB.render(svg(), {
       grip: activeGrip,
       otherShapes: state.solo.section === "targets" ? allTriads.filter(() => layers.triads) : [],
@@ -1931,6 +2010,7 @@
       targetNotes: state.solo.section === "targets" ? targetNotes : null,
       targetNowPcs: curTargets.map((note) => note.pc),
       targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],
+      tracer: layers.next && thread ? { fromPc: thread.from.pc, toPc: thread.to.pc } : null,
       overlayRange,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       labelMode: state.labelMode,
@@ -1972,6 +2052,9 @@
       <div class="triad-landscape-key"><span class="landscape-solid">solid</span> nearest ${cur.symbol} triad · <span class="landscape-faint">faint</span> other ${cur.symbol} inversions · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
       <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
       <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
+      ${thread
+        ? `<p class="solo-thread"><b>The thread:</b> ${escapeHtml(thread.from.name)} → ${escapeHtml(thread.to.name)}, ${thread.distance === 1 ? "a half step" : thread.distance === 2 ? "a whole step" : "three frets"} on one string. The neck draws it; play only that move and the change is already audible.</p>`
+        : `<p class="solo-thread quiet"><b>No stepwise thread here:</b> the closest landing is a leap, so aim with your ear and let the pentatonic carry you there.</p>`}
       ${pedalTable}
       <p>${focus === "third"
         ? "Treat the pentatonic as the sentence and the 3rd as the punctuation: arrive on it when the chord changes."
@@ -2040,7 +2123,7 @@
     $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">phrase</span>
       <span class="ro-symbol" style="font-size:22px">${pattern.label}</span></div>
       <div class="lab-stats"><span>frets <b>${phrase.meta.lowFret}–${phrase.meta.highFret}</b></span><span>position <b>${L.position}</b></span></div>
-      <div class="ro-foot">Speak the numbers before playing. Keep one simple rhythm for two passes, then use the final note as the landing point for the chord you hear.</div>`;
+      <div class="ro-foot">Carry ONE cell through every chord of the loop — say the numbers, then let the loop transpose them. 1–2–3–5 is the universal starter; the final note is the landing point for the chord you hear.</div>`;
     $("posLabel").textContent = "Pos " + L.position;
   }
 
@@ -2147,6 +2230,77 @@
   function barsFor(c) { return state.holdI && /^i$/i.test(functionTag(c)) ? 2 : 1; }
   function isTowardIi(c) { return /^ii(?![iv])/i.test(functionTag(c)); }
 
+  // Skeleton mode: the documented first "playing the changes" exercise — one
+  // whole note per chord, just the 3rd, until the guide-tone line is in the ear.
+  function gymNotes(chord) {
+    if (!state.gym.skeleton) return chord.notes;
+    const third = chordTone(chord, "3") || chordTone(chord, "b3");
+    return third ? [third] : chord.notes.slice(0, 1);
+  }
+
+  // Taximi bridge: instead of pivoting, the band stops, a drone sounds on the
+  // NEXT key's tonic, and the player re-centers with a free, unmetered phrase
+  // — the documented kompania device — then the cycle resumes in the new key.
+  function cancelTaximiBridge() {
+    if (!state.gym.bridging) return;
+    if (state.gym.bridgeTimer) clearInterval(state.gym.bridgeTimer);
+    state.gym.bridgeTimer = null;
+    state.gym.bridging = false;
+    const button = $("btnTaximiBridge");
+    if (button) button.textContent = "Taximi bridge";
+  }
+
+  // A tonic drone: root + fifth + octave, low register, re-struck gently so
+  // it sustains under an unmetered phrase. Returns the interval id.
+  function startDrone(tonicPc) {
+    let bottom = 36 + tonicPc;
+    if (bottom < 38) bottom += 12;
+    const notes = [bottom, bottom + 7, bottom + 12].map((midi) => ({ freq: 440 * Math.pow(2, (midi - 69) / 12) }));
+    const strike = () => AU.playChord(notes, "block", undefined, chordReferenceVoice(), 6);
+    strike();
+    return setInterval(strike, 5000);
+  }
+
+  function taximiBridge() {
+    if (state.gym.bridging) {
+      cancelTaximiBridge();
+      AU.stopAll();
+      const pair = sequenceFor("pivot", state.index);
+      setCycleIndex(pair[1]);
+      startPlay();
+      return;
+    }
+    stopPlay();
+    AU.ensure();
+    const pair = sequenceFor("pivot", state.index);
+    const newIi = cycle[pair[1]];
+    const tonicPc = (newIi.rootPc + 10) % 12;
+    state.gym.bridging = true;
+    state.gym.bridgeTimer = startDrone(tonicPc);
+    const button = $("btnTaximiBridge");
+    if (button) button.textContent = "Resume the band ▶";
+    const banner = $("pivotBanner");
+    banner.innerHTML = `Taximi bridge: drone on <b>${escapeHtml(newIi.key)}</b>. Set the new dromos with a free phrase — no meter, no count — then bring the band back in.`;
+    banner.classList.add("show");
+  }
+
+  function syncGymControls() {
+    document.querySelectorAll("[data-gym-keys]").forEach((button) =>
+      button.classList.toggle("active", +button.getAttribute("data-gym-keys") === state.gym.keys));
+    if ($("tglGymSkeleton")) $("tglGymSkeleton").checked = state.gym.skeleton;
+  }
+
+  // Taximi capstone drone (Solo lab step 5): unmetered, tonic of the current
+  // dromos, held until the player stops it.
+  let soloDroneTimer = null;
+  function cancelSoloDrone() {
+    if (!soloDroneTimer) return;
+    clearInterval(soloDroneTimer);
+    soloDroneTimer = null;
+    const button = $("btnTaximiDrone");
+    if (button) button.textContent = "▶ Drone on the tonic";
+  }
+
   // The strips render one chip per BAR (a held tonic gets a second "hold"
   // chip), so the moving highlight can show ii · V · I · I literally.
   function markHeldBar(index) {
@@ -2181,13 +2335,15 @@
   }
 
   function startPlay() {
+    cancelTaximiBridge();
+    cancelSoloDrone();
     AU.ensure();
     const pulse = currentPulse();
     if (state.view === "cycle" && state.cycleComping.focus === "chords") {
       const { chords } = currentProgression();
       pb = { kind: "comping", len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
     } else if (state.view === "cycle") {
-      const seq = sequenceFor(state.cycleMode === "pivot" ? "full" : state.cycleMode, state.index);
+      const seq = gymSequence(state.index);
       pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
     } else if (state.view === "prog" || state.view === "solo") {
       const { chords } = currentProgression();
@@ -2206,10 +2362,10 @@
           if (pb.barsLeft > 0) {
             pb.barsLeft--;
             setTimeout(animateChangeGuide, delay);
-            if (pb.barsLeft === 0) schedulePickup(cycle[pb.seq[(pb.pos + 1) % pb.seq.length]], when);
+            if (pb.barsLeft === 0 && !state.gym.skeleton) schedulePickup(cycle[pb.seq[(pb.pos + 1) % pb.seq.length]], when);
             // Held bars still comp: the pulse stays solid through the long tonic.
             const held = cycle[pb.seq[pb.pos]];
-            return { hold: true, notes: held.notes, referenceVoice: chordReferenceVoice() };
+            return { hold: true, notes: gymNotes(held), referenceVoice: chordReferenceVoice() };
           }
           if (pb.started) {
             const next = pb.pos + 1;
@@ -2224,8 +2380,8 @@
           setTimeout(() => setCycleIndex(idx), delay);
           const nextIndex = pb.seq[(pb.pos + 1) % pb.seq.length];
           const nextChord = cycle[nextIndex] || chord;
-          if (pb.barsLeft === 0) schedulePickup(nextChord, when);
-          return { notes: chord.notes, referenceVoice: chordReferenceVoice(), bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
+          if (pb.barsLeft === 0 && !state.gym.skeleton) schedulePickup(nextChord, when);
+          return { notes: gymNotes(chord), referenceVoice: chordReferenceVoice(), bass: { rootPc: rootPcOf(chord), nextRootPc: rootPcOf(nextChord) } };
         }
         // progression playback
         if (pb.barsLeft > 0) {
@@ -2305,6 +2461,8 @@
     if (v === "lab") v = "solo";   // compatibility with bookmarks from the first version
     if (state.view === "video" && v !== "video" && V) V.destroy();
     stopPlay();
+    cancelTaximiBridge();
+    cancelSoloDrone();
     state.view = v;
     persistPreferences();
     document.body.setAttribute("data-view", v);
@@ -2395,8 +2553,32 @@
       auditionCurrent();
     };
     $("btnPlay").onclick = togglePlay;
-    $("btnPivotPairPrev").onclick = () => { stopPlay(); stepPivotPair(-1); };
-    $("btnPivotPairNext").onclick = () => { stopPlay(); stepPivotPair(1); };
+    $("btnPivotPairPrev").onclick = () => { stopPlay(); cancelTaximiBridge(); stepPivotPair(-1); };
+    $("btnPivotPairNext").onclick = () => { stopPlay(); cancelTaximiBridge(); stepPivotPair(1); };
+    document.querySelectorAll("[data-gym-keys]").forEach((button) => button.onclick = () => {
+      const wasPlaying = AU.isPlaying();
+      stopPlay(); cancelTaximiBridge();
+      state.gym.keys = +button.getAttribute("data-gym-keys");
+      saveUiPreferences();
+      renderCycle();
+      if (wasPlaying) startPlay();
+    });
+    if ($("tglGymSkeleton")) $("tglGymSkeleton").onchange = (event) => {
+      state.gym.skeleton = event.target.checked;
+      saveUiPreferences();
+    };
+    if ($("btnTaximiBridge")) $("btnTaximiBridge").onclick = taximiBridge;
+
+    document.querySelectorAll("[data-taximi-stage]").forEach((button) => button.onclick = () => {
+      document.querySelectorAll("[data-taximi-stage]").forEach((item) => item.classList.toggle("active", item === button));
+    });
+    if ($("btnTaximiDrone")) $("btnTaximiDrone").onclick = () => {
+      if (soloDroneTimer) { cancelSoloDrone(); AU.stopAll(); return; }
+      stopPlay();
+      AU.ensure();
+      soloDroneTimer = startDrone(M.scaleOf(state.tonic, state.modeId)[0].pc);
+      $("btnTaximiDrone").textContent = "⏸ Stop the drone";
+    };
     $("btnStrum").onclick = () => auditionCurrent("strum");
     $("btnArp").onclick = () => auditionCurrent("arp");
     $("btnShift").onclick = () => {

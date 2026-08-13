@@ -230,6 +230,7 @@
       const isNext = !isNow && (nextSet ? nextSet.has(p.note.pc) : false);
       const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
         (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
+        (p.note.mobile ? " mobile" : "") +
         (p.note.isTonic ? " tonic" : "");
       const gg = el("g", { class: cls, "data-group": p.note.colorGroup, "data-pc": p.note.pc });
       if (opts.lefty) {
@@ -330,7 +331,11 @@
       const active = new Set(
         (opts.grip ? opts.grip.placements : []).map((p) => p.stringIndex + ":" + p.fret)
       );
+      // The one-course road (Goodrick's single-string discipline): restrict the
+      // road overlay to the melody course so the dromos reads as one line.
+      const onlyString = kind === "road" && opts.roadString === "top" ? NSTR - 1 : null;
       for (let s = 0; s < NSTR; s++) {
+        if (onlyString != null && s !== onlyString) continue;
         for (let f = fromFret; f <= toFret; f++) {
           const pc = (((OPEN[s] + f) % 12) + 12) % 12;
           const sn = byPc[pc];
@@ -342,7 +347,7 @@
           g.appendChild(dot(
             { stringIndex: s, fret: f, note: {
               pc, degree: sn.degree, roleLabel: sn.roleLabel, name: sn.name,
-              colorGroup: group, isFlavour: sn.isFlavour, isTonic: sn.isTonic
+              colorGroup: group, isFlavour: sn.isFlavour, isTonic: sn.isTonic, mobile: sn.mobile
             } },
             kind
           ));
@@ -354,6 +359,35 @@
     if (opts.targetNotes && opts.targetNotes.length) renderOverlay(opts.targetNotes, "target");
     if (opts.scaleNotes && opts.scaleNotes.length) renderOverlay(opts.scaleNotes, "scale");
     if (opts.roadNotes && opts.roadNotes.length) renderOverlay(opts.roadNotes, "road");
+
+    // The lean tracer: when the current landing tone resolves to the next
+    // chord's landing tone by a step, draw that half/whole-step move on every
+    // string where both tones sit under one hand — the 2→3 (or 7→3) thread
+    // made literally visible, always to the NEAREST tone, never a jump.
+    if (opts.tracer && opts.tracer.fromPc != null && opts.tracer.toPc != null) {
+      const range = opts.overlayRange || { from: 0, to: N_FRETS };
+      const fromFret = Math.max(0, range.from == null ? 0 : range.from);
+      const toFret = Math.min(N_FRETS, range.to == null ? N_FRETS : range.to);
+      for (let s = 0; s < NSTR; s++) {
+        let best = null;
+        for (let fa = fromFret; fa <= toFret; fa++) {
+          if ((((OPEN[s] + fa) % 12) + 12) % 12 !== opts.tracer.fromPc) continue;
+          for (let fb = fromFret; fb <= toFret; fb++) {
+            if ((((OPEN[s] + fb) % 12) + 12) % 12 !== opts.tracer.toPc) continue;
+            const span = Math.abs(fb - fa);
+            if (span >= 1 && span <= 3 && (!best || span < best.span)) best = { fa, fb, span };
+          }
+        }
+        if (!best) continue;
+        const y = yForString(LAST - s) - 20;
+        const xa = best.fa === 0 ? GEO.padL : xForFret(best.fa);
+        const xb = best.fb === 0 ? GEO.padL : xForFret(best.fb);
+        const x1 = opts.lefty ? width - xa : xa;
+        const x2 = opts.lefty ? width - xb : xb;
+        g.appendChild(el("line", { x1, y1: y, x2, y2: y, class: "tracer-line" }));
+        g.appendChild(el("text", { x: x2, y: y + 3, "text-anchor": "middle", class: "tracer-head" }, x2 >= x1 ? "▸" : "◂"));
+      }
+    }
 
     if (opts.ghosts && opts.allPositions) {
       const active = new Set(opts.grip.placements.map((p) => p.stringIndex + ":" + p.fret));

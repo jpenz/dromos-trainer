@@ -12,9 +12,18 @@ test("the v14 shell exposes the eight primary destinations and shared chrome", (
   ["today", "hear", "harmony", "solo", "repertoire", "learn", "coach", "progress"].forEach((nav) => {
     assert.match(html, new RegExp(`data-nav="${nav}"`), `missing primary destination ${nav}`);
   });
-  assert.match(html, /data-harmony-mode="full"/);
-  assert.match(html, /data-harmony-mode="iiVI"/);
+  // Full Cycle and ii–V–I folded into the Changes Gym as key-count settings;
+  // "pivot" is the one remaining harmony mode.
   assert.match(html, /data-harmony-mode="pivot"/);
+  assert.doesNotMatch(html, /data-harmony-mode="full"/, "Full Cycle must not survive as a separate tab");
+  assert.doesNotMatch(html, /data-harmony-mode="iiVI"/, "ii–V–I must not survive as a separate tab");
+  assert.match(html, /data-gym-keys="1"/, "the gym needs the 1-key on-ramp");
+  assert.match(html, /data-gym-keys="6"/, "the gym needs the six-key wheel");
+  assert.match(html, /id="tglGymSkeleton"/, "the whole-note skeleton drill must be a real option");
+  assert.match(html, /id="btnTaximiBridge"/, "the taximi bridge must sit next to the gym");
+  assert.match(html, /voice-leading gym, not folklore/, "the honesty line must ship");
+  assert.match(html, /data-taximi-stage="low"/, "the taximi arc capstone must exist");
+  assert.match(html, /data-solo-section="cell"[^>]*>5 Taximi/, "solo step 5 is the taximi capstone");
   assert.match(html, /id="settingsDrawer"/);
   assert.match(html, /id="panelToday"/);
   assert.match(html, /id="panelProgress"/);
@@ -32,7 +41,11 @@ test("playback speaks the redesigned musical language", () => {
   assert.match(app, /function commonTone/, "the one-note drill needs a common-tone finder");
   assert.match(app, /function playLeanDemo/, "the audible lean demo must exist");
   assert.match(app, /data-hear-lean/, "the lean demo must be reachable from the Solo recipe");
-  assert.match(app, /Pivot wheel: play ii–V–I–I/, "the pivot drill must explain the reinterpretation");
+  assert.match(app, /Same chord, new job\./, "the pivot moment must explain the reinterpretation");
+  assert.match(app, /function gymNotes/, "the skeleton drill must reduce chords to their 3rd");
+  assert.match(app, /function taximiBridge/, "the taximi bridge must exist");
+  assert.match(app, /function startDrone/, "an unmetered tonic drone must exist");
+  assert.match(app, /function gymSequence/, "the gym must chain keys*3 chords from the current group");
   assert.doesNotMatch(app, /referenceVoice: "guitar"/, "playback must not hardcode the chord voice");
   assert.match(read("js/audio.js"), /function playPianoNoteAt/, "a piano reference voice must exist");
   assert.match(read("js/practice.js"), /sweet-lean/, "the sweet 2→3 melodic route must exist");

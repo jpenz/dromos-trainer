@@ -75,8 +75,10 @@
       const pick = i < Math.max(2, Math.floor(N * 0.16)) ? 1 : 0.32;
       noise[i] = previous * pick;
     }
-    const decay = voice === "bouzouki" ? 0.9945 : voice === "laouto" ? 0.9955 : 0.997;
-    const blend = voice === "bouzouki" ? 0.43 : voice === "laouto" ? 0.47 : 0.52;
+    // Longer decay coefficients: a practice chord should still be ringing when
+    // the bar ends, the way a real course does, instead of dying mid-bar.
+    const decay = voice === "bouzouki" ? 0.9982 : voice === "laouto" ? 0.9986 : 0.9989;
+    const blend = voice === "bouzouki" ? 0.46 : voice === "laouto" ? 0.49 : 0.53;
     for (let i = 0; i < len; i++) {
       if (i < N) { y[i] = noise[i]; }
       else { y[i] = decay * blend * (y[i - N] + y[i - N + 1]); }
@@ -88,7 +90,7 @@
     const normalise = peak > 0 ? 0.72 / peak : 1;
     for (let i = 0; i < len; i++) y[i] *= normalise;
     // gentle overall fade so tails don't click
-    const fade = Math.floor(len * 0.15);
+    const fade = Math.floor(len * 0.22);
     for (let i = 0; i < fade; i++) y[len - 1 - i] *= i / fade;
     bufCache.set(key, buf);
     return buf;
@@ -153,13 +155,17 @@
     body.type = "peaking";
     body.frequency.value = voice === "bouzouki" ? 330 : voice === "laouto" ? 220 : 185;
     body.Q.value = 0.75;
-    body.gain.value = 1.2;
+    body.gain.value = 1.6;
     g.gain.value = gain == null ? 0.24 : gain;
-    fundamental.type = voice === "bouzouki" ? "sine" : "triangle";
+    // The fundamental oscillator exists to give the pluck its body, NOT to
+    // sustain. Anything longer reads as a synth drone humming under the chord
+    // after the strings have decayed, so it is an attack thump only.
+    const thump = Math.min(dur, 0.11);
+    fundamental.type = "triangle";
     fundamental.frequency.setValueAtTime(freq, when);
     fundamentalGain.gain.setValueAtTime(0.0001, when);
-    fundamentalGain.gain.exponentialRampToValueAtTime(0.055, when + 0.008);
-    fundamentalGain.gain.exponentialRampToValueAtTime(0.0001, when + Math.min(dur, 0.75));
+    fundamentalGain.gain.exponentialRampToValueAtTime(0.05, when + 0.006);
+    fundamentalGain.gain.exponentialRampToValueAtTime(0.0001, when + thump);
     src.connect(cleanup); cleanup.connect(tone); tone.connect(body); body.connect(g);
     fundamental.connect(fundamentalGain); fundamentalGain.connect(g); g.connect(master);
     activeSources.push(src, fundamental);
@@ -169,7 +175,7 @@
     src.start(when);
     src.stop(when + dur + 0.05);
     fundamental.start(when);
-    fundamental.stop(when + Math.min(dur, 0.8));
+    fundamental.stop(when + thump + 0.03);
   }
 
   // Strum a chord (array of {freq}). style: "strum" | "arp" | "block".
@@ -178,7 +184,7 @@
   function playChord(notes, style, when, referenceVoice, duration) {
     ensure();
     const t0 = when == null ? ctx.currentTime + 0.01 : when;
-    const dur = duration == null ? 2.2 : Math.max(0.3, duration);
+    const dur = duration == null ? 3.4 : Math.max(0.3, duration);
     const spread = style === "arp" ? 0.14 : style === "block" ? 0 : 0.035;
     const level = voiceGain(notes.length, "chord");
     notes.forEach((n, i) => {
@@ -367,7 +373,9 @@
           if (!chord) { stopTransport(); cfg.onStop && cfg.onStop(); return; }
           if (!chord.hold) activeEvent = chord;
           if (chord.notes && chord.notes.length && cfg.strumStyle) {
-            playChord(chord.notes, cfg.strumStyle, nextTime, chord.referenceVoice);
+            // Ring through the whole bar (plus a little overlap into the next
+            // downbeat) so the harmony is still sounding when the change lands.
+            playChord(chord.notes, cfg.strumStyle, nextTime, chord.referenceVoice, beatsPerBar * secPerBeat() * 1.08);
           }
         }
         const pulseBeat = pulse[beatInBar] || { beat: beatInBar + 1, first: beatInBar === 0, group: 1, size: beatsPerBar };
