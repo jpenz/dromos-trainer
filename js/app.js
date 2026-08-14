@@ -1607,6 +1607,41 @@
     return note.roleLabel || note.degree || phase;
   }
 
+  function triadTones(chord) {
+    return chord.notes.filter((note) => ["R", "3", "b3", "5", "b5", "#5"].includes(note.role));
+  }
+
+  function triadSpelling(chord) {
+    return triadTones(chord).map((note) => `${note.roleLabel} ${note.name}`).join(" · ");
+  }
+
+  function placementKey(placement) {
+    return `${placement.stringIndex}:${placement.fret}`;
+  }
+
+  // Put each selected landing in the actual voice-led shape when possible.
+  // Non-triad targets (2→3 leans, real sevenths, common tones) get one nearby
+  // playable address—not every occurrence of that pitch across the neck.
+  function targetPlacementsForGrip(targets, grip) {
+    const shape = grip && grip.placements ? grip.placements : [];
+    const used = new Set();
+    return (targets || []).map((target) => {
+      const inside = shape.find((placement) => placement.note.pc === target.pc && !used.has(placementKey(placement)));
+      const candidates = inside ? [inside] : FB.allTonePositions([target]).slice().sort((a, b) => {
+        const distance = (placement) => shape.length
+          ? Math.min(...shape.map((anchor) => Math.abs(anchor.fret - placement.fret) + 2 * Math.abs(anchor.stringIndex - placement.stringIndex)))
+          : Math.abs(placement.fret - 5);
+        return distance(a) - distance(b) || Math.abs(a.fret - 5) - Math.abs(b.fret - 5);
+      });
+      const placement = candidates.find((candidate) => !used.has(placementKey(candidate)));
+      if (!placement) return null;
+      used.add(placementKey(placement));
+      return Object.assign({}, placement, {
+        note: Object.assign({}, target, { roleLabel: targetRoleLabel(target, "target", state.solo.focus), colorGroup: "target" })
+      });
+    }).filter(Boolean);
+  }
+
   function renderPathTargetRoute(cur, next, curTargets, nextTargets) {
     const focus = state.solo.focus;
     const route = P.melodicRoute(state.solo.routeId);
@@ -2259,6 +2294,7 @@
     const chip = (id, on, swatch, label) => `<button data-solo-layer="${id}" class="layer-chip${on ? " on" : ""}" aria-pressed="${on}"><span class="layer-swatch ${swatch}"></span>${label}</button>`;
     const nowTarget = preferredSoloTarget(curTargets);
     const nextTarget = preferredSoloTarget(nextTargets);
+    const mode = M.MODES[state.modeId];
     const holds = nowTarget.pc === nextTarget.pc;
     const motion = holds
       ? `${nowTarget.name} holds · the chord changes its meaning`
@@ -2267,22 +2303,31 @@
       : `${nowTarget.name} → ${nextTarget.name} · pre-hear the leap`;
     root.innerHTML = `
       <section class="solo-neck-hud" aria-label="Current and next solo landing" aria-live="polite">
-        <article class="solo-hud-card now"><span>Now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b>${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><small>orange ring · current triad is solid</small></article>
+        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · orange ring is the note to land on</small></article>
         <div class="solo-hud-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b><small>hear the destination before the chord changes</small></div>
-        <article class="solo-hud-card next"><span>Next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b>${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><small>dashed ring · becomes orange on arrival</small></article>
+        <article class="solo-hud-card next"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · turquoise target becomes orange on arrival</small></article>
       </section>
       <div class="solo-layer-row">
-        ${chip("scale", layers.scale, "lc-scale", "Full scale")}
-        ${chip("pentatonic", layers.pentatonic, "lc-penta", "Pentatonic")}
-        ${chip("triads", layers.triads, "lc-triad", "Other triad positions")}
-        <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Now</span>
-        ${chip("next", layers.next, "lc-next", "Next")}
-        <span class="layer-note">solid shape = current chord · rings = landing notes</span>
+        <span class="solo-layer-label">Background</span>
+        ${chip("scale", layers.scale, "lc-scale", `${state.tonic} ${mode.name} · full scale`)}
+        ${chip("pentatonic", layers.pentatonic, "lc-penta", `${state.tonic} ${M.PENTATONIC[state.modeId]?.name || "Pentatonic"}`)}
+        ${chip("none", !layers.scale && !layers.pentatonic, "lc-none", "Triads only")}
+        <span class="solo-layer-divider" aria-hidden="true"></span>
+        <span class="solo-layer-label">Harmony</span>
+        <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Current triad</span>
+        ${chip("next", layers.next, "lc-next", "Coming triad")}
+        ${chip("triads", layers.triads, "lc-triad", "Other current positions")}
+        <span class="layer-note">background is quiet · solid = play now · dashed = prepare next · ring = selected target</span>
       </div>`;
     root.querySelectorAll("[data-solo-layer]").forEach((button) => {
       button.onclick = () => {
         const key = button.getAttribute("data-solo-layer");
-        state.solo.layers[key] = !state.solo.layers[key];
+        if (["scale", "pentatonic", "none"].includes(key)) {
+          state.solo.layers.scale = key === "scale";
+          state.solo.layers.pentatonic = key === "pentatonic";
+        } else {
+          state.solo.layers[key] = !state.solo.layers[key];
+        }
         renderSolo();
       };
     });
@@ -2306,20 +2351,25 @@
     const focus = state.solo.focus;
     const curTargets = soloTargets(cur, focus);
     const nextTargets = soloTargets(next, focus);
-    const targetNotes = curTargets.map((note) => Object.assign({}, note, {
-      roleLabel: targetRoleLabel(note, "now", focus)
-    })).concat(nextTargets.map((note) => Object.assign({}, note, {
-      roleLabel: targetRoleLabel(note, "next", focus)
-    })));
-    const triadPath = TR.pathThrough(chords, { startFret: 5, nameFor: spellPc });
+    const triadPath = TR.pathThrough(chords, { startFret: 5, nameFor: spellPc, closeLoop: true });
     const shape = triadPath[idx];
     const fallbackGrip = shape ? null : FB.findGrip(cur.notes, state.position);
     const activeGrip = shape ? { placements: shape.placements } : fallbackGrip;
+    const nextShape = triadPath[(idx + 1) % triadPath.length];
+    const nextFallbackGrip = nextShape ? null : FB.findGrip(next.notes, state.position);
+    const nextGrip = nextShape ? { placements: nextShape.placements } : nextFallbackGrip;
+    const currentTargetPlacements = targetPlacementsForGrip(curTargets, activeGrip);
+    const nextTargetPlacements = targetPlacementsForGrip(nextTargets, nextGrip);
+    const shapePositions = new Set([...(activeGrip?.placements || []), ...(nextGrip?.placements || [])].map(placementKey));
+    const targetPlacements = currentTargetPlacements.concat(state.solo.layers.next ? nextTargetPlacements : [])
+      .filter((placement) => !shapePositions.has(placementKey(placement)));
+    const currentLanding = currentTargetPlacements.find((placement) => placement.note.pc === preferredSoloTarget(curTargets).pc) || currentTargetPlacements[0];
+    const nextLanding = nextTargetPlacements.find((placement) => placement.note.pc === preferredSoloTarget(nextTargets).pc) || nextTargetPlacements[0];
     const triadId = TR.TRIAD_OF[cur.quality] || "maj";
     const allTriads = TR.allShapes(cur.rootPc, triadId, spellPc);
-    // The view is deliberately whole-neck: the road should reveal the same
-    // target in several registers instead of trapping an intermediate player
-    // inside a single box.
+    // The view is deliberately whole-neck so the selected scale remains a
+    // complete map. Harmonic emphasis stays local: one playable current triad,
+    // one voice-led coming triad, and only their selected landing addresses.
     const overlayRange = { from: 0, to: FB.N_FRETS };
     const pentatonic = M.pentatonicOf(state.tonic, state.modeId);
 
@@ -2331,20 +2381,26 @@
     const thread = soloLandingThread(curTargets, nextTargets);
     FB.render(svg(), {
       grip: activeGrip,
+      nextGrip: layers.next ? nextGrip : null,
       otherShapes: state.solo.section === "targets" ? allTriads.filter(() => layers.triads) : [],
       pentatonicNotes: state.solo.section === "targets" && layers.pentatonic ? pentatonic : null,
       scaleNotes: state.solo.section === "targets" && layers.scale ? M.scaleOf(state.tonic, state.modeId) : null,
-      targetNotes: state.solo.section === "targets" ? targetNotes : null,
+      targetPlacements: state.solo.section === "targets" ? targetPlacements : null,
       targetNowPcs: curTargets.map((note) => note.pc),
       targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],
-      tracer: layers.next && thread ? { fromPc: thread.from.pc, toPc: thread.to.pc } : null,
+      targetNowPlacements: currentTargetPlacements,
+      targetNextPlacements: layers.next ? nextTargetPlacements : [],
+      targetScope: "positions",
+      tracer: layers.next && thread && currentLanding && nextLanding
+        ? { fromPc: thread.from.pc, toPc: thread.to.pc, fromPlacement: currentLanding, toPlacement: nextLanding }
+        : null,
       overlayRange,
       largeNeck: true,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       labelMode: state.labelMode,
       lefty: state.lefty
     });
-    svg().setAttribute("aria-label", window.Tuning.current().name + " soloing map");
+    svg().setAttribute("aria-label", `${window.Tuning.current().name} soloing map: ${state.tonic} ${M.MODES[state.modeId].name} background; play ${cur.degreeLabel} ${cur.symbol} triad ${triadSpelling(cur)}, targeting ${soloTargetLabel(curTargets)}; prepare ${next.degreeLabel} ${next.symbol} triad ${triadSpelling(next)}, targeting ${soloTargetLabel(nextTargets)}`);
     renderSoloLayerChips(cur, next, curTargets, nextTargets, thread);
 
     const frame = M.PENTATONIC[state.modeId];
@@ -2355,14 +2411,14 @@
       : "This change uses triads: hear the 3rd as the colour, then land on the root when you want the resolution to feel final.";
     const route = P.melodicRoute(state.solo.routeId);
     const focusSentence = focus === "triad"
-      ? "The solid shape is the closest voice-led triad; its faint neighbours are every other practical inversion. The quieter dots are the pentatonic frame, and the rings are the current/next triad tones."
+      ? "The solid shape is the current voice-led triad; the dashed shape is the coming triad. The selected background stays quiet so R, 3rd, and 5th remain readable."
       : focus === "guide"
-        ? "The solid shape is the closest voice-led triad; the rings narrow the next landing decision to the clearest guide relationship."
+        ? "The solid and dashed shapes show the current and coming triads; the rings narrow the change to one nearby guide-tone decision."
         : focus === "sweet"
-          ? "The rings mark the 2nd and each chord's 3rd everywhere on the neck: sit on the 2, then let it fall or rise into the 3rd exactly when the harmony moves. That lean is where Greek melodies live."
+          ? "One nearby ring marks the 2nd and one marks the chord's 3rd: sit on the 2, then let it fall or rise into the 3rd exactly when the harmony moves. That lean is where Greek melodies live."
           : focus === "pedal"
-            ? "Every ring is the SAME note. Hold it through the whole progression and listen to the harmony re-name it under your finger; the last chord finally lets it rest."
-            : "The solid shape is the closest voice-led triad; use its 3rd as the chord's colour, while the pentatonic dots supply a restrained way to travel there.";
+            ? "The two rings are playable addresses for the SAME note inside the moving shapes. Hold it through the progression and listen to the harmony re-name it."
+            : "The solid shape is the chord sounding now; the dashed shape is the chord coming next. Land on the orange 3rd, pre-hear the turquoise 3rd, and use the selected scale background only to connect them.";
     const pedalInfo = focus === "pedal" ? commonTone() : null;
     const pedalTable = pedalInfo ? `<div class="pedal-table">${chords.map((chordItem, chordIndex) => {
       const role = pedalRole(pedalInfo.pc, chordItem);
@@ -2377,7 +2433,7 @@
     $("soloRecipe").innerHTML = `
       <div class="solo-frame"><b>${frame.name}</b><span>${pentatonic.map((note) => note.name).join(" · ")}</span></div>
       ${triadSeatHtml(cur, curTargets)}
-      <div class="triad-landscape-key"><span class="landscape-solid">solid</span> nearest ${cur.symbol} triad · <span class="landscape-faint">faint</span> other ${cur.symbol} inversions · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
+      <div class="triad-landscape-key"><span class="landscape-solid">solid</span> play ${cur.symbol} now · <span class="landscape-faint">dashed</span> prepare ${next.symbol} · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
       <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
       <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
       ${thread

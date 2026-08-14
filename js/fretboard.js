@@ -252,6 +252,11 @@
     // preview (dashed turquoise ring). A pc in both reads as "now".
     const nowSet = opts.targetNowPcs ? new Set(opts.targetNowPcs) : null;
     const nextSet = opts.targetNextPcs ? new Set(opts.targetNextPcs) : null;
+    const positionKey = (placement) => `${placement.stringIndex}:${placement.fret}`;
+    const nowPositionSet = Array.isArray(opts.targetNowPlacements)
+      ? new Set(opts.targetNowPlacements.map(positionKey)) : null;
+    const nextPositionSet = Array.isArray(opts.targetNextPlacements)
+      ? new Set(opts.targetNextPlacements.map(positionKey)) : null;
     function dot(p, kind) {
       const sIdx = p.stringIndex;
       const rowFromTop = LAST - sIdx;
@@ -264,14 +269,20 @@
       // and could paint a scale degree (for example 4) over the next chord's
       // functional role (3). Grips and shapes still carry target rings.
       const passiveOverlay = kind === "scale" || kind === "pentatonic" || kind === "road";
-      const ownsTargetTiming = !(opts.targetNotes && opts.targetNotes.length && passiveOverlay);
-      const isNow = ownsTargetTiming && nowSet ? nowSet.has(p.note.pc) : false;
-      const isNext = !isNow && ownsTargetTiming && (nextSet ? nextSet.has(p.note.pc) : false);
+      const ownsTargetTiming = !(passiveOverlay && (opts.targetScope === "positions" || (opts.targetNotes && opts.targetNotes.length)));
+      const key = positionKey(p);
+      const isNow = ownsTargetTiming && nowSet
+        ? nowSet.has(p.note.pc) && (!nowPositionSet || nowPositionSet.has(key)) : false;
+      const isNext = !isNow && ownsTargetTiming && nextSet
+        ? nextSet.has(p.note.pc) && (!nextPositionSet || nextPositionSet.has(key)) : false;
       const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
         (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
         (p.note.mobile ? " mobile" : "") +
         (p.note.isTonic ? " tonic" : "");
-      const gg = el("g", { class: cls, "data-group": p.note.colorGroup, "data-pc": p.note.pc });
+      const gg = el("g", {
+        class: cls, "data-group": p.note.colorGroup, "data-pc": p.note.pc,
+        "data-string": p.stringIndex, "data-fret": p.fret, "data-role": p.note.roleLabel || p.note.degree || ""
+      });
       if (opts.lefty) {
         // counter-flip text so labels read normally
         gg.setAttribute("transform", `translate(${2 * cx},0) scale(-1,1)`);
@@ -403,12 +414,34 @@
     if (opts.pentatonicNotes && opts.pentatonicNotes.length) renderOverlay(opts.pentatonicNotes, "pentatonic");
     if (opts.roadNotes && opts.roadNotes.length) renderOverlay(opts.roadNotes, "road");
     if (opts.targetNotes && opts.targetNotes.length) renderOverlay(opts.targetNotes, "target");
+    if (opts.targetPlacements && opts.targetPlacements.length) {
+      const drawnTargets = new Set();
+      opts.targetPlacements.forEach((placement) => {
+        const key = positionKey(placement);
+        if (drawnTargets.has(key)) return;
+        drawnTargets.add(key);
+        g.appendChild(dot(placement, "target"));
+      });
+    }
 
     // The lean tracer: when the current landing tone resolves to the next
     // chord's landing tone by a step, draw that half/whole-step move on every
     // string where both tones sit under one hand — the 2→3 (or 7→3) thread
     // made literally visible, always to the NEAREST tone, never a jump.
-    if (opts.tracer && opts.tracer.fromPc != null && opts.tracer.toPc != null) {
+    if (opts.tracer && opts.tracer.fromPlacement && opts.tracer.toPlacement) {
+      const from = opts.tracer.fromPlacement;
+      const to = opts.tracer.toPlacement;
+      if (fretRow(from.fret) === fretRow(to.fret)) {
+        const fromX = from.fret === 0 ? GEO.padL : xForFret(from.fret);
+        const toX = to.fret === 0 ? GEO.padL : xForFret(to.fret);
+        const x1 = opts.lefty ? width - fromX : fromX;
+        const x2 = opts.lefty ? width - toX : toX;
+        const y1 = yForString(LAST - from.stringIndex, from.fret);
+        const y2 = yForString(LAST - to.stringIndex, to.fret);
+        g.appendChild(el("line", { x1, y1, x2, y2, class: "tracer-line exact" }));
+        g.appendChild(el("text", { x: x2, y: y2 - 19, "text-anchor": "middle", class: "tracer-head" }, x2 >= x1 ? "▸" : "◂"));
+      }
+    } else if (opts.tracer && opts.tracer.fromPc != null && opts.tracer.toPc != null) {
       const range = opts.overlayRange || { from: 0, to: N_FRETS };
       const fromFret = Math.max(0, range.from == null ? 0 : range.from);
       const toFret = Math.min(N_FRETS, range.to == null ? N_FRETS : range.to);
