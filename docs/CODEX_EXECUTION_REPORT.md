@@ -1,7 +1,7 @@
-# Codex execution report — FR-54 + FR-55
+# Codex execution report — FR-54 + FR-55 + FR-56
 
 Date: 2026-08-13
-Branch: `agent/fr-54-dromos-chord-map`
+Branch: `agent/harmony-matrix`
 
 ## Outcome
 
@@ -9,11 +9,12 @@ The takeover brief was executed in its requested order: cleanup, regression
 hardening, then the Dromos Chord Map. The result keeps the zero-build browser
 architecture and adds no front-end package or CDN dependency.
 
-The Chord Map lives under **Harmony** because it is designed to be consulted
-while practising a progression: choose a tonic and dromos, inspect all seven
-derived triads, hear one, locate a practical grip, and move among its root,
-3rd, and 5th targets. The five-dromos comparison is a reference table inside
-the same view.
+The original Chord Map now has a dedicated top-level **Matrix** destination. It
+compares the same home key across exactly the five verified systems, with each
+scale as a row and degrees 1–7 as columns. Triads are the default; a 7ths toggle
+reveals every lawful four-note stack. Selecting a row opens its construction,
+documented routes, and evidence-labelled sister/transition scales while the
+same selected chord still drives the fretboard, target readout, and audio.
 
 The follow-up consistency audit also completes FR-55: Hear now has an obvious
 three-step start, fixed key/scale context, real Start/Replay/Stop controls, and an
@@ -62,9 +63,27 @@ default, while the additive voice remains a no-network/file fallback.
 - The visible target, next target, spoken cue, fretboard rings, and audio all
   originate from the same selected chord object.
 
+## FR-56 Harmony Matrix contract
+
+- Major, Natural minor, Harmonic minor, Ousak, and Hijaz are the complete scope;
+  the interface does not imply that these five exhaust Greek modal practice.
+- “Home”, “Returns home”, “Primary”, “Working colour”, and “Derived only” are
+  functional study labels computed separately from the displayed documented-map
+  usage count. A frequently occurring chord is not silently promoted to a
+  universal genre rule.
+- Opening a scale shows its formula, exact scale notes, actual documented routes,
+  and only defensible doors: a seven-note relative/sister identity, a named
+  six-note parallel switch, a route containing the destination tonic, or the
+  whole-step ii–V–I pivot in which the old I becomes the next ii.
+- Every door states the shared-note count and reason. It is explicitly a practice
+  comparison, not proof that a song has modulated.
+- The table fits without internal horizontal scrolling at iPad portrait width;
+  on a phone only the table pans horizontally while the page and fretboard remain
+  fixed to the viewport.
+
 ## Verification performed
 
-- `npm run check && npm test`: 36/36 tests passing; 166/166 embedded theory
+- `npm run check && npm test`: 39/39 tests passing; 171/171 embedded theory
   invariants in the browser.
 - Display/sound consistency matrix: 2,088 progression chord tones across every
   tonic, dromos and documented map; each symbol, spelling, interval glyph and
@@ -72,6 +91,12 @@ default, while the additive voice remains a no-network/file fallback.
   respelling edge case (`E–G♯–B`, not `E–A♭–B`).
 - Exhaustive theory matrix: 60 tonic × dromos maps, every degree, all five
   tunings; 2,100 playable-grip checks through fret 15.
+- Exhaustive seventh matrix: all 60 tonic × dromos rows, 1,680 displayed chord
+  tones, every declared quality, spelling/pitch-class match, and a playable
+  compact four-note grip on every supported tuning.
+- Scale-door regressions lock D minor→F major, D harmonic minor→A Hijaz, the
+  Natural/Harmonic-minor and Ousak/Hijaz six-note switches, and the D-major→C-major
+  cycle rule where D I becomes C ii.
 - Static control contract: unique IDs, a stable ID/delegated-data contract for
   every `button`, `input`, and `select`, and an explicit handler for each family.
   This proves wiring coverage, not full behavioural DOM coverage for every
@@ -90,7 +115,7 @@ default, while the additive voice remains a no-network/file fallback.
 - Hear browser regression covered Start, replay, stop-without-losing-answer,
   disabled post-check controls, exact reveal, per-chord audition controls, and the
   known-home/full-map path with no console warnings or errors.
-- Preview deployment identity is asserted against shell release 16, so the
+- Preview deployment identity is asserted against shell release 17, so the
   public release endpoint cannot silently report a stale application version.
 
 ## Known boundary

@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=16" />
+  <link rel="stylesheet" href="css/styles.css?v=17" />
 </head>
 <body>
   <div class="app">
@@ -24,6 +24,7 @@
         <button data-nav="today">Today</button>
         <button data-nav="hear">Hear</button>
         <button data-nav="harmony">Harmony</button>
+        <button data-nav="matrix">Matrix</button>
         <button data-nav="solo">Solo</button>
         <button data-nav="repertoire">Repertoire</button>
         <button data-nav="learn">Learn</button>
@@ -96,7 +97,6 @@
           <nav id="harmonyTabs" class="mode-tabs hidden" aria-label="Harmony workspace mode">
             <button data-harmony-mode="pivot">Changes Gym</button>
             <button data-view="prog">Song Map</button>
-            <button data-view="chordmap">Chord Map</button>
             <button data-view="triads">Comp</button>
           </nav>
           <p id="modePurpose" class="mode-purpose hidden" aria-live="polite"></p>
@@ -109,6 +109,7 @@
           <nav class="visually-hidden" aria-hidden="true">
             <button data-view="cycle" tabindex="-1">Hear movement</button>
             <button data-view="ear" tabindex="-1">Ear checks</button>
+            <button data-view="chordmap" tabindex="-1">Harmony matrix</button>
             <button data-view="solo" tabindex="-1">Solo road</button>
             <button data-view="analyze" tabindex="-1">Analyze</button>
             <button data-view="coach" tabindex="-1">Practice coach</button>
@@ -220,45 +221,50 @@
               <div id="progList" class="prog-list"></div>
             </div>
 
-            <!-- Dromos chord map -->
+            <!-- Harmony matrix -->
             <div id="panelChordMap" class="panel chord-map-panel hidden">
               <header class="chord-map-intro">
-                <span class="panel-label">Dromos chord map</span>
-                <h2>See every triad inside the road.</h2>
-                <p>These seven chords are stacked from the selected equal-tempered collection. Usage counts come only from this trainer’s documented Song Maps—not from an unsupported claim about an entire style.</p>
+                <span class="panel-label">Harmony matrix</span>
+                <h2>One key. Five verified roads. Every chord in its number position.</h2>
+                <p>Read across for the chords inside one scale. Read down to compare what changes between scales. Strong colour shows documented working use; it never turns a mathematical chord into a claim about an entire Greek style.</p>
               </header>
               <div class="chord-map-controls music-context">
                 <label for="chordMapTonicSel">Key / home<select id="chordMapTonicSel"></select></label>
                 <div class="grow">
-                  <span class="panel-label">Scale / dromos</span>
-                  <div class="seg seg-5 chord-map-modes" aria-label="Dromos for chord map">
-                    <button data-chord-map-mode="major">Major</button>
-                    <button data-chord-map-mode="minor">Natural minor</button>
-                    <button data-chord-map-mode="harmonicMinor">Harmonic minor</button>
-                    <button data-chord-map-mode="ousak">Ousak</button>
-                    <button data-chord-map-mode="hijaz">Hijaz</button>
+                  <span class="panel-label">Chord depth</span>
+                  <div class="seg matrix-depth" aria-label="Harmony depth">
+                    <button data-chord-map-depth="triad">Triads · foundation</button>
+                    <button data-chord-map-depth="seventh">7ths · colour</button>
                   </div>
                 </div>
+                <button id="btnMatrixStop" class="mini">■ Stop audio</button>
               </div>
-              <section class="chord-road-section" aria-labelledby="chordRoadTitle">
+              <div class="matrix-legend" aria-label="Harmony matrix legend">
+                <span data-role="home"><i></i>Home</span>
+                <span data-role="cadence"><i></i>Returns directly to home</span>
+                <span data-role="primary"><i></i>Primary working chord</span>
+                <span data-role="colour"><i></i>Working colour</span>
+                <span data-role="derived"><i></i>Derived only</span>
+              </div>
+              <section class="harmony-matrix-section" aria-labelledby="harmonyMatrixTitle">
                 <div class="chord-map-section-head">
-                  <div><span class="panel-label">Scale construction</span><h3 id="chordRoadTitle">Lower 1–4 · upper 5–8</h3></div>
-                  <p>Four-note practice lens—not a claim that every dromos has one fixed historical tetrachord analysis.</p>
+                  <div><span class="panel-label">Scale × degree</span><h3 id="harmonyMatrixTitle">Select a chord or open a scale row</h3></div>
+                  <p>Chord tones are derived from the displayed equal-tempered scale. Progression strips are the separate, verified working layer.</p>
                 </div>
+                <div id="chordMapCompare" class="harmony-matrix-scroll"></div>
+              </section>
+              <section class="matrix-explorer" aria-labelledby="chordRoadTitle">
+                <div class="chord-map-section-head">
+                  <div><span class="panel-label">Selected scale</span><h3 id="chordRoadTitle">Construction, working routes, and sister scales</h3></div>
+                  <p>Relationships say exactly whether notes are identical, one colour changes, or a documented progression supplies the door.</p>
+                </div>
+                <div id="chordMapDegrees" class="matrix-selection-summary"></div>
                 <div id="chordMapRoad" class="chord-road"></div>
-              </section>
-              <section aria-labelledby="chordDegreesTitle">
-                <div class="chord-map-section-head">
-                  <div><span class="panel-label">Derived harmony</span><h3 id="chordDegreesTitle">Choose one degree</h3></div>
-                  <p>Tap a chord to hear it and place its practical triad on your current instrument.</p>
+                <div class="matrix-explorer-grid">
+                  <section aria-labelledby="matrixProgressionsTitle"><h4 id="matrixProgressionsTitle">Common progressions</h4><div id="matrixProgressions" class="matrix-progressions"></div></section>
+                  <section aria-labelledby="matrixRelationshipsTitle"><h4 id="matrixRelationshipsTitle">Relative, sister, and transition scales</h4><div id="matrixRelationships" class="matrix-relationships"></div></section>
                 </div>
-                <div id="chordMapDegrees" class="chord-degree-grid"></div>
               </section>
-              <details class="chord-compare">
-                <summary>Compare all five dromoi on this tonic</summary>
-                <p>Read down one degree or across one dromos. Diminished and augmented triads stay visible even when no documented Song Map currently uses them.</p>
-                <div id="chordMapCompare" class="chord-compare-scroll"></div>
-              </details>
             </div>
 
             <!-- Triads / comp -->
@@ -554,8 +560,8 @@
   <script src="js/profiles.js?v=15"></script>
   <script src="js/theory.js?v=14"></script>
   <script src="js/harmony-journey.js?v=15"></script>
-  <script src="js/modes.js?v=16"></script>
-  <script src="js/chord-map.js?v=15"></script>
+  <script src="js/modes.js?v=17"></script>
+  <script src="js/chord-map.js?v=17"></script>
   <script src="js/ear-drills.js?v=14"></script>
   <script src="js/styles.js?v=14"></script>
   <script src="js/analysis.js?v=14"></script>
@@ -565,11 +571,11 @@
   <script src="js/video.js?v=14"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/triads.js?v=14"></script>
+  <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=16"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=16"></script>
-  <script src="js/app.js?v=16"></script>
+  <script src="js/app.js?v=17"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

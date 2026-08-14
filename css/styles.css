@@ -689,9 +689,19 @@ svg.lean-phase .dot-next-ring, svg.arrive-phase .dot-next-ring { transition: opa
 .chord-map-intro { display: grid; gap: 5px; }
 .chord-map-intro h2 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: clamp(23px, 2.4vw, 31px); font-weight: 500; }
 .chord-map-intro p, .chord-map-section-head p, .chord-compare > p { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
-.chord-map-controls { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; align-items: end; }
+.chord-map-controls { display: grid; grid-template-columns: 132px minmax(250px, 1fr) auto; gap: 12px; align-items: end; padding: 12px; }
 .chord-map-controls > label { display: grid; gap: 5px; color: var(--aegean); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .chord-map-controls select { width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-family: var(--font-mono); font-size: 13px; }
+.matrix-depth { display: grid; grid-template-columns: 1fr 1fr; }
+.matrix-depth button { min-height: 42px; }
+.matrix-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.matrix-legend span { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 9.5px; font-weight: 650; letter-spacing: 0.03em; }
+.matrix-legend i { width: 9px; height: 9px; border-radius: 50%; background: var(--faint); }
+.matrix-legend [data-role="home"] i { background: var(--turquoise); }
+.matrix-legend [data-role="cadence"] i { background: var(--terracotta); }
+.matrix-legend [data-role="primary"] i { background: var(--aegean-bright); }
+.matrix-legend [data-role="colour"] i { background: var(--amber); }
+.matrix-legend [data-role="derived"] i { background: var(--faint); }
 .chord-map-section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
 .chord-map-section-head > div { display: grid; gap: 2px; }
 .chord-map-section-head h3 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: 18px; font-weight: 500; }
@@ -755,6 +765,66 @@ svg.lean-phase .dot-next-ring, svg.arrive-phase .dot-next-ring { transition: opa
 .chord-map-actions button:hover:not(:disabled) { border-color: var(--terracotta); color: var(--text); background: var(--terracotta-soft); }
 .chord-map-actions button:disabled { opacity: 0.45; cursor: default; }
 .chord-practice-note { display: block; margin-top: 8px; padding: 8px; border: 1px solid rgba(228, 184, 91, 0.35); border-radius: var(--r-sm); background: var(--amber-soft); color: var(--text); }
+
+/* Harmony Matrix: one semantic table, with working routes visibly separated
+   from the mathematically derived chord cells. */
+.harmony-matrix-section, .matrix-explorer { min-width: 0; }
+.harmony-matrix-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; border: 1px solid var(--line); border-radius: var(--r-lg); background: #171411; }
+.harmony-matrix { width: 100%; min-width: 1010px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.harmony-matrix thead th { position: sticky; top: 0; z-index: 3; height: 49px; padding: 7px; border-bottom: 1px solid var(--line-strong); background: #1B1714; color: var(--faint); font-size: 8px; letter-spacing: 0.08em; text-align: center; text-transform: uppercase; }
+.harmony-matrix thead th:first-child { left: 0; z-index: 5; width: 154px; text-align: left; }
+.harmony-matrix thead th b { display: block; color: var(--text); font-family: var(--font-mono); font-size: 14px; }
+.harmony-matrix thead th span { display: block; }
+.matrix-scale-row th { position: sticky; left: 0; z-index: 2; width: 154px; padding: 0; border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); background: #1B1714; }
+.matrix-scale-row th > button { display: grid; gap: 2px; width: 100%; min-height: 116px; padding: 10px; border: 0; border-left: 3px solid transparent; background: transparent; color: var(--text); text-align: left; }
+.matrix-scale-row th > button span { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
+.matrix-scale-row th > button b { color: var(--aegean-bright); font-size: 10px; }
+.matrix-scale-row th > button small { color: var(--muted); font-size: 9px; }
+.matrix-scale-row th > button em { margin-top: 4px; color: var(--faint); font-family: var(--font-mono); font-size: 7.5px; font-style: normal; line-height: 1.45; }
+.matrix-scale-row.selected th > button { border-left-color: var(--terracotta); background: var(--terracotta-soft); }
+.matrix-cell { position: relative; padding: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); vertical-align: top; }
+.matrix-cell > button { position: relative; display: grid; align-content: start; gap: 5px; width: 100%; min-height: 116px; padding: 9px; border: 0; border-top: 3px solid transparent; background: var(--raised); color: var(--text); text-align: left; transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+.matrix-cell > button:hover { background: var(--panel2); }
+.matrix-cell > button.active { z-index: 1; background: var(--terracotta-soft); box-shadow: inset 0 0 0 2px var(--terracotta); }
+.matrix-cell-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; min-width: 0; }
+.matrix-cell-top i { color: var(--text); font-family: var(--font-display); font-size: 12px; font-style: normal; font-weight: 650; }
+.matrix-cell-top em { overflow: hidden; color: var(--faint); font-size: 7px; font-style: normal; letter-spacing: 0.04em; text-align: right; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.matrix-cell > button > b { overflow-wrap: anywhere; font-family: var(--font-mono); font-size: 14px; line-height: 1.15; }
+.matrix-cell > button > small { color: var(--muted); font-family: var(--font-mono); font-size: 8px; line-height: 1.4; }
+.matrix-cell > button > strong { align-self: end; color: var(--faint); font-size: 7.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
+.matrix-cell.role-home > button { border-top-color: var(--turquoise); background: var(--turquoise-soft); }
+.matrix-cell.role-cadence > button { border-top-color: var(--terracotta); }
+.matrix-cell.role-primary > button { border-top-color: var(--aegean-bright); }
+.matrix-cell.role-colour > button { border-top-color: var(--amber); }
+.matrix-cell.role-derived > button { opacity: 0.66; }
+.matrix-route-row td { padding: 6px 8px 9px; border-bottom: 1px solid var(--line-strong); background: #171411; }
+.matrix-route-row.selected td { background: linear-gradient(90deg, var(--terracotta-soft), #171411 52%); }
+.matrix-route-row td > div { display: flex; align-items: center; gap: 5px; min-width: 0; overflow-x: auto; }
+.matrix-route-row td > div > span { position: sticky; left: 0; z-index: 1; flex: none; padding-right: 4px; background: inherit; color: var(--faint); font-size: 7.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.matrix-route-row button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--text); }
+.matrix-route-row button:hover { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.matrix-route-row button b { font-family: var(--font-display); font-size: 10px; }
+.matrix-route-row button span { color: var(--muted); font-family: var(--font-mono); font-size: 8px; }
+.matrix-selection-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 9px; }
+.matrix-selection-summary > span { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.matrix-selection-summary b { color: var(--text); font-family: var(--font-mono); font-size: 13px; }
+.matrix-selection-summary small { color: var(--muted); font-size: 9.5px; line-height: 1.4; }
+.matrix-selection-summary i { color: var(--aegean); font-size: 8px; font-style: normal; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.matrix-explorer { padding: 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: linear-gradient(145deg, var(--aegean-soft), var(--raised) 38%); }
+.matrix-explorer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.matrix-explorer-grid > section { min-width: 0; }
+.matrix-explorer-grid h4 { margin: 0 0 7px; color: var(--text); font-family: var(--font-display); font-size: 16px; font-weight: 550; }
+.matrix-progressions, .matrix-relationships { display: grid; gap: 6px; }
+.matrix-progressions > button, .matrix-relationships > button { display: grid; gap: 5px; width: 100%; min-height: 96px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(20, 17, 15, 0.56); color: var(--text); text-align: left; transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.matrix-progressions > button:hover { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.matrix-relationships > button:hover { border-color: var(--turquoise); background: var(--turquoise-soft); }
+.matrix-progressions button > span, .matrix-relationships button > span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.matrix-progressions i, .matrix-relationships i { color: var(--aegean-bright); font-size: 8px; font-style: normal; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.matrix-progressions b, .matrix-relationships b { font-family: var(--font-display); font-size: 13px; }
+.matrix-progressions strong, .matrix-relationships strong { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+.matrix-relationships strong { color: var(--turquoise); }
+.matrix-progressions small, .matrix-relationships small { color: var(--muted); font-size: 9.5px; line-height: 1.45; }
+.matrix-progressions em, .matrix-relationships em { color: var(--faint); font-size: 8px; font-style: normal; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; }
 
 /* ear trainer */
 #panelEar { gap: 14px; }
@@ -1326,6 +1396,12 @@ body[data-view="progress"] .panel { border: 0; background: transparent; padding:
 body[data-view="solo"] #btnShift { display: none; }
 body[data-view="chordmap"] .next-shape-key,
 body[data-view="chordmap"] .legend-note { display: none; }
+body[data-view="chordmap"] main { width: min(1320px, 100%); }
+body[data-view="chordmap"] .workbench { order: 1; grid-template-columns: minmax(0, 1fr); }
+body[data-view="chordmap"] .workbench-panels { width: 100%; }
+body[data-view="chordmap"] .readout { order: 0; }
+body[data-view="chordmap"] .stage { order: 2; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); }
+body[data-view="chordmap"] .hint { order: 3; }
 body[data-view="ear"] main, body[data-view="video"] main, body[data-view="styles"] main,
 body[data-view="analyze"] main, body[data-view="concepts"] main, body[data-view="coach"] main,
 body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px; }
@@ -1356,6 +1432,8 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
   .workbench { grid-template-columns: minmax(0, 1fr); }
   .readout { order: -1; }
   .tuning-sub { display: none; }
+  .harmony-matrix { min-width: 760px; }
+  .matrix-scale-row th, .harmony-matrix thead th:first-child { width: 128px; }
 }
 
 /* Compact: bottom navigation */
@@ -1442,4 +1520,8 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
   .chord-map-section-head p { text-align: left; }
   .chord-road-lane { grid-template-columns: 1fr; }
   .chord-degree-grid { grid-template-columns: repeat(7, 100px); }
+  .matrix-explorer-grid, .matrix-selection-summary { grid-template-columns: 1fr; }
+  .harmony-matrix { min-width: 930px; }
+  .matrix-scale-row th, .harmony-matrix thead th:first-child { width: 136px; }
+  .matrix-route-row td > div > span { position: static; }
 }

@@ -7,15 +7,18 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => readFileSync(path.join(root, file), "utf8");
 
-test("the v14 shell exposes the eight primary destinations and shared chrome", () => {
+test("the shell exposes nine primary destinations including the standalone matrix", () => {
   const html = read("index.html");
-  ["today", "hear", "harmony", "solo", "repertoire", "learn", "coach", "progress"].forEach((nav) => {
+  ["today", "hear", "harmony", "matrix", "solo", "repertoire", "learn", "coach", "progress"].forEach((nav) => {
     assert.match(html, new RegExp(`data-nav="${nav}"`), `missing primary destination ${nav}`);
   });
   // Full Cycle and ii–V–I folded into the Changes Gym as key-count settings;
   // "pivot" is the one remaining harmony mode.
   assert.match(html, /data-harmony-mode="pivot"/);
-  assert.match(html, /data-view="chordmap"/, "Chord Map belongs beside the other during-practice Harmony tools");
+  assert.match(html, /data-view="chordmap"/, "the Harmony Matrix keeps a stable deep-link view id");
+  const harmonyTabs = (html.match(/<nav id="harmonyTabs"[\s\S]*?<\/nav>/) || [""])[0];
+  assert.doesNotMatch(harmonyTabs, /data-view="chordmap"/,
+    "the matrix must be a primary destination instead of another Harmony sub-tab");
   assert.doesNotMatch(html, /data-harmony-mode="full"/, "Full Cycle must not survive as a separate tab");
   assert.doesNotMatch(html, /data-harmony-mode="iiVI"/, "ii–V–I must not survive as a separate tab");
   assert.match(html, /data-gym-keys="1"/, "the gym needs the 1-key on-ramp");
@@ -47,8 +50,8 @@ test("playback speaks the redesigned musical language", () => {
   assert.match(app, /function taximiBridge/, "the taximi bridge must exist");
   assert.match(app, /function startDrone/, "an unmetered tonic drone must exist");
   assert.match(app, /function gymSequence/, "the gym must chain keys*3 chords from the current group");
-  assert.match(app, /view: "chordmap", label: "2b · Harmonize"/,
-    "Chord Map needs its own visible training cue instead of inheriting Song Map instructions");
+  assert.match(app, /view: "chordmap", label: "Matrix · Reference"/,
+    "the matrix needs its own visible training cue instead of inheriting Song Map instructions");
   assert.doesNotMatch(app, /referenceVoice: "guitar"/, "playback must not hardcode the chord voice");
   assert.match(read("js/audio.js"), /function playPianoNoteAt/, "a piano reference voice must exist");
   assert.match(read("js/practice.js"), /sweet-lean/, "the sweet 2→3 melodic route must exist");
