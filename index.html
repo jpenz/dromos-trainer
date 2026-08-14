@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=17" />
+  <link rel="stylesheet" href="css/styles.css?v=18" />
 </head>
 <body>
   <div class="app">
@@ -291,25 +291,25 @@
 
             <!-- Solo lab -->
             <div id="panelSolo" class="panel hidden">
-              <div class="solo-title"><span class="panel-label">Solo Road</span><span>map → phrase → change</span></div>
+              <div class="solo-title"><span class="panel-label">Solo Lab</span><span>hear → see → land</span></div>
               <div id="soloMapControls" class="solo-map-controls"></div>
               <div class="solo-section-nav" aria-label="Solo lab activity">
-                <button data-solo-section="road" class="active" title="The dromos, built the Greek way: lower tetrachord, upper tetrachord, close the octave.">1 Road</button>
-                <button data-solo-section="path" title="The smaller shape inside the road. Slide it up the neck and you own a new tonic.">2 Frame</button>
-                <button data-solo-section="phrase" title="One four-note cell, every chord, every key.">3 Cells</button>
-                <button data-solo-section="targets" title="Watch the 3rd move to its nearest neighbor. Play the line the lights draw.">4 Changes</button>
+                <button data-solo-section="targets" class="active" title="Keep the full scale visible, see the current triad, and follow the 3rd into the next chord.">1 Follow changes</button>
+                <button data-solo-section="road" title="The dromos, built the Greek way: lower tetrachord, upper tetrachord, close the octave.">2 Road</button>
+                <button data-solo-section="path" title="The smaller shape inside the road. Slide it up the neck and you own a new tonic.">3 Frame</button>
+                <button data-solo-section="phrase" title="One four-note cell, every chord, every key.">4 Cells</button>
                 <button data-solo-section="cell" title="Low phrases, then high, then home. The intro that sets up the song.">5 Taximi</button>
               </div>
               <div id="soloRoad" class="sub"></div>
               <div id="soloTargets" class="sub hidden">
-                <p class="ear-hint">Start in the five-note frame, then make the harmony audible by landing on a sweet note when the change arrives.</p>
+                <p class="ear-hint"><b>Read the neck while the harmony moves:</b> the full scale stays visible, the solid shape is the chord under your hand, and the rings tell you which note to land on now and next.</p>
                 <span class="panel-label">Landing strategy</span>
                 <div class="seg seg-5">
-                  <button data-solo-focus="sweet" class="active">Sweet 2→3</button>
-                  <button data-solo-focus="pedal">One note</button>
-                  <button data-solo-focus="third">Colour 3rd</button>
+                  <button data-solo-focus="third" class="active">3rds · start here</button>
+                  <button data-solo-focus="sweet">Lean 2→3</button>
                   <button data-solo-focus="triad">Triad tones</button>
                   <button data-solo-focus="guide">Guide tones</button>
+                  <button data-solo-focus="pedal">Common tone</button>
                 </div>
                 <div id="soloRecipe" class="solo-recipe"></div>
               </div>
@@ -572,10 +572,10 @@
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
   <script src="js/triads.js?v=17"></script>
-  <script src="js/fretboard.js?v=16"></script>
+  <script src="js/fretboard.js?v=18"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=16"></script>
-  <script src="js/app.js?v=17"></script>
+  <script src="js/app.js?v=18"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

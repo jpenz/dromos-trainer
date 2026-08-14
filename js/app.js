@@ -1,5 +1,5 @@
 /* app.js — views, wiring, animation, playback sync, shortcuts.
- * Implements FR-04..07, FR-11, FR-12, FR-15. See docs/REQUIREMENTS.md.
+ * Implements FR-04..07, FR-11, FR-12, FR-15, FR-57 / MI-27. See docs/REQUIREMENTS.md.
  */
 (function () {
   "use strict";
@@ -34,10 +34,10 @@
     // --- triads ---
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true },
     // --- solo lab ---
-    solo: { section: "road", focus: "sweet", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "sweet-lean", matrixBeat: 0, matrixPlan: [],
+    solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [],
       // visual layers on the Changes map: the scale road and the targets are
       // meant to be seen TOGETHER, so both default on.
-      layers: { scale: true, pentatonic: false, triads: true, next: true } },
+      layers: { scale: true, pentatonic: false, triads: false, next: true } },
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
     // --- transparent analysis ---
@@ -264,7 +264,7 @@
     chordmap: { purpose: "Compare harmony by number", title: "Pick one key, read all five roads, then follow a justified door into the next scale.", steps: ["Read across one scale or down one degree.", "Use role colour and map counts to separate working chords from derived-only chords.", "Open a sister scale only after reading whether it shares seven notes, changes one colour, or uses a documented progression door."] },
     ear: { purpose: "Recall without the neck", title: "First identify colour; then identify the home and the change boxes by ear.", steps: ["Use Dromos colour to isolate the 2nd and 3rd.", "Use Key & changes to choose both the home and progression.", "After checking, open Song Map and find the same boxes."] },
     triads: { purpose: "Comp with voice leading", title: "See the nearest useful triad instead of hunting for a large chord.", steps: ["Choose a Song Map progression.", "Follow the highlighted low-travel triad.", "Change inversion only when it serves the next chord."] },
-    solo: { purpose: "Make a line explain the song", title: "Road → shape → numbers → change → ear is the soloing order.", steps: ["Start with the full Solo Road, not a random box.", "Choose a shape/position, then speak a number contour.", "Land the final note on the current chord target."] },
+    solo: { purpose: "Follow the harmony on one neck", title: "See the full scale, the chord under your hand, and the next 3rd before it arrives.", steps: ["Choose a home, dromos, and progression.", "Keep the scale quiet; read the solid current triad and the orange Now target.", "Press Play and move only when the dashed Next target becomes Now."] },
     styles: { purpose: "Put the map in time", title: "A rhythm is a place for the phrase—not a substitute for the dromos.", steps: ["Choose the pulse family.", "Feel its grouped beats before playing notes.", "Return to Song Map to choose the harmonic/melodic material."] },
     video: { purpose: "Study a real motion deliberately", title: "Loop a public lesson briefly, then turn observation into understanding.", steps: ["Set A–B around one small physical/musical event.", "Slow it down and watch only one hand at a time.", "Name the home, target, and function in Song Map before borrowing the idea."] },
     analyze: { purpose: "Explain a part you own", title: "Turn written chord symbols and notes into a transparent practice decision.", steps: ["Enter your own chord map or MusicXML score.", "Read the strong targets and possible harmonic readings.", "Take one recommendation to Triads or Solo Road."] },
@@ -289,7 +289,9 @@
     const specialStep = state.view === "styles" || state.view === "video";
     if (!step && !specialStep) return;
     let detail = step ? step.detail : state.view === "video" ? "Loop only enough material to identify the destination; then put the video down and make the idea yours." : "Build the general language first, then place it inside a real Greek pulse without confusing style and dromos.";
-    if (state.view === "solo" && state.solo.section === "road") {
+    if (state.view === "solo" && state.solo.section === "targets") {
+      detail = "Keep the whole scale visible, state the current triad, and pre-hear the next chord's 3rd before its ring changes colour.";
+    } else if (state.view === "solo" && state.solo.section === "road") {
       detail = "See the whole road first: lower tetrachord, upper tetrachord, then the tonic that joins them.";
     } else if (state.view === "solo" && state.solo.section === "path") {
       detail = "Build clean alternate picking first; change the string break before you raise the tempo.";
@@ -1599,7 +1601,10 @@
   }
 
   function targetRoleLabel(note, phase, focus) {
-    return focus === "third" ? phase : note.roleLabel;
+    // Ring style already says Now (solid terracotta) versus Next (dashed
+    // turquoise). Keep the text inside the dot musical: 3/♭3, R, 5, or 7.
+    // A player should never have to trade the note's job for a timing label.
+    return note.roleLabel || note.degree || phase;
   }
 
   function renderPathTargetRoute(cur, next, curTargets, nextTargets) {
@@ -1611,11 +1616,11 @@
     if (!focusRoot || !routeRoot || !hintRoot) return;
 
     focusRoot.innerHTML = [
-      ["sweet", "Sweet 2→3", "the 2 leans into the chord's 3rd"],
-      ["pedal", "One note", "a single note that fits every chord"],
-      ["third", "Colour 3rd", "the chord's defining colour"],
+      ["third", "3rds · start here", "the colour note that makes each chord audible"],
+      ["sweet", "Lean 2→3", "the 2 leans into the chord's 3rd"],
       ["triad", "Triad", "R, 3/♭3, 5"],
-      ["guide", "Guides", "3rd + 7th, or 3rd + root"]
+      ["guide", "Guides", "3rd + 7th, or 3rd + root"],
+      ["pedal", "Common tone", "one note that the chords re-name"]
     ].map(([id, label, detail]) => `<button data-path-focus="${id}" class="${focus === id ? "active" : ""}"><b>${label}</b><span>${detail}</span></button>`).join("");
     focusRoot.querySelectorAll("[data-path-focus]").forEach((button) => {
       button.onclick = () => {
@@ -2081,9 +2086,10 @@
     (curTargets || []).forEach((from) => {
       (nextTargets || []).forEach((to) => {
         const raw = (((to.pc - from.pc) % 12) + 12) % 12;
-        const distance = Math.min(raw, 12 - raw);
+        const signed = raw > 6 ? raw - 12 : raw;
+        const distance = Math.abs(signed);
         if (!distance || distance > 3) return;
-        if (!best || distance < best.distance) best = { from, to, distance };
+        if (!best || distance < best.distance) best = { from, to, distance, direction: signed };
       });
     });
     return best;
@@ -2203,6 +2209,11 @@
     const leanStep = !lastStep && (step.role === "approach" || index >= plan.length - 2);
     svg().classList.toggle("lean-phase", leanStep);
     svg().classList.toggle("arrive-phase", lastStep);
+    const hud = document.querySelector(".solo-neck-hud");
+    if (hud) {
+      hud.classList.toggle("lean-phase", leanStep);
+      hud.classList.toggle("arrive-phase", lastStep);
+    }
   }
 
   function renderSoloTimingMatrix(cur, next, curTargets, nextTargets) {
@@ -2230,20 +2241,44 @@
   // Layer chips live directly above the fretboard so the player can stack
   // the scale road, the pentatonic frame, triad shapes, and the now/next
   // landing targets without ever covering the neck.
-  function renderSoloLayerChips() {
+  function renderSoloLayerChips(cur, next, curTargets, nextTargets, thread) {
     const root = $("stageLayers");
     if (!root) return;
     if (state.view === "chordmap") return;
     if (state.view !== "solo" || state.solo.section !== "targets") { root.innerHTML = ""; return; }
+    if (!cur || !next) {
+      const progression = currentProgression().chords;
+      const index = Math.min(state.progStep, progression.length - 1);
+      cur = progression[index];
+      next = progression[(index + 1) % progression.length];
+      curTargets = soloTargets(cur, state.solo.focus);
+      nextTargets = soloTargets(next, state.solo.focus);
+      thread = soloLandingThread(curTargets, nextTargets);
+    }
     const layers = state.solo.layers;
     const chip = (id, on, swatch, label) => `<button data-solo-layer="${id}" class="layer-chip${on ? " on" : ""}" aria-pressed="${on}"><span class="layer-swatch ${swatch}"></span>${label}</button>`;
+    const nowTarget = preferredSoloTarget(curTargets);
+    const nextTarget = preferredSoloTarget(nextTargets);
+    const holds = nowTarget.pc === nextTarget.pc;
+    const motion = holds
+      ? `${nowTarget.name} holds · the chord changes its meaning`
+      : thread
+      ? `${thread.from.name} ${thread.direction > 0 ? "↗" : "↘"} ${thread.to.name} · ${thread.distance === 1 ? "½ step" : thread.distance === 2 ? "whole step" : "minor 3rd"}`
+      : `${nowTarget.name} → ${nextTarget.name} · pre-hear the leap`;
     root.innerHTML = `
-      ${chip("scale", layers.scale, "lc-scale", "Scale road")}
-      ${chip("pentatonic", layers.pentatonic, "lc-penta", "Pentatonic")}
-      ${chip("triads", layers.triads, "lc-triad", "Triad shapes")}
-      <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Now targets</span>
-      ${chip("next", layers.next, "lc-next", "Next targets")}
-      <span class="layer-note">now = terracotta ring · next = dashed turquoise</span>`;
+      <section class="solo-neck-hud" aria-label="Current and next solo landing" aria-live="polite">
+        <article class="solo-hud-card now"><span>Now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b>${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><small>orange ring · current triad is solid</small></article>
+        <div class="solo-hud-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b><small>hear the destination before the chord changes</small></div>
+        <article class="solo-hud-card next"><span>Next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b>${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><small>dashed ring · becomes orange on arrival</small></article>
+      </section>
+      <div class="solo-layer-row">
+        ${chip("scale", layers.scale, "lc-scale", "Full scale")}
+        ${chip("pentatonic", layers.pentatonic, "lc-penta", "Pentatonic")}
+        ${chip("triads", layers.triads, "lc-triad", "Other triad positions")}
+        <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Now</span>
+        ${chip("next", layers.next, "lc-next", "Next")}
+        <span class="layer-note">solid shape = current chord · rings = landing notes</span>
+      </div>`;
     root.querySelectorAll("[data-solo-layer]").forEach((button) => {
       button.onclick = () => {
         const key = button.getAttribute("data-solo-layer");
@@ -2304,12 +2339,13 @@
       targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],
       tracer: layers.next && thread ? { fromPc: thread.from.pc, toPc: thread.to.pc } : null,
       overlayRange,
+      largeNeck: true,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       labelMode: state.labelMode,
       lefty: state.lefty
     });
     svg().setAttribute("aria-label", window.Tuning.current().name + " soloing map");
-    renderSoloLayerChips();
+    renderSoloLayerChips(cur, next, curTargets, nextTargets, thread);
 
     const frame = M.PENTATONIC[state.modeId];
     const targetLabel = soloTargetLabel;
