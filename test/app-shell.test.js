@@ -113,12 +113,12 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "18"/,
+  assert.match(read("api/release.js"), /appVersion: "19"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=18/);
-  assert.match(html, /js\/fretboard\.js\?v=18/);
-  assert.match(html, /js\/app\.js\?v=18/);
-  assert.match(read("sw.js"), /dromos-trainer-v18/);
+  assert.match(html, /css\/styles\.css\?v=19/);
+  assert.match(html, /js\/fretboard\.js\?v=19/);
+  assert.match(html, /js\/app\.js\?v=19/);
+  assert.match(read("sw.js"), /dromos-trainer-v19/);
   assert.match(read("css/styles.css"), /\.harmony-matrix-scroll \{[^}]*overflow-x: auto/,
     "the five-dromos matrix must scroll internally instead of widening the page");
 });
@@ -130,8 +130,10 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
   assert.match(app, /solo: \{ section: "targets", focus: "third"/,
     "the first Solo experience must target each chord's actual 3rd");
   assert.match(app, /class="solo-neck-hud"/);
-  assert.match(app, /Now · \$\{escapeHtml\(cur\.degreeLabel\)\}/);
-  assert.match(app, /Next · \$\{escapeHtml\(next\.degreeLabel\)\}/);
+  assert.match(app, /Play now · \$\{escapeHtml\(cur\.degreeLabel\)\}/);
+  assert.match(app, /Prepare next · \$\{escapeHtml\(next\.degreeLabel\)\}/);
+  assert.match(app, /triadSpelling\(cur\)/);
+  assert.match(app, /triadSpelling\(next\)/);
   assert.match(app, /largeNeck: true/);
   assert.match(app, /return note\.roleLabel \|\| note\.degree \|\| phase/,
     "target dots must keep 3/flat-3 and use rings—not replacement text—for timing");
@@ -139,11 +141,22 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
   assert.match(fretboard, /data-neck-emphasis/);
   assert.match(fretboard, /const passiveOverlay = kind === "scale" \|\| kind === "pentatonic" \|\| kind === "road"/,
     "the scale layer must not repaint a scale degree over a chord-role target");
-  assert.ok(fretboard.indexOf('renderOverlay(opts.scaleNotes, "scale")') < fretboard.indexOf('renderOverlay(opts.targetNotes, "target")'),
-    "the dedicated target layer must render above the full scale");
+  assert.match(app, /nextGrip: layers\.next \? nextGrip : null/,
+    "the coming chord must be a complete playable dashed triad, not only a text label");
+  assert.match(app, /targetScope: "positions"/);
+  assert.match(app, /targetNowPlacements: currentTargetPlacements/);
+  assert.match(app, /targetNextPlacements: layers\.next \? nextTargetPlacements : \[\]/);
+  assert.match(fretboard, /nowPositionSet\.has\(key\)/);
+  assert.match(fretboard, /nextPositionSet\.has\(key\)/,
+    "Now/Next rings must be limited to the selected playable addresses");
+  assert.match(app, /state\.solo\.layers\.scale = key === "scale"/);
+  assert.match(app, /state\.solo\.layers\.pentatonic = key === "pentatonic"/,
+    "full scale and pentatonic must be clear alternative backgrounds");
   assert.match(css, /body\[data-view="solo"\]\[data-solo-section="targets"\] main \{ width: min\(1360px, 100%\)/);
   assert.match(css, /\.solo-neck-hud\.lean-phase/,
     "the next target must receive a visible pre-arrival state");
+  assert.match(css, /svg\.lean-phase \.fb-dot\.next-shape/,
+    "the complete coming triad must brighten before the chord boundary");
 });
 
 test("the full fretboard never widens the page and folds on phones", () => {
