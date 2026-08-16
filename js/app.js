@@ -36,7 +36,7 @@
     // --- solo lab ---
     solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [],
       // Soloist Toolkit (FR-58): active pillar/tool and the phrase-arc phase.
-      toolkit: { pillar: "land", toolId: "arrivals", phase: 0 },
+      toolkit: { pillar: "land", toolId: "arrivals", phase: 0, formulaDeck: [0, 1, 2, 3] },
       // visual layers on the Changes map: the scale road and the targets are
       // meant to be seen TOGETHER, so both default on.
       layers: { scale: true, pentatonic: false, triads: false, next: true } },
@@ -2364,10 +2364,14 @@
 
   function formulaRailHtml() {
     const routes = P ? P.MELODIC_ROUTES || [] : [];
-    const deck = routes.slice(0, 4);
+    const tk = state.solo.toolkit;
+    if (!Array.isArray(tk.formulaDeck) || tk.formulaDeck.some((index) => !routes[index])) {
+      tk.formulaDeck = TK.dealFormulaDeck(routes.length);
+    }
+    const deck = tk.formulaDeck.map((index) => routes[index]).filter(Boolean);
     return `<div class="tool-rail"><span>Dealt this round · app-derived starter deck</span>
-      ${deck.map((r, i) => `<b>${escapeHtml(["Opener", "Mover", "Mover", "Cadence"][i] || "Card")}<i>${escapeHtml(r.label)}</i></b>`).join("")}
-      <em>Chain them with no gap. Swap a card for a phrase you stole from a recording — the bank is a rack, not a canon.</em></div>`;
+      ${deck.map((r, i) => `<button data-tk-formula-slot="${i}" class="formula-card" aria-label="Swap ${escapeHtml(["opener", "first mover", "second mover", "cadence"][i] || "card")}: ${escapeHtml(r.label)}"><b>${escapeHtml(["Opener", "Mover", "Mover", "Cadence"][i] || "Card")}</b><i>${escapeHtml(r.label)}</i><small>press to swap</small></button>`).join("")}
+      <em>Chain them with no gap. Press one card to deal a different app-derived route; replace a card with a phrase from a recording when you are ready.</em></div>`;
   }
 
   // The four documented Chiotis arrivals. Selecting one marks the pass you
@@ -2417,6 +2421,42 @@
     return "";
   }
 
+  let toolkitFocusRequest = null;
+  function focusToolkitControl(root, request) {
+    if (!root || !request) return;
+    const target = root.querySelector(`[${request.attribute}="${request.value}"]`);
+    if (!target) return;
+    try { target.focus({ preventScroll: true }); } catch { target.focus(); }
+  }
+
+  function restoreToolkitFocus(root) {
+    const request = toolkitFocusRequest;
+    toolkitFocusRequest = null;
+    focusToolkitControl(root, request);
+  }
+
+  function wireToolkitKeys(root, selector) {
+    const buttons = Array.from(root.querySelectorAll(selector));
+    buttons.forEach((button, index) => {
+      button.onkeydown = (event) => {
+        let next = null;
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % buttons.length;
+        else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index - 1 + buttons.length) % buttons.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = buttons.length - 1;
+        if (next == null) return;
+        event.preventDefault();
+        const attribute = selector.slice(1, -1);
+        const request = { attribute, value: buttons[next].getAttribute(attribute) };
+        buttons[next].click();
+        // Keydown finishes on a node that renderSolo() just replaced. Restore
+        // on the next frame as well so the browser cannot drop focus to body
+        // after the removed node's event finishes.
+        requestAnimationFrame(() => focusToolkitControl($("soloToolkit"), request));
+      };
+    });
+  }
+
   function renderSoloToolkit() {
     const root = $("soloToolkit");
     if (!root || !TK) return;
@@ -2428,13 +2468,13 @@
     const labels = { "greek-core": "Greek core", "labeled-import": "Import", universal: "Universal" };
     root.innerHTML = `
       <div class="tk-pillars" role="tablist" aria-label="Soloist toolkit pillars">
-        ${TK.PILLARS.map((p) => `<button role="tab" aria-selected="${p.id === tk.pillar}" data-tk-pillar="${p.id}" class="${p.id === tk.pillar ? "active" : ""}"><b>${escapeHtml(p.name)}</b><span>${escapeHtml(p.question)}</span></button>`).join("")}
+        ${TK.PILLARS.map((p) => `<button id="tk-pillar-${p.id}" role="tab" aria-selected="${p.id === tk.pillar}" aria-controls="soloToolkitPanel" tabindex="${p.id === tk.pillar ? "0" : "-1"}" data-tk-pillar="${p.id}" class="${p.id === tk.pillar ? "active" : ""}"><b>${escapeHtml(p.name)}</b><span>${escapeHtml(p.question)}</span></button>`).join("")}
       </div>
-      <div class="tk-tools" role="tablist" aria-label="Tools">
+      <div class="tk-tools" role="toolbar" aria-label="${escapeHtml(TK.PILLARS.find((pillar) => pillar.id === tk.pillar)?.name || "Soloist")} tools">
         ${TK.availableTools(tk.pillar, state.modeId).map((t) =>
-          `<button role="tab" aria-selected="${t.id === tool.id}" data-tk-tool="${t.id}" class="${t.id === tool.id ? "active" : ""}">${escapeHtml(t.name)}</button>`).join("")}
+          `<button aria-pressed="${t.id === tool.id}" data-tk-tool="${t.id}" class="${t.id === tool.id ? "active" : ""}">${escapeHtml(t.name)}</button>`).join("")}
       </div>
-      <article class="tk-card">
+      <article id="soloToolkitPanel" class="tk-card" role="tabpanel" aria-labelledby="tk-pillar-${tk.pillar}" tabindex="0">
         <header><b>${escapeHtml(tool.name)}</b><span class="tk-badge tk-${tool.importLabel}">${labels[tool.importLabel]}</span></header>
         <p class="tk-logic">${escapeHtml(tool.logic)}</p>
         <div class="tk-do"><span>Do this</span><p>${escapeHtml(tool.exercise)}</p></div>
@@ -2446,6 +2486,7 @@
       </article>`;
     root.querySelectorAll("[data-tk-pillar]").forEach((b) => b.onclick = () => {
       const id = b.getAttribute("data-tk-pillar");
+      toolkitFocusRequest = { attribute: "data-tk-pillar", value: id };
       state.solo.toolkit.pillar = id;
       const first = TK.availableTools(id, state.modeId)[0];
       if (first) state.solo.toolkit.toolId = first.id;
@@ -2453,18 +2494,33 @@
       applyToolChoreo(); renderSolo();
     });
     root.querySelectorAll("[data-tk-tool]").forEach((b) => b.onclick = () => {
-      state.solo.toolkit.toolId = b.getAttribute("data-tk-tool");
+      const id = b.getAttribute("data-tk-tool");
+      toolkitFocusRequest = { attribute: "data-tk-tool", value: id };
+      state.solo.toolkit.toolId = id;
       state.solo.toolkit.phase = 0;
       applyToolChoreo(); renderSolo();
     });
     root.querySelectorAll("[data-tk-phase]").forEach((b) => b.onclick = () => {
-      state.solo.toolkit.phase = +b.getAttribute("data-tk-phase");
+      const phase = b.getAttribute("data-tk-phase");
+      toolkitFocusRequest = { attribute: "data-tk-phase", value: phase };
+      state.solo.toolkit.phase = +phase;
       renderSolo();
     });
     root.querySelectorAll("[data-tk-arrival]").forEach((b) => b.onclick = () => {
-      state.solo.toolkit.arrival = b.getAttribute("data-tk-arrival");
+      const arrival = b.getAttribute("data-tk-arrival");
+      toolkitFocusRequest = { attribute: "data-tk-arrival", value: arrival };
+      state.solo.toolkit.arrival = arrival;
       renderSolo();
     });
+    root.querySelectorAll("[data-tk-formula-slot]").forEach((button) => button.onclick = () => {
+      const slot = +button.getAttribute("data-tk-formula-slot");
+      toolkitFocusRequest = { attribute: "data-tk-formula-slot", value: String(slot) };
+      state.solo.toolkit.formulaDeck = TK.swapFormulaCard(state.solo.toolkit.formulaDeck, slot, (P.MELODIC_ROUTES || []).length);
+      renderSoloToolkit();
+    });
+    wireToolkitKeys(root, "[data-tk-pillar]");
+    wireToolkitKeys(root, "[data-tk-tool]");
+    restoreToolkitFocus(root);
   }
 
   // The fretboard adapts to the active tool: tetrachord zones brighten per

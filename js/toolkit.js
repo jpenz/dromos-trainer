@@ -80,7 +80,7 @@
       id: "formula-bank", pillar: "move", name: "Formula Bank",
       importLabel: "greek-core",
       logic: "The cafe players did not invent from nothing: the tradition recombined stock phrases everyone shared, and execution mattered more than novelty (Pennanen documents the practice, not the phrases). The starter deck here is app-derived — openers, movers and cadences built from this trainer's own routes and the documented Chiotis cadence shape — and says so. Swap in real phrases from recordings as you steal them; the bank is a rack, not a canon.",
-      exercise: "The app deals one opener, two movers and one cadence for the active dromos. Chain them into one continuous line over the loop. Swap one card, run it again. Then replace a dealt card with a phrase you stole from a recording.",
+      exercise: "The app deals one opener, two movers and one cadence for the active dromos. Chain them into one continuous line over the loop. Press one card to swap it, run the new hand, then replace a dealt card with a phrase you stole from a recording.",
       pass: "Self-score: the chain plays with no gap longer than a beat, and the cadence card ends on the tonic.",
       origin: "Pennanen (stock-formula recombination as the tradition's method); deck content: app-derived, disclosed.",
       choreo: { focus: "third", formulaCards: true }
@@ -89,7 +89,7 @@
       id: "motif-ladder", pillar: "move", name: "Motif Ladder",
       importLabel: "greek-core",
       logic: "Chiotis built entire taximia from one cell: state it over the I, restate it from the IV, vary it over the V, resolve — all ten analysed taximia work by this mimisis. One idea, moved, IS the solo. Level 2 borrows the Bulgarian kolyano discipline (a labeled import): chain cells with NO rest, each new cell opening with the previous cell's closing motif — the no-breath version that makes lines continuous.",
-      exercise: "Level 1: make a 3–6 note cell over the I. Restate it verbatim from the IV's landing tone, vary it over the V, resolve home (the map ghosts the shape at each new degree before you play it). Level 2: chain six cells without a gap, each opening with the previous one's tail.",
+      exercise: "Level 1: make a 3–6 note cell over the I. Use the chord strip to advance; restate it from the IV's shown landing tone, vary it over the V, then resolve home. The four phase buttons keep your place; you supply and transpose the cell. Level 2: chain six cells without a gap, each opening with the previous one's tail.",
       pass: "Self-score L1: the cell's rhythm survives every transposition. L2: an unbroken six-cell chain, each link audibly sharing its opening with the last link's close.",
       origin: "Papasolomontos 2017 (mimisis in 10/10 taximia); level 2: Bulgarian kolyano chaining, labeled import.",
       choreo: { focus: "third", phases: ["State on I", "Restate on IV", "Vary on V", "Resolve"] }
@@ -107,7 +107,7 @@
       id: "shadow-thirds", pillar: "move", name: "Thirds & Sixths Shadow",
       importLabel: "greek-core",
       logic: "Chiotis's documented escalation: play the phrase single-line, then repeat it doubled in parallel 3rds or 6ths inside the dromos. Single first, harmonised second — the doubling is an intensity step, not a default. On bouzouki the parallel 3rd is the classic two-course sound.",
-      exercise: "Play a four-note phrase alone. Replay it doubled: the side rail pairs every dromos tone with its diatonic 3rd, so the second voice is under your eyes, not in your imagination.",
+      exercise: "Play a four-note phrase alone. Replay it doubled. The written side rail pairs every dromos tone with its diatonic 3rd; the fretboard continues to show the primary landing map, so you remain responsible for choosing a playable two-course route.",
       pass: "Self-score: both voices stay inside the dromos and stay rhythm-locked for the whole phrase.",
       origin: "Papasolomontos 2017: 'Anoixe kai metaniosa' phrase analysis — second voice in 6ths, then parallel 3rds on the dominant.",
       choreo: { focus: "third", thirdPairsRail: true }
@@ -167,6 +167,24 @@
     return byPillar(pillarId).filter((tool) => !tool.modeGate || tool.modeGate.includes(modeId));
   }
 
+  function dealFormulaDeck(routeCount) {
+    const count = Math.max(0, Math.floor(routeCount || 0));
+    return Array.from({ length: Math.min(4, count) }, (_, index) => index);
+  }
+
+  function swapFormulaCard(deck, slot, routeCount) {
+    const count = Math.max(0, Math.floor(routeCount || 0));
+    const next = Array.isArray(deck) ? deck.slice(0, Math.min(4, count)) : dealFormulaDeck(count);
+    if (!count || slot < 0 || slot >= next.length) return next;
+    const occupied = new Set(next.filter((_, index) => index !== slot));
+    let candidate = (next[slot] + 1) % count;
+    for (let attempts = 0; attempts < count && occupied.has(candidate); attempts++) {
+      candidate = (candidate + 1) % count;
+    }
+    next[slot] = candidate;
+    return next;
+  }
+
   // The recommended path — an order, not a lock (no detection, no gating).
   const PROGRESSION = ["arrivals", "exit-map", "group-grid", "formula-bank", "motif-ladder", "anasa-gate", "note-budget", "cadence-ramp", "seyir-arc", "chromatic-recolor", "shadow-thirds", "melisma-bank", "sing-first", "taximi-intro"];
 
@@ -192,8 +210,13 @@
       TOOLS.every((tool) => !tool.modeGate || tool.modeGate.every((m) => ["major", "minor", "harmonicMinor", "ousak", "hijaz"].includes(m))));
     add("merged tools stayed merged: no separate finishes or kolyano entries",
       !byId("landing-finishes") && !byId("kolyano-chain") && !byId("three-ways-in"));
+    const dealt = dealFormulaDeck(6);
+    const swapped = swapFormulaCard(dealt, 1, 6);
+    add("formula deck deals four unique routes", dealt.length === 4 && new Set(dealt).size === dealt.length);
+    add("formula swap changes one card without duplicates",
+      swapped[1] !== dealt[1] && swapped.filter((value, index) => value !== dealt[index]).length === 1 && new Set(swapped).size === swapped.length);
     return { ok: results.every((r) => r.pass), results };
   }
 
-  window.SoloToolkit = { PILLARS, TOOLS, PROGRESSION, byPillar, byId, availableTools, selfTest };
+  window.SoloToolkit = { PILLARS, TOOLS, PROGRESSION, byPillar, byId, availableTools, dealFormulaDeck, swapFormulaCard, selfTest };
 })();

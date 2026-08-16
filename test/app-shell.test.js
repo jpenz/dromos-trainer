@@ -178,3 +178,21 @@ test("the full fretboard never widens the page and folds on phones", () => {
   assert.match(read("js/fretboard.js"), /matchMedia\("\(max-width: 620px\)"\)/);
   assert.match(read("js/fretboard.js"), /data-neck-layout/);
 });
+
+test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
+  const app = read("js/app.js");
+  const toolkit = read("js/toolkit.js");
+  assert.match(app, /role="tab" aria-selected="\$\{p\.id === tk\.pillar\}" aria-controls="soloToolkitPanel" tabindex=/,
+    "pillar choices need complete tab semantics and roving focus");
+  assert.match(app, /role="toolbar" aria-label=/,
+    "tool choices are a toolbar, not a second incomplete tab interface");
+  assert.match(app, /requestAnimationFrame\(\(\) => focusToolkitControl/,
+    "a keyboard selection must restore focus after render replaces its source button");
+  assert.match(app, /data-tk-formula-slot/);
+  assert.match(app, /TK\.swapFormulaCard/,
+    "Formula Bank's promised card swap must be an actual interaction");
+  assert.doesNotMatch(toolkit, /map ghosts the shape/,
+    "Motif Ladder cannot promise a fretboard ghost that is not rendered");
+  assert.doesNotMatch(toolkit, /second voice is under your eyes/,
+    "Thirds Shadow must describe its written rail rather than imply a neck overlay");
+});

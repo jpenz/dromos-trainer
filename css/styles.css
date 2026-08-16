@@ -1596,6 +1596,7 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
 .tk-tools { display: flex; flex-wrap: wrap; gap: 5px; }
 .tk-tools button { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 11.5px; }
 .tk-tools button.active { border-color: var(--turquoise); background: rgba(82, 168, 157, 0.14); color: var(--text); font-weight: 600; }
+.tk-pillars button:focus-visible, .tk-tools button:focus-visible, .formula-card:focus-visible { outline: 3px solid var(--turquoise); outline-offset: 2px; }
 .tk-card { display: grid; gap: 8px; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.02); }
 .tk-card > header { display: flex; align-items: center; gap: 8px; }
 .tk-card > header b { font-family: var(--font-display); font-size: 16px; }
@@ -1618,6 +1619,11 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
 .tool-rail b { display: grid; gap: 1px; padding: 4px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); font-family: var(--font-mono); font-size: 12px; }
 .tool-rail b i { color: var(--muted); font-family: var(--font-sans); font-size: 9.5px; font-style: normal; }
 .tool-rail em { width: 100%; color: var(--muted); font-size: 11px; }
+.formula-card { display: grid; gap: 1px; padding: 5px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; }
+.formula-card b { padding: 0; border: 0; font-size: 11px; }
+.formula-card i { color: var(--muted); font-size: 10px; font-style: normal; }
+.formula-card small { color: var(--turquoise); font-size: 9px; }
+.formula-card:hover { border-color: var(--turquoise); background: rgba(82, 168, 157, 0.08); }
 .tk-origin { color: var(--faint); font-size: 10.5px; font-style: italic; }
 /* Map choreography: zones, VII shimmer, group grid */
 #fretboard.zone-lower .fb-dot[data-group="upper-tetra"] { opacity: 0.3; }
