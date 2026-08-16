@@ -1622,7 +1622,7 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
 @media (max-width: 620px) {
   .comp-skeleton > header { align-items: flex-start; flex-direction: column; }
   .comp-skeleton > header i { text-align: left; }
-  .comp-pulse-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .comp-pulse-grid { grid-template-columns: repeat(var(--comp-mobile-units), minmax(0, 1fr)); }
 }
 
 /* ============ Soloist Toolkit (FR-58) ============ */

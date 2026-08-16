@@ -1885,7 +1885,7 @@
     root.innerHTML = `<header><div><span>${escapeHtml(plan.style.title)} · ${escapeHtml(plan.style.meter)}</span><b>${escapeHtml(plan.style.pulse)}</b></div><i>trainer skeleton · not a complete style arrangement</i></header>
       <div class="comp-levels" role="group" aria-label="Comping rhythm level">${[1, 2, 3].map((level) =>
         `<button data-comp-level="${level}" aria-pressed="${level === plan.level}" class="${level === plan.level ? "active" : ""}"><b>Level ${level}</b><span>${level === 1 ? "accents" : level === 2 ? "bass + chord" : "free hand"}</span></button>`).join("")}</div>
-      <div class="comp-pulse-grid" style="--comp-units:${plan.units}" data-comp-units="${plan.units}" aria-label="${escapeHtml(plan.style.title)} level ${plan.level} pulse">${plan.slots.map((slot) => {
+      <div class="comp-pulse-grid" style="--comp-units:${plan.units};--comp-mobile-units:${Math.min(5, plan.units)}" data-comp-units="${plan.units}" aria-label="${escapeHtml(plan.style.title)} level ${plan.level} pulse">${plan.slots.map((slot) => {
         const label = labels[slot.action] || labels.space;
         return `<span data-comp-unit="${slot.unit}" class="comp-slot ${slot.action}${slot.groupStart ? " group-start" : ""}"><i>${slot.unit}</i><b>${escapeHtml(label[0])}</b><small>${escapeHtml(label[1])}</small></span>`;
       }).join("")}</div>
