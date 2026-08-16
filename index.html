@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=19" />
+  <link rel="stylesheet" href="css/styles.css?v=20" />
 </head>
 <body>
   <div class="app">
@@ -269,10 +269,15 @@
 
             <!-- Triads / comp -->
             <div id="panelTriads" class="panel hidden">
-              <span class="panel-label">Comping &amp; chord soloing</span>
-              <p class="ear-hint">Every triad shape of the current chord, all over the neck.
-                The highlighted one is the <b>least-movement</b> choice from the previous
-                chord — that is what hitting the changes looks like under the hand.</p>
+              <span class="panel-label">Comping · pulse before fills</span>
+              <p class="ear-hint"><b>First make the dance audible with muted accents.</b>
+                Then add the bass/chord skeleton; only free the right hand when those anchors
+                survive. The shapes below are the harmony layer, not the starting point.</p>
+              <section id="compSkeleton" class="comp-skeleton" aria-label="Greek pulse comping skeleton"></section>
+              <span class="panel-label">Close-position chord route</span>
+              <p class="ear-hint">The highlighted triad is the <b>least-movement</b> choice from
+                the previous chord. Put it on the chord slots in the skeleton above; keep bass
+                slots sparse enough that the root direction remains audible.</p>
               <div class="row tonic-row">
                 <label for="setSel">Strings</label>
                 <select id="setSel"></select>
@@ -564,7 +569,7 @@
   <script src="js/modes.js?v=17"></script>
   <script src="js/chord-map.js?v=17"></script>
   <script src="js/ear-drills.js?v=14"></script>
-  <script src="js/styles.js?v=14"></script>
+  <script src="js/styles.js?v=20"></script>
   <script src="js/analysis.js?v=14"></script>
   <script src="js/studies.js?v=14"></script>
   <script src="js/musicxml.js?v=14"></script>
@@ -572,12 +577,12 @@
   <script src="js/video.js?v=14"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/toolkit.js?v=1"></script>
+  <script src="js/toolkit.js?v=20"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=19"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=16"></script>
-  <script src="js/app.js?v=19"></script>
+  <script src="js/app.js?v=20"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

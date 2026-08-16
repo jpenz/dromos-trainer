@@ -113,11 +113,11 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "19"/,
+  assert.match(read("api/release.js"), /appVersion: "20"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=19/);
+  assert.match(html, /css\/styles\.css\?v=20/);
   assert.match(html, /js\/fretboard\.js\?v=19/);
-  assert.match(html, /js\/app\.js\?v=19/);
+  assert.match(html, /js\/app\.js\?v=20/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.
@@ -195,4 +195,16 @@ test("Solo Toolkit choices keep keyboard focus and promise only implemented beha
     "Motif Ladder cannot promise a fretboard ghost that is not rendered");
   assert.doesNotMatch(toolkit, /second voice is under your eyes/,
     "Thirds Shadow must describe its written rail rather than imply a neck overlay");
+});
+
+test("Comp starts from a Greek pulse skeleton and transport actually enters the page", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  assert.match(html, /id="compSkeleton"/);
+  assert.match(app, /S\.compPlan\(state\.groove\.styleId, state\.triads\.rhythmLevel\)/);
+  assert.match(app, /data-comp-level/);
+  assert.match(app, /state\.view === "triads"[^]*pb = \{ kind: "triads"/,
+    "Play on Comp must start a real progression transport");
+  assert.match(app, /state\.view === "triads"[^]*updateCompPulse\(beatInBar\)/,
+    "transport must move a visible cursor through the selected pulse");
 });

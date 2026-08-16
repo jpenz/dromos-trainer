@@ -81,6 +81,19 @@
       route: "Start with a simple progression map, then add a dromos flavour note only where it belongs melodically."
     },
     {
+      id: "hasaposerviko",
+      title: "Hasaposerviko",
+      greek: "Χασαποσέρβικο",
+      meter: "2/4",
+      beats: 2,
+      groups: [1, 1],
+      pulse: "1 + 1",
+      character: "The fast hasapiko practice preset. Keep the two-beat floor clear before adding speed or decorative right-hand motion.",
+      comp: "Use the same bass-then-chord skeleton as the hasapiko trainer, compressed into a quick two-beat bar. Tempo is the variable; the harmonic job stays clear.",
+      phrase: "Answer in short two-beat units and leave enough space for the next downbeat to remain obvious.",
+      route: "Choose the dromos from the Song Map; this preset changes the pulse and tempo job, not the note collection."
+    },
+    {
       id: "tsifteteli",
       title: "Tsifteteli",
       greek: "Τσιφτετέλι",
@@ -119,6 +132,69 @@
     })));
   }
 
+  // Comp starts with a deliberately sparse trainer skeleton. These are the
+  // documented practice shapes in CODEX_BRIEF_2, not claims that one pattern
+  // represents every regional or recorded performance of the dance.
+  const COMP_SKELETONS = {
+    zeibekiko: {
+      accent: [1, 3, 5, 7],
+      pattern: { units: 9, groups: [2, 2, 2, 3], hits: { 1: "bass", 3: "chord", 5: "bass", 7: "chord" } },
+      level2: "Alternate bass and chord anchors on 1, 3, 5, and 7; leave the 8–9 tail unfilled so the final group breathes."
+    },
+    hasapiko: {
+      accent: [1, 2],
+      pattern: { units: 4, groups: [2, 2], hits: { 1: "bass", 2: "chord", 3: "walk", 4: "chord" } },
+      level2: "Bass on 1, chord on 2; use beat 3 for one walking bass tone and answer with the chord on 4."
+    },
+    hasaposerviko: {
+      accent: [1, 2],
+      pattern: { units: 2, groups: [1, 1], hits: { 1: "bass", 2: "chord" } },
+      level2: "Keep the fast two-beat bar binary: bass on 1, compact chord on 2. Add speed only after both jobs stay distinct."
+    },
+    tsifteteli: {
+      accent: [1, 4],
+      pattern: { units: 8, groups: [3, 3, 2], hits: { 1: "bass", 4: "chord", 7: "chord" } },
+      level2: "Move from the sparse 1-and-4 stress to a separate eight-subdivision 3 + 3 + 2 study. Do not hear them as the same pattern."
+    },
+    kalamatianos: {
+      accent: [1, 4, 6],
+      pattern: { units: 7, groups: [3, 2, 2], hits: { 1: "bass", 3: "chord", 4: "bass", 5: "chord", 6: "bass", 7: "chord" } },
+      level2: "State each 3 + 2 + 2 group with a bass anchor, then place one compact chord response before the next group."
+    },
+    roumba: {
+      accent: [1, 3],
+      pattern: { units: 4, groups: [2, 2], hits: { 1: "bass", 2: "chord", 3: "bass", 4: "chord" } },
+      level2: "Keep the two halves buoyant with a bass anchor followed by one economical chord response."
+    }
+  };
+
+  function compPlan(styleId, level) {
+    const style = byId(styleId);
+    const spec = COMP_SKELETONS[style.id];
+    const selectedLevel = Math.max(1, Math.min(3, Math.floor(level || 1)));
+    const pattern = selectedLevel === 1
+      ? { units: style.beats, groups: style.groups, hits: Object.fromEntries(spec.accent.map((unit) => [unit, "accent"])) }
+      : spec.pattern;
+    let group = 0;
+    let nextBoundary = 1;
+    const boundaries = pattern.groups.map((size) => (nextBoundary += size) - size);
+    const slots = Array.from({ length: pattern.units }, (_, index) => {
+      const unit = index + 1;
+      if (group + 1 < boundaries.length && unit >= boundaries[group + 1]) group++;
+      const fixed = pattern.hits[unit] || null;
+      return {
+        unit, group: group + 1, groupStart: boundaries.includes(unit),
+        action: selectedLevel === 3 ? (fixed ? "keep" : "free") : (fixed || "space")
+      };
+    });
+    const notes = {
+      1: "Accents only. Clap or mute the marked units; do not add chord fills yet.",
+      2: spec.level2,
+      3: "Free the right hand around the same anchors. A fill passes only if the bass/chord skeleton and grouped pulse remain audible."
+    };
+    return { style, level: selectedLevel, units: pattern.units, groups: pattern.groups.slice(), slots, note: notes[selectedLevel] };
+  }
+
   function selfTest() {
     const results = [];
     const check = (name, pass, detail) => results.push({ name, pass, detail: detail || "" });
@@ -127,10 +203,14 @@
       check(style.id + " pulse totals " + style.beats, total === style.beats, style.pulse);
       check(style.id + " has a separate dromos route", /dromos|Song Map/i.test(style.route), style.route);
       check(style.id + " exposes every beat", beatMap(style).length === style.beats, String(beatMap(style).length));
+      [1, 2, 3].forEach((level) => {
+        const plan = compPlan(style.id, level);
+        check(style.id + " comp level " + level + " covers its pulse", plan.slots.length === plan.units && plan.slots.some((slot) => slot.action !== "space"), plan.note);
+      });
     });
     check("foundation has function, phrase, and pulse", ["hear", "landmarks", "motif", "pulse"].every((id) => FOUNDATION.some((item) => item.id === id)));
     return { ok: results.every((result) => result.pass), results };
   }
 
-  window.StyleLibrary = { FOUNDATION, STYLES, byId, beatMap, selfTest };
+  window.StyleLibrary = { FOUNDATION, STYLES, COMP_SKELETONS, byId, beatMap, compPlan, selfTest };
 })();

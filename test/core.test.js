@@ -168,6 +168,46 @@ test("Greek style pulses are complete and never prescribe a dromos", () => {
   });
 });
 
+test("Comp curriculum stays skeleton-first across every Greek pulse preset", () => {
+  const { StyleLibrary } = loadCore();
+  assert.ok(StyleLibrary.byId("hasaposerviko"), "fast hasapiko needs its own selectable pulse preset");
+  StyleLibrary.STYLES.forEach((style) => {
+    [1, 2, 3].forEach((level) => {
+      const plan = StyleLibrary.compPlan(style.id, level);
+      assert.equal(plan.level, level);
+      assert.equal(plan.slots.length, plan.units, `${style.id} level ${level} covers every pulse unit`);
+      assert.ok(plan.slots.some((slot) => !["space", "free"].includes(slot.action)), `${style.id} level ${level} keeps audible anchors`);
+    });
+  });
+  const zeibekiko = StyleLibrary.compPlan("zeibekiko", 2);
+  assert.deepEqual(Array.from(zeibekiko.slots.filter((slot) => slot.action !== "space"), (slot) => slot.unit), [1, 3, 5, 7]);
+  assert.deepEqual(Array.from(zeibekiko.slots.slice(7), (slot) => slot.action), ["space", "space"], "the 8–9 tail must stay unfilled");
+  const hasapiko = StyleLibrary.compPlan("hasapiko", 2);
+  assert.deepEqual(Array.from(hasapiko.slots, (slot) => slot.action), ["bass", "chord", "walk", "chord"]);
+  const sparseTsifteteli = StyleLibrary.compPlan("tsifteteli", 1);
+  assert.deepEqual(Array.from(sparseTsifteteli.slots.filter((slot) => slot.action === "accent"), (slot) => slot.unit), [1, 4]);
+  const fullTsifteteli = StyleLibrary.compPlan("tsifteteli", 2);
+  assert.deepEqual(Array.from(fullTsifteteli.groups), [3, 3, 2]);
+  assert.equal(fullTsifteteli.units, 8, "3+3+2 is a separate eight-subdivision level, not the sparse 1/4 stress");
+});
+
+test("Solo Road discloses exactly what is and is not modelled descending", () => {
+  const { Modes } = loadCore();
+  Modes.MODE_ORDER.forEach((modeId) => {
+    const policy = Modes.movementPolicy(modeId);
+    assert.ok(policy.label && policy.detail);
+    if (modeId === "ousak") {
+      assert.equal(policy.status, "verified-mobile");
+      assert.match(policy.detail, /ascending options/i);
+      assert.match(policy.detail, /descending trainer returns through the core/i);
+    } else {
+      assert.equal(policy.status, "fixed-collection");
+      assert.match(policy.detail, /same declared .* ascending and descending/i);
+      assert.match(policy.detail, /No additional directional form/i);
+    }
+  });
+});
+
 test("analyzer explains modal colour while preserving harmonic uncertainty", () => {
   const { AnalysisEngine } = loadCore();
   const analysis = AnalysisEngine.analyzeProgression("Am D G", { tonic: "A", modeId: "minor" });

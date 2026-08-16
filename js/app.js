@@ -32,7 +32,7 @@
       map: { answer: null, homePreset: "D", keyOptions: [], keyGuess: null, familyGuess: null, progressionGuess: null, hintLevel: 0, locked: false, score: 0, total: 0, streak: 0, best: 0 }
     },
     // --- triads ---
-    triads: { step: 0, stringSet: null, zone: "mid", showAll: true },
+    triads: { step: 0, stringSet: null, zone: "mid", showAll: true, rhythmLevel: 1 },
     // --- solo lab ---
     solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [],
       // Soloist Toolkit (FR-58): active pillar/tool and the phrase-arc phase.
@@ -222,7 +222,7 @@
     cycle: "Land the 3rd of every chord as the keys fall. This is the muscle that keeps your solo inside the song on stage.",
     prog: "Real Greek progressions for each dromos — Piraeus modal loops first, the Westernized laiko layer second. Drills end here.",
     chordmap: "One key across five verified roads: compare every numbered chord, see the working routes, then open a defensible sister scale.",
-    triads: "The accompanist's seat: keep the changes close with the nearest shape when the harmony moves.",
+    triads: "The accompanist's seat: make the selected Greek pulse audible first, then place the nearest shape on its chord slots.",
     solo: "One neck, three layers: the road, the frame inside it, and the little cells that hit every chord's 3rd."
   };
 
@@ -245,7 +245,7 @@
     { view: "prog", label: "2 · Map", detail: "Name the dromos, progression, and chord function before you play." },
     { view: "chordmap", label: "Matrix · Reference", detail: "Compare the five verified roads by number, then open a working progression or a justified sister scale." },
     { view: "ear", label: "3 · Recall", detail: "Hear a colour or a full cadence, then name its home and change boxes." },
-    { view: "triads", label: "4 · Comp", detail: "Keep the changes close with three-note shapes and clear inversions." },
+    { view: "triads", label: "4 · Comp", detail: "Clap the grouped pulse, add its bass/chord skeleton, then keep the changes close with practical triads." },
     { view: "solo", label: "5 · Solo", detail: "Use a pentatonic frame, then land on chord tones at each change." },
     { view: "styles", label: "6 · Pulse", detail: "Fit the phrase to a real Greek pulse without confusing rhythm and dromos." },
     { view: "video", label: "7 · Study", detail: "Watch one legal public lesson in a short A–B loop, then explain its map." }
@@ -265,7 +265,7 @@
     prog: { purpose: "Name the map", title: "Choose a dromos, home, and progression—then hear each box clearly.", steps: ["Pick the dromos and tonic.", "Choose one progression; its Roman numerals are the map.", "Step each chord and say its function before you play it."] },
     chordmap: { purpose: "Compare harmony by number", title: "Pick one key, read all five roads, then follow a justified door into the next scale.", steps: ["Read across one scale or down one degree.", "Use role colour and map counts to separate working chords from derived-only chords.", "Open a sister scale only after reading whether it shares seven notes, changes one colour, or uses a documented progression door."] },
     ear: { purpose: "Recall without the neck", title: "First identify colour; then identify the home and the change boxes by ear.", steps: ["Use Dromos colour to isolate the 2nd and 3rd.", "Use Key & changes to choose both the home and progression.", "After checking, open Song Map and find the same boxes."] },
-    triads: { purpose: "Comp with voice leading", title: "See the nearest useful triad instead of hunting for a large chord.", steps: ["Choose a Song Map progression.", "Follow the highlighted low-travel triad.", "Change inversion only when it serves the next chord."] },
+    triads: { purpose: "Comp from the pulse outward", title: "Make the Greek rhythm audible before the chord shape becomes busy.", steps: ["Clap Level 1 accents until the grouped pulse is stable.", "At Level 2, put roots on bass slots and the nearest triad on chord slots.", "Use Level 3 fills only when the original skeleton remains easy to hear."] },
     solo: { purpose: "Follow the harmony on one neck", title: "See the full scale, the chord under your hand, and the next 3rd before it arrives.", steps: ["Choose a home, dromos, and progression.", "Keep the scale quiet; read the solid current triad and the orange Now target.", "Press Play and move only when the dashed Next target becomes Now."] },
     styles: { purpose: "Put the map in time", title: "A rhythm is a place for the phrase—not a substitute for the dromos.", steps: ["Choose the pulse family.", "Feel its grouped beats before playing notes.", "Return to Song Map to choose the harmonic/melodic material."] },
     video: { purpose: "Study a real motion deliberately", title: "Loop a public lesson briefly, then turn observation into understanding.", steps: ["Set A–B around one small physical/musical event.", "Slow it down and watch only one hand at a time.", "Name the home, target, and function in Song Map before borrowing the idea."] },
@@ -329,6 +329,7 @@
     state.solo.matrixBeat = 0;
     renderGrooveControls();
     if (state.view === "solo") renderSoloSection();
+    if (state.view === "triads") renderTriads();
     if (state.view === "styles") renderStyles();
   }
 
@@ -1872,6 +1873,48 @@
     return hit ? hit.name : M.simplify(M.nameFor(0, pc));
   }
 
+  function renderCompSkeleton(chord) {
+    const root = $("compSkeleton");
+    if (!root) return;
+    const plan = S.compPlan(state.groove.styleId, state.triads.rhythmLevel);
+    const labels = {
+      accent: ["accent", "mute or clap"], bass: ["bass", "state the root"], chord: ["chord", chord.symbol],
+      walk: ["walk", "one tone toward next root"], keep: ["anchor", "keep this audible"],
+      free: ["free", "fill or leave space"], space: ["space", "do not fill"]
+    };
+    root.innerHTML = `<header><div><span>${escapeHtml(plan.style.title)} · ${escapeHtml(plan.style.meter)}</span><b>${escapeHtml(plan.style.pulse)}</b></div><i>trainer skeleton · not a complete style arrangement</i></header>
+      <div class="comp-levels" role="group" aria-label="Comping rhythm level">${[1, 2, 3].map((level) =>
+        `<button data-comp-level="${level}" aria-pressed="${level === plan.level}" class="${level === plan.level ? "active" : ""}"><b>Level ${level}</b><span>${level === 1 ? "accents" : level === 2 ? "bass + chord" : "free hand"}</span></button>`).join("")}</div>
+      <div class="comp-pulse-grid" style="--comp-units:${plan.units}" data-comp-units="${plan.units}" aria-label="${escapeHtml(plan.style.title)} level ${plan.level} pulse">${plan.slots.map((slot) => {
+        const label = labels[slot.action] || labels.space;
+        return `<span data-comp-unit="${slot.unit}" class="comp-slot ${slot.action}${slot.groupStart ? " group-start" : ""}"><i>${slot.unit}</i><b>${escapeHtml(label[0])}</b><small>${escapeHtml(label[1])}</small></span>`;
+      }).join("")}</div>
+      <p class="comp-level-note">${escapeHtml(plan.note)}</p>
+      <p class="comp-pulse-now" data-comp-now aria-live="polite">Press Play to move the pulse through this skeleton. Bass and drums in Practice setup are optional timing aids.</p>`;
+    root.querySelectorAll("[data-comp-level]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      state.triads.rhythmLevel = +button.getAttribute("data-comp-level");
+      renderTriads();
+    });
+  }
+
+  function updateCompPulse(beatInBar) {
+    const root = $("compSkeleton");
+    if (!root || state.view !== "triads") return;
+    const units = +root.querySelector("[data-comp-units]")?.getAttribute("data-comp-units") || 0;
+    const beatCount = currentPulse().beats.length;
+    root.querySelectorAll("[data-comp-unit]").forEach((slot) => {
+      const unit = +slot.getAttribute("data-comp-unit");
+      const slotBeat = Math.floor(((unit - 1) * beatCount) / Math.max(1, units));
+      const current = beatInBar >= 0 && slotBeat === beatInBar;
+      slot.classList.toggle("current", current);
+      if (current) slot.setAttribute("aria-current", "true");
+      else slot.removeAttribute("aria-current");
+    });
+    const now = root.querySelector("[data-comp-now]");
+    if (now && beatInBar >= 0) now.textContent = `Beat ${beatInBar + 1} of ${beatCount} · keep the marked job clear.`;
+  }
+
   function renderTriads() {
     const { chords } = currentProgression();
     const t = state.triads;
@@ -1935,6 +1978,7 @@
     $("triadStrip").querySelectorAll("[data-tstep]").forEach((b) => {
       b.onclick = () => { t.step = +b.getAttribute("data-tstep"); renderTriads(); auditionTriad(); };
     });
+    renderCompSkeleton(cur.chord);
   }
 
   function auditionTriad() {
@@ -2026,6 +2070,7 @@
 
   function renderSoloRoad() {
     const road = M.tetrachordsOf(state.tonic, state.modeId);
+    const movement = M.movementPolicy(state.modeId);
     const { chords } = currentProgression();
     const current = chords[Math.min(state.progStep, chords.length - 1)];
     const lower = road.lower;
@@ -2057,7 +2102,8 @@
         <button data-road-lens="upper" class="${lens === "upper" ? "active" : ""}"><b>Upper cell</b><span>5 → 8</span></button>
         <button data-road-one-course class="${state.solo.oneCourse ? "active" : ""}" aria-pressed="${state.solo.oneCourse}"><b>One course</b><span>a single string</span></button>
       </div>
-      ${state.modeId === "ousak" ? '<p class="road-mobile-hint">Hollow dots sharpen on the way up. Ousak breathes.</p>' : ""}
+      ${state.modeId === "ousak" ? '<p class="road-mobile-hint">Hollow dots are the two verified ascending alternatives.</p>' : ""}
+      <p class="road-direction-boundary ${movement.status}"><b>${escapeHtml(movement.label)}:</b> ${escapeHtml(movement.detail)}</p>
       <div class="tetra-matrix">
         <section class="tetra-card lower"><div><b>First part</b><span>lower tetrachord · 1–4</span></div><div>${noteMatrix(lower, "lower")}</div></section>
         <section class="tetra-card upper"><div><b>Second part</b><span>upper tetrachord · 5–8</span></div><div>${noteMatrix(upper, "upper")}</div></section>
@@ -3032,6 +3078,9 @@
     } else if (state.view === "cycle") {
       const seq = gymSequence(state.index);
       pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
+    } else if (state.view === "triads") {
+      const { chords } = currentProgression();
+      pb = { kind: "triads", len: chords.length, pos: state.triads.step, barsLeft: 0, started: false };
     } else if (state.view === "prog" || state.view === "solo") {
       const { chords } = currentProgression();
       pb = { kind: "prog", len: chords.length, pos: state.progStep, barsLeft: 0, started: false };
@@ -3097,6 +3146,9 @@
             state.cycleComping.step = pb.pos;
             state.cycleComping.voicingIndex = 0;
             renderCycle();
+          } else if (pb.kind === "triads") {
+            state.triads.step = pb.pos;
+            renderTriads();
           } else {
             state.progStep = pb.pos;
             state.solo.matrixBeat = 0;
@@ -3109,8 +3161,12 @@
         return { notes: c.notes, referenceVoice: chordReferenceVoice(), bass: { rootPc: rootPcOf(c), nextRootPc: rootPcOf(nextChord) } };
       },
       onBeat: (bar, beatInBar, pulseBeat, event, when, now) => {
-        if (state.view !== "solo" || state.solo.section !== "targets") return;
         const delay = Math.max(0, (when - now) * 1000);
+        if (state.view === "triads") {
+          setTimeout(() => updateCompPulse(beatInBar), delay);
+          return;
+        }
+        if (state.view !== "solo" || state.solo.section !== "targets") return;
         setTimeout(() => {
           if (state.view === "solo" && state.solo.section === "targets") updateSoloMatrixJourney(beatInBar);
         }, delay);
