@@ -10,7 +10,7 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
@@ -118,6 +118,28 @@ test("the Piraeus tier leads the minor bank and Ousak breathes without breaking 
   assert.ok(mobile.every((m) => m.mobile), "mobile tones must be marked as such for the hollow-dot render");
   assert.equal(Modes.mobileTonesOf("D", "hijaz").length, 0, "mobile tones are documented for Ousak only");
   assert.equal(Modes.scaleOf("D", "ousak").length, 7, "the strict Ousak collection itself is untouched");
+});
+
+test("the soloist toolkit is MECE, sourced, and never pretends to hear you", () => {
+  const { SoloToolkit } = loadCore();
+  const suite = SoloToolkit.selfTest();
+  assert.equal(suite.ok, true, JSON.stringify(suite.results.filter((r) => !r.pass), null, 2));
+  // Mutually exclusive: the adversarial pass merged arrivals/finishes and
+  // motif-ladder/kolyano. Those merges must not silently come apart.
+  assert.equal(SoloToolkit.byId("landing-finishes"), null);
+  assert.equal(SoloToolkit.byId("kolyano-chain"), null);
+  // Collectively exhaustive: three questions, each with a Greek-core spine.
+  assert.equal(SoloToolkit.PILLARS.map((p) => p.id).join(","), "land,move,speak");
+  // Mode gating must degrade gracefully, never leave a pillar empty.
+  ["major", "minor", "harmonicMinor", "ousak", "hijaz"].forEach((modeId) => {
+    SoloToolkit.PILLARS.forEach((p) => {
+      assert.ok(SoloToolkit.availableTools(p.id, modeId).length > 0,
+        `${p.id} has no tools in ${modeId}`);
+    });
+  });
+  // Cadence Ramp is scoped to major/minor-family taximia, per its source.
+  assert.ok(!SoloToolkit.availableTools("land", "ousak").some((t) => t.id === "cadence-ramp"),
+    "Cadence Ramp is documented for major/minor taximia, not dromos-based ones");
 });
 
 test("Greek style pulses are complete and never prescribe a dromos", () => {

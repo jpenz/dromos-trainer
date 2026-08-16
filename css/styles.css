@@ -1584,3 +1584,49 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
   .matrix-scale-row th, .harmony-matrix thead th:first-child { width: 136px; }
   .matrix-route-row td > div > span { position: static; }
 }
+
+/* ============ Soloist Toolkit (FR-58) ============ */
+.solo-toolkit { display: grid; gap: 8px; margin: 10px 0 14px; }
+.tk-pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tk-pillars button { display: grid; gap: 2px; padding: 8px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; }
+.tk-pillars button b { font-family: var(--font-display); font-size: 14px; }
+.tk-pillars button span { color: var(--muted); font-size: 10.5px; }
+.tk-pillars button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.tk-tools { display: flex; flex-wrap: wrap; gap: 5px; }
+.tk-tools button { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 11.5px; }
+.tk-tools button.active { border-color: var(--turquoise); background: rgba(82, 168, 157, 0.14); color: var(--text); font-weight: 600; }
+.tk-card { display: grid; gap: 8px; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.02); }
+.tk-card > header { display: flex; align-items: center; gap: 8px; }
+.tk-card > header b { font-family: var(--font-display); font-size: 16px; }
+.tk-badge { padding: 2px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.tk-greek-core { background: rgba(212, 118, 59, 0.18); color: var(--terracotta-bright); }
+.tk-labeled-import { background: rgba(91, 135, 181, 0.18); color: var(--aegean); }
+.tk-universal { background: rgba(242, 237, 227, 0.1); color: var(--muted); }
+.tk-logic { margin: 0; color: var(--text); font-size: 12.5px; line-height: 1.5; }
+.tk-do, .tk-pass { display: grid; gap: 2px; padding: 7px 9px; border-left: 2px solid var(--turquoise); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: rgba(82,168,157,0.07); }
+.tk-pass { border-left-color: var(--terracotta); background: var(--terracotta-soft); }
+.tk-do span, .tk-pass span { color: var(--faint); font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.tk-do p, .tk-pass p { margin: 0; font-size: 12px; }
+.tk-phases { display: flex; flex-wrap: wrap; gap: 5px; }
+.tk-phases button { display: flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); font-size: 11px; }
+.tk-phases button i { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; background: var(--line); color: var(--text); font-size: 9px; font-style: normal; }
+.tk-phases button.active { border-color: var(--terracotta); background: var(--terracotta-soft); color: var(--text); }
+.tk-phases button.active i { background: var(--terracotta); color: #14110F; }
+.tool-rail { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 9px; border: 1px dashed var(--line-strong); border-radius: var(--r-sm); }
+.tool-rail > span { width: 100%; color: var(--faint); font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.tool-rail b { display: grid; gap: 1px; padding: 4px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); font-family: var(--font-mono); font-size: 12px; }
+.tool-rail b i { color: var(--muted); font-family: var(--font-sans); font-size: 9.5px; font-style: normal; }
+.tool-rail em { width: 100%; color: var(--muted); font-size: 11px; }
+.tk-origin { color: var(--faint); font-size: 10.5px; font-style: italic; }
+/* Map choreography: zones, VII shimmer, group grid */
+#fretboard.zone-lower .fb-dot[data-group="upper-tetra"] { opacity: 0.3; }
+#fretboard.zone-upper .fb-dot[data-group="lower-tetra"] { opacity: 0.3; }
+#fretboard.zone-lower .fb-dot[data-group="lower-tetra"] .dot-bg,
+#fretboard.zone-upper .fb-dot[data-group="upper-tetra"] .dot-bg { opacity: 0.75; }
+#fretboard.vii-shimmer .fb-dot.is-vii .dot-bg { fill: #8E3B2F; opacity: 0.9; }
+#fretboard.vii-shimmer .fb-dot.is-vii .dot-label { fill: #FFE9E3; }
+@media (prefers-reduced-motion: no-preference) {
+  #fretboard.vii-shimmer .fb-dot.is-vii { animation: vii-pulse 1.6s ease-in-out infinite alternate; }
+}
+@keyframes vii-pulse { from { opacity: 0.65; } to { opacity: 1; } }
+@media (max-width: 720px) { .tk-pillars { grid-template-columns: 1fr; } }
