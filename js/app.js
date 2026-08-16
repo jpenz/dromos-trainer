@@ -5,7 +5,7 @@
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
-    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap;
+    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, TK = window.SoloToolkit;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -35,6 +35,8 @@
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true },
     // --- solo lab ---
     solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [],
+      // Soloist Toolkit (FR-58): active pillar/tool and the phrase-arc phase.
+      toolkit: { pillar: "land", toolId: "arrivals", phase: 0 },
       // visual layers on the Changes map: the scale road and the targets are
       // meant to be seen TOGETHER, so both default on.
       layers: { scale: true, pentatonic: false, triads: false, next: true } },
@@ -2078,6 +2080,17 @@
     return chord.notes.find((note) => note.role === role) || null;
   }
 
+  // The Solo map's scale background: the full dromos as tetrachord-tagged
+  // road notes (lower = blue, upper = violet), including Ousak's mobile
+  // ascending tones as hollow dots. Rendered quiet — it is the floor, not
+  // the message.
+  function soloBackgroundRoad() {
+    const road = M.tetrachordsOf(state.tonic, state.modeId);
+    const mobile = M.mobileTonesOf(state.tonic, state.modeId)
+      .map((note) => Object.assign({}, note, { road: note.off < 6 ? "lower" : "upper" }));
+    return road.lower.concat(road.upper.slice(0, -1)).concat(mobile);
+  }
+
   function soloTargets(chord, focus) {
     const third = chordTone(chord, "3") || chordTone(chord, "b3");
     if (focus === "sweet") {
@@ -2273,6 +2286,178 @@
     updateSoloMatrixJourney(state.solo.matrixBeat);
   }
 
+  // ===================== Soloist Toolkit (FR-58) ========================
+  // Three pillars answering three questions. Choosing a tool re-choreographs
+  // the map: it sets the landing lens, may show a phrase-arc meter, and may
+  // open a side rail with the material that tool needs in the CURRENT key and
+  // dromos — so every tool works in any key without a second diagram.
+  function activeTool() {
+    if (!TK) return null;
+    const tool = TK.byId(state.solo.toolkit.toolId);
+    if (tool && (!tool.modeGate || tool.modeGate.includes(state.modeId))) return tool;
+    // The selected tool is not offered in this dromos: fall back to the first
+    // available tool of the same pillar rather than showing a dead selection.
+    const fallback = TK.availableTools(state.solo.toolkit.pillar, state.modeId)[0]
+      || TK.availableTools("land", state.modeId)[0];
+    if (fallback) { state.solo.toolkit.toolId = fallback.id; state.solo.toolkit.pillar = fallback.pillar; }
+    return fallback || null;
+  }
+
+  function toolPhases(tool) {
+    return (tool && tool.choreo && tool.choreo.phases) || null;
+  }
+
+  // ---- side rails: the tool's material, computed in the current key -----
+  // These dromoi almost always close on the tonic, so listing final chords
+  // just repeats it. The information a soloist needs is the APPROACH: which
+  // chord hands you home, deduped, in the current key.
+  function exitRailHtml() {
+    const bank = M.PROGRESSIONS[state.modeId] || [];
+    const seen = new Set();
+    const exits = [];
+    bank.forEach((p) => {
+      const chords = M.buildProgression(state.tonic, state.modeId, p.id).chords;
+      if (chords.length < 2) return;
+      const last = chords[chords.length - 1];
+      const approach = chords[chords.length - 2];
+      const key = `${approach.symbol}>${last.symbol}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      exits.push({ approach, last, label: p.label });
+    });
+    return `<div class="tool-rail"><span>Ways home · ${escapeHtml(M.MODES[state.modeId].name)} on ${escapeHtml(state.tonic)}</span>
+      ${exits.map((e) => `<b>${escapeHtml(e.approach.symbol)} → ${escapeHtml(e.last.symbol)}<i>${escapeHtml(e.label)}</i></b>`).join("")}
+      <em>Close a section by arriving on a tone of the destination chord. Mid-phrase, land wherever it sounds good.</em></div>`;
+  }
+
+  function thirdPairsRailHtml() {
+    const scale = M.scaleOf(state.tonic, state.modeId);
+    const pairs = scale.map((note, i) => ({ from: note, to: scale[(i + 2) % scale.length] }));
+    return `<div class="tool-rail"><span>Parallel 3rds inside ${escapeHtml(M.MODES[state.modeId].name)}</span>
+      ${pairs.map((p) => `<b>${escapeHtml(p.from.name)}<i>+ ${escapeHtml(p.to.name)}</i></b>`).join("")}
+      <em>Play the phrase alone, then double it with the paired tone. Both voices stay in the dromos.</em></div>`;
+  }
+
+  function chromaticRailHtml() {
+    const scale = M.scaleOf(state.tonic, state.modeId);
+    const gaps = [];
+    scale.forEach((note, i) => {
+      const next = scale[(i + 1) % scale.length];
+      const step = (((next.pc - note.pc) % 12) + 12) % 12;
+      // Spell the passing tone from the LOWER note's own letter, so a whole
+      // step D→E fills with D♯ rather than an illegal name built off C.
+      if (step === 2) {
+        const letter = M.parseName(note.name).letterIdx;
+        gaps.push({ from: note, to: next, mid: M.simplify(M.nameFor(letter, (note.pc + 1) % 12)) });
+      }
+    });
+    return `<div class="tool-rail"><span>Whole steps you may fill · weak beats only</span>
+      ${gaps.length ? gaps.map((g) => `<b>${escapeHtml(g.from.name)} → ${escapeHtml(g.to.name)}<i>via ${escapeHtml(g.mid)}</i></b>`).join("")
+        : "<b>—<i>no whole steps to fill</i></b>"}
+      <em>The inserted tone must never land on a strong beat.</em></div>`;
+  }
+
+  function formulaRailHtml() {
+    const routes = P ? P.MELODIC_ROUTES || [] : [];
+    const deck = routes.slice(0, 4);
+    return `<div class="tool-rail"><span>Dealt this round · app-derived starter deck</span>
+      ${deck.map((r, i) => `<b>${escapeHtml(["Opener", "Mover", "Mover", "Cadence"][i] || "Card")}<i>${escapeHtml(r.label)}</i></b>`).join("")}
+      <em>Chain them with no gap. Swap a card for a phrase you stole from a recording — the bank is a rack, not a canon.</em></div>`;
+  }
+
+  function toolRailHtml(tool) {
+    const c = (tool && tool.choreo) || {};
+    if (c.exitRail) return exitRailHtml();
+    if (c.thirdPairsRail) return thirdPairsRailHtml();
+    if (c.chromaticRail) return chromaticRailHtml();
+    if (c.formulaCards) return formulaRailHtml();
+    return "";
+  }
+
+  function renderSoloToolkit() {
+    const root = $("soloToolkit");
+    if (!root || !TK) return;
+    if (state.view !== "solo" || state.solo.section !== "targets") { root.innerHTML = ""; return; }
+    const tool = activeTool();
+    if (!tool) { root.innerHTML = ""; return; }
+    const tk = state.solo.toolkit;
+    const phases = toolPhases(tool);
+    const labels = { "greek-core": "Greek core", "labeled-import": "Import", universal: "Universal" };
+    root.innerHTML = `
+      <div class="tk-pillars" role="tablist" aria-label="Soloist toolkit pillars">
+        ${TK.PILLARS.map((p) => `<button role="tab" aria-selected="${p.id === tk.pillar}" data-tk-pillar="${p.id}" class="${p.id === tk.pillar ? "active" : ""}"><b>${escapeHtml(p.name)}</b><span>${escapeHtml(p.question)}</span></button>`).join("")}
+      </div>
+      <div class="tk-tools" role="tablist" aria-label="Tools">
+        ${TK.availableTools(tk.pillar, state.modeId).map((t) =>
+          `<button role="tab" aria-selected="${t.id === tool.id}" data-tk-tool="${t.id}" class="${t.id === tool.id ? "active" : ""}">${escapeHtml(t.name)}</button>`).join("")}
+      </div>
+      <article class="tk-card">
+        <header><b>${escapeHtml(tool.name)}</b><span class="tk-badge tk-${tool.importLabel}">${labels[tool.importLabel]}</span></header>
+        <p class="tk-logic">${escapeHtml(tool.logic)}</p>
+        <div class="tk-do"><span>Do this</span><p>${escapeHtml(tool.exercise)}</p></div>
+        <div class="tk-pass"><span>Pass</span><p>${escapeHtml(tool.pass)}</p></div>
+        ${phases ? `<div class="tk-phases" aria-label="Phrase arc">${phases.map((label, i) =>
+          `<button data-tk-phase="${i}" class="${i === tk.phase ? "active" : ""}"><i>${i + 1}</i>${escapeHtml(label)}</button>`).join("")}</div>` : ""}
+        ${toolRailHtml(tool)}
+        <footer class="tk-origin">${escapeHtml(tool.origin)}</footer>
+      </article>`;
+    root.querySelectorAll("[data-tk-pillar]").forEach((b) => b.onclick = () => {
+      const id = b.getAttribute("data-tk-pillar");
+      state.solo.toolkit.pillar = id;
+      const first = TK.availableTools(id, state.modeId)[0];
+      if (first) state.solo.toolkit.toolId = first.id;
+      state.solo.toolkit.phase = 0;
+      applyToolChoreo(); renderSolo();
+    });
+    root.querySelectorAll("[data-tk-tool]").forEach((b) => b.onclick = () => {
+      state.solo.toolkit.toolId = b.getAttribute("data-tk-tool");
+      state.solo.toolkit.phase = 0;
+      applyToolChoreo(); renderSolo();
+    });
+    root.querySelectorAll("[data-tk-phase]").forEach((b) => b.onclick = () => {
+      state.solo.toolkit.phase = +b.getAttribute("data-tk-phase");
+      renderSolo();
+    });
+  }
+
+  // The fretboard adapts to the active tool: tetrachord zones brighten per
+  // phrase-arc phase, the pulse's group onsets can be emphasised, and the
+  // leading-tone colour can shimmer. All driven by classes on the SVG so it
+  // works for any key and any dromos without a second diagram.
+  function applyMapChoreo() {
+    const node = svg();
+    if (!node) return;
+    const tool = activeTool();
+    const c = (tool && tool.choreo) || {};
+    const phases = toolPhases(tool);
+    const phase = state.solo.toolkit.phase;
+    node.classList.remove("zone-lower", "zone-upper", "vii-shimmer", "group-grid");
+    if (c.zoneSweep && phases) {
+      if (phase === 0) node.classList.add("zone-lower");
+      else if (phase === 1) node.classList.add("zone-upper");
+    }
+    if (c.viiShimmer && phases && phase === phases.length - 1) node.classList.add("vii-shimmer");
+    if (c.groupGrid) node.classList.add("group-grid");
+    // The leading tone / VII colour is a pitch class, so mark it for CSS.
+    const scale = M.scaleOf(state.tonic, state.modeId);
+    const seventh = scale[scale.length - 1];
+    node.querySelectorAll(".fb-dot.is-vii").forEach((d) => d.classList.remove("is-vii"));
+    if (c.viiShimmer && seventh) {
+      node.querySelectorAll(`.fb-dot[data-pc="${seventh.pc}"]`).forEach((d) => d.classList.add("is-vii"));
+    }
+  }
+
+  // A tool owns the landing lens, so selecting one re-points the rings.
+  function applyToolChoreo() {
+    const tool = activeTool();
+    if (tool && tool.choreo && tool.choreo.focus) state.solo.focus = tool.choreo.focus;
+    syncSoloFocusButtons();
+  }
+  function syncSoloFocusButtons() {
+    document.querySelectorAll("[data-solo-focus]").forEach((b) =>
+      b.classList.toggle("active", b.getAttribute("data-solo-focus") === state.solo.focus));
+  }
+
   // Layer chips live directly above the fretboard so the player can stack
   // the scale road, the pentatonic frame, triad shapes, and the now/next
   // landing targets without ever covering the neck.
@@ -2309,7 +2494,7 @@
       </section>
       <div class="solo-layer-row">
         <span class="solo-layer-label">Background</span>
-        ${chip("scale", layers.scale, "lc-scale", `${state.tonic} ${mode.name} · full scale`)}
+        ${chip("scale", layers.scale, "lc-scale", `${state.tonic} ${mode.name} · two tetrachords`)}
         ${chip("pentatonic", layers.pentatonic, "lc-penta", `${state.tonic} ${M.PENTATONIC[state.modeId]?.name || "Pentatonic"}`)}
         ${chip("none", !layers.scale && !layers.pentatonic, "lc-none", "Triads only")}
         <span class="solo-layer-divider" aria-hidden="true"></span>
@@ -2384,7 +2569,11 @@
       nextGrip: layers.next ? nextGrip : null,
       otherShapes: state.solo.section === "targets" ? allTriads.filter(() => layers.triads) : [],
       pentatonicNotes: state.solo.section === "targets" && layers.pentatonic ? pentatonic : null,
-      scaleNotes: state.solo.section === "targets" && layers.scale ? M.scaleOf(state.tonic, state.modeId) : null,
+      // The scale background keeps its tetrachord identity: quiet road dots in
+      // the lower/upper hues rather than a flat grey scale, so the two halves
+      // of the dromos stay legible UNDER the pentatonic frame and the targets.
+      roadNotes: state.solo.section === "targets" && layers.scale ? soloBackgroundRoad() : null,
+      roadQuiet: true,
       targetPlacements: state.solo.section === "targets" ? targetPlacements : null,
       targetNowPcs: curTargets.map((note) => note.pc),
       targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],
@@ -2401,7 +2590,9 @@
       lefty: state.lefty
     });
     svg().setAttribute("aria-label", `${window.Tuning.current().name} soloing map: ${state.tonic} ${M.MODES[state.modeId].name} background; play ${cur.degreeLabel} ${cur.symbol} triad ${triadSpelling(cur)}, targeting ${soloTargetLabel(curTargets)}; prepare ${next.degreeLabel} ${next.symbol} triad ${triadSpelling(next)}, targeting ${soloTargetLabel(nextTargets)}`);
+    applyMapChoreo();
     renderSoloLayerChips(cur, next, curTargets, nextTargets, thread);
+    renderSoloToolkit();
 
     const frame = M.PENTATONIC[state.modeId];
     const targetLabel = soloTargetLabel;

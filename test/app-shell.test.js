@@ -118,7 +118,16 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /css\/styles\.css\?v=19/);
   assert.match(html, /js\/fretboard\.js\?v=19/);
   assert.match(html, /js\/app\.js\?v=19/);
-  assert.match(read("sw.js"), /dromos-trainer-v19/);
+  // Drive this from the source, not a hand-kept version number: a literal
+  // assertion here breaks on every legitimate cache bump and, worse, passes
+  // when a newly added script never reaches the offline shell.
+  const sw = read("sw.js");
+  assert.match(sw, /const CACHE = "dromos-trainer-v\d+";/, "the cache must carry an explicit version");
+  const shellScripts = [...html.matchAll(/<script src="(js\/[\w.-]+)\?v=\d+"><\/script>/g)].map((m) => m[1]);
+  assert.ok(shellScripts.length > 15, "expected the shell to load the app's script set");
+  shellScripts.forEach((src) => {
+    assert.ok(sw.includes(`./${src}?v=`), `${src} is loaded by index.html but missing from the service-worker shell`);
+  });
   assert.match(read("css/styles.css"), /\.harmony-matrix-scroll \{[^}]*overflow-x: auto/,
     "the five-dromos matrix must scroll internally instead of widening the page");
 });
