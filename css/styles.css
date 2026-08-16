@@ -532,6 +532,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 
 .fb-dot.next-shape { opacity: 0.4; }
 .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.08); stroke: var(--turquoise); stroke-width: 2; stroke-dasharray: 3 3; }
+.fb-dot.next-shape.held-next .dot-bg { stroke-dasharray: none; }
 .fb-dot.next-shape .dot-label { fill: #9AD5CC; font-size: 10px; }
 .fb-dot.next-shape:not(.overlap) { animation: next-shape-fade 1.6s ease-in-out infinite alternate; }
 .legend-item.next-shape-key i { background: transparent; border: 2px dashed var(--turquoise); }
