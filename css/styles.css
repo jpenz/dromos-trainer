@@ -1630,3 +1630,17 @@ body[data-view="today"] main, body[data-view="progress"] main { max-width: 980px
 }
 @keyframes vii-pulse { from { opacity: 0.65; } to { opacity: 1; } }
 @media (max-width: 720px) { .tk-pillars { grid-template-columns: 1fr; } }
+
+/* Group Landing Grid: promote the pulse's group onsets so the doorway is
+   unmissable while the tool is active. Reuses the marks the timing matrix
+   already renders rather than drawing a second grid. */
+.solo-timing-matrix.show-onsets .journey-step.group-start { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.solo-timing-matrix.show-onsets .journey-step:not(.group-start) { opacity: 0.55; }
+.tool-rail b.onset { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.tk-arrival { padding: 0; border: 0; background: none; color: var(--text); font-family: var(--font-mono); font-size: 12px; }
+.tk-arrival.active { color: var(--terracotta-bright); font-weight: 700; }
+.breath-bar { position: relative; width: 100%; height: 5px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.breath-bar i { position: absolute; inset: 0; width: 100%; border-radius: 999px; background: var(--turquoise); transform-origin: left center; }
+@media (prefers-reduced-motion: no-preference) { .breath-bar i { animation: breath-cycle 6s linear infinite; } }
+@media (prefers-reduced-motion: reduce) { .breath-bar i { transform: scaleX(0.5); opacity: 0.6; } }
+@keyframes breath-cycle { from { transform: scaleX(0); } to { transform: scaleX(1); } }

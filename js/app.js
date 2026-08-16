@@ -2267,6 +2267,11 @@
   function renderSoloTimingMatrix(cur, next, curTargets, nextTargets) {
     const root = $("soloTimingMatrix");
     if (!root) return;
+    // groupGrid lives on the matrix (where the beats are), not on the neck —
+    // a doorway is a rhythmic fact. Applied here because the matrix rebuilds
+    // its own markup after applyMapChoreo runs.
+    const gTool = activeTool();
+    root.classList.toggle("show-onsets", !!(gTool && gTool.choreo && gTool.choreo.groupGrid));
     const pulse = currentPulse();
     const route = P.melodicRoute(state.solo.routeId);
     const plan = buildSoloTimingPlan(cur, next, curTargets, nextTargets);
@@ -2365,8 +2370,46 @@
       <em>Chain them with no gap. Swap a card for a phrase you stole from a recording — the bank is a rack, not a canon.</em></div>`;
   }
 
+  // The four documented Chiotis arrivals. Selecting one marks the pass you
+  // are on; the map names it above the neck so you know which finish is due.
+  const ARRIVALS = [
+    { id: "penia", name: "Penia", hint: "plain accented pick stroke" },
+    { id: "slide", name: "Ghost slide", hint: "slide in from an indeterminate pitch" },
+    { id: "tremolo", name: "Tremolo hold", hint: "fill the landing with 16ths or 32nds" },
+    { id: "sweep", name: "Sweep", hint: "rake adjacent courses, finish on the target" }
+  ];
+  function arrivalRailHtml() {
+    const active = state.solo.toolkit.arrival || "penia";
+    return `<div class="tool-rail"><span>Arrival due this pass</span>
+      ${ARRIVALS.map((a) => `<b><button data-tk-arrival="${a.id}" class="tk-arrival${a.id === active ? " active" : ""}">${escapeHtml(a.name)}</button><i>${escapeHtml(a.hint)}</i></b>`).join("")}
+      <em>Same line four times, one arrival per pass. The target note does not change — only how you reach it.</em></div>`;
+  }
+
+  // The Greek pulse's group onsets are the landing doorways. Rather than
+  // invent a second grid, this promotes the group starts already marked in
+  // the timing matrix so the doorway is unmissable while the tool is active.
+  function groupOnsetLabel() {
+    const pulse = currentPulse();
+    const starts = pulse.beats.filter((b) => b.first).map((b) => b.beat);
+    return `<div class="tool-rail"><span>Group onsets · ${escapeHtml(pulse.style.title)} ${escapeHtml(pulse.style.meter)}</span>
+      ${pulse.beats.map((b) => `<b class="${b.first ? "onset" : ""}">${b.beat}<i>${b.first ? "doorway" : "inside"}</i></b>`).join("")}
+      <em>Land targets on beats ${starts.join(", ")} to lock to the dance; land inside a group to float.</em></div>`;
+  }
+
+  // A pacing reminder, not a judgement: the bar cycles every six seconds so
+  // you can see a breath coming. The app has no microphone and never claims
+  // to know whether you actually breathed.
+  function breathRailHtml() {
+    return `<div class="tool-rail"><span>Breath pacing · six seconds</span>
+      <div class="breath-bar" aria-hidden="true"><i></i></div>
+      <em>Aim the first note after each breath at a landing tone. This is a visual metronome for phrasing — nothing is being listened to.</em></div>`;
+  }
+
   function toolRailHtml(tool) {
     const c = (tool && tool.choreo) || {};
+    if (c.breathCue) return breathRailHtml();
+    if (c.arrivalBadges) return arrivalRailHtml();
+    if (c.groupGrid) return groupOnsetLabel();
     if (c.exitRail) return exitRailHtml();
     if (c.thirdPairsRail) return thirdPairsRailHtml();
     if (c.chromaticRail) return chromaticRailHtml();
@@ -2418,6 +2461,10 @@
       state.solo.toolkit.phase = +b.getAttribute("data-tk-phase");
       renderSolo();
     });
+    root.querySelectorAll("[data-tk-arrival]").forEach((b) => b.onclick = () => {
+      state.solo.toolkit.arrival = b.getAttribute("data-tk-arrival");
+      renderSolo();
+    });
   }
 
   // The fretboard adapts to the active tool: tetrachord zones brighten per
@@ -2431,13 +2478,12 @@
     const c = (tool && tool.choreo) || {};
     const phases = toolPhases(tool);
     const phase = state.solo.toolkit.phase;
-    node.classList.remove("zone-lower", "zone-upper", "vii-shimmer", "group-grid");
+    node.classList.remove("zone-lower", "zone-upper", "vii-shimmer");
     if (c.zoneSweep && phases) {
       if (phase === 0) node.classList.add("zone-lower");
       else if (phase === 1) node.classList.add("zone-upper");
     }
     if (c.viiShimmer && phases && phase === phases.length - 1) node.classList.add("vii-shimmer");
-    if (c.groupGrid) node.classList.add("group-grid");
     // The leading tone / VII colour is a pitch class, so mark it for CSS.
     const scale = M.scaleOf(state.tonic, state.modeId);
     const seventh = scale[scale.length - 1];

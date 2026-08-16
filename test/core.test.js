@@ -137,6 +137,22 @@ test("the soloist toolkit is MECE, sourced, and never pretends to hear you", () 
         `${p.id} has no tools in ${modeId}`);
     });
   });
+  // No dead choreography: every flag a tool declares must be consumed by the
+  // app, and every CSS class the app applies must have a rule behind it.
+  // A declared-but-inert flag is a promise the map does not keep.
+  const app = readFileSync(path.join(root, "js/app.js"), "utf8");
+  const css = readFileSync(path.join(root, "css/styles.css"), "utf8");
+  const flags = new Set();
+  SoloToolkit.TOOLS.forEach((tool) => Object.keys(tool.choreo || {}).forEach((k) => flags.add(k)));
+  flags.forEach((flag) => {
+    if (flag === "focus" || flag === "phases") return;
+    assert.ok(app.includes(`c.${flag}`), `choreo flag "${flag}" is declared but never consumed by app.js`);
+  });
+  ["zone-lower", "zone-upper", "vii-shimmer", "group-grid"].forEach((cls) => {
+    if (!app.includes(`"${cls}"`)) return;
+    assert.ok(css.includes(cls), `app.js applies .${cls} but no CSS rule backs it`);
+  });
+
   // Cadence Ramp is scoped to major/minor-family taximia, per its source.
   assert.ok(!SoloToolkit.availableTools("land", "ousak").some((t) => t.id === "cadence-ramp"),
     "Cadence Ramp is documented for major/minor taximia, not dromos-based ones");
