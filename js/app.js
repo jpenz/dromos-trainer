@@ -2078,6 +2078,17 @@
     return chord.notes.find((note) => note.role === role) || null;
   }
 
+  // The Solo map's scale background: the full dromos as tetrachord-tagged
+  // road notes (lower = blue, upper = violet), including Ousak's mobile
+  // ascending tones as hollow dots. Rendered quiet — it is the floor, not
+  // the message.
+  function soloBackgroundRoad() {
+    const road = M.tetrachordsOf(state.tonic, state.modeId);
+    const mobile = M.mobileTonesOf(state.tonic, state.modeId)
+      .map((note) => Object.assign({}, note, { road: note.off < 6 ? "lower" : "upper" }));
+    return road.lower.concat(road.upper.slice(0, -1)).concat(mobile);
+  }
+
   function soloTargets(chord, focus) {
     const third = chordTone(chord, "3") || chordTone(chord, "b3");
     if (focus === "sweet") {
@@ -2309,7 +2320,7 @@
       </section>
       <div class="solo-layer-row">
         <span class="solo-layer-label">Background</span>
-        ${chip("scale", layers.scale, "lc-scale", `${state.tonic} ${mode.name} · full scale`)}
+        ${chip("scale", layers.scale, "lc-scale", `${state.tonic} ${mode.name} · two tetrachords`)}
         ${chip("pentatonic", layers.pentatonic, "lc-penta", `${state.tonic} ${M.PENTATONIC[state.modeId]?.name || "Pentatonic"}`)}
         ${chip("none", !layers.scale && !layers.pentatonic, "lc-none", "Triads only")}
         <span class="solo-layer-divider" aria-hidden="true"></span>
@@ -2384,7 +2395,11 @@
       nextGrip: layers.next ? nextGrip : null,
       otherShapes: state.solo.section === "targets" ? allTriads.filter(() => layers.triads) : [],
       pentatonicNotes: state.solo.section === "targets" && layers.pentatonic ? pentatonic : null,
-      scaleNotes: state.solo.section === "targets" && layers.scale ? M.scaleOf(state.tonic, state.modeId) : null,
+      // The scale background keeps its tetrachord identity: quiet road dots in
+      // the lower/upper hues rather than a flat grey scale, so the two halves
+      // of the dromos stay legible UNDER the pentatonic frame and the targets.
+      roadNotes: state.solo.section === "targets" && layers.scale ? soloBackgroundRoad() : null,
+      roadQuiet: true,
       targetPlacements: state.solo.section === "targets" ? targetPlacements : null,
       targetNowPcs: curTargets.map((note) => note.pc),
       targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],

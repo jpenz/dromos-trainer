@@ -510,6 +510,14 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .fb-dot.road .dot-bg { stroke: rgba(242, 237, 227, 0.34); stroke-width: 1.7; }
 .fb-dot.road.tonic .dot-bg { stroke: #F5E4C3; stroke-width: 3; }
 .fb-dot.road .dot-label { font-size: 11px; }
+/* Quiet road: the parent scale as a translucent under-layer that keeps its
+   tetrachord hues (blue lower, violet upper) so the two halves of the dromos
+   stay visible UNDER the pentatonic frame and the burning targets. */
+.fb-dot.road.quiet { animation: none; }
+.fb-dot.road.quiet .dot-bg { opacity: 0.34; stroke: none; }
+.fb-dot.road.quiet .dot-label { opacity: 0.5; font-size: 10px; }
+.fb-dot.road.quiet.tonic .dot-bg { opacity: 0.55; stroke: rgba(245, 228, 195, 0.6); stroke-width: 2; }
+.fb-dot.road.quiet.target-now .dot-bg, .fb-dot.road.quiet.target-next .dot-bg { opacity: 0.7; }
 @media (prefers-reduced-motion: no-preference) {
   .fb-dot.road { animation: road-breathe 2.8s ease-in-out infinite alternate; }
   .fb-dot.road:nth-child(3n) { animation-delay: -0.9s; }

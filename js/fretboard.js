@@ -278,6 +278,7 @@
       const cls = "fb-dot " + kind + (isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
         (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
         (p.note.mobile ? " mobile" : "") +
+        (kind === "road" && opts.roadQuiet ? " quiet" : "") +
         (p.note.isTonic ? " tonic" : "");
       const gg = el("g", {
         class: cls, "data-group": p.note.colorGroup, "data-pc": p.note.pc,
