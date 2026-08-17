@@ -282,11 +282,11 @@
 
   // Play a melodic path for scale/cell drills. Ear-map prompts deliberately
   // use chords only so the answer is never leaked by a diagnostic scale run.
-  function playSequence(notes, spacing, when) {
+  function playSequence(notes, spacing, when, referenceVoice) {
     ensure();
     const sp = spacing == null ? 0.26 : spacing;
     const t0 = when == null ? ctx.currentTime + 0.02 : when;
-    notes.forEach((n, i) => playNoteAt(n.freq, t0 + i * sp, 1.4, voiceGain(1, "sequence")));
+    notes.forEach((n, i) => playNoteAt(n.freq, t0 + i * sp, 1.4, voiceGain(1, "sequence"), referenceVoice));
     return t0 + notes.length * sp;
   }
 

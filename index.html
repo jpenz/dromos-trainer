@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=20" />
+  <link rel="stylesheet" href="css/styles.css?v=22" />
 </head>
 <body>
   <div class="app">
@@ -21,11 +21,14 @@
         <span class="nav-wordmark">Dromos</span>
       </div>
       <nav class="nav-list" aria-label="Practice areas">
+        <span class="nav-group-label">Practice</span>
         <button data-nav="today">Today</button>
-        <button data-nav="hear">Hear</button>
+        <button data-nav="hear">Ear</button>
+        <button data-nav="melody">Melody</button>
         <button data-nav="harmony">Harmony</button>
-        <button data-nav="matrix">Matrix</button>
         <button data-nav="solo">Solo</button>
+        <span class="nav-group-label">Reference &amp; support</span>
+        <button data-nav="matrix">Matrix</button>
         <button data-nav="repertoire">Repertoire</button>
         <button data-nav="learn">Learn</button>
         <button data-nav="coach">Coach</button>
@@ -109,6 +112,7 @@
           <nav class="visually-hidden" aria-hidden="true">
             <button data-view="cycle" tabindex="-1">Hear movement</button>
             <button data-view="ear" tabindex="-1">Ear checks</button>
+            <button data-view="melody" tabindex="-1">Melody to harmony</button>
             <button data-view="chordmap" tabindex="-1">Harmony matrix</button>
             <button data-view="solo" tabindex="-1">Solo road</button>
             <button data-view="analyze" tabindex="-1">Analyze</button>
@@ -120,6 +124,7 @@
         <section id="journeyBand" class="journey-band" aria-label="Harmonic journey">
           <section id="changeGuide" class="change-guide" aria-label="Current and next chord" aria-live="off"></section>
           <div id="journeyAnnouncement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+          <section id="cycleRoadmap" class="cycle-roadmap hidden" aria-label="Six-chord look-ahead"></section>
           <div id="pivotBanner" class="pivot-banner"></div>
           <section id="keymapWrap" class="keymap-wrap" aria-labelledby="keymapTitle">
             <header><div><span>Moving key centers</span><b id="keymapTitle">Old I becomes the next ii</b></div><p>Tap a key to jump to its ii and hear that starting chord. “Next” marks a role change, not another chord.</p></header>
@@ -392,6 +397,58 @@
               <button id="btnLabPlay" class="tbtn primary">▶ Play (Space)</button>
             </div>
 
+            <!-- Melody to harmony -->
+            <div id="panelMelody" class="panel melody-lab hidden">
+              <header class="melody-hero">
+                <span class="panel-label">Melody → Harmony</span>
+                <h2>Hear one note. Name its job. Try the chords beneath it.</h2>
+                <p>The melody never determines one automatic chord. This lab shows every lawful option, then separates trainer-evidenced routes from scale-derived possibilities.</p>
+              </header>
+              <section class="melody-setup music-context" aria-label="Melody lab setup">
+                <label for="melodyTonicSel">Known home<select id="melodyTonicSel"></select></label>
+                <div class="grow">
+                  <span class="panel-label">Scale / dromos</span>
+                  <div class="seg seg-5 melody-mode-grid">
+                    <button data-melody-mode="major">Major</button>
+                    <button data-melody-mode="minor">Natural minor</button>
+                    <button data-melody-mode="harmonicMinor">Harmonic minor</button>
+                    <button data-melody-mode="ousak">Ousak</button>
+                    <button data-melody-mode="hijaz">Hijaz</button>
+                  </div>
+                </div>
+                <div>
+                  <span class="panel-label">Harmony depth</span>
+                  <div class="seg melody-depth">
+                    <button data-melody-depth="triad">Triads</button>
+                    <button data-melody-depth="seventh">7ths</button>
+                  </div>
+                </div>
+              </section>
+              <section class="melody-question" aria-labelledby="melodyQuestionTitle">
+                <div class="melody-question-head"><div><span>1 · Hear + identify</span><h3 id="melodyQuestionTitle">Set your home, then start a note</h3></div><div id="melodyScore" class="melody-score">0 / 0</div></div>
+                <div class="melody-actions">
+                  <button id="btnMelodyHome" class="mini">♪ Hear home</button>
+                  <button id="btnMelodyNew" class="mini primary-mini">▶ Start next note</button>
+                  <button id="btnMelodyReplay" class="mini">↻ Replay</button>
+                  <button id="btnMelodyStop" class="mini">■ Stop</button>
+                </div>
+                <div id="melodyAudioStatus" class="ear-audio-status" role="status" aria-live="polite">Known home first · sampled studio piano</div>
+                <div id="melodyScaleRail" class="melody-scale-rail" aria-label="Scale-degree answer choices"></div>
+                <div id="melodyChoices" class="melody-choices"></div>
+                <div class="melody-check-row"><button id="btnMelodyHint" class="mini">Give one hint</button><button id="btnMelodyCheck" class="mini primary-mini">Check + build harmony map</button></div>
+                <p id="melodyFeedback" class="melody-feedback">The home stays known so the question trains relative hearing, not perfect pitch.</p>
+              </section>
+              <section id="melodyReveal" class="melody-reveal hidden" aria-live="polite">
+                <div id="melodyIdentity" class="melody-identity"></div>
+                <div class="melody-workflow-grid">
+                  <section aria-labelledby="melodyCandidatesTitle"><div class="melody-section-head"><span>2 · Put harmony under it</span><h3 id="melodyCandidatesTitle">Chord colours</h3></div><div id="melodyCandidates" class="melody-candidates"></div></section>
+                  <section aria-labelledby="melodyNextTitle"><div class="melody-section-head"><span>3 · Anticipate</span><h3 id="melodyNextTitle">What can follow?</h3></div><div id="melodyNext" class="melody-next"></div></section>
+                </div>
+                <section class="melody-enhance" aria-labelledby="melodyMovesTitle"><div class="melody-section-head"><span>4 · Make an answer line</span><h3 id="melodyMovesTitle">Counter-melody and top-voice moves</h3></div><div id="melodyMoves" class="melody-moves"></div></section>
+                <p class="melody-boundary"><b>Evidence boundary:</b> chord membership is derived from the selected scale; “can follow” appears only when that exact degree-to-degree move exists in this trainer’s documented progression bank.</p>
+              </section>
+            </div>
+
             <!-- Ear trainer -->
             <div id="panelEar" class="panel hidden">
               <header class="ear-start">
@@ -525,7 +582,7 @@
           <aside id="readout" class="readout" aria-label="Chord inspector"></aside>
         </section>
 
-        <div class="hint">Space plays · ← → steps · number keys follow the navigation</div>
+        <div id="keyboardHint" class="hint">Space plays · ← → steps · number keys follow the navigation</div>
       </main>
 
       <!-- ================= Transport ================= -->
@@ -568,6 +625,7 @@
   <script src="js/harmony-journey.js?v=15"></script>
   <script src="js/modes.js?v=20"></script>
   <script src="js/chord-map.js?v=17"></script>
+  <script src="js/melody-harmony.js?v=22"></script>
   <script src="js/ear-drills.js?v=14"></script>
   <script src="js/styles.js?v=20"></script>
   <script src="js/analysis.js?v=14"></script>
@@ -581,8 +639,8 @@
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=19"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=16"></script>
-  <script src="js/app.js?v=20"></script>
+  <script src="js/audio.js?v=22"></script>
+  <script src="js/app.js?v=22"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

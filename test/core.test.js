@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/melody-harmony.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.MelodyHarmony.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -317,6 +317,56 @@ test("Harmony Matrix separates working roles from derived harmony", () => {
   assert.equal(major[2].workingRole.id, "derived", "iii stays visible without being promoted to a documented working chord");
   const naturalMinor = ChordMap.harmonize("D", "minor");
   assert.equal(naturalMinor[6].workingRole.id, "cadence", "natural-minor ♭VII resolves into i in the verified maps");
+});
+
+test("Melody Harmony separates note identity, lawful chord membership, and route evidence", () => {
+  const { Modes, MelodyHarmony } = loadCore();
+  let prompts = 0;
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    for (let degreeIndex = 0; degreeIndex < 7; degreeIndex++) {
+      const prompt = MelodyHarmony.buildPrompt({ tonic, modeId, degreeIndex, depth: "triad" });
+      assert.equal(prompt.note.pc, prompt.scale[degreeIndex].pc);
+      assert.equal(prompt.candidates.length, 3, `${tonic} ${modeId} degree ${degreeIndex + 1} belongs to three stacked triads`);
+      prompt.candidates.forEach((candidate) => {
+        assert.ok(candidate.chord.notes.some((note) => note.pc === prompt.note.pc),
+          `${candidate.chord.symbol} must actually contain the heard pitch`);
+        candidate.successors.forEach((successor) => successor.routes.forEach((route) => {
+          const progression = Modes.PROGRESSIONS[modeId].find((item) => item.id === route.id);
+          assert.ok(progression.chords.some(([offset], index) =>
+            offset === candidate.chord.scaleNote.off && progression.chords[(index + 1) % progression.chords.length][0] === successor.nextOffset),
+          `${candidate.chord.roman} → ${successor.chord.degreeLabel} must be an exact trainer-map adjacency`);
+        }));
+      });
+      prompts++;
+    }
+  }));
+  assert.equal(prompts, 420);
+});
+
+test("Melody Harmony counter-lines stay audible and disclose unsupported routes", () => {
+  const { MelodyHarmony } = loadCore();
+  const prompt = MelodyHarmony.buildPrompt({ tonic: "D", modeId: "hijaz", degreeIndex: 2 });
+  assert.equal(prompt.note.name, "F♯");
+  assert.equal(prompt.note.degree, "3");
+  const derived = prompt.candidates.find((candidate) => candidate.chord.degreeIndex === 2);
+  assert.equal(derived.evidenceKind, "derived-only");
+  assert.equal(derived.successors.length, 0, "the app must not invent a next chord for Hijaz iii°");
+  const home = prompt.candidates.find((candidate) => candidate.chord.degreeIndex === 0);
+  const successor = home.successors[0];
+  const moves = MelodyHarmony.enhancementMoves(prompt, home, successor);
+  assert.ok(moves.some((move) => move.id === "guide-thread"));
+  assert.ok(moves.some((move) => move.id === "third-shadow"));
+  moves.forEach((move) => move.notes.forEach((note) => {
+    assert.ok(Number.isFinite(note.midi));
+    assert.ok(Number.isFinite(note.freq));
+  }));
+
+  const ousakHome = MelodyHarmony.buildPrompt({ tonic: "A", modeId: "ousak", degreeIndex: 0 });
+  const ousakCandidate = ousakHome.candidates.find((candidate) => candidate.chord.degreeIndex === 0);
+  const ousakMove = MelodyHarmony.enhancementMoves(ousakHome, ousakCandidate, ousakCandidate.successors[0])
+    .find((move) => move.id === "guide-thread");
+  assert.equal(ousakMove.notes[1].name, "B♭", "A should take the half-step into the next B♭ chord, not leap to its 3rd");
+  assert.match(ousakMove.label, /nearest chord tone/i);
 });
 
 test("Harmony Matrix scale doors state exact, parallel, and cycle evidence", () => {

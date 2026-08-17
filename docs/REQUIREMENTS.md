@@ -36,7 +36,7 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-24** | Instrument tunings | DONE | — | `js/tuning.js` | Guitar, drop D, bouzouki tetrachordo (C F A D), bouzouki trichordo (D A D). Switching redraws everything; chords thin gracefully when strings < notes |
 | **FR-25** | Triad map | DONE | — | `js/triads.js` | Every triad shape on the neck, grouped by string set and inversion; works on all tunings |
 | **FR-26** | Voice-led triads through changes | DONE | — | `js/triads.js` | Dynamic programming chooses the lowest-cost complete route on one fixed string set and neck area; optional loop closure prices the final-to-first move and reports per-voice movement |
-| **FR-27** | Practice curriculum path | DONE | — | `index.html`, `js/app.js` | Hear → Map → Comp → Solo → Recall path remains visible and each step opens the matching practice area with a concrete cue |
+| **FR-27** | Practice curriculum path | DONE | — | `index.html`, `js/app.js` | Changes → Recall → Melody → Map → Comp → Solo → Pulse → Study remains visible and each step opens the matching practice area with a concrete cue |
 | **FR-28** | Solo target map | DONE | — | `js/modes.js`, `js/fretboard.js`, `js/app.js` | Shows the dromos-specific pentatonic frame plus current/next 3rd or guide-tone landing notes through the selected progression |
 | **FR-29** | Mainland laouto tuning | DONE | — | `js/tuning.js` | `A D G C` tuning produces playable grips, triads, and scale paths without guitar-only assumptions |
 | **FR-30** | Installable offline browser shell | DONE | — | `manifest.webmanifest`, `sw.js` | Versioned shell assets and network-first same-origin requests show the current deployment online, with the cache used as an offline fallback; `file://` still works without service workers |
@@ -64,6 +64,8 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-58** | Soloist Toolkit | DONE | — | `js/toolkit.js`, `js/app.js`, `css/styles.css` | Three MECE pillars—Land, Move, Speak—route sourced, self-scored practice tools into the active Solo map; keyboard tabs retain focus after rendering, Formula Bank cards genuinely swap, and text-only tools do not promise missing fretboard overlays |
 | **FR-59** | Pulse-first Comp curriculum | DONE | — | `js/styles.js`, `js/app.js`, `index.html`, `css/styles.css` | Comp starts with three progressive levels for every Greek pulse preset: accents only, disclosed bass/chord skeleton, then free right hand around preserved anchors; Hasaposerviko is selectable, transport plays the progression, and the visible cursor follows the current pulse before triad-shape work |
 | **FR-60** | Directional road disclosure | DONE | — | `js/modes.js`, `js/app.js` | Solo Road distinguishes Ousak's verified ascending mobile 2nd/6th from its core descending trainer collection and explicitly states when any other scale is re-used in both directions because no additional directional form is encoded |
+| **FR-61** | Melody-to-Harmony Lab | DONE | — | `js/melody-harmony.js`, `js/audio.js`, `js/app.js`, `index.html`, `css/styles.css` | A standalone practice page anchors a known tonic/dromos, plays one pitch through the pitch-stable reference, checks its scale degree, reveals its exact note/interval/tetrachord role, auditions every derived triad or seventh chord containing it, shows only progression-evidenced successors, and demonstrates common-tone, guide-thread, and disclosed thirds-shadow enhancements |
+| **FR-62** | Read-ahead harmonic roadmaps | DONE | — | `js/app.js`, `css/styles.css` | Changes Gym shows up to six upcoming chords in a readable 3×2 roadmap derived from the same journey as playback; Solo keeps the complete progression and the selected target interval/note for every chord above the fretboard, with current and next encoded by text, border, and stable colour |
 | **FR-17** | Headless test runner | DONE | — | `package.json`, `test/` | `npm test` runs theory, dromos pentatonic, laouto, and app-shell regressions without a browser |
 | **FR-18** | Persist stable player state | DONE | — | `js/profiles.js`, `js/app.js` | Tonic, mode, progression, tuning, tempo, view and ear scores survive reload per named local player; unanswered prompts, imported score content, timers and audio are deliberately excluded |
 | **FR-19** | Printable one-page chart | TODO | — | — | Print stylesheet producing a music-stand sheet of the current mode |
@@ -109,6 +111,8 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-27** | A Solo Now/Next landing and both displayed triads are derived from the same current/next chord objects that drive playback. The default target is each chord's actual 3rd (`3` or `♭3`), never an invented seventh. Target rings are position-scoped to one playable address in the voice-led current/coming shapes—not sprayed across every matching pitch on the neck—and visual arrival occurs on the transport's chord boundary. | ✅ |
 | **MI-28** | Comp may free the right hand only after preserving the selected pulse's Level-1 anchors. Zeibekiko marks 1/3/5/7 and leaves 8–9 unfilled; Hasapiko states bass on 1/chord on 2 before adding the walk; sparse Tsifteteli 1/4 accents remain distinct from its Level-2 eight-subdivision 3+3+2 study; Hasaposerviko remains a fast two-beat bass/chord preset. | ✅ |
 | **MI-29** | A directional dromos claim must be represented as directional data. Only Ousak's verified ascending mobile 2nd/6th is currently encoded; every other selected map discloses that the trainer repeats its declared fixed collection descending rather than inventing a sourced seira. | ✅ |
+| **MI-30** | A melody pitch never implies one automatic chord. Candidate harmony must actually contain the sounding pitch; its R/3/5/7 role comes from that chord object. “Can follow” may appear only for exact adjacent degree moves in `Modes.PROGRESSIONS`; a scale-derived chord with no bank evidence must say so instead of receiving an invented route. | ✅ — exhaustive 420-prompt test |
+| **MI-31** | Musical colour is redundant, not exclusive: current = terracotta + “Now” + solid border; next = turquoise + “Next” + dashed border; lower/upper road zones use text and structure as well as hue; interval families always retain R/3/5/7 labels. | ✅ — shell/source + browser verification |
 ### The reference tables
 
 **MI-07b — progression banks, tonic D** (and A for Hijaz)
@@ -188,6 +192,7 @@ choice.** Each is asserted by a self-test where marked.
 | `js/theory.js` | FR-01 | MI-01, MI-02, MI-03, MI-07a | `Theory.selfTest()` |
 | `js/modes.js`, `js/ear-drills.js` | FR-08, FR-09, FR-10, FR-12, FR-13, FR-28, FR-46, FR-55, FR-60 | MI-04, MI-05, MI-06, MI-07b, MI-08, MI-15, MI-25, MI-29 | `Modes.selfTest()` + `EarDrills.selfTest()` + exhaustive display/sound and movement-policy audits in `npm test` |
 | `js/chord-map.js` | FR-54, FR-56 | MI-04, MI-07c, MI-07d, MI-10, MI-12, MI-26 | `ChordMap.selfTest()` + exhaustive triad/seventh, scale-door, and 60-map/5-tuning checks in `npm test` |
+| `js/melody-harmony.js` | FR-61 | MI-25, MI-30 | `MelodyHarmony.selfTest()` + exhaustive 12-tonic × 5-dromos × 7-degree candidate/transition audit in `npm test` |
 | `js/styles.js` | FR-37, FR-50, FR-59 | MI-16, MI-22, MI-28 | `StyleLibrary.selfTest()` + exact three-level skeleton regressions in `npm test` |
 | `js/toolkit.js` | FR-58 | — | `SoloToolkit.selfTest()` + keyboard/focus and promise/behavior regressions in `npm test` and browser |
 | `js/analysis.js` | FR-38, FR-39 | MI-17 | `AnalysisEngine.selfTest()` + `npm test` |
@@ -201,8 +206,8 @@ choice.** Each is asserted by a self-test where marked.
 | `js/guitar-voicings.js` | FR-51 | MI-23 | `GuitarVoicings.selfTest()` + `npm test` |
 | `js/tuning.js` | FR-24, FR-29 | MI-12 | via the other suites |
 | `js/triads.js` | FR-25, FR-26, FR-49, FR-56 | MI-12, MI-13, MI-14, MI-24 | `Triads.selfTest()` + exhaustive compact-seventh grip checks in `npm test` |
-| `js/audio.js` | FR-05, FR-06, FR-23, FR-50, FR-55 | MI-06, MI-22, MI-25 | `AudioEngine.selfTest()` + browser sample-load/stop/replay regression |
-| `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15, FR-45…47, FR-49…51, FR-56…60 | MI-22, MI-26…29 | visual + Solo Now/Next, toolkit focus, Comp transport/pulse browser regression + `npm test` |
+| `js/audio.js` | FR-05, FR-06, FR-23, FR-50, FR-55, FR-61 | MI-06, MI-22, MI-25 | `AudioEngine.selfTest()` + browser sample-load/stop/replay regression |
+| `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15, FR-45…47, FR-49…51, FR-56…62 | MI-22, MI-26…31 | visual + Solo/Changes roadmaps, Melody Lab, toolkit focus, Comp transport/pulse browser regression + `npm test` |
 | `js/video.js` | FR-48 | MI-20 | catalog self-test + host-controlled embed |
 | `index.html`, `sw.js` | FR-27, FR-30, FR-47…48 | — | `npm test` + browser verification |
 
