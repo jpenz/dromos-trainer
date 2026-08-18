@@ -184,6 +184,7 @@
     const shadowTone = chord.notes.find((note) => note.pc === shadow.pc);
     moves.push({
       id: "third-shadow", label: "Add a diatonic 3rd below", badge: "Chiotis-linked practice",
+      exampleId: "chiotis-double-voice",
       detail: `${melody.name} over ${shadow.name}${shadowTone ? ` · ${shadow.name} is ${shadowTone.roleLabel} of ${chord.symbol}` : " · scale colour, not a chord tone here"}.`,
       listen: shadowTone
         ? "Play the single melody first, then add the lower voice without changing its rhythm."

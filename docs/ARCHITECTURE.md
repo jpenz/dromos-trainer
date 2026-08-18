@@ -8,7 +8,7 @@ double-clicking `index.html`, works offline, and will still run in ten years. Be
 adding a framework or a bundler, read NFR-01/02 in [REQUIREMENTS.md](REQUIREMENTS.md).
 
 Modules attach one global each (`window.Theory`, `window.Modes`, `window.ChordMap`,
-`window.ChordPath`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
+`window.ChordPath`, `window.TacticalExamples`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
 are loaded in dependency order by `index.html`.
 
 ## Module map
@@ -22,6 +22,7 @@ index.html
   └─ js/modes.js    ──►  Modes      pure. dromoi, spelling, progression banks
   └─ js/chord-map.js ─►  ChordMap   pure. derived harmony + scale relationships
   └─ js/chord-path.js►  ChordPath  pure. arpeggios, connectors, successors + doors
+  └─ js/tactical-examples.js ► TacticalExamples pure. sourced claims + generated drills
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
   └─ js/audio.js    ──►  AudioEngine Web Audio synth + bar transport
@@ -47,6 +48,13 @@ successor exists only when the same chord is followed by that chord in
 whether the sounding chord holds, its root holds while colour changes, or the
 explicit major-I-to-new-ii cycle rule applies. `app.js` renders and sounds this
 model; it must not add an unsupported route in player-facing copy.
+
+`tactical-examples.js` is the named-source evidence boundary. The source record says
+only what a publication documents; a separate builder creates the current
+tonic/dromos note path and practice instructions. The rendered page must always show
+both layers and the explicit “not a transcription” boundary. `toolkit.js` links each
+tool to one example ID, while `app.js` owns navigation, audio preview, and the handoff
+back into Solo. A citation must never be used as decoration for an invented lick.
 
 ## The two engines
 
@@ -151,7 +159,8 @@ increases. High-pass cleanup, instrument-specific filtering, a dynamics compress
 and a conservative output stage protect against summed clipping. No samples, library,
 or network are required.
 
-Ear checks use a single warm guitar reference voice and chord cadences only, twice.
+Ear checks use a self-hosted, pitch-stable sampled piano reference and chord cadences
+only, twice, with an additive warm-keys fallback when samples are unavailable.
 The selected instrument still controls the visual/playable map; it does not change
 the Recall reference. Bass, percussion, and scale runs are off for ear questions.
 

@@ -175,6 +175,16 @@
       terms: [["A–B loop", "A selected start point A and end point B that repeat."], ["Playhead", "The current time position in the video."], ["Articulation", "How a note begins, connects, bends, slides, or ends."]],
       targetId: "videoStudy"
     },
+    examples: {
+      purpose: "Turn a named idea into something playable",
+      answer: "Choose a source-backed concept, then practise the exact notes, timing, listening goal, and pass test shown for your current key and dromos.",
+      result: "Every entry separates what the research actually supports from the new Dromos exercise built from it.",
+      steps: ["Choose Key / home and Scale / dromos, then select one category and example.", "Read What the source supports before following the numbered Use it now steps.", "Press Hear the note path, perform the drill, and use its Pass when test before opening it in Solo."],
+      done: "You can demonstrate the idea on your instrument and explain both its musical purpose and its evidence boundary.",
+      why: "A famous name is not an instruction. Concrete notes, timing, listening criteria, and honest attribution turn inspiration into repeatable practice without inventing a player's lick.",
+      terms: [["Tactical example", "A playable sequence of actions with specific notes or functions and a success test."], ["Source-bounded", "The app states exactly what the source supports and labels the generated drill as an adaptation, not a transcription."], ["Note path", "A pitch-only preview; articulation and groove still come from your hands and the selected exercise."]],
+      targetId: "tacticalExamples"
+    },
     analyze: {
       purpose: "Explain music you are studying",
       answer: "Enter a chord map or MusicXML score you own, then turn the analysis into one specific practice decision.",
@@ -235,7 +245,7 @@
 
   function selfTest() {
     const results = [];
-    const requiredViews = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "analyze", "concepts", "coach", "progress"];
+    const requiredViews = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "examples", "analyze", "concepts", "coach", "progress"];
     const missingViews = requiredViews.filter((view) => !resolve({ view }));
     results.push({ name: "every workspace resolves to a guide", pass: missingViews.length === 0, got: missingViews.join(", "), want: "" });
     const incomplete = Object.entries(GUIDES).filter(([, guide]) => !guide.answer || !guide.result || guide.steps.length !== 3 || !guide.done || !guide.why || !guide.targetId || guide.terms.length < 2).map(([key]) => key);

@@ -1,12 +1,12 @@
 /* app.js — views, wiring, animation, playback sync, shortcuts.
- * Implements FR-04..07, FR-11, FR-12, FR-15, FR-57, FR-65 / MI-27, MI-34. See docs/REQUIREMENTS.md.
+ * Implements FR-04..07, FR-11, FR-12, FR-15, FR-57, FR-65, FR-66 / MI-27, MI-34, MI-35. See docs/REQUIREMENTS.md.
  */
 (function () {
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
     PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
-    PG = window.PageGuides;
+    PG = window.PageGuides, TE = window.TacticalExamples;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -49,6 +49,8 @@
       layers: { scale: true, pentatonic: false, triads: false, next: true } },
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
+    // --- source-bounded tactical example index ---
+    examples: { category: "all", selectedId: "chiotis-mimisis" },
     // --- transparent analysis ---
     analysis: { tonic: "D", modeId: "minor", selected: 0, studyId: null, importStatus: "" },
     // --- scale lab ---
@@ -106,7 +108,7 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   }[character]));
 
-  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "analyze", "concepts", "coach"];
+  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "examples", "analyze", "concepts", "coach"];
 
   function stablePreferences() {
     return {
@@ -223,7 +225,7 @@
   // Primary destinations follow the player's journey: orient, hear, connect
   // melody to harmony, map/comp, then solo. Reference tools follow beneath.
   const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", melody: "melody", harmony: "cycle", matrix: "chordmap", solo: "solo", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
-  const VIEW_NAV = { today: "today", ear: "hear", melody: "melody", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", concepts: "learn", coach: "coach", progress: "progress" };
+  const VIEW_NAV = { today: "today", ear: "hear", melody: "melody", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", examples: "learn", concepts: "learn", coach: "coach", progress: "progress" };
   const NAV_TITLES = { today: "Today", hear: "Ear", melody: "Melody → Harmony", harmony: "Harmony", matrix: "Harmony Matrix", solo: "Solo", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
 
   // One sentence per workspace answering "what is this FOR" — the purposes the
@@ -318,9 +320,12 @@
   function renderCoachCue() {
     if (state.view === "today" || state.view === "progress") { $("coachCue").innerHTML = ""; return; }
     const step = PRACTICE_STEPS.find((item) => item.view === state.view);
-    const specialStep = state.view === "styles" || state.view === "video";
-    if (!step && !specialStep) return;
-    let detail = step ? step.detail : state.view === "video" ? "Loop only enough material to identify the destination; then put the video down and make the idea yours." : "Build the general language first, then place it inside a real Greek pulse without confusing style and dromos.";
+    const specialStep = state.view === "styles" || state.view === "video" || state.view === "examples";
+    if (!step && !specialStep) { $("coachCue").innerHTML = ""; return; }
+    let detail = step ? step.detail
+      : state.view === "video" ? "Loop only enough material to identify the destination; then put the video down and make the idea yours."
+        : state.view === "examples" ? "Turn one documented concept into exact notes, timing, a listening goal, and an honest pass test."
+          : "Build the general language first, then place it inside a real Greek pulse without confusing style and dromos.";
     if (state.view === "solo" && state.solo.section === "targets") {
       detail = "Keep the whole scale visible, state the current triad, and pre-hear the next chord's 3rd before its ring changes colour.";
     } else if (state.view === "solo" && state.solo.section === "road") {
@@ -332,7 +337,7 @@
     } else if (state.view === "solo" && state.solo.section === "cell") {
       detail = "Pre-hear the final note, leave space for it, then reveal and check your ear.";
     }
-    $("coachCue").innerHTML = `<span>${step ? step.label : state.view === "video" ? "Video study" : "Style lab"}</span><b>${detail}</b>`;
+    $("coachCue").innerHTML = `<span>${step ? step.label : state.view === "video" ? "Video study" : state.view === "examples" ? "Tactical examples" : "Style lab"}</span><b>${detail}</b>`;
   }
 
   function currentPulse() {
@@ -1300,6 +1305,156 @@
     renderPageGuide();
   }
 
+  // ====================== TACTICAL EXAMPLE INDEX ======================
+  // Named-source claims and app-authored drills remain visibly separate.
+  // A source can support the observed technique without implying that the
+  // generated notes below are a transcription of a player's recorded phrase.
+  function tacticalContext() {
+    const style = S.byId(state.groove.styleId);
+    return {
+      tonic: state.tonic,
+      modeId: state.modeId,
+      progId: state.progId,
+      instrument: window.Tuning.current().name,
+      pulse: `${style.title} · ${style.meter} · ${style.pulse}`
+    };
+  }
+
+  function openTacticalExample(id) {
+    if (!TE) return;
+    const template = TE.byId(id);
+    if (!template) return;
+    if (template.modeGate && !template.modeGate.includes(state.modeId)) {
+      state.modeId = state.modeId === "minor" && template.modeGate.includes("harmonicMinor")
+        ? "harmonicMinor" : template.modeGate[0];
+      state.progId = M.PROGRESSIONS[state.modeId][0].id;
+      state.progStep = 0;
+      persistPreferences();
+    }
+    state.examples.category = template.category;
+    state.examples.selectedId = template.id;
+    setView("examples");
+  }
+
+  function useTacticalExample(example) {
+    if (!example) return;
+    if (example.toolId && TK) {
+      const tool = TK.byId(example.toolId);
+      if (!tool) return;
+      state.solo.section = "targets";
+      state.solo.toolkit.pillar = tool.pillar;
+      state.solo.toolkit.toolId = tool.id;
+      state.solo.toolkit.phase = 0;
+      applyToolChoreo();
+      setView("solo");
+      return;
+    }
+    // Pennanen's tactile comparison belongs in the picking/route workspace,
+    // where the selected instrument determines the actual course layout.
+    state.solo.section = "path";
+    setView("solo");
+  }
+
+  let tacticalPlaybackRequest = 0;
+  function playTacticalExample(example) {
+    if (!example || !example.notes.length) return;
+    stopPlay();
+    const request = ++tacticalPlaybackRequest;
+    AU.prepareStudioPiano().then((ready) => {
+      if (request !== tacticalPlaybackRequest || state.view !== "examples" || state.examples.selectedId !== example.id) return;
+      AU.playSequence(example.notes, 0.34, undefined, ready ? "studio" : "piano");
+    });
+  }
+
+  function tacticalInstrumentRoute(notes) {
+    const tuning = window.Tuning.current();
+    const maxFret = Math.min(15, tuning.frets);
+    let previous = null;
+    return notes.slice(0, 8).map((note) => {
+      const candidates = [];
+      tuning.open.forEach((openMidi, stringIndex) => {
+        for (let fret = 0; fret <= maxFret; fret++) {
+          if (((openMidi + fret) % 12 + 12) % 12 === note.pc) candidates.push({ stringIndex, fret });
+        }
+      });
+      candidates.sort((left, right) => {
+        const leftCost = previous
+          ? Math.abs(left.fret - previous.fret) + Math.abs(left.stringIndex - previous.stringIndex) * 1.7
+          : Math.abs(left.fret - 5) - left.stringIndex * 0.35;
+        const rightCost = previous
+          ? Math.abs(right.fret - previous.fret) + Math.abs(right.stringIndex - previous.stringIndex) * 1.7
+          : Math.abs(right.fret - 5) - right.stringIndex * 0.35;
+        return leftCost - rightCost || right.stringIndex - left.stringIndex || left.fret - right.fret;
+      });
+      previous = candidates[0] || previous;
+      return previous ? { note, stringIndex: previous.stringIndex, fret: previous.fret, course: tuning.names[previous.stringIndex] } : null;
+    }).filter(Boolean);
+  }
+
+  function renderTacticalExamples() {
+    const root = $("tacticalExamples");
+    if (!root || !TE) return;
+    const ctx = tacticalContext();
+    const built = new Map(TE.available(ctx).map((example) => [example.id, example]));
+    const visibleTemplates = TE.TEMPLATES.filter((template) =>
+      state.examples.category === "all" || template.category === state.examples.category);
+    let selected = built.get(state.examples.selectedId);
+    if (!selected || !visibleTemplates.some((template) => template.id === selected.id)) {
+      const first = visibleTemplates.find((template) => built.has(template.id));
+      selected = first ? built.get(first.id) : built.values().next().value;
+      if (selected) state.examples.selectedId = selected.id;
+    }
+    const instrumentRoute = selected ? tacticalInstrumentRoute(selected.notes) : [];
+    const categoryName = (id) => TE.CATEGORIES.find((category) => category.id === id)?.name || "Practice";
+    root.innerHTML = `
+      <section class="examples-context" aria-label="Tactical example key and scale">
+        <div><span>All examples recalculate</span><b>Choose the same home and dromos as the music you are practising.</b></div>
+        <label for="examplesTonicSel">Key / home<select id="examplesTonicSel">${M.TONICS.map((tonic) => `<option value="${escapeHtml(tonic)}"${tonic === state.tonic ? " selected" : ""}>${escapeHtml(tonic)}</option>`).join("")}</select></label>
+        <div class="seg seg-5" aria-label="Tactical example scale or dromos">${M.MODE_ORDER.map((modeId) => `<button data-example-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}">${escapeHtml(M.MODES[modeId].name)}</button>`).join("")}</div>
+      </section>
+      <section class="examples-filter" aria-label="Tactical example categories">
+        <button data-example-category="all" class="${state.examples.category === "all" ? "active" : ""}"><b>All</b><span>${TE.TEMPLATES.length} examples</span></button>
+        ${TE.CATEGORIES.map((category) => `<button data-example-category="${category.id}" class="${state.examples.category === category.id ? "active" : ""}"><b>${escapeHtml(category.name)}</b><span>${escapeHtml(category.question)}</span></button>`).join("")}
+      </section>
+      <div class="examples-layout">
+        <nav class="examples-index" aria-label="Tactical example index">${visibleTemplates.map((template) => {
+          const example = built.get(template.id);
+          const unavailable = !example;
+          return `<button data-example-id="${template.id}" class="${selected && template.id === selected.id ? "active" : ""}"${unavailable ? " disabled" : ""}>
+            <span>${escapeHtml(categoryName(template.category))}</span><b>${escapeHtml(template.title)}</b><small>${escapeHtml(template.figure)}${unavailable ? " · choose Major or Harmonic minor" : ""}</small>
+          </button>`;
+        }).join("")}</nav>
+        ${selected ? `<article class="example-detail">
+          <header><div><span>${escapeHtml(categoryName(selected.category))}</span><h2>${escapeHtml(selected.title)}</h2><p>${escapeHtml(selected.figure)}</p></div><i>Source-bounded</i></header>
+          <section class="example-evidence"><span>What the source supports</span><p>${escapeHtml(selected.evidence)}</p>${selected.source.href ? `<a href="${escapeHtml(selected.source.href)}" target="_blank" rel="noopener noreferrer">Open source · ${escapeHtml(selected.source.name)}</a>` : `<small>${escapeHtml(selected.source.name)}</small>`}</section>
+          <section class="example-setup"><span>Use it now</span><b>${escapeHtml(selected.setup)}</b><p>${escapeHtml(selected.noteLine)}</p></section>
+          <section class="example-instrument"><span>One compact starting route · ${escapeHtml(window.Tuning.current().name)}</span><div>${instrumentRoute.map((placement) => `<b><i>${escapeHtml(placement.note.name)}</i><small>${escapeHtml(placement.course)} ${window.Tuning.current().open.length === 6 ? "string" : "course"} · fret ${placement.fret}</small></b>`).join("")}</div><p>First ${instrumentRoute.length} note${instrumentRoute.length === 1 ? "" : "s"} only, kept at fret 15 or lower. This is one practical start—not the only fingering. Pennanen's comparison still asks you to test a same-course route against this compact route for tone color.</p></section>
+          <ol class="example-steps">${selected.steps.map((step, index) => `<li><i>${index + 1}</i><p>${escapeHtml(step)}</p></li>`).join("")}</ol>
+          <div class="example-checks"><div><span>Listen for</span><p>${escapeHtml(selected.listen)}</p></div><div><span>Pass when</span><p>${escapeHtml(selected.pass)}</p></div></div>
+          <p class="example-boundary"><b>Evidence boundary:</b> ${escapeHtml(selected.boundary)}</p>
+          <footer><button class="mini" data-example-hear="${selected.id}">♪ Hear the note path</button><button class="mini" data-example-stop>■ Stop</button><button class="mini primary-mini" data-example-practise="${selected.id}">Open in ${selected.toolId ? "Solo Toolkit" : "Picking Path"}</button><button class="mini" data-example-all="${selected.category}">See all in this category</button></footer>
+        </article>` : ""}
+      </div>`;
+    $("examplesTonicSel").onchange = (event) => {
+      stopPlay(); state.tonic = event.target.value; state.progId = M.PROGRESSIONS[state.modeId][0].id; state.progStep = 0;
+      persistPreferences(); renderTacticalExamples(); renderPageGuide();
+    };
+    root.querySelectorAll("[data-example-mode]").forEach((button) => button.onclick = () => {
+      stopPlay(); state.modeId = button.getAttribute("data-example-mode"); state.progId = M.PROGRESSIONS[state.modeId][0].id; state.progStep = 0;
+      persistPreferences(); renderTacticalExamples(); renderPageGuide();
+    });
+    root.querySelectorAll("[data-example-category]").forEach((button) => button.onclick = () => {
+      state.examples.category = button.getAttribute("data-example-category"); renderTacticalExamples();
+    });
+    root.querySelectorAll("[data-example-id]").forEach((button) => button.onclick = () => {
+      state.examples.selectedId = button.getAttribute("data-example-id"); renderTacticalExamples();
+    });
+    root.querySelector("[data-example-hear]")?.addEventListener("click", () => playTacticalExample(selected));
+    root.querySelector("[data-example-stop]")?.addEventListener("click", stopPlay);
+    root.querySelector("[data-example-practise]")?.addEventListener("click", () => useTacticalExample(selected));
+    root.querySelector("[data-example-all]")?.addEventListener("click", () => { state.examples.category = "all"; renderTacticalExamples(); });
+  }
+
   // ============================ ANALYZER ================================
   function syncAnalysisControls() {
     $("analysisTonic").value = state.analysis.tonic;
@@ -2163,10 +2318,15 @@
     });
 
     const moves = MH.enhancementMoves(prompt, selected, activeSuccessor);
+    const moveExamples = Array.from(new Map(moves.filter((move) => move.exampleId).map((move) => [move.exampleId, move])).values());
     $("melodyMoves").innerHTML = moves.map((move, index) => `<button data-melody-move="${index}" class="melody-move">
-      <span>${escapeHtml(move.badge)}</span><strong>${escapeHtml(move.label)}</strong><b>♪ ${escapeHtml(move.detail)}</b><p><i>Listen:</i> ${escapeHtml(move.listen)}</p></button>`).join("");
+      <span>${escapeHtml(move.badge)}</span><strong>${escapeHtml(move.label)}</strong><b>♪ ${escapeHtml(move.detail)}</b><p><i>Listen:</i> ${escapeHtml(move.listen)}</p></button>`).join("") +
+      (moveExamples.length ? `<div class="melody-example-links">${moveExamples.map((move) => `<button class="mini" data-open-tactical-example="${escapeHtml(move.exampleId)}">Why ${escapeHtml(move.label)}? See the exact practice example →</button>`).join("")}</div>` : "");
     $("melodyMoves").querySelectorAll("[data-melody-move]").forEach((button) => {
       button.onclick = () => playMelodyMove(moves[+button.getAttribute("data-melody-move")]);
+    });
+    $("melodyMoves").querySelectorAll("[data-open-tactical-example]").forEach((button) => {
+      button.onclick = () => openTacticalExample(button.getAttribute("data-open-tactical-example"));
     });
     renderSingTrainer({ preserveFeedback: state.melody.sing.listening || state.melody.sing.voicedFrames > 0 });
   }
@@ -3201,7 +3361,7 @@
         ${phases ? `<div class="tk-phases" aria-label="Phrase arc">${phases.map((label, i) =>
           `<button data-tk-phase="${i}" class="${i === tk.phase ? "active" : ""}"><i>${i + 1}</i>${escapeHtml(label)}</button>`).join("")}</div>` : ""}
         ${toolRailHtml(tool)}
-        <footer class="tk-origin">${escapeHtml(tool.origin)}</footer>
+        <footer class="tk-origin"><span>${escapeHtml(tool.origin)}</span><button class="mini" data-open-tactical-example="${escapeHtml(tool.exampleId)}">See exact tactical example →</button></footer>
       </article>`;
     root.querySelectorAll("[data-tk-pillar]").forEach((b) => b.onclick = () => {
       const id = b.getAttribute("data-tk-pillar");
@@ -3237,6 +3397,8 @@
       state.solo.toolkit.formulaDeck = TK.swapFormulaCard(state.solo.toolkit.formulaDeck, slot, (P.MELODIC_ROUTES || []).length);
       renderSoloToolkit();
     });
+    root.querySelector("[data-open-tactical-example]")?.addEventListener("click", (event) =>
+      openTacticalExample(event.currentTarget.getAttribute("data-open-tactical-example")));
     wireToolkitKeys(root, "[data-tk-pillar]");
     wireToolkitKeys(root, "[data-tk-tool]");
     restoreToolkitFocus(root);
@@ -3868,7 +4030,7 @@
     setPlayingUI(true);
   }
 
-  function stopPlay() { playbackStartRequest++; melodyPlaybackRequest++; playbackLoading = false; AU.stopAll(); setPlayingUI(false); }
+  function stopPlay() { playbackStartRequest++; melodyPlaybackRequest++; tacticalPlaybackRequest++; playbackLoading = false; AU.stopAll(); setPlayingUI(false); }
   function setPlayingUI(p, label) {
     const b = $("btnPlay");
     b.textContent = label || (p ? "⏸ Pause" : "▶ Play");
@@ -3904,7 +4066,9 @@
     persistPreferences();
     document.body.setAttribute("data-view", v);
     document.body.setAttribute("data-solo-section", state.solo.section);
-    $("btnPrev").disabled = false; $("btnNext").disabled = false;
+    $("btnPrev").disabled = v === "examples"; $("btnNext").disabled = v === "examples";
+    $("btnPlay").disabled = v === "examples";
+    $("btnPlay").title = v === "examples" ? "Use Hear the note path inside the selected example" : "Play / Pause (Space)";
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-view") === v));
     const nav = VIEW_NAV[v] || "harmony";
@@ -3915,8 +4079,8 @@
     if ($("harmonyTabs")) $("harmonyTabs").classList.toggle("hidden", nav !== "harmony");
     if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
     syncHarmonyTabs();
-    ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
-    $("stage").classList.toggle("hidden", v === "ear" || v === "melody" || v === "video" || v === "styles" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
+    ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelExamples", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
+    $("stage").classList.toggle("hidden", v === "ear" || v === "melody" || v === "video" || v === "styles" || v === "examples" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
@@ -3931,6 +4095,7 @@
     else if (v === "melody") { $("panelMelody").classList.remove("hidden"); renderMelodyLab(); }
     else if (v === "video") { $("panelVideo").classList.remove("hidden"); if (V) V.render(); }
     else if (v === "styles") { $("panelStyles").classList.remove("hidden"); renderStyles(); }
+    else if (v === "examples") { $("panelExamples").classList.remove("hidden"); renderTacticalExamples(); }
     else if (v === "analyze") { $("panelAnalyze").classList.remove("hidden"); syncAnalysisControls(); renderAnalyzer(); }
     else if (v === "concepts") { $("panelConcepts").classList.remove("hidden"); renderConcepts(); }
     else if (v === "coach") { $("panelCoach").classList.remove("hidden"); C.render(); }
@@ -3948,6 +4113,8 @@
       ? "Space replays the note · choose one degree · Check builds the harmony map"
       : v === "ear"
         ? "Space replays · answers stay editable until Check"
+        : v === "examples"
+          ? "Choose an example · Hear previews pitch only · Stop clears every sound"
         : "Space plays · ← → steps · number keys follow the navigation";
     // Each primary destination is a new lesson, not another state of the old
     // page. Opening at the previous page's scroll depth hides the premise and
@@ -4322,7 +4489,7 @@
         else if (state.view === "melody") state.melody.prompt ? playMelodyPrompt(false) : newMelodyQuestion();
         else if (state.view === "chordmap") auditionChordMap("strum");
         else if (state.view === "solo" && ["path", "phrase", "cell"].includes(state.solo.section)) $("btnLabPlay").click();
-        else if (state.view !== "styles" && state.view !== "video" && state.view !== "analyze" && state.view !== "concepts" && state.view !== "coach" && state.view !== "today" && state.view !== "progress") togglePlay();
+        else if (state.view !== "styles" && state.view !== "video" && state.view !== "examples" && state.view !== "analyze" && state.view !== "concepts" && state.view !== "coach" && state.view !== "today" && state.view !== "progress") togglePlay();
       }
       else if (e.code === "ArrowRight" && state.view === "triads") { e.preventDefault(); stepTriad(1); }
       else if (e.code === "ArrowLeft" && state.view === "triads") { e.preventDefault(); stepTriad(-1); }
@@ -4350,6 +4517,7 @@
     else if (state.view === "triads") { syncTriadControls(); renderTriads(); }
     else if (state.view === "ear") setEarDrill(state.ear.drill);
     else if (state.view === "styles") renderStyles();
+    else if (state.view === "examples") renderTacticalExamples();
     else if (state.view === "analyze") renderAnalyzer();
     else if (state.view === "concepts") renderConcepts();
     else if (state.view === "coach") C.render();
@@ -4359,7 +4527,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TK.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TK.selfTest(), TE.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

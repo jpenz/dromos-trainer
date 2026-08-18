@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.SoloToolkit.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.SoloToolkit.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -156,6 +156,22 @@ test("the soloist toolkit is MECE, sourced, and never pretends to hear you", () 
   // Cadence Ramp is scoped to major/minor-family taximia, per its source.
   assert.ok(!SoloToolkit.availableTools("land", "ousak").some((t) => t.id === "cadence-ramp"),
     "Cadence Ramp is documented for major/minor taximia, not dromos-based ones");
+});
+
+test("every Solo Toolkit claim opens a source-bounded tactical example", () => {
+  const { SoloToolkit, TacticalExamples, Modes } = loadCore();
+  const linked = SoloToolkit.TOOLS.map((tool) => TacticalExamples.byId(tool.exampleId));
+  assert.ok(linked.every(Boolean), "each toolkit tool needs a real example record");
+  assert.equal(new Set(SoloToolkit.TOOLS.map((tool) => tool.exampleId)).size, SoloToolkit.TOOLS.length,
+    "tools should not collapse distinct teaching jobs into one generic example");
+  assert.ok(TacticalExamples.byId("pennanen-tactility"), "Pennanen's documented neck-tactility concept needs its own practical comparison");
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    TacticalExamples.available({ tonic, modeId, instrument: "Test" }).forEach((example) => {
+      assert.match(example.boundary, /not a transcription/i);
+      assert.ok(example.steps.length >= 3);
+      assert.ok(example.notes.every((note) => Number.isFinite(note.freq)));
+    });
+  }));
 });
 
 test("Greek style pulses are complete and never prescribe a dromos", () => {

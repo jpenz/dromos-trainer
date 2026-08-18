@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=26" />
+  <link rel="stylesheet" href="css/styles.css?v=27" />
 </head>
 <body>
   <div class="app">
@@ -106,6 +106,7 @@
           <nav id="learnTabs" class="mode-tabs hidden" aria-label="Learn area">
             <button data-view="styles">Greek Pulse</button>
             <button data-view="video">Video Study</button>
+            <button data-view="examples">Tactical Examples</button>
             <button data-view="concepts">Concepts</button>
           </nav>
           <!-- direct view shortcuts kept for assistive tech, deep links and tests -->
@@ -550,6 +551,11 @@
               <div id="styleExplorer" class="style-explorer hidden"></div>
             </div>
 
+            <!-- Source-bounded tactical examples -->
+            <div id="panelExamples" class="panel hidden">
+              <div id="tacticalExamples" class="tactical-examples"></div>
+            </div>
+
             <!-- Analyzer -->
             <div id="panelAnalyze" class="panel hidden">
               <span class="panel-label">Study analyzer</span>
@@ -648,7 +654,7 @@
   <script src="js/modes.js?v=20"></script>
   <script src="js/chord-map.js?v=17"></script>
   <script src="js/chord-path.js?v=25"></script>
-  <script src="js/melody-harmony.js?v=22"></script>
+  <script src="js/melody-harmony.js?v=27"></script>
   <script src="js/pitch-lab.js?v=23"></script>
   <script src="js/ear-drills.js?v=14"></script>
   <script src="js/styles.js?v=20"></script>
@@ -659,13 +665,14 @@
   <script src="js/video.js?v=14"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/toolkit.js?v=20"></script>
+  <script src="js/toolkit.js?v=27"></script>
+  <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=19"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=22"></script>
-  <script src="js/page-guides.js?v=26"></script>
-  <script src="js/app.js?v=26"></script>
+  <script src="js/page-guides.js?v=27"></script>
+  <script src="js/app.js?v=27"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
