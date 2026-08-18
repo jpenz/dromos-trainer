@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=22" />
+  <link rel="stylesheet" href="css/styles.css?v=23" />
 </head>
 <body>
   <div class="app">
@@ -445,6 +445,28 @@
                   <section aria-labelledby="melodyNextTitle"><div class="melody-section-head"><span>3 · Anticipate</span><h3 id="melodyNextTitle">What can follow?</h3></div><div id="melodyNext" class="melody-next"></div></section>
                 </div>
                 <section class="melody-enhance" aria-labelledby="melodyMovesTitle"><div class="melody-section-head"><span>4 · Make an answer line</span><h3 id="melodyMovesTitle">Counter-melody and top-voice moves</h3></div><div id="melodyMoves" class="melody-moves"></div></section>
+                <section id="melodySing" class="melody-sing" aria-labelledby="melodySingTitle">
+                  <div class="melody-section-head"><span>5 · Sing it back</span><h3 id="melodySingTitle">Make the degree audible without the instrument</h3></div>
+                  <div class="sing-grid">
+                    <div class="sing-target-card">
+                      <span>Target · any octave</span><strong id="singTargetName">—</strong><b id="singTargetRole">Check the note first</b>
+                      <p>Hear it once, stop the reference, then hold the pitch. The microphone never plays through the speakers.</p>
+                      <div class="sing-actions"><button id="btnSingTarget" class="mini">♪ Hear target</button><button id="btnSingStart" class="mini primary-mini">● Enable mic + sing</button><button id="btnSingStop" class="mini" disabled>■ Stop mic</button></div>
+                      <label class="sing-input-label" for="singInputSel">Input device<select id="singInputSel" disabled><option value="">Default system input</option></select></label>
+                    </div>
+                    <div class="sing-feedback-card">
+                      <div class="sing-live"><span>Detected</span><strong id="singDetectedNote">—</strong><b id="singDetectedHz">Waiting for a clear pitch</b></div>
+                      <div id="singGauge" class="pitch-gauge" role="meter" aria-label="Pitch distance from target" aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0">
+                        <span class="gauge-flat">flat</span><span class="gauge-center">target</span><span class="gauge-sharp">sharp</span><i id="singNeedle"></i>
+                      </div>
+                      <div class="sing-readouts"><span><b id="singCents">—</b>accuracy</span><span><b id="singStabilityText">—</b>stability</span><span><b id="singHold">0.0 s</b>in tune</span></div>
+                      <div class="sing-stability" aria-hidden="true"><i id="singStabilityFill"></i></div>
+                      <p id="singInstruction">Start the mic, sing on “ah,” and keep the needle near the center for one second.</p>
+                    </div>
+                  </div>
+                  <div id="singStatus" class="sing-status" role="status" aria-live="polite">Microphone off · audio is analyzed only on this device and is never recorded or uploaded.</div>
+                  <p class="melody-boundary"><b>Input note:</b> laptops and desktop browsers can expose built-in, AirPods, and class-compliant interface inputs. iPadOS/Safari may follow the system-routed microphone even when an external device is connected, so this page always names the input the browser actually reports.</p>
+                </section>
                 <p class="melody-boundary"><b>Evidence boundary:</b> chord membership is derived from the selected scale; “can follow” appears only when that exact degree-to-degree move exists in this trainer’s documented progression bank.</p>
               </section>
             </div>
@@ -620,12 +642,13 @@
   </div>
 
   <script src="js/tuning.js?v=14"></script>
-  <script src="js/profiles.js?v=15"></script>
+  <script src="js/profiles.js?v=16"></script>
   <script src="js/theory.js?v=14"></script>
   <script src="js/harmony-journey.js?v=15"></script>
   <script src="js/modes.js?v=20"></script>
   <script src="js/chord-map.js?v=17"></script>
   <script src="js/melody-harmony.js?v=22"></script>
+  <script src="js/pitch-lab.js?v=23"></script>
   <script src="js/ear-drills.js?v=14"></script>
   <script src="js/styles.js?v=20"></script>
   <script src="js/analysis.js?v=14"></script>
@@ -640,7 +663,7 @@
   <script src="js/fretboard.js?v=19"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=22"></script>
-  <script src="js/app.js?v=22"></script>
+  <script src="js/app.js?v=23"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

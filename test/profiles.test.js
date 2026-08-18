@@ -37,18 +37,21 @@ test("first run is Dre on four-course bouzouki and survives reload", () => {
   assert.equal(reloaded.preferences.bpm, 96);
 });
 
-test("players keep independent settings and ear progress", () => {
+test("players keep independent settings, ear progress, and sing-back locks", () => {
   const profiles = moduleWith(memoryStorage());
   const dre = profiles.bootstrap();
   profiles.recordProgress({ kind: "ear", drill: "map", correct: true });
+  profiles.recordProgress({ kind: "sing", correct: true });
   const alex = profiles.create("Alex", { tuningId: "laouto4" });
   profiles.recordProgress({ kind: "ear", drill: "map", correct: false });
   assert.equal(profiles.active().progress.earMap.correct, 0);
   assert.equal(profiles.active().progress.earMap.attempts, 1);
+  assert.equal(profiles.active().progress.singPitch.attempts, 0);
   profiles.switchTo(dre.id);
   assert.equal(profiles.active().preferences.tuningId, "bouzouki4");
   assert.equal(profiles.active().progress.earMap.correct, 1);
   assert.equal(profiles.active().progress.earMap.attempts, 1);
+  assert.equal(profiles.active().progress.singPitch.correct, 1);
   profiles.switchTo(alex.id);
   assert.equal(profiles.active().preferences.tuningId, "laouto4");
 });

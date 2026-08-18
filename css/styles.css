@@ -1509,6 +1509,51 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .melody-boundary { margin: 0; padding-top: 9px; border-top: 1px solid var(--line); color: var(--faint); font-size: 10.5px; line-height: 1.45; }
 .melody-boundary b { color: var(--muted); }
 
+/* The microphone is an ear-training loop, not a recorder or generic tuner. */
+.melody-sing { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.sing-grid { display: grid; grid-template-columns: minmax(280px, 0.72fr) minmax(340px, 1.28fr); gap: 8px; }
+.sing-target-card, .sing-feedback-card { display: grid; align-content: start; gap: 7px; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
+.sing-target-card > span, .sing-live > span { color: var(--aegean-bright); font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.sing-target-card > strong { color: var(--terracotta-bright); font-family: var(--font-display); font-size: 30px; font-weight: 550; line-height: 1; }
+.sing-target-card > b { color: var(--text); font-family: var(--font-mono); font-size: 10px; }
+.sing-target-card > p { margin: 1px 0 2px; color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+.sing-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.sing-actions .mini { flex: 1 1 120px; }
+.sing-input-label { display: grid; gap: 4px; margin-top: 2px; color: var(--faint); font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.sing-input-label select { width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-size: 11px; text-transform: none; }
+.sing-live { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; align-items: baseline; }
+.sing-live > span { grid-column: 1 / -1; }
+.sing-live > strong { color: var(--text); font-family: var(--font-display); font-size: 28px; font-weight: 550; }
+.sing-live > b { color: var(--muted); font-family: var(--font-mono); font-size: 10px; font-weight: 500; text-align: right; }
+.pitch-gauge {
+  position: relative; height: 58px; margin-top: 2px; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: linear-gradient(90deg, rgba(91,135,181,0.14), rgba(82,168,157,0.05) 34%, rgba(111,194,160,0.15) 48%, rgba(111,194,160,0.15) 52%, rgba(82,168,157,0.05) 66%, rgba(212,118,59,0.14));
+}
+.pitch-gauge::before { content: ""; position: absolute; top: 8px; bottom: 8px; left: 50%; width: 2px; transform: translateX(-1px); background: var(--ok); box-shadow: 0 0 12px rgba(111,194,160,0.5); }
+.pitch-gauge > span { position: absolute; bottom: 5px; color: var(--faint); font-size: 7.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.gauge-flat { left: 8px; }
+.gauge-center { left: 50%; transform: translateX(-50%); }
+.gauge-sharp { right: 8px; }
+.pitch-gauge > i {
+  position: absolute; left: 50%; top: 6px; width: 3px; height: 28px; opacity: 0.15;
+  border-radius: 3px; background: var(--terracotta-bright); transform: translateX(-50%);
+  box-shadow: 0 0 9px rgba(212,118,59,0.55); transition: left 90ms linear, opacity 120ms ease, background 120ms ease;
+}
+.melody-sing[data-pitch="voiced"] .pitch-gauge > i { opacity: 1; }
+.melody-sing[data-pitch="locked"] .pitch-gauge { border-color: var(--ok); }
+.melody-sing[data-pitch="locked"] .pitch-gauge > i { opacity: 1; background: var(--ok); box-shadow: 0 0 12px rgba(111,194,160,0.7); }
+.melody-sing[data-pitch="different-note"] .pitch-gauge > i { opacity: 1; background: var(--danger); }
+.sing-readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.sing-readouts > span { display: grid; gap: 1px; min-width: 0; padding: 6px 7px; border-radius: 6px; background: rgba(242,237,227,0.035); color: var(--faint); font-size: 8px; text-transform: uppercase; }
+.sing-readouts b { overflow: hidden; color: var(--text); font-family: var(--font-mono); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.sing-stability { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(242,237,227,0.08); }
+.sing-stability i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--turquoise); transition: width 120ms ease; }
+.sing-feedback-card > p { min-height: 30px; margin: 1px 0 0; color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+.sing-status { padding: 8px 10px; border-left: 3px solid var(--aegean); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--aegean-soft); color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.sing-status.success { border-left-color: var(--ok); background: rgba(111,194,160,0.1); color: var(--text); }
+.sing-status.error { border-left-color: var(--danger); background: rgba(217,106,91,0.08); }
+
 .hint { font-size: 11.5px; color: var(--faint); text-align: center; padding-top: 6px; }
 
 /* ========================= Per-view visibility ========================= */
@@ -1723,6 +1768,8 @@ body[data-view="melody"] main { max-width: 1180px; }
   .melody-identity { grid-template-columns: 1fr; }
   .melody-choices { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .melody-candidates, .melody-moves { grid-template-columns: 1fr; }
+  .sing-grid { grid-template-columns: 1fr; }
+  .sing-readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .melody-question, .melody-reveal { padding: 12px; }
 }
 

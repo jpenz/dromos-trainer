@@ -8,7 +8,7 @@ double-clicking `index.html`, works offline, and will still run in ten years. Be
 adding a framework or a bundler, read NFR-01/02 in [REQUIREMENTS.md](REQUIREMENTS.md).
 
 Modules attach one global each (`window.Theory`, `window.Modes`, `window.Fretboard`,
-`window.AudioEngine`) and are loaded in dependency order by `index.html`.
+`window.AudioEngine`, `window.PitchLab`) and are loaded in dependency order by `index.html`.
 
 ## Module map
 
@@ -22,6 +22,7 @@ index.html
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
   └─ js/audio.js    ──►  AudioEngine Web Audio synth + bar transport
+  └─ js/pitch-lab.js──►  PitchLab   pure. YIN pitch detection + target scoring
   └─ js/app.js      ──►  (controller) state, views, wiring. the only place
                                      that knows about both music and DOM
 ```
@@ -29,6 +30,12 @@ index.html
 **Dependency rule:** `theory.js` and `modes.js` must never touch the DOM.
 `fretboard.js` never touches audio. `app.js` is the only module allowed to know
 about everything. Keeping this true is what makes the theory testable.
+
+`pitch-lab.js` is also pure: it accepts `Float32Array` samples and returns pitch,
+clarity, cents, and a target classification. Only `app.js` may request microphone
+permission, own a `MediaStream`, or update the DOM. The stream feeds an analyser
+but never the audio destination, so there is no monitor/feedback path. See
+[PITCH_SINGBACK_DECISION.md](PITCH_SINGBACK_DECISION.md).
 
 ## The two engines
 

@@ -1,5 +1,11 @@
 # Codex brief 2 — audit, harden, and finish the Solo lab
 
+> **2026-08-17 update:** law 3 below described the app at the time of this brief.
+> The owner later explicitly requested microphone sing-back. FR-63/MI-32 now
+> supersede that limitation with local, permission-bound, non-recording pitch
+> analysis. Do not remove or weaken FR-63 by treating this historical brief as
+> the current microphone policy.
+
 You are taking over **Dromos Trainer** (`jpenz/dromos-trainer`), live at
 https://dromos-trainer.vercel.app. Zero build step, deploys from `main`.
 
@@ -23,7 +29,7 @@ Violating any of these is a defect regardless of how good the feature is.
 2. **The screen must never claim something the audio does not do.**
    `js/harmony-journey.js` is the single source of truth for current/next
    harmony; guide, strips and transport all read it.
-3. **The app has no microphone.** It cannot hear the player. Never ship a
+3. **Historical constraint (superseded by FR-63).** The app had no microphone and could not hear the player. Never ship a
    feature that implies detection — no scoring of performance, no unlock
    gating, no "we heard you play X". Pass tests are self-scored by design.
 4. **Derive, don't tabulate — then assert the derivation.** `js/theory.js`

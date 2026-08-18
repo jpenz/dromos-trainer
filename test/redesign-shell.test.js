@@ -60,6 +60,11 @@ test("playback speaks the redesigned musical language", () => {
   assert.match(app, /function renderCycleRoadmap/, "the pivot map must expose six upcoming chords from the shared journey");
   assert.match(app, /class="solo-progression-roadmap"/, "Solo must keep the complete progression and every selected target above the neck");
   assert.match(app, /function renderMelodyLab/, "the melody note must route into an interactive harmony comparison");
+  assert.match(app, /navigator\.mediaDevices\.getUserMedia/, "sing-back must use an explicit browser microphone grant");
+  assert.match(app, /function startPitchListening/, "melody practice must connect sung recall to the revealed degree");
+  assert.match(app, /Never connect the microphone to destination/, "the microphone must not create a speaker feedback path");
+  assert.match(read("js/pitch-lab.js"), /analyzeAgainstTarget/, "live vocal feedback must distinguish pitch class from tuning accuracy");
+  assert.match(read("js/pitch-lab.js"), /never uploads or records/, "the microphone privacy boundary must be explicit in the implementation");
   assert.match(read("js/audio.js"), /playSequence\(notes, spacing, when, referenceVoice\)/,
     "single-note ear prompts must use the same pitch-stable reference voice as chord prompts");
 });

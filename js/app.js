@@ -5,7 +5,7 @@
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
-    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, MH = window.MelodyHarmony, TK = window.SoloToolkit;
+    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -32,7 +32,11 @@
       map: { answer: null, homePreset: "D", keyOptions: [], keyGuess: null, familyGuess: null, progressionGuess: null, hintLevel: 0, locked: false, score: 0, total: 0, streak: 0, best: 0 }
     },
     // --- melody note -> harmonic choices ---
-    melody: { prompt: null, guess: null, revealed: false, hintLevel: 0, depth: "triad", selectedDegree: null, selectedSuccessor: 0, score: 0, total: 0, message: "The home stays known so the question trains relative hearing, not perfect pitch." },
+    melody: {
+      prompt: null, guess: null, revealed: false, hintLevel: 0, depth: "triad", selectedDegree: null, selectedSuccessor: 0,
+      score: 0, total: 0, message: "The home stays known so the question trains relative hearing, not perfect pitch.",
+      sing: { listening: false, requesting: false, deviceId: "", inputLabel: "Default system input", inputDevices: [], history: [], stableSince: 0, holdMs: 0, success: false, recorded: false, voicedFrames: 0 }
+    },
     // --- triads ---
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true, rhythmLevel: 1 },
     // --- solo lab ---
@@ -146,6 +150,8 @@
     state.ear.map.total = profile.progress.earMap.attempts;
     state.ear.map.streak = profile.progress.earMap.streak;
     state.ear.map.best = profile.progress.earMap.best;
+    state.melody.sing.listening = false; state.melody.sing.requesting = false; state.melody.sing.history = []; state.melody.sing.stableSince = 0;
+    state.melody.sing.holdMs = 0; state.melody.sing.success = false; state.melody.sing.recorded = false; state.melody.sing.voicedFrames = 0;
     state.ear.answer = null; state.ear.guess = null; state.ear.locked = false;
     state.ear.map.answer = null; state.ear.map.keyGuess = null; state.ear.map.familyGuess = null; state.ear.map.progressionGuess = null; state.ear.map.locked = false;
   }
@@ -161,8 +167,8 @@
     const active = PP.active();
     root.innerHTML = `<details class="player-menu"${keepOpen ? " open" : ""}><summary aria-label="Player profile ${escapeHtml(active.displayName)}">
       <span class="player-avatar">${escapeHtml(active.displayName.slice(0, 1).toUpperCase())}</span><span class="player-summary"><b>${escapeHtml(active.displayName)}</b><span>${escapeHtml(instrumentShortName(active.preferences.tuningId))} · this device</span></span><span class="player-chevron">▾</span></summary>
-      <div class="player-panel"><div class="player-panel-head"><b>Player profiles · this device</b><span>Separate instrument settings, ear scores, and coach history. These are local profiles, not password-protected accounts.</span></div>
-      <div class="player-list">${profiles.map((profile) => `<button class="player-choice${profile.id === active.id ? " active" : ""}" data-player-id="${profile.id}"><b>${escapeHtml(profile.displayName)}</b><span>${escapeHtml(instrumentShortName(profile.preferences.tuningId))} · ${profile.progress.earColour.correct + profile.progress.earMap.correct}/${profile.progress.earColour.attempts + profile.progress.earMap.attempts} ear checks</span><i>${profile.id === active.id ? "Active" : "Switch"}</i></button>`).join("")}</div>
+      <div class="player-panel"><div class="player-panel-head"><b>Player profiles · this device</b><span>Separate instrument settings, ear scores, sing-back locks, and coach history. These are local profiles, not password-protected accounts.</span></div>
+      <div class="player-list">${profiles.map((profile) => `<button class="player-choice${profile.id === active.id ? " active" : ""}" data-player-id="${profile.id}"><b>${escapeHtml(profile.displayName)}</b><span>${escapeHtml(instrumentShortName(profile.preferences.tuningId))} · ${profile.progress.earColour.correct + profile.progress.earMap.correct}/${profile.progress.earColour.attempts + profile.progress.earMap.attempts} ear checks · ${profile.progress.singPitch.correct} pitch locks</span><i>${profile.id === active.id ? "Active" : "Switch"}</i></button>`).join("")}</div>
       <form id="renamePlayerForm" class="player-form"><input id="renamePlayerName" maxlength="32" value="${escapeHtml(active.displayName)}" aria-label="Rename active player" /><button>Rename</button></form>
       <form id="addPlayerForm" class="player-form"><input id="newPlayerName" maxlength="32" placeholder="New player name" aria-label="New player name" /><button>Add player</button></form>
       <div class="player-manage"><span class="player-privacy">Stored only in this browser.</span>${profiles.length > 1 ? '<button id="removePlayer" type="button">Remove active</button>' : ""}</div></div></details>`;
@@ -202,7 +208,7 @@
   }
 
   function switchPlayer(profileId) {
-    stopPlay();
+    stopPitchListening({ record: false, quiet: true }); stopPlay();
     const profile = PP.switchTo(profileId);
     if (!profile) return;
     applyPlayerProfile(profile);
@@ -1598,6 +1604,262 @@
 
   // ======================= MELODY -> HARMONY ===========================
   let melodyPlaybackRequest = 0;
+  let pitchStream = null;
+  let pitchContext = null;
+  let pitchSource = null;
+  let pitchAnalyser = null;
+  let pitchDetector = null;
+  let pitchBuffer = null;
+  let pitchFrame = 0;
+  let pitchLastAt = 0;
+
+  function resetPitchSession() {
+    const sing = state.melody.sing;
+    sing.history = []; sing.stableSince = 0; sing.holdMs = 0;
+    sing.success = false; sing.recorded = false; sing.voicedFrames = 0;
+  }
+
+  function pitchErrorMessage(error) {
+    if (!window.isSecureContext) return "Microphone access needs HTTPS (or localhost). Open the deployed Vercel app, then try again.";
+    const name = error && error.name;
+    if (name === "NotAllowedError" || name === "SecurityError") return "Microphone access was blocked. Allow it in this site's browser settings, then press Enable mic again.";
+    if (name === "NotFoundError") return "No microphone input is available. Connect or enable an input, then try again.";
+    if (name === "NotReadableError" || name === "AbortError") return "The input is busy or unavailable. Close another recording app, reconnect the interface, and try again.";
+    if (name === "OverconstrainedError") return "That input is no longer available. Choose Default system input and try again.";
+    return "The browser could not start this microphone. Check its site permission and the system input, then try again.";
+  }
+
+  function setSingStatus(message, kind) {
+    const status = $("singStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.className = `sing-status${kind ? ` ${kind}` : ""}`;
+  }
+
+  function renderSingInputs() {
+    const select = $("singInputSel");
+    if (!select) return;
+    const sing = state.melody.sing;
+    const current = sing.deviceId;
+    select.innerHTML = `<option value="">Default system input</option>${sing.inputDevices.map((device, index) =>
+      `<option value="${escapeHtml(device.deviceId)}">${escapeHtml(device.label || `Microphone ${index + 1}`)}</option>`).join("")}`;
+    select.value = sing.inputDevices.some((device) => device.deviceId === current) ? current : "";
+    select.disabled = !sing.inputDevices.length;
+  }
+
+  function renderSingTrainer(options) {
+    const settings = options || {};
+    const sing = state.melody.sing;
+    const prompt = state.melody.prompt;
+    if ($("singTargetName")) $("singTargetName").textContent = prompt ? prompt.note.name : "—";
+    if ($("singTargetRole")) $("singTargetRole").textContent = prompt
+      ? `degree ${prompt.note.degree} · ${prompt.hearing.short}` : "Check the note first";
+    if ($("btnSingTarget")) $("btnSingTarget").disabled = !prompt || !state.melody.revealed || sing.listening || sing.requesting;
+    if ($("btnSingStart")) {
+      $("btnSingStart").disabled = !prompt || !state.melody.revealed || sing.listening || sing.requesting;
+      $("btnSingStart").textContent = sing.requesting ? "● Requesting…" : sing.listening ? "● Listening…" : "● Enable mic + sing";
+    }
+    if ($("btnSingStop")) $("btnSingStop").disabled = !sing.listening && !sing.requesting;
+    renderSingInputs();
+    if (!settings.preserveFeedback && $("melodySing")) {
+      $("melodySing").setAttribute("data-pitch", "idle");
+      $("singDetectedNote").textContent = "—";
+      $("singDetectedHz").textContent = "Waiting for a clear pitch";
+      $("singCents").textContent = "—";
+      $("singStabilityText").textContent = "—";
+      $("singHold").textContent = "0.0 s";
+      $("singNeedle").style.left = "50%";
+      $("singGauge").setAttribute("aria-valuenow", "0");
+      $("singStabilityFill").style.width = "0%";
+      $("singInstruction").textContent = "Start the mic, sing on ‘ah,’ and keep the needle near the center for one second.";
+    }
+  }
+
+  async function refreshPitchInputs() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      state.melody.sing.inputDevices = devices.filter((device) => device.kind === "audioinput");
+      renderSingInputs();
+    } catch { /* the active track still works when device enumeration is restricted */ }
+  }
+
+  function updatePitchUi(reading, raw, summary) {
+    const sing = state.melody.sing;
+    const section = $("melodySing");
+    if (!section) return;
+    if (!reading || raw.clarity < 0.72) {
+      section.setAttribute("data-pitch", "idle");
+      $("singDetectedNote").textContent = "—";
+      $("singDetectedHz").textContent = raw.reason === "quiet" ? "Sing a little more clearly" : "Finding one steady note…";
+      $("singInstruction").textContent = "Hold one comfortable ‘ah.’ Reduce room noise and keep the mic away from the speakers.";
+      $("singHold").textContent = "0.0 s";
+      return;
+    }
+
+    const cents = Math.round(reading.cents);
+    const target = state.melody.prompt.note.name;
+    const gaugeCents = Math.max(-50, Math.min(50, reading.cents));
+    section.setAttribute("data-pitch", reading.status === "close" || reading.status === "adjust" ? "voiced" : reading.status);
+    $("singDetectedNote").textContent = `${reading.note.name}${reading.note.octave}`;
+    $("singDetectedHz").textContent = `${raw.frequency.toFixed(1)} Hz · ${Math.round(raw.clarity * 100)}% clear`;
+    $("singCents").textContent = reading.correctPitchClass ? `${cents > 0 ? "+" : ""}${cents}¢` : "wrong note";
+    $("singStabilityText").textContent = `${summary.stability}%`;
+    $("singHold").textContent = `${(sing.holdMs / 1000).toFixed(1)} s`;
+    $("singNeedle").style.left = `${50 + gaugeCents}%`;
+    $("singGauge").setAttribute("aria-valuenow", String(Math.round(gaugeCents)));
+    $("singStabilityFill").style.width = `${summary.stability}%`;
+    if (!reading.correctPitchClass) {
+      $("singInstruction").textContent = `You are singing ${reading.note.name}; the target is ${target}. Hear the scale degree, then move ${reading.direction === "flat" ? "up" : "down"} to it.`;
+    } else if (reading.status === "locked") {
+      $("singInstruction").textContent = sing.success ? `Locked: ${target} is now coming from your ear, not the instrument.` : "Centered. Keep the air and vowel steady until the hold completes.";
+    } else if (reading.direction === "flat") {
+      $("singInstruction").textContent = "Right note, slightly flat. Support the air and let the pitch rise toward center.";
+    } else {
+      $("singInstruction").textContent = "Right note, slightly sharp. Relax toward the center without dropping the tone.";
+    }
+  }
+
+  function recordSingResult(correct) {
+    const sing = state.melody.sing;
+    if (sing.recorded || !PP) return;
+    PP.recordProgress({ kind: "sing", correct: !!correct });
+    sing.recorded = true;
+    renderPlayerProfiles(false);
+    if (state.view === "progress") renderProgress();
+  }
+
+  function pitchLoop(timestamp) {
+    if (!state.melody.sing.listening || !pitchAnalyser || !pitchDetector) return;
+    pitchFrame = window.requestAnimationFrame(pitchLoop);
+    if (timestamp - pitchLastAt < 72) return;
+    pitchLastAt = timestamp;
+    pitchAnalyser.getFloatTimeDomainData(pitchBuffer);
+    const raw = pitchDetector.detect(pitchBuffer, pitchContext.sampleRate);
+    const sing = state.melody.sing;
+    const prompt = state.melody.prompt;
+    if (!prompt) { stopPitchListening({ record: false, quiet: true }); return; }
+    const reading = raw.frequency && raw.clarity >= 0.72 ? PL.analyzeAgainstTarget(raw.frequency, prompt.note.midi, raw.clarity) : null;
+    if (!reading) {
+      sing.stableSince = 0; sing.holdMs = 0;
+      updatePitchUi(null, raw, PL.summarize(sing.history));
+      return;
+    }
+    sing.voicedFrames++;
+    const previousReading = sing.history[sing.history.length - 1];
+    if (previousReading && previousReading.note.pc !== reading.note.pc) sing.history = [];
+    sing.history.push(reading);
+    if (sing.history.length > 18) sing.history.shift();
+    const summary = PL.summarize(sing.history);
+    if (reading.absoluteCents <= 25 && raw.clarity >= 0.78) {
+      if (!sing.stableSince) sing.stableSince = timestamp;
+      sing.holdMs = timestamp - sing.stableSince;
+    } else {
+      sing.stableSince = 0; sing.holdMs = 0;
+    }
+    if (!sing.success && sing.holdMs >= 1000) {
+      sing.success = true;
+      recordSingResult(true);
+      setSingStatus(`Pitch locked · ${prompt.note.name} held in tune for one second · saved to ${PP ? PP.active().displayName : "this profile"}`, "success");
+    }
+    updatePitchUi(reading, raw, summary);
+  }
+
+  function stopPitchListening(options) {
+    const settings = Object.assign({ record: false, quiet: false }, options || {});
+    const sing = state.melody.sing;
+    const wasListening = sing.listening;
+    const wasRequesting = sing.requesting;
+    sing.listening = false; sing.requesting = false;
+    if (pitchFrame) window.cancelAnimationFrame(pitchFrame);
+    pitchFrame = 0; pitchLastAt = 0;
+    if (navigator.mediaDevices && navigator.mediaDevices.removeEventListener) navigator.mediaDevices.removeEventListener("devicechange", refreshPitchInputs);
+    if (pitchSource) { try { pitchSource.disconnect(); } catch { /* already disconnected */ } }
+    if (pitchAnalyser) { try { pitchAnalyser.disconnect(); } catch { /* already disconnected */ } }
+    if (pitchStream) pitchStream.getTracks().forEach((track) => track.stop());
+    if (pitchContext && pitchContext.state !== "closed") pitchContext.close().catch(() => {});
+    pitchStream = null; pitchContext = null; pitchSource = null; pitchAnalyser = null; pitchDetector = null; pitchBuffer = null;
+    if (settings.record && wasListening && sing.voicedFrames >= 8 && !sing.success) recordSingResult(false);
+    renderSingTrainer({ preserveFeedback: true });
+    if (!settings.quiet && wasRequesting) setSingStatus("Microphone start cancelled. If the browser permission prompt remains open, dismiss it there too.");
+    else if (!settings.quiet && wasListening && !sing.success) setSingStatus("Microphone stopped · your last feedback stays visible. Start again whenever you are ready.");
+  }
+
+  async function startPitchListening() {
+    const prompt = state.melody.prompt;
+    if (!prompt || !state.melody.revealed || state.melody.sing.requesting || state.melody.sing.listening) return;
+    stopPlay();
+    stopPitchListening({ record: false, quiet: true });
+    resetPitchSession();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !PL) {
+      setSingStatus("This browser does not provide live microphone analysis. Use current Safari, Chrome, or Edge over HTTPS.", "error");
+      return;
+    }
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      setSingStatus("This browser does not provide Web Audio input analysis. Use current Safari, Chrome, or Edge.", "error");
+      return;
+    }
+    state.melody.sing.requesting = true;
+    renderSingTrainer({ preserveFeedback: true });
+    setSingStatus("Requesting microphone permission… audio stays inside this page.");
+    const requestedDeviceId = state.melody.sing.deviceId;
+    const audio = {
+      channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false
+    };
+    if (requestedDeviceId) audio.deviceId = { exact: requestedDeviceId };
+    try {
+      // Create/resume during the original button gesture. This matters on iOS,
+      // where doing it only after the asynchronous permission prompt can leave
+      // the capture context suspended even though the stream was granted.
+      pitchContext = new AudioContextClass({ latencyHint: "interactive" });
+      if (pitchContext.state === "suspended") await pitchContext.resume();
+      if (!state.melody.sing.requesting || state.view !== "melody" || state.melody.prompt !== prompt) return;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio, video: false });
+      if (state.view !== "melody" || state.melody.prompt !== prompt || !state.melody.revealed || !state.melody.sing.requesting) {
+        stream.getTracks().forEach((track) => track.stop()); return;
+      }
+      pitchStream = stream;
+      pitchSource = pitchContext.createMediaStreamSource(stream);
+      pitchAnalyser = pitchContext.createAnalyser();
+      pitchAnalyser.fftSize = 2048;
+      pitchAnalyser.smoothingTimeConstant = 0;
+      pitchSource.connect(pitchAnalyser); // Never connect the microphone to destination: no feedback path.
+      pitchBuffer = new Float32Array(pitchAnalyser.fftSize);
+      pitchDetector = PL.createDetector(pitchAnalyser.fftSize, { minFrequency: 70, maxFrequency: 1050 });
+      const track = stream.getAudioTracks()[0];
+      const settings = track && track.getSettings ? track.getSettings() : {};
+      state.melody.sing.inputLabel = track && track.label || "Browser-selected microphone";
+      if (settings.deviceId) state.melody.sing.deviceId = settings.deviceId;
+      state.melody.sing.requesting = false; state.melody.sing.listening = true;
+      if (track) track.addEventListener("ended", () => {
+        if (!state.melody.sing.listening) return;
+        stopPitchListening({ record: false, quiet: true });
+        setSingStatus("The microphone input disconnected. Reconnect it or choose another input, then start again.", "error");
+      }, { once: true });
+      await refreshPitchInputs();
+      if (navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener("devicechange", refreshPitchInputs);
+      renderSingTrainer({ preserveFeedback: false });
+      setSingStatus(`Listening through ${state.melody.sing.inputLabel} · sing ${prompt.note.name} in any comfortable octave`);
+      pitchFrame = window.requestAnimationFrame(pitchLoop);
+    } catch (error) {
+      stopPitchListening({ record: false, quiet: true });
+      setSingStatus(pitchErrorMessage(error), "error");
+    }
+  }
+
+  function playSingTarget() {
+    const prompt = state.melody.prompt;
+    if (!prompt || !state.melody.revealed) return;
+    stopPitchListening({ record: false, quiet: true });
+    resetPitchSession();
+    renderSingTrainer({ preserveFeedback: false });
+    withMelodyVoice((voice, when) => {
+      AU.playSequence([prompt.note], 0.42, when, voice);
+      AU.playSequence([prompt.note], 0.42, when + 0.8, voice);
+    });
+    setSingStatus(`Reference: ${prompt.note.name}, degree ${prompt.note.degree}. Let it stop, imagine it, then enable the mic and sing.`);
+  }
 
   function melodyPromptFor(degreeIndex) {
     return MH.buildPrompt({ tonic: state.tonic, modeId: state.modeId, degreeIndex, depth: state.melody.depth });
@@ -1711,6 +1973,7 @@
     $("melodyMoves").querySelectorAll("[data-melody-move]").forEach((button) => {
       button.onclick = () => playMelodyMove(moves[+button.getAttribute("data-melody-move")]);
     });
+    renderSingTrainer({ preserveFeedback: state.melody.sing.listening || state.melody.sing.voicedFrames > 0 });
   }
 
   function renderMelodyLab() {
@@ -1740,6 +2003,7 @@
   }
 
   function newMelodyQuestion() {
+    stopPitchListening({ record: false, quiet: true });
     const previous = state.melody.prompt ? state.melody.prompt.degreeIndex : -1;
     let degreeIndex = Math.floor(Math.random() * 7);
     if (degreeIndex === previous) degreeIndex = (degreeIndex + 1) % 7;
@@ -3130,6 +3394,7 @@
       <div class="today-stats">
         <span>Ear colour <b>${e.score}/${e.total}</b>${pct == null ? "" : ` (${pct}%)`}</span>
         <span>Home + changes <b>${e.map.score}/${e.map.total}</b></span>
+        <span>Sing-back locks <b>${active ? active.progress.singPitch.correct : 0}/${active ? active.progress.singPitch.attempts : 0}</b></span>
         <span>Streak <b>${state.ear.drill === "map" ? e.map.streak : e.streak}</b></span>
         <span>Instrument <b>${escapeHtml(window.Tuning.current().name)}</b></span>
       </div>`;
@@ -3147,12 +3412,12 @@
       <div class="progress-head"><h2>Profiles on this device</h2>
         <p>Separate instrument settings, ear scores, and coach history per player. Stored only in this browser — these are local profiles, not cloud accounts.</p></div>
       <div class="progress-list">${PP.list().map((profile) => {
-        const colour = profile.progress.earColour, map = profile.progress.earMap;
+        const colour = profile.progress.earColour, map = profile.progress.earMap, sing = profile.progress.singPitch;
         return `<div class="progress-card${profile.id === active.id ? " active" : ""}">
           <span class="player-avatar">${escapeHtml(profile.displayName.slice(0, 1).toUpperCase())}</span>
           <b>${escapeHtml(profile.displayName)}${profile.id === active.id ? " · active" : ""}</b>
           <small>${escapeHtml(instrumentShortName(profile.preferences.tuningId))} · last practice ${profile.progress.lastPracticedAt ? escapeHtml(String(profile.progress.lastPracticedAt).slice(0, 10)) : "—"}</small>
-          <span class="progress-scores"><span><b>${colour.correct}/${colour.attempts}</b>colour</span><span><b>${map.correct}/${map.attempts}</b>map</span><span><b>${Math.max(colour.best, map.best)}</b>best streak</span></span>
+          <span class="progress-scores"><span><b>${colour.correct}/${colour.attempts}</b>colour</span><span><b>${map.correct}/${map.attempts}</b>map</span><span><b>${sing.correct}/${sing.attempts}</b>sing-back</span><span><b>${Math.max(colour.best, map.best, sing.best)}</b>best streak</span></span>
         </div>`;
       }).join("")}</div>`;
   }
@@ -3436,6 +3701,7 @@
   function setView(v) {
     if (v === "lab") v = "solo";   // compatibility with bookmarks from the first version
     if (state.view === "video" && v !== "video" && V) V.destroy();
+    stopPitchListening({ record: false, quiet: true });
     stopPlay();
     cancelTaximiBridge();
     cancelSoloDrone();
@@ -3525,20 +3791,20 @@
     $("btnMatrixStop").onclick = stopPlay;
 
     $("melodyTonicSel").onchange = (event) => {
-      stopPlay(); state.tonic = event.target.value;
+      stopPitchListening({ record: false, quiet: true }); stopPlay(); state.tonic = event.target.value;
       state.melody.prompt = null; state.melody.guess = null; state.melody.revealed = false;
       state.melody.message = `Known home changed to ${state.tonic}. Hear it, then start a new note.`;
       persistPreferences(); renderMelodyLab();
     };
     document.querySelectorAll("[data-melody-mode]").forEach((button) => button.onclick = () => {
-      stopPlay(); state.modeId = button.getAttribute("data-melody-mode");
+      stopPitchListening({ record: false, quiet: true }); stopPlay(); state.modeId = button.getAttribute("data-melody-mode");
       state.progId = M.PROGRESSIONS[state.modeId][0].id;
       state.melody.prompt = null; state.melody.guess = null; state.melody.revealed = false;
       state.melody.message = `${M.MODES[state.modeId].name} selected. Re-hear the home before the next note.`;
       persistPreferences(); renderMelodyLab();
     });
     document.querySelectorAll("[data-melody-depth]").forEach((button) => button.onclick = () => {
-      stopPlay(); state.melody.depth = button.getAttribute("data-melody-depth") === "seventh" ? "seventh" : "triad";
+      stopPitchListening({ record: false, quiet: true }); stopPlay(); state.melody.depth = button.getAttribute("data-melody-depth") === "seventh" ? "seventh" : "triad";
       if (state.melody.prompt) {
         const degreeIndex = state.melody.prompt.degreeIndex;
         state.melody.prompt = melodyPromptFor(degreeIndex);
@@ -3556,7 +3822,17 @@
     $("btnMelodyHint").onclick = hintMelodyQuestion;
     $("btnMelodyCheck").onclick = checkMelodyQuestion;
     $("btnMelodyStop").onclick = () => {
-      stopPlay(); $("melodyAudioStatus").textContent = "Stopped · your answer and harmony map stay in place";
+      stopPitchListening({ record: false, quiet: true }); stopPlay(); $("melodyAudioStatus").textContent = "Stopped · your answer and harmony map stay in place";
+    };
+    $("btnSingTarget").onclick = playSingTarget;
+    $("btnSingStart").onclick = startPitchListening;
+    $("btnSingStop").onclick = () => stopPitchListening({ record: true });
+    $("singInputSel").onchange = async (event) => {
+      const wasListening = state.melody.sing.listening;
+      stopPitchListening({ record: false, quiet: true });
+      state.melody.sing.deviceId = event.target.value;
+      if (wasListening) await startPitchListening();
+      else renderSingInputs();
     };
 
     if ($("voiceSel")) $("voiceSel").onchange = (event) => {
@@ -3882,7 +4158,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;
