@@ -5,7 +5,7 @@
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
-    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit;
+    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -25,7 +25,7 @@
     progId: "ii-V-I",
     progStep: 0,
     scaleOverlay: false,
-    chordMap: { depth: "triad", degree: 0, targetIndex: 1, shapeIndex: 0 },
+    chordMap: { depth: "triad", degree: 0, targetIndex: 1, shapeIndex: 0, pathLens: "play" },
     // --- ear trainer ---
     ear: {
       drill: "colour", tonic: "D", answer: null, guess: null, hintLevel: 0, score: 0, total: 0, streak: 0, best: 0, locked: false,
@@ -844,18 +844,58 @@
   // ======================= HARMONY MATRIX ==============================
   function chordMapShapes(chord) {
     const preferred = state.position == null ? 5 : state.position;
-    return TR.allShapes(chord.rootPc, chord.quality, spellPc)
+    return TR.allShapes(chord.rootPc, TR.TRIAD_OF[chord.quality] || chord.quality, spellPc)
       .filter((shape) => shape.placements.every((placement) => placement.fret <= 15))
       .sort((a, b) => Math.abs(a.lowFret - preferred) - Math.abs(b.lowFret - preferred) || a.lowFret - b.lowFret);
+  }
+
+  function chordMapVoicings(chord) {
+    const triads = chordMapShapes(chord);
+    const full = GV ? GV.fullVoicings(chord) : [];
+    const compact = FB.findGrip(chord.notes, state.position);
+    const choices = [];
+    if (state.chordMap.depth === "triad") {
+      triads.forEach((shape) => choices.push({
+        kind: "triad", shape,
+        label: `${shape.inversionName} · ${shape.setLabel}`,
+        detail: `frets ${shape.lowFret}–${Math.max(...shape.placements.map((placement) => placement.fret))}`
+      }));
+      full.forEach((shape) => choices.push({
+        kind: "full", shape,
+        label: shape.label,
+        detail: `${shape.family} · frets ${shape.lowFret}–${shape.highFret}`
+      }));
+    } else {
+      if (compact) choices.push({
+        kind: "compact", shape: compact,
+        label: "Compact four-note grip",
+        detail: `frets ${Math.min(...compact.placements.map((placement) => placement.fret))}–${Math.max(...compact.placements.map((placement) => placement.fret))}`
+      });
+      full.forEach((shape) => choices.push({
+        kind: "full", shape,
+        label: shape.label,
+        detail: `${shape.family} · frets ${shape.lowFret}–${shape.highFret}`
+      }));
+    }
+    if (!choices.length && compact) choices.push({ kind: "compact", shape: compact, label: "Compact grip", detail: "Auto-positioned" });
+    return { triads, choices };
   }
 
   function currentChordMapSelection() {
     const chords = CM.harmonize(state.tonic, state.modeId, state.chordMap.depth);
     state.chordMap.degree = Math.max(0, Math.min(6, state.chordMap.degree));
     const chord = chords[state.chordMap.degree];
-    const shapes = state.chordMap.depth === "triad" ? chordMapShapes(chord) : [];
-    state.chordMap.shapeIndex = shapes.length ? state.chordMap.shapeIndex % shapes.length : 0;
-    return { chords, chord, shapes, shape: shapes[state.chordMap.shapeIndex] || FB.findGrip(chord.notes, state.position) };
+    const voicings = chordMapVoicings(chord);
+    state.chordMap.shapeIndex = voicings.choices.length ? state.chordMap.shapeIndex % voicings.choices.length : 0;
+    const choice = voicings.choices[state.chordMap.shapeIndex] || null;
+    return {
+      chords, chord,
+      shapes: voicings.choices.map((item) => item.shape),
+      triadShapes: voicings.triads,
+      voicings: voicings.choices,
+      voicing: choice,
+      shape: choice ? choice.shape : FB.findGrip(chord.notes, state.position)
+    };
   }
 
   function auditionChordMap(style) {
@@ -873,6 +913,13 @@
     if (shouldPlay !== false) auditionChordMap("strum");
   }
 
+  function revealChordPath() {
+    const path = $("matrixChordPath");
+    if (!path) return;
+    const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    path.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest", inline: "nearest" });
+  }
+
   function renderChordMapRoad() {
     const lanes = CM.road(state.tonic, state.modeId);
     const laneHtml = (label, notes) => `<div class="chord-road-lane"><span>${label}</span><div>${notes.map((note, index) => {
@@ -882,15 +929,8 @@
     $("chordMapRoad").innerHTML = laneHtml("Lower road · 1–4", lanes.lower) + laneHtml("Upper road · 5–8", lanes.upper);
   }
 
-  const MATRIX_TRIAD_QUALITY = { maj: "maj", min: "min", dim: "dim", aug: "aug", maj7: "maj", dom7: "maj", m7: "min", m7b5: "dim", dim7: "dim", mMaj7: "min", maj7sharp5: "aug" };
   function matrixProgressionChords(modeId, progression) {
-    if (state.chordMap.depth === "seventh") return M.buildProgression(state.tonic, modeId, progression.id).chords;
-    let previous = null;
-    return progression.chords.map(([offset, quality]) => {
-      const chord = M.buildChord(state.tonic, modeId, offset, MATRIX_TRIAD_QUALITY[quality] || quality, previous);
-      previous = chord.bottomMidi;
-      return chord;
-    });
+    return CP.progressionChords(state.tonic, modeId, progression, state.chordMap.depth);
   }
 
   function matrixProgressionCopy(modeId, progression) {
@@ -898,7 +938,95 @@
     return { symbols, label: progression.label, why: progression.why, group: progression.group || "Working route" };
   }
 
-  function renderChordMapComparison() {
+  function chordPathLocation(notes, shape) {
+    const placements = shape && shape.placements ? notes.map((note) =>
+      shape.placements.find((placement) => placement.note.role === note.role) ||
+      shape.placements.find((placement) => placement.note.pc === note.pc)) : [];
+    if (placements.length === notes.length && placements.every(Boolean)) {
+      return {
+        placements,
+        label: placements.map((placement) => `${window.Tuning.names()[placement.stringIndex]}${placement.fret}`).join(" → ")
+      };
+    }
+    const path = CP.instrumentPath(notes);
+    return path ? { placements: path.placements, label: `${path.course} course · frets ${path.frets.join(" → ")}` } : { placements: [], label: "Hear first; locate near the selected grip." };
+  }
+
+  function chordPathNoteRun(notes) {
+    return notes.map((note) => `<span data-group="${escapeHtml(note.colorGroup || "root")}"><i>${escapeHtml(note.roleLabel || note.degree || "·")}</i><b>${escapeHtml(note.name)}</b></span>`).join("");
+  }
+
+  function renderChordPathPlay(selected) {
+    return `<div class="chord-path-copy"><b>See the same harmony in every practical place.</b><span>The selected ${selected.voicing ? selected.voicing.kind : "compact"} form is solid on the full neck. Choose another card to move the grip without changing the chord.</span></div>
+      <div class="chord-shape-rail" aria-label="Playable ${escapeHtml(selected.chord.symbol)} voicings">${selected.voicings.map((item, index) => {
+        const roles = item.shape.placements.map((placement) => placement.note.roleLabel).join(" · ");
+        const locations = item.shape.placements.map((placement) => `${window.Tuning.names()[placement.stringIndex]}${placement.fret}`).join(" · ");
+        return `<button data-chord-path-shape="${index}" class="${index === state.chordMap.shapeIndex ? "active" : ""}"><i>${escapeHtml(item.kind === "full" ? "Full chord" : item.kind === "compact" ? "Four notes" : "Triad")}</i><b>${escapeHtml(item.label)}</b><span>${escapeHtml(item.detail)}</span><small>${escapeHtml(roles)} · ${escapeHtml(locations)}</small></button>`;
+      }).join("")}</div>
+      <p class="chord-path-honesty">Instrument-relative: every displayed fret comes from ${escapeHtml(window.Tuning.current().name)} and stays at or below fret 15. Full guitar forms appear only when the validated library has one; other instruments use tuning-derived grips.</p>`;
+  }
+
+  function renderChordPathOutline(selected, model) {
+    const extension = model.extension;
+    const extensionCopy = extension.added
+      ? `${extension.chord.symbol} adds ${extension.added.roleLabel} ${extension.added.name}, derived from the selected scale.`
+      : `${extension.chord.symbol} keeps R–3–5 as the foundation under the selected seventh chord.`;
+    return `<div class="chord-path-copy"><b>Turn the chord shape into a melodic object.</b><span>Start with the 3rd: it tells your ear what kind of chord this is. These are technique cells—not quoted Greek phrases.</span></div>
+      <div class="chord-extension-card"><div><i>Scale-locked enhancement</i><b>${escapeHtml(extension.label)} · ${escapeHtml(extension.chord.symbol)}</b><span>${escapeHtml(extensionCopy)}</span></div><button data-chord-path-extension>▶ Hear</button></div>
+      <div class="chord-pattern-grid">${model.arpeggios.map((pattern, index) => {
+        const location = chordPathLocation(pattern.notes, selected.shape);
+        return `<button data-chord-path-arp="${index}"><i>Arpeggio cell ${index + 1}</i><b>${escapeHtml(pattern.label)}</b><span class="chord-note-run">${chordPathNoteRun(pattern.notes)}</span><small>${escapeHtml(location.label)}</small><em>${escapeHtml(pattern.intent)}</em></button>`;
+      }).join("")}</div>
+      <p class="chord-path-honesty">Practice sequence: sing the note names, play the cell slowly, then change its rhythm while keeping the same chord-tone order.</p>`;
+  }
+
+  function renderChordPathConnect(selected, model) {
+    const target = selected.chord.notes[state.chordMap.targetIndex % selected.chord.notes.length];
+    return `<div class="chord-path-copy"><b>Enter ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)} so the chord sounds intentional.</b><span>Choose the landing first. The app then finds a short single-course line using only ${escapeHtml(state.tonic)} ${escapeHtml(M.MODES[state.modeId].name)}.</span></div>
+      <div class="chord-path-targets"><span>Landing tone</span>${selected.chord.notes.map((note, index) => `<button data-chord-path-target="${index}" class="${index === state.chordMap.targetIndex ? "active" : ""}" data-group="${escapeHtml(note.colorGroup)}"><i>${escapeHtml(note.roleLabel)}</i><b>${escapeHtml(note.name)}</b></button>`).join("")}</div>
+      <div class="chord-pattern-grid">${model.approaches.map((pattern, index) => {
+        const location = CP.instrumentPath(pattern.notes);
+        const locationCopy = location ? `${location.course} course · frets ${location.frets.join(" → ")}` : "Choose the nearest course by ear.";
+        return `<button data-chord-path-approach="${index}"><i>Scale-only connector</i><b>${escapeHtml(pattern.label)}</b><span class="chord-note-run">${chordPathNoteRun(pattern.notes)}</span><small>${escapeHtml(locationCopy)}</small><em>${escapeHtml(pattern.intent)}</em></button>`;
+      }).join("")}</div>
+      <p class="chord-path-honesty">No automatic chromatic filler: each connector stays inside the displayed fixed-fret collection. Add ornaments only after the scale-only arrival is audible and repertoire supports them.</p>`;
+  }
+
+  function successorCard(item, index) {
+    const common = item.guide.common.length ? item.guide.common.map((note) => note.name).join(" · ") : "none";
+    const maps = item.maps.map((map) => map.label).join(" · ");
+    return `<article class="chord-route-card"><header><div><i>${escapeHtml(item.maps[0].group)}</i><b>${escapeHtml(item.chord.symbol)}</b></div><button data-chord-path-successor="${index}">▶ Hear move</button></header><p><strong>3rd thread:</strong> ${escapeHtml(item.guide.from.name)} → ${escapeHtml(item.guide.to.name)} · ${escapeHtml(item.guide.motion.label)}.</p><p><strong>Common tones:</strong> ${escapeHtml(common)}.</p><small>Verified adjacency in ${escapeHtml(maps)}.</small></article>`;
+  }
+
+  function doorCard(door, index) {
+    return `<article class="chord-door-card"><header><div><i>${escapeHtml(door.kind === "pivot" ? "Same chord · new job" : door.kind === "recolour" ? "Change the colour" : "Role-change chain")}</i><b>${escapeHtml(door.label)} · ${escapeHtml(door.tonic)} ${escapeHtml(M.MODES[door.modeId].name)}</b></div><span>${door.shared}/7 shared</span></header><p>${escapeHtml(door.instruction)}</p><small>${escapeHtml(door.why)}</small><footer><button data-chord-path-door-hear="${index}">▶ Hear context</button><button data-chord-path-door-open="${index}">Open ${escapeHtml(door.targetChord.roman)} ${escapeHtml(door.targetChord.symbol)} →</button></footer></article>`;
+  }
+
+  function renderChordPathContinue(selected, model) {
+    return `<div class="chord-path-copy"><b>Separate song evidence from theory doors.</b><span>“Can follow” means an exact next chord in the app’s verified maps. A door shows a defensible way to re-hear or recolour the chord; it does not claim that a song has modulated.</span></div>
+      <div class="chord-continue-grid"><section><h4>Likely next · inside this scale</h4><div class="chord-route-list">${model.successors.length ? model.successors.map(successorCard).join("") : `<p class="chord-path-empty">No verified Song Map places another chord directly after this exact ${state.chordMap.depth}. It remains a valid derived chord, but the app will not invent a route.</p>`}</div></section>
+      <section><h4>Mode and key doors</h4><div class="chord-route-list">${model.doors.length ? model.doors.map(doorCard).join("") : `<p class="chord-path-empty">No chord-specific door is justified from this selection. Open a scale relationship below to compare the collections without calling it a modulation.</p>`}</div></section></div>`;
+  }
+
+  function renderChordPathInline(selected) {
+    const model = CP.build(state.tonic, state.modeId, selected.chord, state.chordMap.depth, state.chordMap.targetIndex);
+    const lens = state.chordMap.pathLens;
+    const body = lens === "outline" ? renderChordPathOutline(selected, model)
+      : lens === "connect" ? renderChordPathConnect(selected, model)
+        : lens === "continue" ? renderChordPathContinue(selected, model)
+          : renderChordPathPlay(selected);
+    const tabs = [
+      ["play", "1", "Play it", "voicings"],
+      ["outline", "2", "Outline it", "arpeggios"],
+      ["connect", "3", "Enter it", "scale lines"],
+      ["continue", "4", "Leave it", "next + change"]
+    ];
+    return `<section id="matrixChordPath" class="matrix-chord-path" aria-label="Chord path for ${escapeHtml(selected.chord.symbol)}"><header class="chord-path-head"><div><span>Chord path · ${escapeHtml(window.Tuning.current().name)}</span><h3>${escapeHtml(selected.chord.roman)} · ${escapeHtml(selected.chord.symbol)}</h3></div><p>${escapeHtml(state.tonic)} ${escapeHtml(M.MODES[state.modeId].name)} · selected ${escapeHtml(state.chordMap.depth)} · target ${escapeHtml(selected.chord.notes[state.chordMap.targetIndex % selected.chord.notes.length].roleLabel)}</p></header>
+      <nav class="chord-path-tabs" aria-label="Chord path questions">${tabs.map((tab) => `<button data-chord-path-lens="${tab[0]}" class="${lens === tab[0] ? "active" : ""}"><i>${tab[1]}</i><b>${tab[2]}</b><span>${tab[3]}</span></button>`).join("")}</nav>
+      <div class="chord-path-body">${body}</div></section>`;
+  }
+
+  function renderChordMapComparison(selected) {
     const rows = CM.comparison(state.tonic, state.chordMap.depth);
     $("chordMapCompare").innerHTML = `<table class="harmony-matrix"><thead><tr><th scope="col">Scale / dromos</th>${Array.from({ length: 7 }, (_, degree) => `<th scope="col"><b>${degree + 1}</b><span>degree</span></th>`).join("")}</tr></thead><tbody>${rows.map((row) => {
       const selectedRow = row.modeId === state.modeId;
@@ -912,7 +1040,8 @@
         const copy = matrixProgressionCopy(row.modeId, progression);
         return `<button data-matrix-prog="${progression.id}" data-matrix-mode="${row.modeId}" title="${escapeHtml(copy.why)}"><b>${escapeHtml(copy.label)}</b><span>${escapeHtml(copy.symbols)}</span></button>`;
       }).join("");
-      return `<tr class="matrix-scale-row${selectedRow ? " selected" : ""}"><th scope="row"><button data-matrix-mode="${row.modeId}"><span>${escapeHtml(row.mode.name)}</span><b>${escapeHtml(row.mode.greek)}</b><small>${escapeHtml(row.mode.signature)}</small><em>${escapeHtml(scaleNames)}</em></button></th>${chordCells}</tr><tr class="matrix-route-row${selectedRow ? " selected" : ""}"><td colspan="8"><div><span>Working routes</span>${routes}</div></td></tr>`;
+      const chordPath = selectedRow ? `<tr class="matrix-path-row"><td colspan="8">${renderChordPathInline(selected)}</td></tr>` : "";
+      return `<tr class="matrix-scale-row${selectedRow ? " selected" : ""}"><th scope="row"><button data-matrix-mode="${row.modeId}"><span>${escapeHtml(row.mode.name)}</span><b>${escapeHtml(row.mode.greek)}</b><small>${escapeHtml(row.mode.signature)}</small><em>${escapeHtml(scaleNames)}</em></button></th>${chordCells}</tr><tr class="matrix-route-row${selectedRow ? " selected" : ""}"><td colspan="8"><div><span>Working routes</span>${routes}</div></td></tr>${chordPath}`;
     }).join("")}</tbody></table>`;
   }
 
@@ -969,7 +1098,7 @@
     const grip = selected.shape && selected.shape.placements ? { placements: selected.shape.placements } : selected.shape;
     FB.render(svg(), {
       grip,
-      otherShapes: selected.shapes.filter((shape) => shape !== selected.shape),
+      otherShapes: selected.voicing && selected.voicing.kind === "triad" ? selected.triadShapes.filter((shape) => shape !== selected.shape) : [],
       scaleNotes: scale,
       targetNowPcs: [target.pc],
       targetNextPcs: [nextTarget.pc],
@@ -983,14 +1112,14 @@
     document.querySelectorAll("[data-chord-map-depth]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-chord-map-depth") === state.chordMap.depth));
     $("chordMapTonicSel").value = state.tonic;
-    renderChordMapComparison();
+    renderChordMapComparison(selected);
     $("chordMapDegrees").innerHTML = `<span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)}</b><small>${scale.map((note) => escapeHtml(note.name)).join(" · ")}</small></span><span><i>Selected ${state.chordMap.depth}</i><b>${escapeHtml(chord.roman)} · ${escapeHtml(chord.symbol)}</b><small>${escapeHtml(chord.workingRole.label)} · ${chord.prominence.mapsUsed}/${chord.prominence.totalMaps} working maps</small></span>`;
     renderChordMapRoad();
     renderMatrixProgressions();
     renderMatrixRelationships();
 
     const shapeCopy = selected.shape && selected.shape.placements
-      ? `${selected.shape.inversionName || "compact grip"} · frets ${Math.min(...selected.shape.placements.map((placement) => placement.fret))}–${Math.max(...selected.shape.placements.map((placement) => placement.fret))}`
+      ? `${selected.voicing ? selected.voicing.label : selected.shape.inversionName || "compact grip"} · frets ${Math.min(...selected.shape.placements.map((placement) => placement.fret))}–${Math.max(...selected.shape.placements.map((placement) => placement.fret))}`
       : "compact grip";
     const specialQuality = chord.quality === "dim" || chord.quality === "dim7" || chord.quality === "m7b5"
       ? "This diminished-family result is truthful scale stacking. Treat it as tension and voice-leading material; its working-map count says whether the curriculum actually asks for it."
@@ -1004,7 +1133,7 @@
       <div class="chord-map-evidence"><b>${escapeHtml(chord.workingRole.label)} · ${escapeHtml(chord.prominence.label)}</b><span>Used in ${chord.prominence.mapsUsed} of ${chord.prominence.totalMaps} documented Song Maps · ${chord.prominence.occurrences} appearance${chord.prominence.occurrences === 1 ? "" : "s"}. The role badge and the usage count are separate evidence.</span></div>
       <div class="chord-target-sequence"><span>Target sequence · not a predicted melody</span>${chord.notes.map((note, index) => `<button data-chord-target="${index}" class="${index === targetIndex ? "active" : index === nextTargetIndex ? "next" : ""}" data-group="${note.colorGroup}"><i>${escapeHtml(note.roleLabel)}</i><b>${escapeHtml(note.name)}</b><small>${index === targetIndex ? "hear now" : index === nextTargetIndex ? "then" : "after"}</small></button>`).join("")}</div>
       <p class="chord-target-cue"><b>Hear now:</b> ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}. <b>Then:</b> ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)}. Sing it before touching the highlighted fret.</p>
-      <div class="chord-map-actions"><button data-hear-chord>Hear chord</button><button data-hear-target>Hear ${escapeHtml(target.roleLabel)}</button><button data-hear-triad>Hear ${chord.notes.map((note) => escapeHtml(note.roleLabel)).join(" → ")}</button><button data-next-chord-shape${selected.shapes.length < 2 ? " disabled" : ""}>${state.chordMap.depth === "triad" ? `Next position · ${selected.shapes.length ? state.chordMap.shapeIndex + 1 : 1}/${Math.max(1, selected.shapes.length)}` : "Compact 7th grip"}</button></div>
+      <div class="chord-map-actions"><button data-hear-chord>Hear chord</button><button data-hear-target>Hear ${escapeHtml(target.roleLabel)}</button><button data-hear-triad>Hear ${chord.notes.map((note) => escapeHtml(note.roleLabel)).join(" → ")}</button><button data-next-chord-shape${selected.shapes.length < 2 ? " disabled" : ""}>Next voicing · ${selected.shapes.length ? state.chordMap.shapeIndex + 1 : 1}/${Math.max(1, selected.shapes.length)}</button></div>
       <div class="tri-tags"><span class="tri-set">${escapeHtml(window.Tuning.current().name)}</span><span class="tri-fret">${escapeHtml(shapeCopy)}</span></div>
       <div class="ro-foot"><b>${escapeHtml(specialQuality)}</b> ${variants}${chord.practiceNote ? ` <span class="chord-practice-note">${escapeHtml(chord.practiceNote)}</span>` : ""}</div>`;
 
@@ -1015,6 +1144,7 @@
         if (!M.PROGRESSIONS[state.modeId].some((progression) => progression.id === state.progId)) state.progId = M.PROGRESSIONS[state.modeId][0].id;
       }
       selectChordMapDegree(button.getAttribute("data-chord-degree"), true);
+      revealChordPath();
     });
     document.querySelectorAll("[data-matrix-mode]").forEach((button) => {
       if (button.hasAttribute("data-matrix-prog")) return;
@@ -1028,6 +1158,50 @@
       state.modeId = button.getAttribute("data-matrix-relation-mode");
       state.progId = M.PROGRESSIONS[state.modeId][0].id;
       state.chordMap.degree = 0; state.chordMap.targetIndex = 1; state.chordMap.shapeIndex = 0;
+      persistPreferences(); renderChordMap(); auditionChordMap("strum");
+    });
+    document.querySelectorAll("[data-chord-path-lens]").forEach((button) => button.onclick = () => {
+      state.chordMap.pathLens = button.getAttribute("data-chord-path-lens");
+      renderChordMap();
+    });
+    document.querySelectorAll("[data-chord-path-shape]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      state.chordMap.shapeIndex = +button.getAttribute("data-chord-path-shape");
+      renderChordMap(); auditionChordMap("block");
+    });
+    document.querySelectorAll("[data-chord-path-target]").forEach((button) => button.onclick = () => {
+      state.chordMap.targetIndex = +button.getAttribute("data-chord-path-target");
+      renderChordMap();
+    });
+    const chordPathModel = CP.build(state.tonic, state.modeId, chord, state.chordMap.depth, state.chordMap.targetIndex);
+    document.querySelectorAll("[data-chord-path-arp]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const pattern = chordPathModel.arpeggios[+button.getAttribute("data-chord-path-arp")];
+      if (pattern) AU.playSequence(pattern.notes, 0.34);
+    });
+    document.querySelectorAll("[data-chord-path-approach]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const pattern = chordPathModel.approaches[+button.getAttribute("data-chord-path-approach")];
+      if (pattern) AU.playSequence(pattern.notes, 0.32);
+    });
+    document.querySelectorAll("[data-chord-path-extension]").forEach((button) => button.onclick = () => {
+      stopPlay(); AU.playSequence(chordPathModel.extension.chord.notes, 0.36);
+    });
+    document.querySelectorAll("[data-chord-path-successor]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const route = chordPathModel.successors[+button.getAttribute("data-chord-path-successor")];
+      if (route) AU.playProgressionPrompt([chord, route.chord], state.bpm, chordReferenceVoice());
+    });
+    document.querySelectorAll("[data-chord-path-door-hear]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const door = chordPathModel.doors[+button.getAttribute("data-chord-path-door-hear")];
+      if (door) AU.playProgressionPrompt(door.preview, state.bpm, chordReferenceVoice());
+    });
+    document.querySelectorAll("[data-chord-path-door-open]").forEach((button) => button.onclick = () => {
+      const door = chordPathModel.doors[+button.getAttribute("data-chord-path-door-open")];
+      if (!door) return;
+      stopPlay(); state.tonic = door.tonic; state.modeId = door.modeId; state.progId = M.PROGRESSIONS[door.modeId][0].id;
+      state.chordMap.degree = door.targetDegree; state.chordMap.targetIndex = 1; state.chordMap.shapeIndex = 0;
       persistPreferences(); renderChordMap(); auditionChordMap("strum");
     });
     $("readout").querySelectorAll("[data-chord-target]").forEach((button) => button.onclick = () => {
@@ -4010,6 +4184,7 @@
       showTuningSub();
       persistPreferences(); renderPlayerProfiles(false);
       state.position = null;
+      state.chordMap.shapeIndex = 0;
       $("btnShift").textContent = "Position: auto";
       rerender();
       if (state.view === "ear") renderEarScore();

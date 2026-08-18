@@ -918,6 +918,78 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .matrix-progressions small, .matrix-relationships small { color: var(--muted); font-size: 9.5px; line-height: 1.45; }
 .matrix-progressions em, .matrix-relationships em { color: var(--faint); font-size: 8px; font-style: normal; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; }
 
+/* The selected Matrix row opens a four-question chord path in place. Keeping
+   it inside that row preserves the table comparison while avoiding a second,
+   detached inspector at the bottom of a long page. */
+.matrix-path-row td { padding: 0; border-bottom: 1px solid var(--line-strong); background: #12100E; }
+.matrix-chord-path { display: grid; gap: 10px; padding: 14px; border-left: 3px solid var(--terracotta); background: linear-gradient(125deg, rgba(194, 100, 54, 0.13), rgba(30, 48, 51, 0.16) 54%, transparent); }
+.chord-path-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.chord-path-head > div { display: grid; gap: 2px; }
+.chord-path-head span, .chord-path-copy span { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.chord-path-head > div > span { color: var(--terracotta-bright); font-size: 8px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.chord-path-head h3 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: 20px; font-weight: 550; }
+.chord-path-head p { margin: 0; color: var(--faint); font-family: var(--font-mono); font-size: 8.5px; text-align: right; }
+.chord-path-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.chord-path-tabs button { display: grid; grid-template-columns: 24px 1fr; grid-template-rows: auto auto; gap: 0 7px; min-height: 48px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(20, 17, 15, 0.68); color: var(--text); text-align: left; }
+.chord-path-tabs button:hover { border-color: var(--line-strong); background: var(--panel); }
+.chord-path-tabs button.active { border-color: var(--terracotta); background: var(--terracotta-soft); box-shadow: inset 0 -2px 0 var(--terracotta); }
+.chord-path-tabs i { grid-row: 1 / span 2; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--panel2); color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
+.chord-path-tabs b { font-size: 10.5px; }
+.chord-path-tabs span { color: var(--faint); font-size: 7.5px; letter-spacing: 0.05em; text-transform: uppercase; }
+.chord-path-body { display: grid; gap: 9px; min-width: 0; }
+.chord-path-copy { display: flex; align-items: baseline; gap: 8px; }
+.chord-path-copy b { flex: none; color: var(--text); font-family: var(--font-display); font-size: 13px; }
+.chord-path-honesty { margin: 0; padding-left: 8px; border-left: 2px solid var(--aegean); color: var(--faint); font-size: 8.5px; line-height: 1.45; }
+.chord-shape-rail { display: flex; gap: 6px; min-width: 0; overflow-x: auto; padding: 1px 1px 5px; scroll-snap-type: x proximity; }
+.chord-shape-rail button { flex: 0 0 180px; display: grid; align-content: start; gap: 3px; min-height: 96px; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--raised); color: var(--text); text-align: left; scroll-snap-align: start; }
+.chord-shape-rail button:hover { border-color: var(--aegean); background: var(--aegean-soft); }
+.chord-shape-rail button.active { border-color: var(--terracotta); background: var(--terracotta-soft); box-shadow: inset 0 0 0 1px var(--terracotta); }
+.chord-shape-rail i, .chord-pattern-grid button > i, .chord-extension-card i, .chord-route-card i, .chord-door-card i { color: var(--aegean-bright); font-size: 7.5px; font-style: normal; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.chord-shape-rail b { font-family: var(--font-display); font-size: 11px; }
+.chord-shape-rail span { color: var(--muted); font-family: var(--font-mono); font-size: 8px; }
+.chord-shape-rail small { color: var(--faint); font-family: var(--font-mono); font-size: 7.5px; line-height: 1.45; }
+.chord-extension-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border: 1px solid rgba(228, 184, 91, 0.32); border-radius: var(--r-sm); background: var(--amber-soft); }
+.chord-extension-card > div { display: grid; gap: 2px; }
+.chord-extension-card b { color: var(--text); font-size: 10.5px; }
+.chord-extension-card span { color: var(--muted); font-size: 9px; }
+.chord-extension-card button, .chord-route-card button, .chord-door-card button { flex: none; min-height: 32px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--text); font-size: 8.5px; }
+.chord-extension-card button:hover, .chord-route-card button:hover, .chord-door-card button:hover { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.chord-pattern-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.chord-pattern-grid > button { display: grid; align-content: start; gap: 5px; min-height: 130px; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--raised); color: var(--text); text-align: left; }
+.chord-pattern-grid > button:hover { border-color: var(--turquoise); background: var(--turquoise-soft); }
+.chord-pattern-grid button > b { font-family: var(--font-display); font-size: 12px; }
+.chord-pattern-grid button > small { color: var(--turquoise); font-family: var(--font-mono); font-size: 8px; }
+.chord-pattern-grid button > em { color: var(--muted); font-size: 8.5px; font-style: normal; line-height: 1.45; }
+.chord-note-run { display: flex; align-items: center; gap: 4px; }
+.chord-note-run > span { display: inline-grid; grid-template-columns: auto auto; gap: 3px; align-items: center; padding: 3px 5px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel2); }
+.chord-note-run i { display: grid; place-items: center; min-width: 17px; height: 17px; border-radius: 50%; color: #14110F; font-family: var(--font-mono); font-size: 7px; font-style: normal; font-weight: 700; }
+.chord-note-run [data-group="root"] i { background: var(--c-root); }
+.chord-note-run [data-group="third"] i { background: var(--c-third); }
+.chord-note-run [data-group="fifth"] i { background: var(--c-fifth); }
+.chord-note-run [data-group="seventh"] i { background: var(--c-seventh); }
+.chord-note-run b { font-family: var(--font-mono); font-size: 8.5px; }
+.chord-path-targets { display: flex; align-items: center; gap: 5px; }
+.chord-path-targets > span { margin-right: 3px; color: var(--faint); font-size: 8px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.chord-path-targets button { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--text); }
+.chord-path-targets button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.chord-path-targets i { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 8px; font-style: normal; }
+.chord-path-targets b { font-family: var(--font-mono); font-size: 9px; }
+.chord-continue-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 8px; }
+.chord-continue-grid > section { min-width: 0; }
+.chord-continue-grid h4 { margin: 0 0 5px; color: var(--text); font-family: var(--font-display); font-size: 12px; }
+.chord-route-list { display: grid; gap: 6px; }
+.chord-route-card, .chord-door-card { display: grid; gap: 5px; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--raised); }
+.chord-route-card header, .chord-door-card header, .chord-door-card footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.chord-route-card header > div, .chord-door-card header > div { display: grid; gap: 2px; }
+.chord-route-card b, .chord-door-card b { color: var(--text); font-family: var(--font-display); font-size: 11px; }
+.chord-route-card p, .chord-door-card p { margin: 0; color: var(--muted); font-size: 8.5px; line-height: 1.4; }
+.chord-route-card strong { color: var(--text); }
+.chord-route-card small, .chord-door-card small { color: var(--faint); font-size: 7.5px; line-height: 1.4; }
+.chord-door-card { border-left: 2px solid var(--turquoise); }
+.chord-door-card header > span { flex: none; color: var(--turquoise); font-family: var(--font-mono); font-size: 8px; }
+.chord-door-card footer { justify-content: flex-start; }
+.chord-path-empty { margin: 0; padding: 10px; border: 1px dashed var(--line); border-radius: var(--r-sm); color: var(--faint); font-size: 8.5px; line-height: 1.5; }
+
 /* ear trainer */
 #panelEar { gap: 14px; }
 .ear-start { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: linear-gradient(135deg, var(--aegean-soft), var(--panel)); }
@@ -1758,6 +1830,13 @@ body[data-view="melody"] main { max-width: 1180px; }
   .harmony-matrix { min-width: 930px; }
   .matrix-scale-row th, .harmony-matrix thead th:first-child { width: 136px; }
   .matrix-route-row td > div > span { position: static; }
+  .matrix-path-row td { position: relative; }
+  .matrix-chord-path { position: sticky; left: 0; width: calc(100vw - 28px); }
+  .chord-path-head, .chord-path-copy { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .chord-path-head p { text-align: left; }
+  .chord-path-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chord-pattern-grid, .chord-continue-grid { grid-template-columns: 1fr; }
+  .chord-path-targets { align-items: flex-start; flex-wrap: wrap; }
   .cycle-roadmap > header, .solo-progression-roadmap > header { align-items: flex-start; flex-direction: column; }
   .cycle-roadmap > header p, .solo-progression-roadmap > header p { max-width: none; text-align: left; }
   .cycle-roadmap-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

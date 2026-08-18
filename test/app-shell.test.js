@@ -42,6 +42,7 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /Returns directly to home/,
     "the working-role legend must describe a direct return without overclaiming a formal cadence");
   assert.match(html, /js\/chord-map\.js\?v=17/);
+  assert.match(html, /js\/chord-path\.js\?v=25/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -113,6 +114,14 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/ear-drills.js"), /harmonicMinor/);
   assert.match(read("js/app.js"), /function renderPageGuide/);
   assert.match(read("js/app.js"), /function renderChordMap/);
+  assert.match(read("js/app.js"), /function renderChordPathInline/,
+    "clicking a Matrix chord must open the four-question chord path in its selected row");
+  assert.match(read("js/app.js"), /data-chord-path-lens/);
+  assert.match(read("js/app.js"), /data-chord-path-shape/);
+  assert.match(read("js/app.js"), /data-chord-path-approach/);
+  assert.match(read("js/app.js"), /data-chord-path-successor/);
+  assert.match(read("js/chord-path.js"), /Modes\.PROGRESSIONS|M\.PROGRESSIONS/,
+    "successor suggestions must come from the verified progression bank");
   assert.match(read("js/app.js"), /targetNowPcs: \[target\.pc\]/,
     "Chord Map must render the current R/3/5 target from the same derived chord used by audio");
   assert.match(read("js/app.js"), /AU\.playSequence\(chord\.notes, 0\.38\)/,
@@ -125,11 +134,12 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "23"/,
+  assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
+  assert.match(read("api/release.js"), /appVersion: "25"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=23/);
+  assert.match(html, /css\/styles\.css\?v=25/);
   assert.match(html, /js\/fretboard\.js\?v=19/);
-  assert.match(html, /js\/app\.js\?v=23/);
+  assert.match(html, /js\/app\.js\?v=25/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.

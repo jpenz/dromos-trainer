@@ -7,8 +7,9 @@ not laziness: it was built on a machine with no Node, and it means the app opens
 double-clicking `index.html`, works offline, and will still run in ten years. Before
 adding a framework or a bundler, read NFR-01/02 in [REQUIREMENTS.md](REQUIREMENTS.md).
 
-Modules attach one global each (`window.Theory`, `window.Modes`, `window.Fretboard`,
-`window.AudioEngine`, `window.PitchLab`) and are loaded in dependency order by `index.html`.
+Modules attach one global each (`window.Theory`, `window.Modes`, `window.ChordMap`,
+`window.ChordPath`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
+are loaded in dependency order by `index.html`.
 
 ## Module map
 
@@ -19,6 +20,8 @@ index.html
   └─ js/theory.js   ──►  Theory     pure. the ii–V–I pivot CYCLE only
   └─ js/harmony-journey.js ► HarmonyJourney shared current/next sequence model
   └─ js/modes.js    ──►  Modes      pure. dromoi, spelling, progression banks
+  └─ js/chord-map.js ─►  ChordMap   pure. derived harmony + scale relationships
+  └─ js/chord-path.js►  ChordPath  pure. arpeggios, connectors, successors + doors
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
   └─ js/audio.js    ──►  AudioEngine Web Audio synth + bar transport
@@ -36,6 +39,14 @@ clarity, cents, and a target classification. Only `app.js` may request microphon
 permission, own a `MediaStream`, or update the DOM. The stream feeds an analyser
 but never the audio destination, so there is no monitor/feedback path. See
 [PITCH_SINGBACK_DECISION.md](PITCH_SINGBACK_DECISION.md).
+
+`chord-path.js` is the Matrix's evidence boundary. It may derive chord-tone cells,
+scale-neighbour connectors, instrument paths, and triad/seventh extensions, but a
+successor exists only when the same chord is followed by that chord in
+`Modes.PROGRESSIONS`. Mode/key doors reuse `ChordMap.relationships()` and state
+whether the sounding chord holds, its root holds while colour changes, or the
+explicit major-I-to-new-ii cycle rule applies. `app.js` renders and sounds this
+model; it must not add an unsupported route in player-facing copy.
 
 ## The two engines
 

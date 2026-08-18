@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -277,6 +277,69 @@ test("Chord Map labels prominence as trainer evidence, not a genre claim", () =>
   const ousakSecond = ChordMap.harmonize("D", "ousak")[1];
   assert.equal(ousakSecond.symbol, "E♭");
   assert.match(ousakSecond.practiceNote, /fixed-fret harmony/i);
+});
+
+test("Chord Path stays instrument-playable, scale-locked, and evidence-bound for every Matrix degree at both depths", () => {
+  const { Modes, ChordMap, ChordPath, Tuning } = loadCore();
+  const restore = Tuning.currentId();
+  const toneKey = (chord, depth) => chord.notes.slice(0, depth === "seventh" ? 4 : 3)
+    .map((note) => note.pc).sort((a, b) => a - b).join(",");
+  let chordsChecked = 0;
+  let routesChecked = 0;
+
+  ["triad", "seventh"].forEach((depth) => Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    const scalePcs = new Set(Modes.scaleOf(tonic, modeId).map((note) => note.pc));
+    ChordMap.harmonize(tonic, modeId, depth).forEach((chord) => {
+      const plan = ChordPath.build(tonic, modeId, chord, depth, 1);
+      assert.equal(plan.arpeggios.length, 3, `${tonic} ${modeId} ${chord.symbol} needs three chord-tone cells`);
+      assert.equal(plan.approaches.length, 3, `${tonic} ${modeId} ${chord.symbol} needs three connector choices`);
+      plan.approaches.forEach((approach) => {
+        assert.ok(approach.notes.every((note) => scalePcs.has(note.pc)), `${approach.label} must stay inside ${tonic} ${modeId}`);
+        assert.equal(approach.notes.at(-1).pc, chord.notes[1].pc, `${approach.label} must land on the selected 3rd`);
+      });
+      assert.equal(plan.extension.chord.degreeIndex, chord.degreeIndex, "triad/seventh enhancement stays on the selected scale degree");
+
+      plan.successors.forEach((successor) => {
+        successor.maps.forEach((evidence) => {
+          const progression = Modes.PROGRESSIONS[modeId].find((item) => item.id === evidence.id);
+          assert.ok(progression, `${successor.chord.symbol} needs a real progression source`);
+          const sequence = ChordPath.progressionChords(tonic, modeId, progression, depth);
+          assert.ok(sequence.some((candidate, index) => index < sequence.length - 1 &&
+            toneKey(candidate, depth) === toneKey(chord, depth) &&
+            toneKey(sequence[index + 1], depth) === toneKey(successor.chord, depth)),
+          `${chord.symbol} → ${successor.chord.symbol} must be exact adjacency in ${progression.id}`);
+          routesChecked++;
+        });
+      });
+
+      plan.doors.forEach((door) => {
+        const target = ChordMap.harmonize(door.tonic, door.modeId, depth)[door.targetDegree];
+        assert.equal(toneKey(target, depth), toneKey(door.targetChord, depth), "a door opens the exact chord it describes");
+        if (door.kind === "pivot") assert.equal(toneKey(chord, depth), toneKey(door.targetChord, depth), "a pivot must hold the same sounding chord");
+        if (door.kind === "recolour") assert.equal(chord.rootPc, door.targetChord.rootPc, "a recolour door keeps the root");
+        if (door.kind === "role-change") {
+          assert.equal(modeId, "major");
+          assert.equal(chord.degreeIndex, 0);
+          assert.equal(door.targetDegree, 1);
+        }
+      });
+      chordsChecked++;
+    });
+  })));
+
+  Tuning.TUNINGS.forEach((tuning) => {
+    Tuning.set(tuning.id);
+    const chord = ChordMap.harmonize("D", "hijaz")[0];
+    ChordPath.approaches("D", "hijaz", chord, 1).forEach((approach) => {
+      const path = ChordPath.instrumentPath(approach.notes);
+      assert.ok(path, `${approach.label} needs a path on ${tuning.name}`);
+      assert.ok(path.frets.every((fret) => fret >= 0 && fret <= 15), `${tuning.name} connector stays at fret 15 or below`);
+      assert.equal(new Set(path.placements.map((placement) => placement.stringIndex)).size, 1, `${tuning.name} connector stays on one course`);
+    });
+  });
+  Tuning.set(restore);
+  assert.equal(chordsChecked, 840);
+  assert.ok(routesChecked > 0);
 });
 
 test("Harmony Matrix derives truthful seventh chords for all 60 key-scale rows", () => {
