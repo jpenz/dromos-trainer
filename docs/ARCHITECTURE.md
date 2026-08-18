@@ -8,7 +8,7 @@ double-clicking `index.html`, works offline, and will still run in ten years. Be
 adding a framework or a bundler, read NFR-01/02 in [REQUIREMENTS.md](REQUIREMENTS.md).
 
 Modules attach one global each (`window.Theory`, `window.Modes`, `window.ChordMap`,
-`window.ChordPath`, `window.TacticalExamples`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
+`window.ChordPath`, `window.TacticalExamples`, `window.PickingLab`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
 are loaded in dependency order by `index.html`.
 
 ## Module map
@@ -23,6 +23,7 @@ index.html
   └─ js/chord-map.js ─►  ChordMap   pure. derived harmony + scale relationships
   └─ js/chord-path.js►  ChordPath  pure. arpeggios, connectors, successors + doors
   └─ js/tactical-examples.js ► TacticalExamples pure. sourced claims + generated drills
+  └─ js/picking-lab.js ► PickingLab pure. plectrum curriculum + event plans
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
   └─ js/audio.js    ──►  AudioEngine Web Audio synth + bar transport
@@ -55,6 +56,14 @@ tonic/dromos note path and practice instructions. The rendered page must always 
 both layers and the explicit “not a transcription” boundary. `toolkit.js` links each
 tool to one example ID, while `app.js` owns navigation, audio preview, and the handoff
 back into Solo. A citation must never be used as decoration for an invented lick.
+
+`picking-lab.js` applies the same boundary to plectrum technique. It stores what a
+source actually supports, the original Dromos drill built from that observation,
+stroke/ornament event plans, and measurable pass criteria. `practice.js` remains the
+single source for tuning-aware paths and crossing classification; `app.js` combines
+the two with the selected Greek pulse and current/next chord. This prevents a method
+catalogue entry or Pennanen's motor analysis from being misrepresented as a copied
+exercise or an artist transcription.
 
 ## The two engines
 

@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => readFileSync(path.join(root, file), "utf8");
 
-test("the shell exposes ten primary destinations including Melody and the standalone matrix", () => {
+test("the shell exposes eleven primary destinations including Melody, Picking, and the standalone matrix", () => {
   const html = read("index.html");
-  ["today", "hear", "melody", "harmony", "matrix", "solo", "repertoire", "learn", "coach", "progress"].forEach((nav) => {
+  ["today", "hear", "melody", "harmony", "matrix", "solo", "picking", "repertoire", "learn", "coach", "progress"].forEach((nav) => {
     assert.match(html, new RegExp(`data-nav="${nav}"`), `missing primary destination ${nav}`);
   });
   // Full Cycle and ii–V–I folded into the Changes Gym as key-count settings;

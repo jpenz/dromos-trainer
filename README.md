@@ -101,6 +101,15 @@ that is what changes the crossing pattern. `◀ below` / `above ▶` walk the sa
 to the core positions above and below. Loose wrist, pick barely clearing the string,
 and drop the tempo until every crossing is clean.
 
+The standalone **Picking Lab** turns that feedback into a nine-exercise curriculum:
+even attack, Greek grouped accents, tremolo bursts, isolated and mixed course
+crossings, horizontal-versus-tiered route and timbre comparisons, ornaments, and a
+triad-arpeggio arrival on the coming chord's 3rd. Each exercise has an animated
+event rail, an exact three-step instruction, a listening goal, a pass test, and a
+direct evidence link. Artist/method observations and Dromos-authored exercises are
+labelled separately; no published exercise or recorded lick is represented as a
+transcription.
+
 **Audiation cells.** Start with 3 notes, add one each pass to the octave, then take
 one away back down to 3. The **last note is the target**: playback leaves a *silent
 beat* where it belongs so you sing it internally first, then reveal to check yourself.

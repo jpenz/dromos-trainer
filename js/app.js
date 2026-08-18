@@ -1,18 +1,18 @@
 /* app.js — views, wiring, animation, playback sync, shortcuts.
- * Implements FR-04..07, FR-11, FR-12, FR-15, FR-57, FR-65, FR-66 / MI-27, MI-34, MI-35. See docs/REQUIREMENTS.md.
+ * Implements FR-04..07, FR-11, FR-12, FR-15, FR-57, FR-65..67 / MI-27, MI-34..36. See docs/REQUIREMENTS.md.
  */
 (function () {
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
     PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
-    PG = window.PageGuides, TE = window.TacticalExamples;
+    PG = window.PageGuides, TE = window.TacticalExamples, PK = window.PickingLab;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
 
   const state = {
-    view: "cycle",             // cycle | prog | ear | melody | triads | solo | styles | video | analyze | concepts | coach
+    view: "cycle",             // cycle | prog | ear | melody | triads | solo | picking | styles | video | analyze | concepts | coach
     // --- cycle view ---
     index: 0,
     cycleMode: "pivot",        // the Changes Gym; "full"/"iiVI" survive only as legacy preference values
@@ -59,6 +59,11 @@
       layout: "3nps", position: 5, startDegree: 1, startString: 0,
       firstStroke: "down", updown: true, pathIndex: null,
       cellIdx: 0, audiate: true, revealed: false
+    },
+    // --- dedicated plectrum curriculum ---
+    picking: {
+      category: "all", exerciseId: "down-up-clock", route: "horizontal",
+      subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, playing: false
     },
     // --- shared ---
     labelMode: "interval",
@@ -108,7 +113,7 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   }[character]));
 
-  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "examples", "analyze", "concepts", "coach"];
+  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "examples", "analyze", "concepts", "coach"];
 
   function stablePreferences() {
     return {
@@ -224,9 +229,9 @@
   // ====================== primary navigation model ======================
   // Primary destinations follow the player's journey: orient, hear, connect
   // melody to harmony, map/comp, then solo. Reference tools follow beneath.
-  const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", melody: "melody", harmony: "cycle", matrix: "chordmap", solo: "solo", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
-  const VIEW_NAV = { today: "today", ear: "hear", melody: "melody", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", analyze: "repertoire", styles: "learn", video: "learn", examples: "learn", concepts: "learn", coach: "coach", progress: "progress" };
-  const NAV_TITLES = { today: "Today", hear: "Ear", melody: "Melody → Harmony", harmony: "Harmony", matrix: "Harmony Matrix", solo: "Solo", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
+  const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", melody: "melody", harmony: "cycle", matrix: "chordmap", solo: "solo", picking: "picking", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
+  const VIEW_NAV = { today: "today", ear: "hear", melody: "melody", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", picking: "picking", analyze: "repertoire", styles: "learn", video: "learn", examples: "learn", concepts: "learn", coach: "coach", progress: "progress" };
+  const NAV_TITLES = { today: "Today", hear: "Ear", melody: "Melody → Harmony", harmony: "Harmony", matrix: "Harmony Matrix", solo: "Solo", picking: "Picking Lab", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
 
   // One sentence per workspace answering "what is this FOR" — the purposes the
   // pedagogy research settled on, in the player's language.
@@ -236,7 +241,8 @@
     chordmap: "One key across five verified roads: compare every numbered chord, see the working routes, then open a defensible sister scale.",
     melody: "Hear one scale degree against a known home, then compare the lawful chords that can give that same note a different job.",
     triads: "The accompanist's seat: make the selected Greek pulse audible first, then place the nearest shape on its chord slots.",
-    solo: "One neck, three layers: the road, the frame inside it, and the little cells that hit every chord's 3rd."
+    solo: "One neck, three layers: the road, the frame inside it, and the little cells that hit every chord's 3rd.",
+    picking: "Right-hand control becomes music only when the attack, Greek grouping, route timbre, and chord arrival remain audible."
   };
 
   function renderModePurpose() {
@@ -244,7 +250,7 @@
     if (!el) return;
     const copy = MODE_PURPOSE[state.view];
     el.textContent = copy || "";
-    el.classList.toggle("hidden", !copy || !["harmony", "matrix", "solo"].includes(VIEW_NAV[state.view]));
+    el.classList.toggle("hidden", !copy || !["harmony", "matrix", "solo", "picking"].includes(VIEW_NAV[state.view]));
   }
 
   function syncHarmonyTabs() {
@@ -261,8 +267,9 @@
     { view: "chordmap", label: "Matrix · Reference", detail: "Compare the five verified roads by number, then open a working progression or a justified sister scale." },
     { view: "triads", label: "5 · Comp", detail: "Clap the grouped pulse, add its bass/chord skeleton, then keep the changes close with practical triads." },
     { view: "solo", label: "6 · Solo", detail: "Use a pentatonic frame, then land on chord tones at each change." },
-    { view: "styles", label: "7 · Pulse", detail: "Fit the phrase to a real Greek pulse without confusing rhythm and dromos." },
-    { view: "video", label: "8 · Study", detail: "Watch one legal public lesson in a short A–B loop, then explain its map." }
+    { view: "picking", label: "7 · Picking", detail: "Make the attack, course changes, and accents survive inside the phrase." },
+    { view: "styles", label: "8 · Pulse", detail: "Fit the phrase to a real Greek pulse without confusing rhythm and dromos." },
+    { view: "video", label: "9 · Study", detail: "Watch one legal public lesson in a short A–B loop, then explain its map." }
   ];
 
   function renderPracticePath() {
@@ -282,6 +289,7 @@
       return `${home === "blind" ? "Home hidden" : `Known home ${home}`} · sampled studio piano`;
     }
     if (state.view === "analyze") return `${instrument} · ${state.analysis.tonic} ${M.MODES[state.analysis.modeId].name}`;
+    if (state.view === "picking") return `${instrument} · ${state.tonic} ${M.MODES[state.modeId].name} · ${S.byId(state.groove.styleId).title} · ${state.bpm} BPM`;
     if (state.view === "styles") return state.styles.section === "greek" ? `Greek styles · ${S.byId(state.styles.styleId).title}` : "Foundation · general musical skills";
     if (["video", "concepts", "progress", "today"].includes(state.view)) return instrument;
     const mode = M.MODES[state.modeId];
@@ -320,11 +328,12 @@
   function renderCoachCue() {
     if (state.view === "today" || state.view === "progress") { $("coachCue").innerHTML = ""; return; }
     const step = PRACTICE_STEPS.find((item) => item.view === state.view);
-    const specialStep = state.view === "styles" || state.view === "video" || state.view === "examples";
+    const specialStep = state.view === "styles" || state.view === "video" || state.view === "examples" || state.view === "picking";
     if (!step && !specialStep) { $("coachCue").innerHTML = ""; return; }
     let detail = step ? step.detail
       : state.view === "video" ? "Loop only enough material to identify the destination; then put the video down and make the idea yours."
         : state.view === "examples" ? "Turn one documented concept into exact notes, timing, a listening goal, and an honest pass test."
+          : state.view === "picking" ? "Start with even attack, isolate the string change, then reconnect the right hand to a Greek pulse and chord target."
           : "Build the general language first, then place it inside a real Greek pulse without confusing style and dromos.";
     if (state.view === "solo" && state.solo.section === "targets") {
       detail = "Keep the whole scale visible, state the current triad, and pre-hear the next chord's 3rd before its ring changes colour.";
@@ -337,7 +346,7 @@
     } else if (state.view === "solo" && state.solo.section === "cell") {
       detail = "Pre-hear the final note, leave space for it, then reveal and check your ear.";
     }
-    $("coachCue").innerHTML = `<span>${step ? step.label : state.view === "video" ? "Video study" : state.view === "examples" ? "Tactical examples" : "Style lab"}</span><b>${detail}</b>`;
+    $("coachCue").innerHTML = `<span>${step ? step.label : state.view === "video" ? "Video study" : state.view === "examples" ? "Tactical examples" : state.view === "picking" ? "Picking Lab" : "Style lab"}</span><b>${detail}</b>`;
   }
 
   function currentPulse() {
@@ -1349,10 +1358,11 @@
       setView("solo");
       return;
     }
-    // Pennanen's tactile comparison belongs in the picking/route workspace,
-    // where the selected instrument determines the actual course layout.
-    state.solo.section = "path";
-    setView("solo");
+    // Pennanen's tactile comparison belongs in the dedicated Picking Lab,
+    // where horizontal and tiered versions are shown on the selected tuning.
+    state.picking.exerciseId = "tactile-ab";
+    state.picking.category = "route";
+    setView("picking");
   }
 
   let tacticalPlaybackRequest = 0;
@@ -2697,6 +2707,222 @@
     if (L.drill === "phrase") playLabPhrase();
   }
 
+  // ============================ PICKING LAB =============================
+  // Pennanen and the method sources support the technique categories. The
+  // exact event rails are generated here for the selected tuning, key, road,
+  // pulse and chord map; they are not copied repertoire or method notation.
+  function pickingExercise() {
+    return PK.byId(state.picking.exerciseId);
+  }
+
+  function pickingNode(placement, note) {
+    const midi = window.Tuning.open()[placement.stringIndex] + placement.fret;
+    return {
+      stringIndex: placement.stringIndex, fret: placement.fret, midi,
+      freq: 440 * Math.pow(2, (midi - 69) / 12),
+      note: Object.assign({}, note, {
+        roleLabel: note.roleLabel || note.degree || note.role || "·",
+        colorGroup: note.colorGroup || (String(note.role || "").includes("3") ? "third" : note.role === "R" ? "root" : "scaledeg")
+      })
+    };
+  }
+
+  function nearestPickingPlacement(note, anchor) {
+    const candidates = FB.allTonePositions([note]).filter((placement) => placement.fret <= 15);
+    candidates.sort((left, right) => {
+      const score = (placement) => anchor
+        ? Math.abs(placement.fret - anchor.fret) + Math.abs(placement.stringIndex - anchor.stringIndex) * 1.8
+        : Math.abs(placement.fret - state.lab.position);
+      return score(left) - score(right) || left.fret - right.fret;
+    });
+    return candidates[0] || null;
+  }
+
+  function pickingArpeggioNodes() {
+    const { chords } = currentProgression();
+    const index = Math.min(state.progStep, chords.length - 1);
+    const current = chords[index];
+    const next = chords[(index + 1) % chords.length];
+    const tones = [
+      current.notes.find((note) => note.role === "R"),
+      current.notes.find((note) => String(note.role).includes("3")),
+      current.notes.find((note) => String(note.role).includes("5"))
+    ].filter(Boolean);
+    const grip = FB.findGrip(tones, state.lab.position);
+    const nodes = tones.map((tone) => {
+      const placement = grip && grip.placements.find((item) => item.note.pc === tone.pc);
+      return placement ? pickingNode(placement, tone) : null;
+    }).filter(Boolean);
+    const nextThird = next.notes.find((note) => String(note.role).includes("3")) || next.notes[0];
+    const landing = nextThird && nearestPickingPlacement(nextThird, nodes[nodes.length - 1]);
+    if (landing) nodes.push(pickingNode(landing, Object.assign({}, nextThird, { colorGroup: "target" })));
+    return { nodes, current, next };
+  }
+
+  function pickingBaseNodes(exercise) {
+    if (exercise.sequence === "arpeggio") return pickingArpeggioNodes();
+    const compareLayout = state.picking.route === "tiered" ? "2nps" : "horizontal";
+    const layout = exercise.compare ? compareLayout : exercise.layout;
+    const path = P.buildPath(state.tonic, state.modeId, {
+      layout, position: state.lab.position, startDegree: state.lab.startDegree,
+      startString: state.lab.startString, firstStroke: state.picking.firstStroke,
+      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings"
+    });
+    const { chords } = currentProgression();
+    const index = Math.min(state.progStep, chords.length - 1);
+    return { nodes: path ? path.nodes : [], current: chords[index], next: chords[(index + 1) % chords.length] };
+  }
+
+  function buildPickingSession() {
+    const exercise = pickingExercise();
+    const base = pickingBaseNodes(exercise);
+    const pulse = S.beatMap(S.byId(state.groove.styleId));
+    const nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke);
+    let priorPick = state.picking.firstStroke;
+    for (let index = 0; index < nodes.length; index++) {
+      const node = nodes[index];
+      if (index > 0) node.crossing = P.crossingType(nodes[index - 1].stringIndex, node.stringIndex, priorPick);
+      if (node.stroke) priorPick = node.stroke;
+    }
+    const frets = nodes.map((node) => node.fret);
+    return {
+      exercise, nodes, pulse, current: base.current, next: base.next,
+      meta: {
+        lowFret: frets.length ? Math.min(...frets) : 0,
+        highFret: frets.length ? Math.max(...frets) : 0,
+        inside: nodes.filter((node) => node.crossing === "inside").length,
+        outside: nodes.filter((node) => node.crossing === "outside").length
+      }
+    };
+  }
+
+  function selectPickingExercise(id) {
+    stopPlay();
+    state.picking.exerciseId = PK.byId(id).id;
+    state.picking.pathIndex = null;
+    state.picking.cleanPasses = 0;
+    renderPickingLab();
+    renderPageGuide();
+  }
+
+  function selectPickingMode(modeId) {
+    stopPlay();
+    state.modeId = M.MODES[modeId] ? modeId : "major";
+    state.progId = M.PROGRESSIONS[state.modeId][0].id;
+    state.progStep = 0;
+    state.picking.cleanPasses = 0;
+    persistPreferences();
+    renderPickingLab();
+    renderPageGuide();
+  }
+
+  function renderPickingSetup() {
+    const exercise = pickingExercise();
+    $("pickingTonicSel").innerHTML = M.TONICS.map((name) => `<option value="${name}"${name === state.tonic ? " selected" : ""}>${name}</option>`).join("");
+    $("pickingTonicSel").onchange = (event) => {
+      stopPlay(); state.tonic = event.target.value; state.progStep = 0; state.picking.cleanPasses = 0;
+      persistPreferences(); renderPickingLab(); renderPageGuide();
+    };
+    document.querySelectorAll("[data-picking-mode]").forEach((button) =>
+      button.classList.toggle("active", button.getAttribute("data-picking-mode") === state.modeId));
+    $("pickingPulseSel").innerHTML = S.STYLES.map((style) => `<option value="${style.id}"${style.id === state.groove.styleId ? " selected" : ""}>${escapeHtml(style.title)} · ${escapeHtml(style.meter)} · ${escapeHtml(style.pulse)}</option>`).join("");
+    $("pickingPulseSel").onchange = (event) => { selectGrooveStyle(event.target.value); renderPickingLab(); renderPageGuide(); };
+
+    const categories = [{ id: "all", label: "All", detail: "recommended order" }].concat(PK.CATEGORIES);
+    $("pickingCategories").innerHTML = categories.map((category) => `<button data-picking-category="${category.id}" class="${state.picking.category === category.id ? "active" : ""}"><b>${escapeHtml(category.label)}</b><span>${escapeHtml(category.detail)}</span></button>`).join("");
+    $("pickingCategories").querySelectorAll("[data-picking-category]").forEach((button) => button.onclick = () => {
+      state.picking.category = button.getAttribute("data-picking-category"); renderPickingSetup();
+    });
+    const available = state.picking.category === "all" ? PK.EXERCISES : PK.EXERCISES.filter((item) => item.category === state.picking.category);
+    $("pickingExerciseRail").innerHTML = available.map((item) => `<button data-picking-exercise="${item.id}" class="${item.id === exercise.id ? "active" : ""}"><i>${item.order}</i><span><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.short)}</small></span></button>`).join("");
+    $("pickingExerciseRail").querySelectorAll("[data-picking-exercise]").forEach((button) =>
+      button.onclick = () => selectPickingExercise(button.getAttribute("data-picking-exercise")));
+  }
+
+  function pickingTechniqueName(mark) {
+    return ({ D: "down", U: "up", H: "hammer", P: "pull", SL: "slide" })[mark] || mark || "hold";
+  }
+
+  function renderPickingLab() {
+    renderPickingSetup();
+    const session = buildPickingSession();
+    const exercise = session.exercise;
+    const currentIndex = state.picking.pathIndex;
+    FB.render(svg(), {
+      path: session.nodes, pathIndex: currentIndex,
+      labelMode: state.labelMode, lefty: state.lefty, showStrokes: true, largeNeck: true,
+      flavourPcs: M.flavourPcs(state.tonic, state.modeId)
+    });
+    svg().setAttribute("aria-label", `${window.Tuning.current().name} ${exercise.title} picking path`);
+
+    const category = PK.CATEGORIES.find((item) => item.id === exercise.category);
+    const rail = session.nodes.map((node, index) => {
+      const note = node.note || {};
+      const detail = node.crossing ? node.crossing : node.burst ? `${node.burst}-stroke burst` : node.phrase || "";
+      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong>${escapeHtml(node.technique || "·")}</strong><b>${escapeHtml(state.labelMode === "note" ? note.name || "·" : note.roleLabel || note.degree || "·")}</b><small>${escapeHtml(detail)}</small></button>`;
+    }).join("");
+    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · ${escapeHtml(category.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><i>${escapeHtml(window.Tuning.current().name)}</i></header>
+      <div class="picking-stroke-key"><span><b>D</b> down</span><span><b>U</b> up</span><span><b>H</b> hammer</span><span><b>P</b> pull</span><span><b>SL</b> slide</span><em>Tap any event to hear and inspect it.</em></div>
+      <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
+      <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
+      <aside class="picking-evidence"><span>Evidence boundary</span><p>${escapeHtml(exercise.evidence)}</p><a href="${exercise.sourceHref}" target="_blank" rel="noreferrer">${escapeHtml(exercise.sourceLabel)} ↗</a><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></aside>`;
+    $("pickingLesson").querySelectorAll("[data-picking-step]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const index = +button.getAttribute("data-picking-step");
+      state.picking.pathIndex = index;
+      AU.playPath([session.nodes[index]], 0.35, { onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
+      renderPickingLab();
+    });
+
+    $("pickingRouteChoice").classList.toggle("hidden", !exercise.compare);
+    document.querySelectorAll("[data-picking-route]").forEach((button) =>
+      button.classList.toggle("active", button.getAttribute("data-picking-route") === state.picking.route));
+    document.querySelectorAll("[data-picking-subdivision]").forEach((button) =>
+      button.classList.toggle("active", +button.getAttribute("data-picking-subdivision") === state.picking.subdivision));
+    $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "⊓ down" : "V up"}`;
+    $("btnPickingPlay").textContent = state.picking.playing ? "Playing…" : "▶ Play drill";
+    $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3);
+    $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p>`;
+
+    const pulse = S.byId(state.groove.styleId);
+    const chordContext = session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "dromos route";
+    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${escapeHtml(exercise.category)}</span><span class="ro-symbol" style="font-size:22px">${escapeHtml(state.tonic)} ${escapeHtml(M.MODES[state.modeId].name)}</span><span class="ro-key">${escapeHtml(chordContext)}</span></div><div class="lab-stats"><span><b>${session.nodes.length}</b> events</span><span>frets <b>${session.meta.lowFret}–${session.meta.highFret}</b></span><span class="x-out"><b>${session.meta.outside}</b> outside</span><span class="x-in"><b>${session.meta.inside}</b> inside</span></div><div class="ro-foot"><b>Pulse:</b> ${escapeHtml(pulse.title)} · ${escapeHtml(pulse.meter)} · ${escapeHtml(pulse.pulse)}.<br /><b>Route:</b> ${exercise.compare ? escapeHtml(state.picking.route) : escapeHtml(exercise.layout)}. Audio previews pitch and timing; your pick supplies the attack, tremolo continuity, and ornaments.</div>`;
+  }
+
+  function playPickingExercise() {
+    stopPlay();
+    const session = buildPickingSession();
+    if (!session.nodes.length) return;
+    state.picking.playing = true;
+    setPlayingUI(true, "■ Stop picking");
+    renderPickingLab();
+    AU.playPath(session.nodes, 60 / state.bpm / state.picking.subdivision, {
+      onStep: (index) => { if (state.view === "picking") { state.picking.pathIndex = index; renderPickingLab(); } },
+      onDone: () => {
+        state.picking.playing = false; state.picking.pathIndex = null; setPlayingUI(false);
+        if (state.view === "picking") renderPickingLab();
+      }
+    });
+  }
+
+  function stepPickingExercise(delta) {
+    const index = PK.EXERCISES.findIndex((exercise) => exercise.id === state.picking.exerciseId);
+    selectPickingExercise(PK.EXERCISES[(index + delta + PK.EXERCISES.length) % PK.EXERCISES.length].id);
+  }
+
+  function logPickingPass() {
+    if (state.picking.playing) return;
+    state.picking.cleanPasses = Math.min(3, state.picking.cleanPasses + 1);
+    renderPickingLab();
+  }
+
+  function raisePickingTempo() {
+    if (state.picking.cleanPasses < 3) return;
+    state.bpm = Math.min(180, state.bpm + 4);
+    state.picking.cleanPasses = 0;
+    AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab(); renderPageGuide();
+  }
+
   // ============================= TRIADS ==================================
   const TR = window.Triads;
 
@@ -4030,13 +4256,20 @@
     setPlayingUI(true);
   }
 
-  function stopPlay() { playbackStartRequest++; melodyPlaybackRequest++; tacticalPlaybackRequest++; playbackLoading = false; AU.stopAll(); setPlayingUI(false); }
+  function stopPlay() {
+    playbackStartRequest++; melodyPlaybackRequest++; tacticalPlaybackRequest++; playbackLoading = false;
+    state.picking.playing = false; state.picking.pathIndex = null;
+    AU.stopAll(); setPlayingUI(false);
+  }
   function setPlayingUI(p, label) {
     const b = $("btnPlay");
     b.textContent = label || (p ? "⏸ Pause" : "▶ Play");
     b.classList.toggle("playing", p);
   }
-  function togglePlay() { AU.isPlaying() || playbackLoading ? stopPlay() : startPlay(); }
+  function togglePlay() {
+    if (state.view === "picking") { state.picking.playing ? (stopPlay(), renderPickingLab()) : playPickingExercise(); return; }
+    AU.isPlaying() || playbackLoading ? stopPlay() : startPlay();
+  }
 
   function auditionCurrent(style) {
     AU.ensure();
@@ -4050,6 +4283,7 @@
       }
     }
     else if (state.view === "chordmap") auditionChordMap(style);
+    else if (state.view === "picking") playPickingExercise();
     else if (state.view === "prog" || state.view === "solo") auditionProg();
     else if (state.view === "triads") auditionTriad();
   }
@@ -4079,7 +4313,7 @@
     if ($("harmonyTabs")) $("harmonyTabs").classList.toggle("hidden", nav !== "harmony");
     if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
     syncHarmonyTabs();
-    ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelExamples", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
+    ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelPicking", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelExamples", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
     $("stage").classList.toggle("hidden", v === "ear" || v === "melody" || v === "video" || v === "styles" || v === "examples" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
@@ -4087,11 +4321,13 @@
     $("triadStrip").classList.toggle("hidden", v !== "triads");
     $("changeGuide").classList.toggle("hidden", v !== "cycle" && v !== "prog");
     $("cycleRoadmap").classList.toggle("hidden", v !== "cycle");
+    $("pickingSetup").classList.toggle("hidden", v !== "picking");
     if (v === "cycle") { $("panelCycle").classList.remove("hidden"); renderCycle(); }
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
     else if (v === "chordmap") { $("panelChordMap").classList.remove("hidden"); renderChordMap(); }
     else if (v === "triads") { $("panelTriads").classList.remove("hidden"); syncTriadControls(); renderTriads(); }
     else if (v === "solo") { $("panelSolo").classList.remove("hidden"); setSoloSection(state.solo.section); }
+    else if (v === "picking") { $("panelPicking").classList.remove("hidden"); renderPickingLab(); }
     else if (v === "melody") { $("panelMelody").classList.remove("hidden"); renderMelodyLab(); }
     else if (v === "video") { $("panelVideo").classList.remove("hidden"); if (V) V.render(); }
     else if (v === "styles") { $("panelStyles").classList.remove("hidden"); renderStyles(); }
@@ -4115,6 +4351,8 @@
         ? "Space replays · answers stay editable until Check"
         : v === "examples"
           ? "Choose an example · Hear previews pitch only · Stop clears every sound"
+          : v === "picking"
+            ? "Space plays or stops · ← → changes exercise · tap any event to inspect it"
         : "Space plays · ← → steps · number keys follow the navigation";
     // Each primary destination is a new lesson, not another state of the old
     // page. Opening at the previous page's scroll depth hides the premise and
@@ -4212,6 +4450,7 @@
       stopPlay();
       if (state.view === "cycle") state.cycleComping.focus === "chords" ? stepCycleComping(-1) : stepCycle(-1);
       else if (state.view === "chordmap") { selectChordMapDegree((state.chordMap.degree + 6) % 7, false); }
+      else if (state.view === "picking") { stepPickingExercise(-1); return; }
       else if (state.view === "prog" || state.view === "solo") stepProg(-1);
       else if (state.view === "triads") stepTriad(-1);
       else return;
@@ -4221,6 +4460,7 @@
       stopPlay();
       if (state.view === "cycle") state.cycleComping.focus === "chords" ? stepCycleComping(1) : stepCycle(1);
       else if (state.view === "chordmap") { selectChordMapDegree((state.chordMap.degree + 1) % 7, false); }
+      else if (state.view === "picking") { stepPickingExercise(1); return; }
       else if (state.view === "prog" || state.view === "solo") stepProg(1);
       else if (state.view === "triads") stepTriad(1);
       else return;
@@ -4453,6 +4693,25 @@
     };
     $("tglAudiate").onchange = (e) => { state.lab.audiate = e.target.checked; state.lab.revealed = false; renderLabCell(); };
 
+    // --- dedicated picking curriculum ---
+    document.querySelectorAll("[data-picking-mode]").forEach((button) => button.onclick = () =>
+      selectPickingMode(button.getAttribute("data-picking-mode")));
+    document.querySelectorAll("[data-picking-subdivision]").forEach((button) => button.onclick = () => {
+      stopPlay(); state.picking.subdivision = +button.getAttribute("data-picking-subdivision"); state.picking.cleanPasses = 0; renderPickingLab();
+    });
+    document.querySelectorAll("[data-picking-route]").forEach((button) => button.onclick = () => {
+      stopPlay(); state.picking.route = button.getAttribute("data-picking-route") === "tiered" ? "tiered" : "horizontal";
+      state.picking.cleanPasses = 0; renderPickingLab();
+    });
+    $("btnPickingStroke").onclick = () => {
+      stopPlay(); state.picking.firstStroke = state.picking.firstStroke === "down" ? "up" : "down";
+      state.picking.cleanPasses = 0; renderPickingLab();
+    };
+    $("btnPickingPlay").onclick = playPickingExercise;
+    $("btnPickingStop").onclick = () => { stopPlay(); renderPickingLab(); };
+    $("btnPickingClean").onclick = logPickingPass;
+    $("btnPickingTempoUp").onclick = raisePickingTempo;
+
     $("earTonicSel").onchange = (event) => {
       state.ear.tonic = event.target.value;
       renderEarReference();
@@ -4488,6 +4747,7 @@
         if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : playEarPrompt();
         else if (state.view === "melody") state.melody.prompt ? playMelodyPrompt(false) : newMelodyQuestion();
         else if (state.view === "chordmap") auditionChordMap("strum");
+        else if (state.view === "picking") togglePlay();
         else if (state.view === "solo" && ["path", "phrase", "cell"].includes(state.solo.section)) $("btnLabPlay").click();
         else if (state.view !== "styles" && state.view !== "video" && state.view !== "examples" && state.view !== "analyze" && state.view !== "concepts" && state.view !== "coach" && state.view !== "today" && state.view !== "progress") togglePlay();
       }
@@ -4514,6 +4774,7 @@
     else if (state.view === "prog") renderProg();
     else if (state.view === "chordmap") renderChordMap();
     else if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
+    else if (state.view === "picking") renderPickingLab();
     else if (state.view === "triads") { syncTriadControls(); renderTriads(); }
     else if (state.view === "ear") setEarDrill(state.ear.drill);
     else if (state.view === "styles") renderStyles();
@@ -4527,7 +4788,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TK.selfTest(), TE.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), PK.selfTest(), TK.selfTest(), TE.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

@@ -145,6 +145,16 @@
       terms: [["Taximi", "An unmetered modal improvisation that can introduce the dromos and emotional space."], ["Drone", "A sustained home note used as a hearing reference."], ["Register", "The low, middle, or high area of the instrument's range."]],
       targetId: "btnTaximiDrone"
     },
+    picking: {
+      purpose: "Make the pick serve the music",
+      answer: "Build an even attack first, isolate course changes second, then place the same control inside a Greek pulse and chord arrival.",
+      result: "The Picking Lab turns right-hand mechanics into nine instrument-specific exercises with visible strokes, fretboard animation, listening goals, and honest pass tests.",
+      steps: ["Leave Down–up clock selected and match every displayed D/U attack at a tempo where the hand stays loose.", "Follow the numbered curriculum through crossings and Pennanen's Horizontal ↔ Tiered comparison; tap any event when one move is unclear.", "Finish with Triad arpeggio → next 3rd, log three clean passes, and raise only 4 BPM."],
+      done: "The pulse and note destination remain clear through a course change, accent, tremolo burst, or ornament—and you can stop without tightening.",
+      why: "Speed is useful only when attack, time, timbre, and harmonic destination survive. Small measurable drills reveal which part fails before it reaches a song.",
+      terms: [["D / U", "Downstroke and upstroke; the sequence alternates unless an ornament replaces a picked attack."], ["Horizontal", "A line that travels mainly along one course and preserves a more continuous course timbre."], ["Tiered", "A compact route that crosses courses and reduces left-hand position shifts."], ["Clean pass", "One complete repetition with even time, relaxed motion, and the exercise's listening goal intact."]],
+      targetId: "pickingExerciseRail"
+    },
     stylesFoundation: {
       purpose: "Build transferable musical habits",
       answer: "Learn the general skills first; then place them inside a specific Greek pulse and dromos.",

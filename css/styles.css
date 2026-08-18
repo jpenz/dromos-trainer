@@ -2086,3 +2086,95 @@ body[data-view="melody"] main { max-width: 1180px; }
   .example-detail > header { flex-direction: column; }
   .example-detail > footer .mini { width: 100%; }
 }
+
+/* ============ Picking Lab (FR-67) ============ */
+.picking-setup { display: grid; gap: 12px; padding: 15px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); }
+.picking-setup > header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr); gap: 18px; align-items: end; }
+.picking-setup > header h2 { margin: 3px 0 0; font-family: var(--font-display); font-size: clamp(22px, 2.4vw, 31px); font-weight: 400; }
+.picking-setup > header p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.picking-context { display: grid; grid-template-columns: minmax(120px, 0.35fr) minmax(430px, 1.4fr) minmax(210px, 0.65fr); gap: 10px; align-items: end; padding: 11px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
+.picking-context > label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-context select { width: 100%; min-height: 40px; }
+.picking-categories { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.picking-categories button { display: grid; gap: 2px; min-height: 52px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; }
+.picking-categories button b { font-size: 11px; }
+.picking-categories button span { color: var(--muted); font-size: 9px; line-height: 1.3; }
+.picking-categories button.active { border-color: var(--turquoise); background: rgba(82,168,157,0.11); }
+.picking-exercise-rail { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.picking-exercise-rail button { display: grid; grid-template-columns: 27px minmax(0, 1fr); align-items: start; gap: 8px; min-height: 66px; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; }
+.picking-exercise-rail button > i { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--panel2); color: var(--muted); font-family: var(--font-mono); font-size: 10px; font-style: normal; }
+.picking-exercise-rail button span { display: grid; gap: 3px; min-width: 0; }
+.picking-exercise-rail button b { font-family: var(--font-display); font-size: 13px; font-weight: 500; }
+.picking-exercise-rail button small { color: var(--muted); font-size: 9.5px; line-height: 1.3; }
+.picking-exercise-rail button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.picking-exercise-rail button.active > i { background: var(--terracotta); color: #14110f; }
+.picking-panel { gap: 10px; }
+.picking-lesson { display: grid; gap: 10px; }
+.picking-lesson-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.picking-lesson-head span { color: var(--terracotta-bright); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.picking-lesson-head h2 { margin: 2px 0; font-family: var(--font-display); font-size: clamp(22px, 2.5vw, 30px); font-weight: 400; }
+.picking-lesson-head p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.picking-lesson-head > i { padding: 4px 8px; border: 1px solid var(--turquoise); border-radius: 999px; color: var(--turquoise); font-size: 9px; font-style: normal; font-weight: 700; white-space: nowrap; }
+.picking-stroke-key { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: 9.5px; }
+.picking-stroke-key span { display: flex; gap: 4px; align-items: center; padding: 3px 6px; border: 1px solid var(--line); border-radius: 999px; }
+.picking-stroke-key b { color: var(--text); font-family: var(--font-mono); }
+.picking-stroke-key em { margin-left: auto; font-style: normal; }
+.picking-event-rail { display: grid; grid-template-columns: repeat(var(--picking-events), minmax(48px, 1fr)); gap: 4px; }
+.picking-event { display: grid; grid-template-rows: auto auto auto 1fr; gap: 1px; min-height: 76px; padding: 6px 4px; border: 1px solid var(--line); border-top: 3px solid transparent; border-radius: var(--r-sm); background: var(--panel); color: var(--text); text-align: center; }
+.picking-event > i { color: var(--faint); font-family: var(--font-mono); font-size: 8px; font-style: normal; }
+.picking-event > strong { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 14px; }
+.picking-event > b { font-family: var(--font-mono); font-size: 11px; }
+.picking-event > small { align-self: end; color: var(--muted); font-size: 8px; line-height: 1.2; }
+.picking-event.accent { border-top-color: var(--terracotta); background: var(--terracotta-soft); }
+.picking-event.current { outline: 3px solid var(--turquoise); outline-offset: 1px; transform: translateY(-2px); }
+.picking-detail-grid { display: grid; grid-template-columns: 1.35fr 0.82fr 0.82fr; gap: 7px; }
+.picking-detail-grid section { padding: 10px 11px; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.picking-detail-grid section > span, .picking-evidence > span, .picking-passes span { color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.picking-detail-grid ol { margin: 7px 0 0; padding-left: 18px; }
+.picking-detail-grid li, .picking-detail-grid p { margin: 0; font-size: 11px; line-height: 1.45; }
+.picking-detail-grid li + li { margin-top: 4px; }
+.picking-detail-grid section:nth-child(2) { border-color: rgba(82,168,157,0.45); background: rgba(82,168,157,0.06); }
+.picking-detail-grid section:nth-child(3) { border-color: rgba(212,118,59,0.45); background: var(--terracotta-soft); }
+.picking-evidence { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 11px; border-left: 3px solid var(--turquoise); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: rgba(82,168,157,0.06); }
+.picking-evidence > span { grid-column: 1 / -1; }
+.picking-evidence p { margin: 0; font-size: 11px; line-height: 1.45; }
+.picking-evidence a { align-self: start; color: var(--turquoise); font-size: 10px; }
+.picking-evidence small { grid-column: 1 / -1; padding-top: 5px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9.5px; line-height: 1.4; }
+.picking-evidence small b { color: var(--text); }
+.picking-controls { display: grid; grid-template-columns: minmax(210px, 0.75fr) minmax(120px, 0.35fr) minmax(240px, 0.8fr) minmax(320px, 1.2fr); align-items: end; gap: 8px; padding-top: 3px; }
+.picking-controls > div { display: grid; gap: 5px; }
+.picking-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.picking-passes { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.picking-passes > div { display: grid; gap: 4px; }
+.picking-passes b { display: flex; gap: 5px; }
+.picking-passes i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel2); color: var(--muted); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
+.picking-passes i.done { background: var(--turquoise); color: #14110f; }
+.picking-passes p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.picking-categories button:focus-visible, .picking-exercise-rail button:focus-visible, .picking-event:focus-visible { outline: 3px solid var(--turquoise); outline-offset: 2px; }
+body[data-view="picking"] main { width: min(1360px, 100%); }
+body[data-view="picking"] .legend { display: none; }
+
+@media (max-width: 1100px) {
+  .picking-context { grid-template-columns: 160px minmax(0, 1fr); }
+  .picking-context > label:last-child { grid-column: 1 / -1; }
+  .picking-event-rail { grid-template-columns: repeat(6, minmax(48px, 1fr)); }
+  .picking-controls { grid-template-columns: 1fr 0.6fr 1fr; }
+  .picking-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .picking-setup > header, .picking-context, .picking-detail-grid, .picking-controls { grid-template-columns: 1fr; }
+  .picking-context > label:last-child, .picking-actions { grid-column: auto; }
+  .picking-categories { display: flex; overflow-x: auto; padding-bottom: 3px; }
+  .picking-categories button { flex: 0 0 148px; }
+  .picking-exercise-rail { grid-template-columns: 1fr 1fr; }
+  .picking-event-rail { grid-template-columns: repeat(4, minmax(50px, 1fr)); }
+  .picking-evidence { grid-template-columns: 1fr; }
+  .picking-evidence > span, .picking-evidence small { grid-column: auto; }
+  .picking-stroke-key em { width: 100%; margin-left: 0; }
+}
+@media (max-width: 430px) {
+  .picking-exercise-rail { grid-template-columns: 1fr; }
+  .picking-actions { grid-template-columns: 1fr 1fr; }
+  .picking-passes { grid-template-columns: 1fr; }
+  .picking-lesson-head { flex-direction: column; }
+}

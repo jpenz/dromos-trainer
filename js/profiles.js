@@ -10,7 +10,7 @@
 
   const STORAGE_KEY = "dromos-trainer-player-profiles-v1";
   const TUNINGS = ["guitar", "bouzouki4", "laouto4", "bouzouki3", "guitarDropD"];
-  const VIEWS = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "analyze", "concepts", "coach", "progress"];
+  const VIEWS = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "analyze", "concepts", "coach", "progress"];
   const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
   const MODES = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
   const CYCLE_MODES = ["full", "iiVI", "pivot"];

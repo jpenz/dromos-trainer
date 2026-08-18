@@ -1,7 +1,7 @@
 export const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 export const MODES = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
 export const TUNINGS = ["guitar", "bouzouki4", "laouto4", "bouzouki3", "guitarDropD"];
-export const VIEWS = ["cycle", "prog", "chordmap", "triads", "solo", "ear", "styles", "video", "analyze", "concepts", "coach"];
+export const VIEWS = ["cycle", "prog", "chordmap", "triads", "solo", "picking", "ear", "styles", "video", "analyze", "concepts", "coach"];
 export const STUDIES = ["paliatzis", "apopse", "tsigaro"];
 export const STYLES = ["zeibekiko", "kalamatianos", "hasapiko", "tsifteteli", "roumba"];
 export const PROGRESSIONS = {

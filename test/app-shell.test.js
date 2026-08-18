@@ -21,6 +21,13 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-view="chordmap"/);
   assert.match(html, /data-view="melody"/);
   assert.match(html, /data-nav="melody"/);
+  assert.match(html, /data-nav="picking"/);
+  assert.match(html, /id="pickingSetup"/);
+  assert.match(html, /id="panelPicking"/);
+  assert.match(html, /id="pickingExerciseRail"/);
+  assert.match(html, /js\/picking-lab\.js\?v=28/);
+  assert.match(read("js/picking-lab.js"), /Horizontal ↔ tiered A\/B/);
+  assert.match(read("js/picking-lab.js"), /not a .*transcription|not copied|not his prescribed exercise/i);
   assert.match(html, /id="panelMelody"/);
   assert.match(html, /id="melodyScaleRail"/);
   assert.match(html, /id="melodyCandidates"/);
@@ -44,7 +51,7 @@ test("the installable app shell links its offline assets", () => {
     "the working-role legend must describe a direct return without overclaiming a formal cadence");
   assert.match(html, /js\/chord-map\.js\?v=17/);
   assert.match(html, /js\/chord-path\.js\?v=25/);
-  assert.match(html, /js\/page-guides\.js\?v=27/);
+  assert.match(html, /js\/page-guides\.js\?v=28/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -150,11 +157,11 @@ test("the installable app shell links its offline assets", () => {
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
   assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "27"/,
+  assert.match(read("api/release.js"), /appVersion: "28"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=27/);
+  assert.match(html, /css\/styles\.css\?v=28/);
   assert.match(html, /js\/fretboard\.js\?v=19/);
-  assert.match(html, /js\/app\.js\?v=27/);
+  assert.match(html, /js\/app\.js\?v=28/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.

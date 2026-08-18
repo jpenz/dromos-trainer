@@ -208,7 +208,22 @@ sequence: map rhythm/form, map dromos/harmony, choose a melodic target/route, th
 decide articulation and instrument role. It links to the publications as a study
 shelf; it does not reproduce their exercises, notation, recordings or songs.
 
+The dedicated Picking Lab turns that consequence into a playable nine-step route.
+Trigas supports an instrument-specific progression joining picking, arpeggio,
+ornament, rhythm, dromos, and improvisation studies; the public Pafranidis sample
+separately verifies plectrum direction, open-course work, arpeggios, tremolo, and
+tremolo exercises. Pennanen supplies the key analytical distinction: horizontal
+playing follows a linear array with more position movement, while tiered playing
+crosses courses with fewer shifts, and a course change can create a musically useful
+or disruptive timbre change. Dromos therefore teaches even attack and grouping first,
+then exposes course crossings, then A/B compares horizontal and tiered routes before
+adding tremolo, ornaments, and chord-target arpeggios. The exact notes and 2–4–6–8
+burst ladder are app-authored, visibly labelled as such, and never attributed to those
+authors as transcriptions.
+
 - [Trigas: three-string five-book method and scope](https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-three-string-bouzouki/)
+- [Pennanen: *The Poetics of the Little Finger*](https://taju.uniarts.fi/bitstreams/782c4f90-3fb7-4058-bf6b-9631b2c55bb7/download)
+- [Pafranidis: public sample of *Complete Method for Three-Stringed Bouzouki, Baglamas & Tzouras*](https://fagottobooks.gr/blog/wp-content/uploads/2020/04/trixordo-sample.pdf)
 - [Trigas: four-string five-book method and scope](https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-four-string-bouzouki/)
 - [Trigas: advanced three-string Volume 3](https://www.trigas.gr/en/book/methodos-gia-trichordo-bouzouki-no-3/)
 - [Trigas: 2 Instrumentals for three-string bouzouki](https://www.trigas.gr/en/book/vangelis-trigkas-12-organika-gia-trichordo-bouzouki/)
