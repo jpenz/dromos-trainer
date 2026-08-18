@@ -131,6 +131,17 @@ local profile namespaces the opaque Coach token and therefore has separate anony
 Neon history. This is not authentication or cloud sync; a future account system must
 validate provider identity server-side and explicitly claim anonymous history.
 
+## Teaching-header boundary
+
+`PageGuides` owns the learner-facing purpose, three actions, success check,
+plain-language reason, definitions, and first-control target for every workspace and
+meaningful sub-exercise. It is pure curriculum data and selection logic: it does not
+read the DOM or change practice state. `app.js` supplies the current view/subview and
+music context, renders the answer-first pyramid, and performs the optional
+“Show me where” focus movement. The outcome and complete action path remain visible;
+only definitions and basic control help live in a disclosure. This keeps educational
+copy testable and prevents individual pages from inventing incompatible onboarding.
+
 ## Audio
 
 `AudioEngine` renders a normalized **hybrid plucked string**: a Karplus–Strong

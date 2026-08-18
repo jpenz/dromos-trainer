@@ -1,11 +1,12 @@
 /* app.js — views, wiring, animation, playback sync, shortcuts.
- * Implements FR-04..07, FR-11, FR-12, FR-15, FR-57 / MI-27. See docs/REQUIREMENTS.md.
+ * Implements FR-04..07, FR-11, FR-12, FR-15, FR-57, FR-65 / MI-27, MI-34. See docs/REQUIREMENTS.md.
  */
 (function () {
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
-    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit;
+    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
+    PG = window.PageGuides;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -271,30 +272,47 @@
     });
   }
 
-  const PAGE_GUIDES = {
-    cycle: { purpose: "Hear harmonic gravity", title: "Train the ii–V–I pivot before you touch a shape.", steps: ["Press Play and follow the highlighted chord.", "Say its function: ii, V, or I.", "Notice when the old I becomes the next ii."] },
-    prog: { purpose: "Name the map", title: "Choose a dromos, home, and progression—then hear each box clearly.", steps: ["Pick the dromos and tonic.", "Choose one progression; its Roman numerals are the map.", "Step each chord and say its function before you play it."] },
-    chordmap: { purpose: "Compare harmony by number", title: "Pick one key, read all five roads, then follow a justified door into the next scale.", steps: ["Read across one scale or down one degree.", "Use role colour and map counts to separate working chords from derived-only chords.", "Open a sister scale only after reading whether it shares seven notes, changes one colour, or uses a documented progression door."] },
-    ear: { purpose: "Recall without the neck", title: "First identify colour; then identify the home and the change boxes by ear.", steps: ["Use Dromos colour to isolate the 2nd and 3rd.", "Use Key & changes to choose both the home and progression.", "After checking, open Song Map and find the same boxes."] },
-    melody: { purpose: "Turn one note into harmonic choices", title: "Hear the scale degree first; only then ask which chord can sit under it.", steps: ["Keep the home known and identify the note by its scale-degree pull.", "After checking, audition each chord that actually contains the note.", "Choose one evidenced next chord and sing the shortest top-voice answer before playing it."] },
-    triads: { purpose: "Comp from the pulse outward", title: "Make the Greek rhythm audible before the chord shape becomes busy.", steps: ["Clap Level 1 accents until the grouped pulse is stable.", "At Level 2, put roots on bass slots and the nearest triad on chord slots.", "Use Level 3 fills only when the original skeleton remains easy to hear."] },
-    solo: { purpose: "Follow the harmony on one neck", title: "See the full scale, the chord under your hand, and the next 3rd before it arrives.", steps: ["Choose a home, dromos, and progression.", "Keep the scale quiet; read the solid current triad and the orange Now target.", "Press Play and move only when the dashed Next target becomes Now."] },
-    styles: { purpose: "Put the map in time", title: "A rhythm is a place for the phrase—not a substitute for the dromos.", steps: ["Choose the pulse family.", "Feel its grouped beats before playing notes.", "Return to Song Map to choose the harmonic/melodic material."] },
-    video: { purpose: "Study a real motion deliberately", title: "Loop a public lesson briefly, then turn observation into understanding.", steps: ["Set A–B around one small physical/musical event.", "Slow it down and watch only one hand at a time.", "Name the home, target, and function in Song Map before borrowing the idea."] },
-    analyze: { purpose: "Explain a part you own", title: "Turn written chord symbols and notes into a transparent practice decision.", steps: ["Enter your own chord map or MusicXML score.", "Read the strong targets and possible harmonic readings.", "Take one recommendation to Triads or Solo Road."] },
-    concepts: { purpose: "Keep causes separate", title: "Solve the right musical problem: time, map, route, or touch.", steps: ["Read the answer-first pyramid.", "Choose the one layer that is actually weak.", "Use its small drill; do not solve every problem with another scale."] },
-    coach: { purpose: "Ask for a precise next step", title: "The coach knows your selected map and can open one specific exercise.", steps: ["Ask a concrete question about a chord, phrase, or practice obstacle.", "Use the returned action only if it fits what you hear.", "The coach advises; your ear and score remain the source of truth."] },
-    today: { purpose: "Start where it matters", title: "One session, in order: hear it, name it, then find it on the neck.", steps: ["Pick the first step you have not done today.", "Play each phrase as ii · V · I · I, then let it reset.", "Stop while your ear is still ahead of your hands."] },
-    progress: { purpose: "Honest local progress", title: "Scores, streaks, and players live only on this device.", steps: ["Check the colour and map percentages, not just the streak.", "Switch players from the top bar; each keeps separate settings.", "A falling percentage means slow the tempo, not add more theory."] }
-  };
+  function pageGuideContext() {
+    const instrument = window.Tuning.current().name;
+    if (state.view === "cycle") return `${instrument} · ${state.gym.keys} key${state.gym.keys === 1 ? "" : "s"} · ${state.bpm} BPM`;
+    if (state.view === "ear") {
+      const home = state.ear.drill === "map" ? state.ear.map.homePreset : state.ear.tonic;
+      return `${home === "blind" ? "Home hidden" : `Known home ${home}`} · sampled studio piano`;
+    }
+    if (state.view === "analyze") return `${instrument} · ${state.analysis.tonic} ${M.MODES[state.analysis.modeId].name}`;
+    if (state.view === "styles") return state.styles.section === "greek" ? `Greek styles · ${S.byId(state.styles.styleId).title}` : "Foundation · general musical skills";
+    if (["video", "concepts", "progress", "today"].includes(state.view)) return instrument;
+    const mode = M.MODES[state.modeId];
+    return `${instrument} · ${state.tonic} ${mode ? mode.name : ""}`;
+  }
+
+  function focusPageGuideTarget(targetId) {
+    const target = targetId ? $(targetId) : null;
+    if (!target) return;
+    if (!target.matches("button, input, select, textarea, a[href], [tabindex]")) target.setAttribute("tabindex", "-1");
+    target.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    target.focus({ preventScroll: true });
+    target.classList.remove("guide-target-pulse");
+    void target.offsetWidth;
+    target.classList.add("guide-target-pulse");
+    window.setTimeout(() => target.classList.remove("guide-target-pulse"), 1800);
+  }
 
   function renderPageGuide() {
-    const guide = state.view === "cycle" && state.cycleComping.focus === "chords"
-      ? { purpose: "Comp with usable shapes", title: "Choose the smallest chord shape that makes the function clear.", steps: ["Set dromos and progression before choosing a grip.", "Try Full 6 for open/barre vocabulary, then Triad 3 or Compact 4 for moving changes.", "Keep a common tone when possible; listen for the 3rd and 7th when the harmony changes."] }
-      : PAGE_GUIDES[state.view] || PAGE_GUIDES.cycle;
-    const current = state.view === "solo" ? `Current road: ${M.MODES[state.modeId].name} on ${state.tonic} · ${currentProgression().prog.label}.` : "";
-    $("pageGuide").innerHTML = `<details><summary><span>${guide.purpose}</span><b>${guide.title}</b></summary>
-      <ol>${guide.steps.map((step) => `<li>${step}</li>`).join("")}</ol>${current ? `<p>${current}</p>` : ""}</details>`;
+    const guide = PG.resolve({
+      view: state.view,
+      cycleFocus: state.cycleComping.focus,
+      earDrill: state.ear.drill,
+      soloSection: state.solo.section,
+      styleSection: state.styles.section
+    });
+    $("pageGuide").innerHTML = `<article class="learning-pyramid" data-guide-key="${escapeHtml(guide.key)}">
+      <header class="guide-answer"><span>Answer first · ${escapeHtml(guide.purpose)}</span><h1>${escapeHtml(guide.answer)}</h1><p>${escapeHtml(guide.result)}</p><small>Current setup · ${escapeHtml(pageGuideContext())}</small></header>
+      <ol class="guide-steps" aria-label="How to use this page">${guide.steps.map((step, index) => `<li class="${index === 0 ? "is-first" : ""}"><i>${index + 1}</i><div><span>${index === 0 ? "Start here" : index === 1 ? "Then" : "Finish"}</span><b>${escapeHtml(step)}</b>${index === 0 ? `<button type="button" data-guide-target="${escapeHtml(guide.targetId)}">Show me where</button>` : ""}</div></li>`).join("")}</ol>
+      <div class="guide-reason"><div><span>What to listen or look for</span><p>${escapeHtml(guide.why)}</p></div><div class="guide-success"><span>You are ready to move on when…</span><b>${escapeHtml(guide.done)}</b></div></div>
+      <details class="guide-explain"><summary>New here? Explain the words and screen controls</summary><div><dl>${guide.terms.map(([term, meaning]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(meaning)}</dd></div>`).join("")}</dl><p><b>Using the screen:</b> Tap a button once. The selected choice is highlighted. You may change choices until an exercise says <i>Check</i>. Use <i>Stop</i> whenever you need silence; changing pages also stops the sound.</p></div></details>
+    </article>`;
+    $("pageGuide").querySelector("[data-guide-target]").onclick = (event) => focusPageGuideTarget(event.currentTarget.getAttribute("data-guide-target"));
   }
 
   function renderCoachCue() {
@@ -804,6 +822,7 @@
     syncProgControls();
     if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
     else renderProg();
+    renderPageGuide();
   }
 
   function syncProgControls() {
@@ -1278,6 +1297,7 @@
   function setStyleSection(section) {
     state.styles.section = section;
     renderStyles();
+    renderPageGuide();
   }
 
   // ============================ ANALYZER ================================
@@ -1764,6 +1784,7 @@
         : "Studio piano loads on first play · Stop always keeps your answer choices", studioState === "ready" ? "ready" : "");
     if (drill === "map" && !state.ear.map.answer) newEarMap();
     renderEarScore();
+    if (state.view === "ear") renderPageGuide();
   }
 
   function renderEarScore() {
@@ -3562,7 +3583,7 @@
         <h2>Καλή πρόβα, ${escapeHtml(name)}.</h2>
         <p>Work the loop in order: hear the change, name it, then find it on the ${escapeHtml(window.Tuning.current().name)}. Every phrase runs ii · V · I · I, then resets.</p></div>
       <div class="today-grid">${PRACTICE_STEPS.map((step) => {
-        const guide = PAGE_GUIDES[step.view];
+        const guide = PG.resolve({ view: step.view });
         return `<button class="today-card" data-today-view="${step.view}"><i>${escapeHtml(step.label)}</i><b>${escapeHtml(guide ? guide.purpose : step.label)}</b><p>${escapeHtml(step.detail)}</p></button>`;
       }).join("")}</div>
       <div class="today-stats">
@@ -3968,14 +3989,14 @@
       stopPitchListening({ record: false, quiet: true }); stopPlay(); state.tonic = event.target.value;
       state.melody.prompt = null; state.melody.guess = null; state.melody.revealed = false;
       state.melody.message = `Known home changed to ${state.tonic}. Hear it, then start a new note.`;
-      persistPreferences(); renderMelodyLab();
+      persistPreferences(); renderMelodyLab(); renderPageGuide();
     };
     document.querySelectorAll("[data-melody-mode]").forEach((button) => button.onclick = () => {
       stopPitchListening({ record: false, quiet: true }); stopPlay(); state.modeId = button.getAttribute("data-melody-mode");
       state.progId = M.PROGRESSIONS[state.modeId][0].id;
       state.melody.prompt = null; state.melody.guess = null; state.melody.revealed = false;
       state.melody.message = `${M.MODES[state.modeId].name} selected. Re-hear the home before the next note.`;
-      persistPreferences(); renderMelodyLab();
+      persistPreferences(); renderMelodyLab(); renderPageGuide();
     });
     document.querySelectorAll("[data-melody-depth]").forEach((button) => button.onclick = () => {
       stopPitchListening({ record: false, quiet: true }); stopPlay(); state.melody.depth = button.getAttribute("data-melody-depth") === "seventh" ? "seventh" : "triad";
@@ -4048,6 +4069,7 @@
       state.gym.anchor = Math.floor(state.index / 3) * 3;
       saveUiPreferences();
       renderCycle();
+      renderPageGuide();
       if (wasPlaying) startPlay();
     });
     if ($("tglGymSkeleton")) $("tglGymSkeleton").onchange = (event) => {
@@ -4119,12 +4141,12 @@
 
     $("analysisTonic").innerHTML = M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}</option>`).join("");
     $("analysisTonic").onchange = (event) => {
-      state.analysis.tonic = event.target.value; state.analysis.studyId = null; state.analysis.selected = 0; renderAnalyzer();
+      state.analysis.tonic = event.target.value; state.analysis.studyId = null; state.analysis.selected = 0; renderAnalyzer(); renderPageGuide();
     };
     document.querySelectorAll("[data-analysis-mode]").forEach((button) => {
       button.onclick = () => {
         state.analysis.modeId = button.getAttribute("data-analysis-mode"); state.analysis.studyId = null; state.analysis.selected = 0;
-        syncAnalysisControls(); renderAnalyzer();
+        syncAnalysisControls(); renderAnalyzer(); renderPageGuide();
       };
     });
     $("btnAnalyze").onclick = () => { state.analysis.studyId = null; state.analysis.selected = 0; renderAnalyzer(); };
@@ -4166,12 +4188,13 @@
       if (state.view === "prog") renderProg();
       else if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
       else if (state.view === "triads") renderTriads();
+      renderPageGuide();
     };
     const chordMapTonic = $("chordMapTonicSel");
     chordMapTonic.innerHTML = M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}</option>`).join("");
     chordMapTonic.onchange = (event) => {
       stopPlay(); state.tonic = event.target.value; state.chordMap.degree = 0; state.chordMap.targetIndex = 1; state.chordMap.shapeIndex = 0;
-      persistPreferences(); renderChordMap(); auditionChordMap("strum");
+      persistPreferences(); renderChordMap(); renderPageGuide(); auditionChordMap("strum");
     };
 
     const tuneSel = $("tuningSel");
@@ -4266,6 +4289,7 @@
     $("earTonicSel").onchange = (event) => {
       state.ear.tonic = event.target.value;
       renderEarReference();
+      renderPageGuide();
       if (state.view === "ear" && state.ear.drill === "colour") newEarQuestion();
     };
     $("btnEarTonic").onclick = playEarTonic;
@@ -4276,6 +4300,7 @@
     $("btnEarCheck").onclick = checkColourGuess;
     $("earMapHomeSel").onchange = (event) => {
       state.ear.map.homePreset = event.target.value;
+      renderPageGuide();
       if (state.view === "ear" && state.ear.drill === "map") newEarMap();
     };
     $("btnEarMapNew").onclick = newEarMap;
@@ -4330,10 +4355,11 @@
     else if (state.view === "coach") C.render();
     else if (state.view === "today") renderToday();
     else if (state.view === "progress") renderProgress();
+    renderPageGuide();
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), TK.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

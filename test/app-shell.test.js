@@ -43,6 +43,7 @@ test("the installable app shell links its offline assets", () => {
     "the working-role legend must describe a direct return without overclaiming a formal cadence");
   assert.match(html, /js\/chord-map\.js\?v=17/);
   assert.match(html, /js\/chord-path\.js\?v=25/);
+  assert.match(html, /js\/page-guides\.js\?v=26/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -113,6 +114,9 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/app.js"), /function checkEarMap/);
   assert.match(read("js/ear-drills.js"), /harmonicMinor/);
   assert.match(read("js/app.js"), /function renderPageGuide/);
+  assert.match(read("js/app.js"), /Answer first/);
+  assert.match(read("js/app.js"), /Show me where/);
+  assert.match(read("js/page-guides.js"), /every guide has the full answer-first pyramid/);
   assert.match(read("js/app.js"), /function renderChordMap/);
   assert.match(read("js/app.js"), /function renderChordPathInline/,
     "clicking a Matrix chord must open the four-question chord path in its selected row");
@@ -135,11 +139,11 @@ test("the installable app shell links its offline assets", () => {
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
   assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "25"/,
+  assert.match(read("api/release.js"), /appVersion: "26"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=25/);
+  assert.match(html, /css\/styles\.css\?v=26/);
   assert.match(html, /js\/fretboard\.js\?v=19/);
-  assert.match(html, /js\/app\.js\?v=25/);
+  assert.match(html, /js\/app\.js\?v=26/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.
