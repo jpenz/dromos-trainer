@@ -1,6 +1,6 @@
 /* audio.js — speaker-safe hybrid string voice + simple bar transport.
  * No external libs. Exposes window.AudioEngine.
- * Implements FR-05, FR-06, FR-23 and FR-50. See docs/REQUIREMENTS.md.
+ * Implements FR-05, FR-06, FR-23, FR-50 and FR-68. See docs/REQUIREMENTS.md.
  */
 (function () {
   "use strict";
@@ -343,7 +343,16 @@
     stopPath();
     const o = opts || {};
     const sp = spacing == null ? 0.3 : spacing;
-    const t0 = ctx.currentTime + 0.06;
+    const beatSpacing = Math.max(sp, +o.beatSpacing || sp);
+    const countInBeats = Math.max(0, Math.floor(+o.countInBeats || 0));
+    const start = ctx.currentTime + 0.06;
+    const t0 = start + countInBeats * beatSpacing;
+    const pulse = Array.isArray(o.pulse) && o.pulse.length ? o.pulse : [{ first: true }];
+    if (o.metronome) {
+      for (let beat = 0; beat < countInBeats; beat++) click(start + beat * beatSpacing, !!pulse[beat % pulse.length].first);
+      const soundingBeats = Math.max(1, Math.ceil(notes.length * sp / beatSpacing));
+      for (let beat = 0; beat < soundingBeats; beat++) click(t0 + beat * beatSpacing, !!pulse[beat % pulse.length].first);
+    }
     notes.forEach((n, i) => {
       const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
       const when = t0 + i * sp;
@@ -380,6 +389,7 @@
     g.gain.exponentialRampToValueAtTime(accent ? 0.18 : 0.11, t + 0.001);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
     o.connect(g); g.connect(master);
+    track(o);
     o.start(t); o.stop(t + 0.08);
   }
 

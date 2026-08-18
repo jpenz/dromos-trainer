@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=28" />
+  <link rel="stylesheet" href="css/styles.css?v=29" />
 </head>
 <body>
   <div class="app">
@@ -417,6 +417,18 @@
             <!-- Dedicated picking curriculum -->
             <div id="panelPicking" class="panel picking-panel hidden">
               <section id="pickingLesson" class="picking-lesson" aria-live="polite"></section>
+              <section class="picking-runner" aria-labelledby="pickingRunnerTitle">
+                <header><div><span class="panel-label">Practice engine</span><h3 id="pickingRunnerTitle">Repeat it exactly—or evolve one variable.</h3></div><p id="pickingRunSummary"></p></header>
+                <div class="picking-runner-grid">
+                  <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop</button><button data-picking-run="evolve">Evolve</button></div></div>
+                  <label class="picking-tempo" for="pickingBpm">Tempo <span><input id="pickingBpm" type="range" min="40" max="180" step="1" /><output id="pickingBpmVal" for="pickingBpm">84 BPM</output></span></label>
+                  <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
+                  <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="both">Keys + positions</option></select></label>
+                  <label class="check"><input type="checkbox" id="tglPickingMetronome" checked /> Metronome</label>
+                  <label class="check"><input type="checkbox" id="tglPickingCountIn" checked /> One-bar count-in</label>
+                </div>
+                <div id="pickingRunMap" class="picking-run-map" aria-label="Picking practice run roadmap"></div>
+              </section>
               <section class="picking-controls" aria-label="Picking playback and progress">
                 <div>
                   <span class="panel-label">Subdivision</span>
@@ -714,15 +726,15 @@
   <script src="js/video.js?v=14"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/picking-lab.js?v=28"></script>
+  <script src="js/picking-lab.js?v=29"></script>
   <script src="js/toolkit.js?v=27"></script>
   <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=19"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=22"></script>
-  <script src="js/page-guides.js?v=28"></script>
-  <script src="js/app.js?v=28"></script>
+  <script src="js/audio.js?v=29"></script>
+  <script src="js/page-guides.js?v=29"></script>
+  <script src="js/app.js?v=29"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

@@ -110,6 +110,12 @@ direct evidence link. Artist/method observations and Dromos-authored exercises a
 labelled separately; no published exercise or recorded lick is represented as a
 transcription.
 
+Each drill also has a small practice engine. **Loop** repeats the exact key and
+shape for consistency. **Evolve** keeps the drill and pulse fixed while moving
+through verified neck positions, circle-of-fourths keys, or both. Runs may use a
+grouped one-bar count-in and metronome; the roadmap previews every stage, and an
+evolved run starts again from the key/position where the previous run finished.
+
 **Audiation cells.** Start with 3 notes, add one each pass to the octave, then take
 one away back down to 3. The **last note is the target**: playback leaves a *silent
 beat* where it belongs so you sing it internally first, then reveal to check yourself.

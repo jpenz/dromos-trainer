@@ -147,12 +147,12 @@
     },
     picking: {
       purpose: "Make the pick serve the music",
-      answer: "Build an even attack first, isolate course changes second, then place the same control inside a Greek pulse and chord arrival.",
-      result: "The Picking Lab turns right-hand mechanics into nine instrument-specific exercises with visible strokes, fretboard animation, listening goals, and honest pass tests.",
-      steps: ["Leave Down–up clock selected and match every displayed D/U attack at a tempo where the hand stays loose.", "Follow the numbered curriculum through crossings and Pennanen's Horizontal ↔ Tiered comparison; tap any event when one move is unclear.", "Finish with Triad arpeggio → next 3rd, log three clean passes, and raise only 4 BPM."],
+      answer: "Loop one exact movement until it is easy; then evolve only the position, key, or both while the attack and pulse stay unchanged.",
+      result: "The Picking Lab turns right-hand mechanics into nine instrument-specific exercises with visible strokes, fretboard animation, a count-in/metronome, and a run map through practical shapes or circle-of-fourths keys.",
+      steps: ["Leave Down–up clock selected, choose Loop, and match every displayed D/U attack at a tempo where the hand stays loose.", "Choose Evolve only after the loop is stable; move through practical positions, keys, or both while keeping the same subdivision and Greek pulse.", "Finish with Triad arpeggio → next 3rd, log three clean passes, and raise only 4 BPM."],
       done: "The pulse and note destination remain clear through a course change, accent, tremolo burst, or ornament—and you can stop without tightening.",
       why: "Speed is useful only when attack, time, timbre, and harmonic destination survive. Small measurable drills reveal which part fails before it reaches a song.",
-      terms: [["D / U", "Downstroke and upstroke; the sequence alternates unless an ornament replaces a picked attack."], ["Horizontal", "A line that travels mainly along one course and preserves a more continuous course timbre."], ["Tiered", "A compact route that crosses courses and reduces left-hand position shifts."], ["Clean pass", "One complete repetition with even time, relaxed motion, and the exercise's listening goal intact."]],
+      terms: [["Loop", "Repeat the same key, route, and position so one motor problem can settle."], ["Evolve", "Keep the exercise intact while the trainer advances one chosen variable."], ["Circle of 4ths", "A practical key route: D → G → C → F, continuing through all twelve keys."], ["Clean pass", "One complete repetition with even time, relaxed motion, and the exercise's listening goal intact."]],
       targetId: "pickingExerciseRail"
     },
     stylesFoundation: {

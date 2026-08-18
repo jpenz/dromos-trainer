@@ -23,7 +23,7 @@ index.html
   └─ js/chord-map.js ─►  ChordMap   pure. derived harmony + scale relationships
   └─ js/chord-path.js►  ChordPath  pure. arpeggios, connectors, successors + doors
   └─ js/tactical-examples.js ► TacticalExamples pure. sourced claims + generated drills
-  └─ js/picking-lab.js ► PickingLab pure. plectrum curriculum + event plans
+  └─ js/picking-lab.js ► PickingLab pure. plectrum curriculum + event/run plans
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
   └─ js/audio.js    ──►  AudioEngine Web Audio synth + bar transport

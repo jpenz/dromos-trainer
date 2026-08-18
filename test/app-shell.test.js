@@ -25,7 +25,13 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="pickingSetup"/);
   assert.match(html, /id="panelPicking"/);
   assert.match(html, /id="pickingExerciseRail"/);
-  assert.match(html, /js\/picking-lab\.js\?v=28/);
+  assert.match(html, /id="pickingRunMap"/);
+  assert.match(html, /data-picking-run="loop"/);
+  assert.match(html, /data-picking-run="evolve"/);
+  assert.match(html, /id="tglPickingMetronome"/);
+  assert.match(html, /id="tglPickingCountIn"/);
+  assert.match(html, /id="pickingBpm"[^>]*min="40"[^>]*max="180"/);
+  assert.match(html, /js\/picking-lab\.js\?v=29/);
   assert.match(read("js/picking-lab.js"), /Horizontal ↔ tiered A\/B/);
   assert.match(read("js/picking-lab.js"), /not a .*transcription|not copied|not his prescribed exercise/i);
   assert.match(html, /id="panelMelody"/);
@@ -51,7 +57,7 @@ test("the installable app shell links its offline assets", () => {
     "the working-role legend must describe a direct return without overclaiming a formal cadence");
   assert.match(html, /js\/chord-map\.js\?v=17/);
   assert.match(html, /js\/chord-path\.js\?v=25/);
-  assert.match(html, /js\/page-guides\.js\?v=28/);
+  assert.match(html, /js\/page-guides\.js\?v=29/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -148,20 +154,24 @@ test("the installable app shell links its offline assets", () => {
     "Chord Map must render the current R/3/5 target from the same derived chord used by audio");
   assert.match(read("js/app.js"), /AU\.playSequence\(chord\.notes, 0\.38\)/,
     "the visible R→3rd→5th sequence must be audible");
-  assert.match(read("js/app.js"), /function stopPlay\(\) \{[^}]*AU\.stopAll\(\);/,
+  assert.match(read("js/app.js"), /function stopPlay\(\) \{[\s\S]{0,700}AU\.stopAll\(\);/,
     "changing a drill must clear path timers and ringing voices as well as transport");
   assert.match(read("js/audio.js"), /function stopAll\(\)/);
+  assert.match(read("js/audio.js"), /countInBeats[\s\S]{0,900}o\.metronome/,
+    "picking runs need a cancel-safe count-in and metronome on the shared audio clock");
+  assert.match(read("js/app.js"), /PK\.buildPracticePlan/,
+    "Picking Loop and Evolve must share the tested pure run planner");
   assert.match(read("sw.js"), /fetch\(event\.request\)[\s\S]*caches\.match\(event\.request\)/,
     "online sessions must prefer the deployed app and use cache only as an offline fallback");
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
   assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "28"/,
+  assert.match(read("api/release.js"), /appVersion: "29"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=28/);
+  assert.match(html, /css\/styles\.css\?v=29/);
   assert.match(html, /js\/fretboard\.js\?v=19/);
-  assert.match(html, /js\/app\.js\?v=28/);
+  assert.match(html, /js\/app\.js\?v=29/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.

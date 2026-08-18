@@ -1,4 +1,4 @@
-/* picking-lab.js — source-bounded plectrum curriculum and event plans.
+/* picking-lab.js — source-bounded plectrum curriculum, event plans and repeatable runs.
  * Pure data/logic: the app supplies the current instrument path and pulse.
  *
  * The named sources support technique categories and observed performance
@@ -178,6 +178,42 @@
     return alternate(nodes, null, firstStroke);
   }
 
+  // A practice run stays deliberately small: repeat one exact motor problem,
+  // or evolve it through playable positions and/or a circle-of-fourths key
+  // route. The caller supplies positions already verified for the instrument.
+  function buildPracticePlan(options) {
+    const o = Object.assign({
+      tonic: "D", position: 5, repeats: 4, runMode: "loop", movement: "position",
+      tonics: ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"],
+      positions: [{ position: 5, lowFret: 5 }]
+    }, options || {});
+    const repeats = [1, 2, 4, 6].includes(+o.repeats) ? +o.repeats : 4;
+    const runMode = o.runMode === "evolve" ? "evolve" : "loop";
+    const movement = ["position", "key", "both"].includes(o.movement) ? o.movement : "position";
+    const tonics = Array.isArray(o.tonics) && o.tonics.length ? o.tonics : [o.tonic];
+    const normalizedPositions = (Array.isArray(o.positions) ? o.positions : [])
+      .map((item) => typeof item === "number" ? { position: item, lowFret: item } : item)
+      .filter((item) => item && Number.isFinite(+item.position))
+      .sort((left, right) => (+left.lowFret || +left.position) - (+right.lowFret || +right.position));
+    if (!normalizedPositions.length) normalizedPositions.push({ position: +o.position || 0, lowFret: +o.position || 0 });
+    const startPositionIndex = normalizedPositions.reduce((best, item, index) =>
+      Math.abs(+item.position - +o.position) < Math.abs(+normalizedPositions[best].position - +o.position) ? index : best, 0);
+    const positionRoute = normalizedPositions.slice(startPositionIndex).concat(normalizedPositions.slice(0, startPositionIndex));
+    const startTonicIndex = Math.max(0, tonics.indexOf(o.tonic));
+
+    return Array.from({ length: repeats }, (_, index) => {
+      const advances = runMode === "evolve" ? index : 0;
+      const movePosition = movement === "position" || movement === "both";
+      const moveKey = movement === "key" || movement === "both";
+      const position = movePosition ? positionRoute[advances % positionRoute.length] : { position: +o.position || 0, lowFret: +o.position || 0 };
+      const tonic = moveKey ? tonics[(startTonicIndex + advances * 5) % tonics.length] : o.tonic;
+      return {
+        index, tonic, position: +position.position, lowFret: Number.isFinite(+position.lowFret) ? +position.lowFret : +position.position,
+        label: runMode === "loop" ? `Loop ${index + 1}` : `Stage ${index + 1}`
+      };
+    });
+  }
+
   function selfTest() {
     const results = [];
     const check = (name, pass, detail) => results.push({ name, pass, detail: detail || "" });
@@ -196,8 +232,15 @@
     check("grouped accents follow group starts", "1,3", pulse.map((event, index) => event.accent ? index + 1 : null).filter(Boolean).join(","));
     check("tremolo ladder is 2+4+6+8", 20, buildSequence("tremolo-ladder", sample, []).length);
     check("ornament plan separates picked and legato events", "D,H,H,P,U,SL", buildSequence("pick-legato", sample, []).map((event) => event.technique).join(","));
+    const positions = [{ position: 2, lowFret: 2 }, { position: 5, lowFret: 5 }, { position: 7, lowFret: 7 }, { position: 10, lowFret: 10 }];
+    const loopPlan = buildPracticePlan({ tonic: "D", position: 5, repeats: 4, runMode: "loop", movement: "both", positions });
+    check("loop plan preserves one exact problem", true, loopPlan.every((stage) => stage.tonic === "D" && stage.position === 5));
+    const keyPlan = buildPracticePlan({ tonic: "D", position: 5, repeats: 4, runMode: "evolve", movement: "key", positions });
+    check("key evolution follows circle of fourths", "D,G,C,F", keyPlan.map((stage) => stage.tonic).join(","));
+    const positionPlan = buildPracticePlan({ tonic: "D", position: 5, repeats: 4, runMode: "evolve", movement: "position", positions });
+    check("position evolution visits practical shapes then wraps", "5,7,10,2", positionPlan.map((stage) => stage.position).join(","));
     return { ok: results.every((result) => result.pass), results };
   }
 
-  window.PickingLab = { CATEGORIES, EXERCISES, byId, buildSequence, selfTest };
+  window.PickingLab = { CATEGORIES, EXERCISES, byId, buildSequence, buildPracticePlan, selfTest };
 })();
