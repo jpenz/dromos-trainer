@@ -2109,6 +2109,13 @@ body[data-view="melody"] main { max-width: 1180px; }
 .picking-context > label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .picking-context > label small { color: var(--faint); font-size: 8px; font-weight: 500; letter-spacing: 0; line-height: 1.2; text-transform: none; }
 .picking-context select { width: 100%; min-height: 40px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
+.picking-mastery-spine { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.picking-mastery-spine > span { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: auto auto; gap: 1px 7px; align-items: center; min-height: 43px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--muted); }
+.picking-mastery-spine i { grid-row: 1 / 3; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel2); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
+.picking-mastery-spine b { overflow: hidden; color: var(--text); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.picking-mastery-spine small { overflow: hidden; font-size: 8.5px; text-overflow: ellipsis; white-space: nowrap; }
+.picking-mastery-spine > span.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.picking-mastery-spine > span.active i { background: var(--terracotta); color: #17120f; }
 .picking-runner select { padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
 .picking-categories { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .picking-categories button { display: grid; gap: 2px; min-height: 52px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; }
@@ -2129,7 +2136,13 @@ body[data-view="melody"] main { max-width: 1180px; }
 .picking-lesson-head span { color: var(--terracotta-bright); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .picking-lesson-head h2 { margin: 2px 0; font-family: var(--font-display); font-size: clamp(22px, 2.5vw, 30px); font-weight: 400; }
 .picking-lesson-head p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
-.picking-lesson-head > i { padding: 4px 8px; border: 1px solid var(--turquoise); border-radius: 999px; color: var(--turquoise); font-size: 9px; font-style: normal; font-weight: 700; white-space: nowrap; }
+.picking-head-badges { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.picking-head-badges > i, .picking-head-badges > b { padding: 4px 8px; border: 1px solid var(--turquoise); border-radius: 999px; color: var(--turquoise); font-size: 9px; font-style: normal; font-weight: 700; white-space: nowrap; }
+.picking-head-badges > b { border-color: var(--terracotta); color: var(--terracotta-bright); }
+.picking-articulation { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid rgba(212,118,59,0.45); border-radius: var(--r-sm); background: var(--terracotta-soft); }
+.picking-articulation > span { padding: 3px 6px; border-radius: 999px; background: var(--terracotta); color: #17120f; font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
+.picking-articulation > b { font-size: 10.5px; }
+.picking-articulation > p { margin: 0; color: var(--muted); font-size: 9.5px; line-height: 1.35; }
 .picking-motion { display: grid; grid-template-columns: minmax(0, 1fr) 130px minmax(0, 0.78fr); align-items: stretch; min-height: 126px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: linear-gradient(125deg, var(--terracotta-soft), rgba(255,255,255,0.018) 50%, var(--turquoise-soft)); }
 .picking-motion section { display: grid; align-content: center; gap: 4px; padding: 14px 16px; }
 .picking-motion section > span { color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -2185,6 +2198,9 @@ body[data-view="melody"] main { max-width: 1180px; }
 .picking-evidence span { grid-column: 1 / -1; color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
 .picking-evidence p { margin: 0; font-size: 11px; line-height: 1.45; }
 .picking-evidence a { align-self: start; color: var(--turquoise); font-size: 10px; }
+.picking-evidence nav { display: grid; gap: 4px; min-width: 260px; }
+.picking-evidence nav a { display: grid; gap: 1px; padding: 5px 7px; border: 1px solid var(--line); border-radius: var(--r-sm); text-decoration: none; }
+.picking-evidence nav a i { color: var(--faint); font-size: 7.5px; font-style: normal; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .picking-evidence small { grid-column: 1 / -1; padding-top: 5px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9.5px; line-height: 1.4; }
 .picking-evidence small b { color: var(--text); }
 .picking-runner { display: grid; gap: 9px; padding: 11px; border: 1px solid rgba(82,168,157,0.42); border-radius: var(--r-md); background: rgba(82,168,157,0.055); }
@@ -2255,6 +2271,8 @@ body[data-view="picking"] .picking-setup > header { display: none; }
   .picking-setup > header, .picking-context, .picking-detail-grid, .picking-controls, .picking-motion { grid-template-columns: 1fr; }
   .picking-context > label:last-child, .picking-actions { grid-column: auto; }
   .picking-categories { display: flex; overflow-x: auto; padding-bottom: 3px; }
+  .picking-mastery-spine { display: flex; overflow-x: auto; padding-bottom: 3px; }
+  .picking-mastery-spine > span { flex: 0 0 145px; }
   .picking-categories button { flex: 0 0 148px; }
   .picking-exercise-rail button { flex-basis: min(78vw, 240px); }
   .picking-event-rail { grid-template-columns: repeat(4, minmax(50px, 1fr)); }
@@ -2273,5 +2291,9 @@ body[data-view="picking"] .picking-setup > header { display: none; }
   .picking-actions { grid-template-columns: 1fr 1fr; }
   .picking-passes { grid-template-columns: 1fr; }
   .picking-lesson-head { flex-direction: column; }
+  .picking-head-badges { justify-content: flex-start; }
+  .picking-articulation { grid-template-columns: auto 1fr; }
+  .picking-articulation > p { grid-column: 1 / -1; }
+  .picking-evidence nav { min-width: 0; }
   .picking-run-map { grid-template-columns: 1fr 1fr; }
 }

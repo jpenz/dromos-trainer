@@ -101,14 +101,16 @@ that is what changes the crossing pattern. `◀ below` / `above ▶` walk the sa
 to the core positions above and below. Loose wrist, pick barely clearing the string,
 and drop the tempo until every crossing is clean.
 
-The standalone **Picking Lab** turns that feedback into a ten-exercise curriculum:
-even attack, Greek grouped accents, tremolo bursts, isolated and mixed course
-crossings, horizontal-versus-tiered route and timbre comparisons, a Pennanen-bounded
-strict-alternate versus glide/sweep A/B, ornaments, and a triad-arpeggio arrival on
-the coming chord's 3rd. Each exercise has an animated pick-motion cue, a theory link,
-event rail, an exact three-step instruction, a listening goal, a pass test, and a
-direct evidence link. Artist/method observations and Dromos-authored exercises are
-labelled separately; no published exercise or recorded lick is represented as a
+The standalone **Picking Lab** turns that feedback into a 13-exercise, five-stage
+mastery spine: ta–ka attack, hand/course coordination, neck-route choice, phrase
+language, then performance transfer. **Every note picked** is the explicit default
+for articulated lines; tremolo is a later, separately labelled sustain choice.
+Exercises add grouped accents, graded degree windows, isolated and mixed crossings,
+horizontal-versus-tiered route and timbre comparisons, a Pennanen-bounded
+strict-alternate versus glide/sweep A/B, ornaments, a generic dromos contour, and a
+triad-arpeggio arrival on the coming chord's 3rd. Each has an animated pick cue,
+theory link, event rail, exact instructions, listening goal, pass test, provenance,
+and a rights boundary. No published exercise or recorded lick is represented as a
 transcription.
 
 Each drill also has a small practice engine. **Loop** repeats the exact key and
@@ -323,6 +325,8 @@ on every page load, asserting generated chords against a hand-verified ground tr
 - [CONTRIBUTING.md](CONTRIBUTING.md) — recipes for adding a progression or a mode
 - [docs/BACKLOG.md](docs/BACKLOG.md) — what is next
 - [docs/CURRICULUM.md](docs/CURRICULUM.md) — product intent, practice loop and curriculum roadmap
+- [docs/BOUZOUKI_MASTERY.md](docs/BOUZOUKI_MASTERY.md) — evidence-ranked picking,
+  phrase, and lawful source-ingestion model
 - [docs/AI_COACH.md](docs/AI_COACH.md) — coach product boundary and design
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Vercel + Neon production setup
 

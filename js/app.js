@@ -6,7 +6,7 @@
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
     PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
-    PG = window.PageGuides, TE = window.TacticalExamples, PK = window.PickingLab;
+    PG = window.PageGuides, TE = window.TacticalExamples, BK = window.BouzoukiKnowledge, PK = window.PickingLab;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -2891,6 +2891,7 @@
 
   function renderPickingSetup() {
     const exercise = pickingExercise();
+    const currentPhase = BK.phaseForExercise(exercise.id);
     $("pickingTonicSel").innerHTML = M.TONICS.map((name) => `<option value="${name}"${name === state.tonic ? " selected" : ""}>${name}</option>`).join("");
     $("pickingTonicSel").onchange = (event) => {
       stopPlay(); state.tonic = event.target.value; state.progStep = 0; state.picking.cleanPasses = 0;
@@ -2900,6 +2901,9 @@
       button.classList.toggle("active", button.getAttribute("data-picking-mode") === state.modeId));
     $("pickingPulseSel").innerHTML = S.STYLES.map((style) => `<option value="${style.id}"${style.id === state.groove.styleId ? " selected" : ""}>${escapeHtml(style.title)} · ${escapeHtml(style.meter)} · ${escapeHtml(style.pulse)}</option>`).join("");
     $("pickingPulseSel").onchange = (event) => { selectGrooveStyle(event.target.value); renderPickingLab(); renderPageGuide(); };
+    $("pickingMasterySpine").innerHTML = BK.MASTERY_PHASES.map((phase) =>
+      `<span class="${phase.id === currentPhase.id ? "active" : ""}"><i>${phase.step}</i><b>${escapeHtml(phase.label)}</b><small>${escapeHtml(phase.short)}</small></span>`
+    ).join("");
 
     const categories = [{ id: "all", label: "All", detail: "recommended order" }].concat(PK.CATEGORIES);
     $("pickingCategories").innerHTML = categories.map((category) => `<button data-picking-category="${category.id}" class="${state.picking.category === category.id ? "active" : ""}"><b>${escapeHtml(category.label)}</b><span>${escapeHtml(category.detail)}</span></button>`).join("");
@@ -2918,8 +2922,8 @@
 
   function pickingTechniqueMeta(mark) {
     return ({
-      D: { glyph: "↓", short: "DOWN", label: "Downstroke", cue: "Pick moves toward the floor. Make one compact, clean attack.", direction: "down" },
-      U: { glyph: "↑", short: "UP", label: "Upstroke", cue: "Pick returns toward you. Match the timing and volume of the downstroke.", direction: "up" },
+      D: { glyph: "↓", short: "TA · DOWN", label: "Ta · downstroke", cue: "Pick moves toward the floor. Make one compact, clean attack.", direction: "down" },
+      U: { glyph: "↑", short: "KA · UP", label: "Ka · upstroke", cue: "Pick returns toward you. Match the timing and volume of the downstroke.", direction: "up" },
       DG: { glyph: "↓↘", short: "GLIDE", label: "Downstroke glide", cue: "Continue the same down motion through the adjacent course; do not reset the hand.", direction: "down-glide" },
       UG: { glyph: "↑↖", short: "GLIDE", label: "Upstroke glide", cue: "Continue the same up motion through the adjacent course; keep it one connected gesture.", direction: "up-glide" },
       H: { glyph: "H", short: "HAMMER", label: "Hammer-on", cue: "Do not pick again. The left hand places the next attack exactly in time.", direction: "legato" },
@@ -2966,6 +2970,9 @@
     svg().setAttribute("aria-label", `${window.Tuning.current().name} ${exercise.title} picking path`);
 
     const category = PK.CATEGORIES.find((item) => item.id === exercise.category);
+    const mastery = BK.phaseForExercise(exercise.id);
+    const articulation = PK.ARTICULATIONS[exercise.articulation];
+    const evidenceSources = exercise.sourceIds.map((id) => BK.sourceById(id)).filter(Boolean);
     const motionIndex = currentIndex == null ? 0 : currentIndex;
     const motionEvent = session.nodes[motionIndex] || {};
     const nextMotionEvent = session.nodes[(motionIndex + 1) % Math.max(1, session.nodes.length)] || {};
@@ -2977,16 +2984,17 @@
       const mark = pickingTechniqueMeta(node.technique);
       return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u><small>${escapeHtml(mark.short)}</small></strong><b>${escapeHtml(state.labelMode === "note" ? note.name || "·" : note.roleLabel || note.degree || "·")}</b><small>${escapeHtml(detail)}</small></button>`;
     }).join("");
-    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · ${escapeHtml(category.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><i>${escapeHtml(window.Tuning.current().name)}</i></header>
+    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · stage ${mastery.step} · ${escapeHtml(mastery.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i><b>${escapeHtml(articulation.label)}</b></div></header>
+      <div class="picking-articulation"><span>${escapeHtml(articulation.mnemonic)}</span><b>${escapeHtml(articulation.label)}</b><p>${escapeHtml(articulation.detail)}</p></div>
       <div class="picking-motion ${currentIndex == null ? "is-ready" : "is-playing"}" data-motion="${escapeHtml(motion.direction)}" aria-live="polite">
         <section class="picking-motion-now"><span>${currentIndex == null ? "Start with" : `Now · event ${motionIndex + 1}`}</span><b><i>${escapeHtml(motion.glyph)}</i>${escapeHtml(motion.label)}</b><p>${escapeHtml(motion.cue)}</p></section>
         <div class="picking-motion-visual" aria-hidden="true"><i class="pick-shape"></i><b></b><b></b><b></b><span>${motionEvent.accent ? "ACCENT" : "EVEN"}</span></div>
         <section class="picking-motion-next"><span>Prepare next</span><b><i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}</b><p>${escapeHtml(nextMotion.cue)}</p></section>
       </div>
-      <div class="picking-stroke-key"><span><b>↓ D</b> downstroke</span><span><b>↑ U</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><em>Tap an event to hear it and see the motion.</em></div>
+      <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><em>Tap an event to hear it and see the motion.</em></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
       <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section class="picking-theory"><span>Theory inside the motion</span><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}</b><p>${escapeHtml(exercise.theory)}</p><small>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</small></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
-      <details class="picking-evidence"><summary>Research source + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><a href="${exercise.sourceHref}" target="_blank" rel="noreferrer">${escapeHtml(exercise.sourceLabel)} ↗</a><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
+      <details class="picking-evidence"><summary>${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
     $("pickingLesson").querySelectorAll("[data-picking-step]").forEach((button) => button.onclick = () => {
       stopPlay();
       const index = +button.getAttribute("data-picking-step");
@@ -4997,7 +5005,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), PK.selfTest(), TK.selfTest(), TE.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), BK.selfTest(), PK.selfTest(), TK.selfTest(), TE.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;

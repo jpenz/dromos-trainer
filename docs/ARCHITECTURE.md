@@ -8,7 +8,8 @@ double-clicking `index.html`, works offline, and will still run in ten years. Be
 adding a framework or a bundler, read NFR-01/02 in [REQUIREMENTS.md](REQUIREMENTS.md).
 
 Modules attach one global each (`window.Theory`, `window.Modes`, `window.ChordMap`,
-`window.ChordPath`, `window.TacticalExamples`, `window.PickingLab`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
+`window.ChordPath`, `window.TacticalExamples`, `window.BouzoukiKnowledge`,
+`window.PickingLab`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
 are loaded in dependency order by `index.html`.
 
 ## Module map
@@ -23,6 +24,7 @@ index.html
   └─ js/chord-map.js ─►  ChordMap   pure. derived harmony + scale relationships
   └─ js/chord-path.js►  ChordPath  pure. arpeggios, connectors, successors + doors
   └─ js/tactical-examples.js ► TacticalExamples pure. sourced claims + generated drills
+  └─ js/bouzouki-knowledge.js ► BouzoukiKnowledge pure. source authority + mastery spine
   └─ js/picking-lab.js ► PickingLab pure. plectrum curriculum + event/run plans
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
@@ -57,7 +59,11 @@ both layers and the explicit “not a transcription” boundary. `toolkit.js` li
 tool to one example ID, while `app.js` owns navigation, audio preview, and the handoff
 back into Solo. A citation must never be used as decoration for an invented lick.
 
-`picking-lab.js` applies the same boundary to plectrum technique. It stores what a
+`bouzouki-knowledge.js` owns the provenance hierarchy and five-stage mastery spine.
+It says what each public source may support and requires an explicit rights boundary;
+community evidence is a learner-UX signal and can never stand alone as a music rule.
+
+`picking-lab.js` applies that boundary to plectrum technique. It stores what a
 source actually supports, the original Dromos drill built from that observation,
 stroke/ornament event plans, and measurable pass criteria. `practice.js` remains the
 single source for tuning-aware paths and crossing classification; `app.js` combines

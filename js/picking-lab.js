@@ -18,22 +18,57 @@
   const TRIGAS = "https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-three-string-bouzouki/";
   const PENNANEN = "https://taju.uniarts.fi/bitstreams/782c4f90-3fb7-4058-bf6b-9631b2c55bb7/download";
   const PAFRANIDIS = "https://fagottobooks.gr/blog/wp-content/uploads/2020/04/trixordo-sample.pdf";
+  const AVLONITIS = "https://fagottobooks.gr/en/1037-4_979-0-801151-59-9.html";
+  const KARANTINIS = "https://karantinis.com/video-lessons/";
+
+  const ARTICULATIONS = {
+    "picked-line": {
+      label: "Every note picked", mnemonic: "TA · KA",
+      detail: "One clear pick attack per displayed note: down is ta, up is ka. Do not blur the line into tremolo."
+    },
+    "tremolo-sustain": {
+      label: "Tremolo sustain", mnemonic: "TA-KA repeated",
+      detail: "Many even alternate attacks sustain one selected pitch. This is a separate expressive choice, not the default line articulation."
+    },
+    "picked-legato": {
+      label: "Picked + left hand", mnemonic: "attack · connect",
+      detail: "Pick only the marked D/U events; hammer, pull, and slide events keep their own measured placement without another pick."
+    },
+    "picked-or-glide": {
+      label: "Compare stroke grammar", mnemonic: "TA-KA ↔ glide",
+      detail: "Keep the pitches fixed while comparing strict one-note attacks with a deliberate same-direction course glide."
+    }
+  };
 
   const EXERCISES = [
     {
-      id: "down-up-clock", category: "time", order: 1, title: "Down–up clock",
-      short: "Make every attack the same size before adding speed.", layout: "horizontal", sequence: "alternate", count: 8,
-      theory: "Say the scale degree on every note. The hand repeats D–U, but the ear follows a numbered line inside the selected key and dromos.",
-      evidence: "Trigas places picking and right-hand technical handling inside a progressive bouzouki curriculum; Pafranidis begins with plectrum direction and open-course exercises.",
+      id: "down-up-clock", category: "time", order: 1, title: "Ta–ka one-note clock",
+      short: "Make ↓ ta and ↑ ka feel and sound equal before the left hand moves.", layout: "horizontal", sequence: "single", count: 8,
+      articulation: "picked-line", sourceIds: ["trigas-method", "pafranidis-sample"],
+      theory: "Down and up are rhythmic locations as well as hand directions. Say ta on every downstroke and ka on every upstroke while one pitch stays fixed.",
+      evidence: "Trigas places picking and right-hand handling inside a progressive bouzouki curriculum; Pafranidis explicitly joins plectrum down/up direction to counted downbeat/upbeat work.",
       sourceLabel: "Trigas method overview + Pafranidis sample contents", sourceHref: TRIGAS,
-      steps: ["Mute one course and play the displayed down/up rail with the smallest comfortable pick motion.", "Unmute and repeat the same rail on the shown dromos notes without changing the attack size.", "Accent only note 1; the other seven notes must stay even."],
+      steps: ["Mute one course and say ta–ka while following every displayed ↓/↑ with the smallest comfortable motion.", "Unmute one shown note and keep all eight attacks the same length, depth, and volume.", "Accent only note 1; the other seven attacks stay even and the wrist stays loose."],
       listen: "One continuous pulse: upstrokes should not sound thinner, later, or louder than downstrokes.",
-      pass: "Three passes stay even and relaxed, with no scrape or extra motion when the course changes.",
-      boundary: "The curriculum categories are source-supported; this eight-note Dromos sequence is original and is not a Trigas or Pafranidis transcription."
+      pass: "Three passes stay even and relaxed, with no scrape or extra wrist or forearm motion.",
+      boundary: "The source supports the plectrum/down-up foundation; ta–ka wording and this eight-attack clock are an original Dromos mnemonic and drill, not a Trigas or Pafranidis transcription."
     },
     {
-      id: "grouped-accents", category: "time", order: 2, title: "Greek grouped accents",
+      id: "picked-dromos-line", category: "time", order: 2, title: "Picked dromos line",
+      short: "Carry ta–ka through the scale: one separate attack for every note.", layout: "horizontal", sequence: "alternate", count: 8,
+      articulation: "picked-line", sourceIds: ["trigas-method", "pafranidis-sample", "pagiatis-dromoi"],
+      theory: "The right hand keeps one D–U clock while the ear follows degrees 1 through the selected dromos. Articulation and pitch map are separate layers that must stay synchronized.",
+      evidence: "Trigas and Pafranidis integrate picking with scales and fretboard knowledge; Pagiatis connects dromos fingerings with their musical use.",
+      sourceLabel: "Trigas + Pafranidis + Pagiatis public material", sourceHref: PAFRANIDIS,
+      steps: ["Pre-sing the displayed degrees, then play each note once with its own ↓ or ↑ attack.", "Loop only the first four notes until ta–ka stays even as the fretting hand changes.", "Play the full line and finish cleanly; do not turn a longer note into unmarked tremolo."],
+      listen: "Eight distinct syllables inside one phrase: pitch changes without the pick pulse becoming uneven.",
+      pass: "Every displayed note has one audible attack, the degree order is clear, and no note is accidentally repeated or smeared.",
+      boundary: "The methods support integrating plectrum and scale study. The displayed degree line is generated from the selected Dromos map and is not copied notation or repertoire."
+    },
+    {
+      id: "grouped-accents", category: "time", order: 3, title: "Greek grouped accents",
       short: "Keep alternate strokes while the selected Greek pulse changes the accents.", layout: "horizontal", sequence: "pulse", count: 9,
+      articulation: "picked-line", sourceIds: ["trigas-method", "pafranidis-sample"],
       theory: "Meter and dromos are different layers: the Greek pulse decides where weight falls; the selected dromos decides which pitches are available.",
       evidence: "Bouzouki methods join picking work to rhythm study. Dromos uses the app's separately documented Greek pulse maps so meter and dromos remain independent choices.",
       sourceLabel: "Trigas method overview", sourceHref: TRIGAS,
@@ -43,8 +78,9 @@
       boundary: "The meter grouping comes from Dromos's documented pulse map; the exact pick-accent drill is an original trainer exercise, not a style transcription."
     },
     {
-      id: "tremolo-ladder", category: "time", order: 3, title: "Tremolo burst ladder",
+      id: "tremolo-ladder", category: "time", order: 10, title: "Tremolo burst ladder",
       short: "Join short, countable bursts into a sustained bouzouki tone.", layout: "horizontal", sequence: "tremolo", count: 20,
+      articulation: "tremolo-sustain", sourceIds: ["trigas-method", "pafranidis-sample"],
       theory: "Hold one scale degree long enough to hear its function. Compare the tonic (settled), 3rd (major/minor colour), and characteristic dromos note.",
       evidence: "Trigas includes picking studies, and Pafranidis explicitly separates tremolo and tremolo exercises after foundational plectrum work.",
       sourceLabel: "Pafranidis sample contents", sourceHref: PAFRANIDIS,
@@ -56,6 +92,7 @@
     {
       id: "outside-pairs", category: "cross", order: 4, title: "Two-per-course crossing loop",
       short: "Expose the same crossing repeatedly instead of hiding it inside a long scale.", layout: "2nps", sequence: "alternate", count: 18,
+      articulation: "picked-line", sourceIds: ["pennanen"],
       theory: "The note numbers remain the same when their fretboard address changes. Name the degree before each course change so geometry never replaces hearing.",
       evidence: "Pennanen distinguishes tiered, across-course motion from horizontal playing and explains that it reduces position changes. Dromos isolates its right-hand crossing cost.",
       sourceLabel: "Pennanen, The Poetics of the Little Finger", sourceHref: PENNANEN,
@@ -67,6 +104,7 @@
     {
       id: "mixed-crossings", category: "cross", order: 5, title: "Three-per-course mixed crossings",
       short: "Alternate inside and outside crossings without changing the pulse.", layout: "3nps", sequence: "alternate", count: 18,
+      articulation: "picked-line", sourceIds: ["pennanen"],
       theory: "Hear one octave as connected scale degrees, then notice where the physical three-per-course pattern cuts across the musical phrase.",
       evidence: "Pennanen documents the practical difference between linear and tiered motor structures. This exercise makes the changing pick geometry visible on a tiered route.",
       sourceLabel: "Pennanen, The Poetics of the Little Finger", sourceHref: PENNANEN,
@@ -76,8 +114,21 @@
       boundary: "The motor-structure comparison is source-supported. The three-per-course path and crossing labels are original Dromos practice logic."
     },
     {
-      id: "tactile-ab", category: "route", order: 6, title: "Horizontal ↔ tiered A/B",
+      id: "degree-window", category: "cross", order: 6, title: "Four-note degree windows",
+      short: "Sequence the dromos in overlapping groups without dropping the ta–ka clock.", layout: "horizontal", sequence: "degreeWindow", count: 16,
+      articulation: "picked-line", sourceIds: ["avlonitis-101", "trigas-method"],
+      theory: "Hear four-note windows as 1–2–3–4, 2–3–4–5, 3–4–5–6, and 4–5–6–7. The left hand and key change; the alternating right-hand engine does not.",
+      evidence: "Avlonitis describes graded plectrum and finger-strength work; Trigas includes progressive fingering, independence, and scale study. Neither source makes this exact degree sequence available as Dromos content.",
+      sourceLabel: "Avlonitis 101 catalogue + Trigas method scope", sourceHref: AVLONITIS,
+      steps: ["Say each four-degree window before playing it and accent only the first note of the window.", "Keep strict ta–ka through the boundary between windows; do not reset to a downstroke.", "Use Evolve only after one position is clean, then move the same degree logic through keys or practical positions."],
+      listen: "Four connected musical cells, not a sixteen-note blur; every new window has a clear first degree without a timing bump.",
+      pass: "All four windows stay even, the window starts are audible, and the picking direction continues correctly across every boundary.",
+      boundary: "The sources support graded dexterity domains. This 1–2–3–4 sliding-window exercise is original, generated by Dromos, and does not copy any Avlonitis or Trigas exercise."
+    },
+    {
+      id: "tactile-ab", category: "route", order: 7, title: "Horizontal ↔ tiered A/B",
       short: "Play the same dromos two ways and choose the route for sound, not convenience alone.", layout: "horizontal", sequence: "alternate", count: 8, compare: true,
+      articulation: "picked-line", sourceIds: ["pennanen"],
       theory: "A dromos is a melodic organization, not one fingering. Preserve the same degree contour while comparing continuous one-course colour with a compact tiered route.",
       evidence: "Pennanen defines horizontal playing as a linear array with position shifts and tiered playing as an across-course array with fewer shifts; he also warns that course changes can alter bouzouki timbre.",
       sourceLabel: "Pennanen, The Poetics of the Little Finger", sourceHref: PENNANEN,
@@ -87,8 +138,9 @@
       boundary: "Pennanen documents the two tactile organizations and their timbral tradeoff. The displayed A/B route is generated for the selected instrument and is not a recorded-player transcription."
     },
     {
-      id: "timbre-echo", category: "route", order: 7, title: "Course-timbre echo",
+      id: "timbre-echo", category: "route", order: 8, title: "Course-timbre echo",
       short: "Repeat one small cell in a new course/register as an intentional answer.", layout: "horizontal", sequence: "echo", count: 8, compare: true,
+      articulation: "picked-line", sourceIds: ["pennanen"],
       theory: "Repetition makes the degree contour recognizable; a register or course change supplies the contrast. This is call-and-answer by timbre, not a new scale.",
       evidence: "Pennanen describes the appealing contrast created when a phrase moves between unison and octave-course regions on four-course bouzouki, including echo-like use in instrumental and taximi contexts.",
       sourceLabel: "Pennanen, The Poetics of the Little Finger", sourceHref: PENNANEN,
@@ -98,9 +150,10 @@
       boundary: "Pennanen supports the echo-timbre observation. Dromos generates the four-note cell; guitar uses a register/string-set comparison rather than claiming paired-course bouzouki acoustics."
     },
     {
-      id: "triplet-grammar", category: "route", order: 8, title: "Alternate ↔ glide triplets",
+      id: "triplet-grammar", category: "route", order: 9, title: "Alternate ↔ glide triplets",
       short: "Compare a strict down/up grid with a deliberate same-direction glide.", layout: "2nps", sequence: "tripletGrammar", count: 12,
       variants: [{ id: "alternate", label: "Strict alternate" }, { id: "glide", label: "Glide / sweep" }],
+      articulation: "picked-or-glide", sourceIds: ["pennanen"],
       theory: "A three-note group can cross the strings without changing its pitches. Compare how the stroke grammar changes the accent: D–U–D / U–D–U versus Pennanen's documented D–D–U / U–D–D glide families.",
       evidence: "Pennanen reports that strict alternate picking is not axiomatic in bouzouki practice. He documents traditional-player deviations, including glide or sweep patterns such as D–D–U and U–D–D in triplet or sextuplet motion.",
       sourceLabel: "Pennanen, The Poetics of the Little Finger", sourceHref: PENNANEN,
@@ -110,8 +163,9 @@
       boundary: "The observed stroke families and warning against one universal rule are source-supported. This exact A/B note route is an original Dromos comparison, not a Pennanen or Hiotis transcription."
     },
     {
-      id: "pick-legato", category: "phrase", order: 9, title: "Pick–hammer–pull–slide chain",
+      id: "pick-legato", category: "phrase", order: 11, title: "Pick–hammer–pull–slide chain",
       short: "Make the pick start the syllable and let the left hand shape it.", layout: "horizontal", sequence: "ornament", count: 6,
+      articulation: "picked-legato", sourceIds: ["pennanen", "trigas-method"],
       theory: "Decoration has a harmonic destination. Name the final note's scale degree and land it as a chord tone; the ornament connects to that target rather than replacing it.",
       evidence: "Pennanen identifies hammer, pull, trill, and glissando/portamento among common bouzouki ornament families; Trigas includes glissando and ornament studies.",
       sourceLabel: "Pennanen + Trigas method overview", sourceHref: PENNANEN,
@@ -121,8 +175,21 @@
       boundary: "The ornament families are source-supported. This exact six-event chain is an original fixed-fret Dromos drill, not a claim about universal Greek execution."
     },
     {
-      id: "arpeggio-arrival", category: "phrase", order: 10, title: "Triad arpeggio → next 3rd",
+      id: "mode-phrase-cell", category: "phrase", order: 12, title: "Dromos contour → home",
+      short: "Turn scale knowledge into a short picked sentence with a named destination.", layout: "horizontal", sequence: "phraseCell", count: 7,
+      articulation: "picked-line", sourceIds: ["karantinis-lessons", "pagiatis-dromoi"],
+      theory: "Knowing a collection is not the same as speaking with it. Hear the app-authored rise–turn–return contour, then identify the selected dromos degrees and final home.",
+      evidence: "Karantinis's official course separates mode positions from mode-specific phraseology and says phrases are central to using modes; Pagiatis joins dromos maps with characteristic musical material.",
+      sourceLabel: "Karantinis official lessons + Pagiatis public foreword", sourceHref: KARANTINIS,
+      steps: ["Sing the seven-degree contour before touching the instrument, then pick every displayed note ta–ka.", "Make the turning note audible with timing and touch, not an extra unscripted note.", "Transpose the same contour with Evolve, then compare it with an owned recording or lesson for truly idiomatic phrase behavior."],
+      listen: "A rise, a turn, and a return to home. The final tonic should answer the phrase instead of sounding like the end of a scale test.",
+      pass: "You can sing the contour, name its degrees, play every attack evenly, and state that the generic cell is not itself an artist or historic phrase.",
+      boundary: "The sources support teaching phraseology beyond scale positions. This generic seven-note contour is an original Dromos scaffold, not a Karantinis phrase, Pagiatis melody, or repertoire transcription."
+    },
+    {
+      id: "arpeggio-arrival", category: "phrase", order: 13, title: "Triad arpeggio → next 3rd",
       short: "Turn picking control into audible harmony.", layout: "arpeggio", sequence: "arpeggio", count: 5,
+      articulation: "picked-line", sourceIds: ["trigas-method", "pafranidis-sample"],
       theory: "Root, 3rd, and 5th state the current chord. The next chord's 3rd is the high-information arrival because it reveals that chord's major or minor quality.",
       evidence: "Trigas combines picking, arpeggios, modes, rhythm, and improvisation in one bouzouki study sequence; Pafranidis likewise places chord arpeggios and tremolo after scale foundations.",
       sourceLabel: "Trigas method overview", sourceHref: TRIGAS,
@@ -132,6 +199,8 @@
       boundary: "The integrated study categories are source-supported. Dromos derives these notes from the selected chord map; it is not a published Trigas exercise or artist lick."
     }
   ];
+
+  EXERCISES.sort((left, right) => left.order - right.order);
 
   function byId(id) {
     return EXERCISES.find((exercise) => exercise.id === id) || EXERCISES[0];
@@ -160,6 +229,27 @@
     const exercise = byId(exerciseId);
     const beats = pulse && pulse.length ? pulse : [{ first: true, group: 1, beat: 1 }];
     let nodes;
+    if (exercise.sequence === "single") {
+      nodes = repeatTo(baseNodes.slice(0, 1), exercise.count);
+      return alternate(nodes, (index) => index === 0, firstStroke).map((node) => Object.assign(node, { phrase: "ta–ka clock" }));
+    }
+    if (exercise.sequence === "degreeWindow") {
+      const source = baseNodes.slice(0, 7);
+      if (!source.length) return [];
+      nodes = [];
+      for (let start = 0; start < 4; start++) {
+        [0, 1, 2, 3].forEach((offset) => nodes.push(cloneNode(source[(start + offset) % source.length])));
+      }
+      return alternate(nodes, (index) => index % 4 === 0, firstStroke).map((node, index) =>
+        Object.assign(node, { phrase: `window ${Math.floor(index / 4) + 1}` }));
+    }
+    if (exercise.sequence === "phraseCell") {
+      const source = baseNodes.slice(0, 4);
+      if (!source.length) return [];
+      nodes = [0, 1, 2, 3, 2, 1, 0].map((index) => cloneNode(source[index % source.length]));
+      return alternate(nodes, (index) => index === 0 || index === 3 || index === 6, firstStroke).map((node, index) =>
+        Object.assign(node, { phrase: index < 3 ? "rise" : index === 3 ? "turn" : index < 6 ? "return" : "home" }));
+    }
     if (exercise.sequence === "pulse") {
       nodes = repeatTo(baseNodes, beats.length);
       return alternate(nodes, (index) => !!beats[index].first, firstStroke).map((node, index) =>
@@ -273,12 +363,24 @@
   function selfTest() {
     const results = [];
     const check = (name, pass, detail) => results.push({ name, pass, detail: detail || "" });
+    const knowledge = window.BouzoukiKnowledge;
     check("picking exercise ids are unique", new Set(EXERCISES.map((item) => item.id)).size === EXERCISES.length);
+    check("picking curriculum order is continuous", EXERCISES.every((item, index) => item.order === index + 1));
     check("every picking category has an exercise", CATEGORIES.every((category) => EXERCISES.some((item) => item.category === category.id)));
     check("every exercise is actionable and bounded", EXERCISES.every((item) =>
       item.steps.length === 3 && item.listen && item.pass && item.theory && /Dromos|not a|not copied|not his/i.test(item.boundary)));
     check("every named claim links to a source", EXERCISES.every((item) => /^https:\/\//.test(item.sourceHref) && item.evidence && item.sourceLabel));
+    check("every exercise declares a valid articulation", EXERCISES.every((item) => !!ARTICULATIONS[item.articulation]));
+    check("every exercise belongs to one mastery phase", !!knowledge && EXERCISES.every((item) => !!knowledge.phaseForExercise(item.id)));
+    check("every exercise provenance resolves", !!knowledge && EXERCISES.every((item) =>
+      item.sourceIds.length && item.sourceIds.every((id) => !!knowledge.sourceById(id))));
+    check("community evidence cannot be an exercise's only authority", !!knowledge && EXERCISES.every((item) =>
+      item.sourceIds.some((id) => knowledge.sourceById(id).rank < 3)));
     const sample = Array.from({ length: 12 }, (_, index) => ({ midi: 60 + index, stringIndex: Math.floor(index / 3), fret: index, note: { degree: String(index + 1) } }));
+    const clock = buildSequence("down-up-clock", sample, []);
+    check("ta-ka clock repeats one pitch with eight distinct attacks", clock.length === 8 && new Set(clock.map((event) => event.midi)).size === 1 && clock.every((event) => /^(D|U)$/.test(event.technique)));
+    const line = buildSequence("picked-dromos-line", sample, []);
+    check("articulated dromos line picks every displayed note", line.length === 8 && line.every((event) => /^(D|U)$/.test(event.technique)));
     const strict = buildSequence("mixed-crossings", sample, []);
     check("strict alternate plan never repeats a stroke", strict.every((event, index) => index === 0 || event.stroke !== strict[index - 1].stroke));
     const pulse = buildSequence("grouped-accents", sample, [
@@ -287,7 +389,10 @@
     ]);
     check("grouped accents follow group starts", "1,3", pulse.map((event, index) => event.accent ? index + 1 : null).filter(Boolean).join(","));
     check("tremolo ladder is 2+4+6+8", 20, buildSequence("tremolo-ladder", sample, []).length);
+    const windows = buildSequence("degree-window", sample, []);
+    check("dexterity windows are four overlapping four-note cells", windows.length === 16 && windows.filter((event) => event.accent).length === 4);
     check("ornament plan separates picked and legato events", "D,H,H,P,U,SL", buildSequence("pick-legato", sample, []).map((event) => event.technique).join(","));
+    check("phrase cell rises, turns, and returns home", "rise,rise,rise,turn,return,return,home", buildSequence("mode-phrase-cell", sample, []).map((event) => event.phrase).join(","));
     check("Pennanen A/B keeps twelve pitches while changing stroke grammar", 12, buildSequence("triplet-grammar", sample, [], "down", "glide").length);
     const twoPerCourse = Array.from({ length: 12 }, (_, index) => ({ midi: 60 + index, stringIndex: Math.floor(index / 2), fret: index, note: { degree: String(index + 1) } }));
     const glide = buildSequence("triplet-grammar", twoPerCourse, [], "down", "glide");
@@ -305,5 +410,5 @@
     return { ok: results.every((result) => result.pass), results };
   }
 
-  window.PickingLab = { CATEGORIES, EXERCISES, byId, buildSequence, buildPracticePlan, selfTest };
+  window.PickingLab = { CATEGORIES, ARTICULATIONS, EXERCISES, byId, buildSequence, buildPracticePlan, selfTest };
 })();

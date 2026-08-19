@@ -208,7 +208,7 @@ sequence: map rhythm/form, map dromos/harmony, choose a melodic target/route, th
 decide articulation and instrument role. It links to the publications as a study
 shelf; it does not reproduce their exercises, notation, recordings or songs.
 
-The dedicated Picking Lab turns that consequence into a playable ten-step route.
+The dedicated Picking Lab turns that consequence into a playable 13-step route.
 Trigas supports an instrument-specific progression joining picking, arpeggio,
 ornament, rhythm, dromos, and improvisation studies; the public Pafranidis sample
 separately verifies plectrum direction, open-course work, arpeggios, tremolo, and
@@ -234,6 +234,36 @@ authors as transcriptions.
 - [Trigas: song and instrumental collection families](https://www.trigas.gr/en/book_categories/en-sylloges-tragoudion-diaforon-syntheton/)
 - [Manolis Michalakis: methods, scales, improvisation and chords](https://www.manolismichalakis.gr/en/books-2/)
 - [Nakas: Polykandriotis, Pagiatis and other bouzouki methods](https://www.nakas.gr/en/proionta/mousika-vivlia/methodoi/methodoi-gia-bouzouki-baglamas/)
+
+### 2026-08-18: source expansion for a bouzouki mastery spine
+
+The strongest additional evidence changes the product from a list of techniques to
+a gated learning sequence. Fagotto's public Pafranidis sample explicitly connects
+downward/upward plectrum movement to counted downbeats/upbeats and begins with slow,
+clear open-course work. Fagotto describes Giorgos Avlonitis's *101 Dexterity
+Exercises for Bouzouki* as graded plectrum, finger-strength, and diminished-scale
+work for four-string and other bouzouki. Karantinis's official lesson catalogue
+separates modes/positions from mode-specific phraseology, supporting the product
+rule that knowing scale notes is not the same as speaking a style. Filippatos's
+BouzoukiLand is a useful teacher-video destination. Repeated r/bouzouki questions
+help identify confusing labels and common learner problems but do not establish a
+technical or theory rule.
+
+**Product consequence:** `BouzoukiKnowledge` ranks source authority and maps the
+Picking Lab to five stages: ta–ka time, coordination, neck route, phrase language,
+and performance transfer. Every exercise declares whether it is note-by-note picked,
+tremolo sustain, picked/legato, or a picked/glide comparison. Community evidence
+may refine help and diagnostics only when a stronger source supports the domain.
+
+- [Avlonitis: *101 Dexterity Exercises for Bouzouki*](https://fagottobooks.gr/en/1037-4_979-0-801151-59-9.html)
+- [Pafranidis: public three-string method sample](https://fagottobooks.gr/blog/wp-content/uploads/2020/04/trixordo-sample.pdf)
+- [Karantinis: official video lessons](https://karantinis.com/video-lessons/)
+- [Karantinis: styles and techniques catalogue](https://karantinis.com/downloads/styles-techniques/)
+- [Nikos Filippatos: BouzoukiLand](https://www.youtube.com/@BouzoukiLand)
+- [r/bouzouki community](https://www.reddit.com/r/bouzouki/)
+
+The detailed source-to-product and rights matrix is in
+[BOUZOUKI_MASTERY.md](BOUZOUKI_MASTERY.md).
 
 ## Score-first analysis boundary
 

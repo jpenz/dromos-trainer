@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/picking-lab.js", "js/toolkit.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/bouzouki-knowledge.js", "js/picking-lab.js", "js/toolkit.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.BouzoukiKnowledge.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -28,8 +28,23 @@ test("authorised study starters and referenced methods remain clearly bounded", 
   assert.ok(StudyLibrary.STUDIES.every((study) => /User-authorised/.test(study.source)));
   assert.equal(ResourceLibrary.TRIGAS.length, 5);
   assert.ok(ResourceLibrary.TRIGAS.every((item) => /trigas\.gr/.test(item.href)));
-  assert.equal(ResourceLibrary.COMMUNITY.length, 3);
-  assert.ok(ResourceLibrary.COMMUNITY.every((item) => /mpouzouki\.weebly\.com/.test(item.href)));
+  assert.equal(ResourceLibrary.COMMUNITY.length, 4);
+  assert.ok(ResourceLibrary.COMMUNITY.some((item) => /reddit\.com\/r\/bouzouki/.test(item.href)));
+  assert.ok(ResourceLibrary.COMMUNITY.filter((item) => /mpouzouki/.test(item.href)).every((item) => /mpouzouki\.weebly\.com/.test(item.href)));
+});
+
+test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority separate", () => {
+  const { BouzoukiKnowledge, PickingLab } = loadCore();
+  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 5);
+  assert.equal(PickingLab.EXERCISES.length, 13);
+  assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
+  assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
+  assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
+  assert.ok(PickingLab.EXERCISES.every((exercise) => exercise.sourceIds.some((id) => BouzoukiKnowledge.sourceById(id).rank < 3)),
+    "a community post must never be the sole authority for a drill");
+  const sample = Array.from({ length: 8 }, (_, index) => ({ midi: 62 + index, stringIndex: 0, fret: index, note: { degree: String(index + 1) } }));
+  const line = PickingLab.buildSequence("picked-dromos-line", sample, [], "down");
+  assert.deepEqual(Array.from(line, (event) => event.technique), ["D", "U", "D", "U", "D", "U", "D", "U"]);
 });
 
 test("video study catalog keeps videos hosted at their original public source", () => {
