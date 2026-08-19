@@ -367,7 +367,7 @@
           gg.appendChild(el("text", {
             x: cx(n), y: cy(n) - 18, "text-anchor": "middle",
             class: "stroke-mark s-" + n.stroke
-          }, n.stroke === "down" ? "⊓" : "V"));
+          }, n.stroke === "down" ? "↓" : "↑"));
         }
         g.appendChild(gg);
       });

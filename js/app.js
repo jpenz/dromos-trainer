@@ -63,6 +63,7 @@
     // --- dedicated plectrum curriculum ---
     picking: {
       category: "all", exerciseId: "down-up-clock", route: "horizontal",
+      variant: "alternate",
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
       runIndex: null, activeSegment: null
@@ -110,6 +111,40 @@
   // additive fallback; "auto" matches the selected instrument.
   function chordReferenceVoice() {
     return state.chordVoice === "studio" ? "studio" : state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
+  }
+
+  function updateAudioReadyStatus(status, message) {
+    const snapshot = status || AU.audioStatus();
+    const copy = message || (snapshot.ready
+      ? snapshot.studio === "loading" ? "Sound on · loading sampled piano…" : "Sound ready"
+      : snapshot.state === "suspended" || snapshot.state === "interrupted" ? "Tap Test sound to restore audio" : "Tap Test sound if audio is silent");
+    [$("audioReadyStatus"), $("pickingAudioReadyStatus")].filter(Boolean).forEach((target) => {
+      target.dataset.state = snapshot.ready ? "ready" : snapshot.state;
+      target.textContent = copy;
+    });
+  }
+
+  async function readyPracticeAudio(loadSelectedVoice) {
+    updateAudioReadyStatus({ state: "starting", ready: false, studio: AU.studioStatus() }, "Starting audio…");
+    const running = await AU.ensureRunning();
+    if (!running) {
+      updateAudioReadyStatus(AU.audioStatus(), "Audio is blocked · tap Test sound again");
+      return false;
+    }
+    if (loadSelectedVoice && chordReferenceVoice() === "studio") {
+      updateAudioReadyStatus({ state: "running", ready: true, studio: "loading" });
+      await AU.prepareStudioPiano();
+    }
+    updateAudioReadyStatus(AU.audioStatus());
+    return true;
+  }
+
+  async function playSoundCheck() {
+    stopPlay();
+    if (!await readyPracticeAudio(true)) return;
+    const voice = chordReferenceVoice();
+    AU.playSequence([60, 64, 67, 72].map((midi) => ({ freq: T.midiToFreq(midi) })), 0.22, undefined, voice);
+    updateAudioReadyStatus(AU.audioStatus(), `${voice === "studio" ? "Sampled piano" : voice === "piano" ? "Warm keys" : voice === "guitar" ? "Clean guitar" : "Instrument voice"} playing`);
   }
   const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -320,9 +355,12 @@
     });
     $("pageGuide").innerHTML = `<article class="learning-pyramid" data-guide-key="${escapeHtml(guide.key)}">
       <header class="guide-answer"><span>Answer first · ${escapeHtml(guide.purpose)}</span><h1>${escapeHtml(guide.answer)}</h1><p>${escapeHtml(guide.result)}</p><small>Current setup · ${escapeHtml(pageGuideContext())}</small></header>
-      <ol class="guide-steps" aria-label="How to use this page">${guide.steps.map((step, index) => `<li class="${index === 0 ? "is-first" : ""}"><i>${index + 1}</i><div><span>${index === 0 ? "Start here" : index === 1 ? "Then" : "Finish"}</span><b>${escapeHtml(step)}</b>${index === 0 ? `<button type="button" data-guide-target="${escapeHtml(guide.targetId)}">Show me where</button>` : ""}</div></li>`).join("")}</ol>
-      <div class="guide-reason"><div><span>What to listen or look for</span><p>${escapeHtml(guide.why)}</p></div><div class="guide-success"><span>You are ready to move on when…</span><b>${escapeHtml(guide.done)}</b></div></div>
-      <details class="guide-explain"><summary>New here? Explain the words and screen controls</summary><div><dl>${guide.terms.map(([term, meaning]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(meaning)}</dd></div>`).join("")}</dl><p><b>Using the screen:</b> Tap a button once. The selected choice is highlighted. You may change choices until an exercise says <i>Check</i>. Use <i>Stop</i> whenever you need silence; changing pages also stops the sound.</p></div></details>
+      <div class="guide-first"><i>1</i><div><span>Start here</span><b>${escapeHtml(guide.steps[0])}</b></div><button type="button" data-guide-target="${escapeHtml(guide.targetId)}">Show me where</button></div>
+      <details class="guide-workflow"><summary><span>Open the complete practice guide</span><b>3 steps · listening goal · success test</b></summary><div class="guide-workflow-body">
+        <ol class="guide-steps" aria-label="How to use this page">${guide.steps.map((step, index) => `<li class="${index === 0 ? "is-first" : ""}"><i>${index + 1}</i><div><span>${index === 0 ? "Start here" : index === 1 ? "Then" : "Finish"}</span><b>${escapeHtml(step)}</b></div></li>`).join("")}</ol>
+        <div class="guide-reason"><div><span>What to listen or look for</span><p>${escapeHtml(guide.why)}</p></div><div class="guide-success"><span>You are ready to move on when…</span><b>${escapeHtml(guide.done)}</b></div></div>
+        <details class="guide-explain"><summary>New here? Explain the words and screen controls</summary><div><dl>${guide.terms.map(([term, meaning]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(meaning)}</dd></div>`).join("")}</dl><p><b>Using the screen:</b> Tap a button once. The selected choice is highlighted. You may change choices until an exercise says <i>Check</i>. Use <i>Stop</i> whenever you need silence; changing pages also stops the sound.</p></div></details>
+      </div></details>
     </article>`;
     $("pageGuide").querySelector("[data-guide-target]").onclick = (event) => focusPageGuideTarget(event.currentTarget.getAttribute("data-guide-target"));
   }
@@ -1421,7 +1459,7 @@
     root.innerHTML = `
       <section class="examples-context" aria-label="Tactical example key and scale">
         <div><span>All examples recalculate</span><b>Choose the same home and dromos as the music you are practising.</b></div>
-        <label for="examplesTonicSel">Key / home<select id="examplesTonicSel">${M.TONICS.map((tonic) => `<option value="${escapeHtml(tonic)}"${tonic === state.tonic ? " selected" : ""}>${escapeHtml(tonic)}</option>`).join("")}</select></label>
+        <label for="examplesTonicSel">Key<select id="examplesTonicSel">${M.TONICS.map((tonic) => `<option value="${escapeHtml(tonic)}"${tonic === state.tonic ? " selected" : ""}>${escapeHtml(tonic)}</option>`).join("")}</select></label>
         <div class="seg seg-5" aria-label="Tactical example scale or dromos">${M.MODE_ORDER.map((modeId) => `<button data-example-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}">${escapeHtml(M.MODES[modeId].name)}</button>`).join("")}</div>
       </section>
       <section class="examples-filter" aria-label="Tactical example categories">
@@ -2773,7 +2811,7 @@
     const path = P.buildPath(context.tonic, state.modeId, {
       layout, position: context.position, startDegree: state.lab.startDegree,
       startString: state.lab.startString, firstStroke: state.picking.firstStroke,
-      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings"
+      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings" || exercise.id === "triplet-grammar"
     });
     const { chords } = M.buildProgression(context.tonic, state.modeId, state.progId);
     const index = Math.min(state.progStep, chords.length - 1);
@@ -2785,7 +2823,7 @@
     const resolved = Object.assign({ tonic: state.tonic, position: state.lab.position }, context || {});
     const base = pickingBaseNodes(exercise, resolved);
     const pulse = S.beatMap(S.byId(state.groove.styleId));
-    const nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke);
+    const nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke, state.picking.variant);
     let priorPick = state.picking.firstStroke;
     for (let index = 0; index < nodes.length; index++) {
       const node = nodes[index];
@@ -2811,7 +2849,7 @@
     const options = {
       layout, position: state.lab.position, startDegree: state.lab.startDegree,
       startString: state.lab.startString, firstStroke: state.picking.firstStroke,
-      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings"
+      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings" || exercise.id === "triplet-grammar"
     };
     const positions = P.positionsFor(tonic, state.modeId, options, state.lab.position).filter((item) => item.lowFret <= 15);
     if (!positions.some((item) => item.position === state.lab.position)) {
@@ -2831,7 +2869,9 @@
 
   function selectPickingExercise(id) {
     stopPlay();
-    state.picking.exerciseId = PK.byId(id).id;
+    const exercise = PK.byId(id);
+    state.picking.exerciseId = exercise.id;
+    state.picking.variant = exercise.variants && exercise.variants.length ? exercise.variants[0].id : "alternate";
     state.picking.pathIndex = null;
     state.picking.cleanPasses = 0;
     renderPickingLab();
@@ -2873,7 +2913,19 @@
   }
 
   function pickingTechniqueName(mark) {
-    return ({ D: "down", U: "up", H: "hammer", P: "pull", SL: "slide" })[mark] || mark || "hold";
+    return ({ D: "downstroke", U: "upstroke", DG: "downstroke glide", UG: "upstroke glide", H: "hammer-on", P: "pull-off", SL: "slide" })[mark] || mark || "hold";
+  }
+
+  function pickingTechniqueMeta(mark) {
+    return ({
+      D: { glyph: "↓", short: "DOWN", label: "Downstroke", cue: "Pick moves toward the floor. Make one compact, clean attack.", direction: "down" },
+      U: { glyph: "↑", short: "UP", label: "Upstroke", cue: "Pick returns toward you. Match the timing and volume of the downstroke.", direction: "up" },
+      DG: { glyph: "↓↘", short: "GLIDE", label: "Downstroke glide", cue: "Continue the same down motion through the adjacent course; do not reset the hand.", direction: "down-glide" },
+      UG: { glyph: "↑↖", short: "GLIDE", label: "Upstroke glide", cue: "Continue the same up motion through the adjacent course; keep it one connected gesture.", direction: "up-glide" },
+      H: { glyph: "H", short: "HAMMER", label: "Hammer-on", cue: "Do not pick again. The left hand places the next attack exactly in time.", direction: "legato" },
+      P: { glyph: "P", short: "PULL", label: "Pull-off", cue: "Do not pick again. Release sideways enough for the lower note to speak in time.", direction: "legato" },
+      SL: { glyph: "SL", short: "SLIDE", label: "Slide", cue: "Keep finger pressure while the hand connects the two frets as one syllable.", direction: "legato" }
+    })[mark] || { glyph: "·", short: "HOLD", label: "Hold", cue: "Let the previous note continue.", direction: "hold" };
   }
 
   function renderPickingRunPlan() {
@@ -2887,6 +2939,7 @@
     $("pickingMoveSel").disabled = state.picking.runMode !== "evolve";
     $("tglPickingMetronome").checked = state.picking.metronome;
     $("tglPickingCountIn").checked = state.picking.countIn;
+    $("pickingVoiceSel").value = state.chordVoice;
     const movementLabel = state.picking.movement === "key" ? "circle-of-fourths keys"
       : state.picking.movement === "both" ? "keys and practical positions" : "practical positions";
     $("pickingRunSummary").textContent = state.picking.runMode === "loop"
@@ -2913,21 +2966,35 @@
     svg().setAttribute("aria-label", `${window.Tuning.current().name} ${exercise.title} picking path`);
 
     const category = PK.CATEGORIES.find((item) => item.id === exercise.category);
+    const motionIndex = currentIndex == null ? 0 : currentIndex;
+    const motionEvent = session.nodes[motionIndex] || {};
+    const nextMotionEvent = session.nodes[(motionIndex + 1) % Math.max(1, session.nodes.length)] || {};
+    const motion = pickingTechniqueMeta(motionEvent.technique);
+    const nextMotion = pickingTechniqueMeta(nextMotionEvent.technique);
     const rail = session.nodes.map((node, index) => {
       const note = node.note || {};
       const detail = node.crossing ? node.crossing : node.burst ? `${node.burst}-stroke burst` : node.phrase || "";
-      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong>${escapeHtml(node.technique || "·")}</strong><b>${escapeHtml(state.labelMode === "note" ? note.name || "·" : note.roleLabel || note.degree || "·")}</b><small>${escapeHtml(detail)}</small></button>`;
+      const mark = pickingTechniqueMeta(node.technique);
+      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u><small>${escapeHtml(mark.short)}</small></strong><b>${escapeHtml(state.labelMode === "note" ? note.name || "·" : note.roleLabel || note.degree || "·")}</b><small>${escapeHtml(detail)}</small></button>`;
     }).join("");
     $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · ${escapeHtml(category.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><i>${escapeHtml(window.Tuning.current().name)}</i></header>
-      <div class="picking-stroke-key"><span><b>D</b> down</span><span><b>U</b> up</span><span><b>H</b> hammer</span><span><b>P</b> pull</span><span><b>SL</b> slide</span><em>Tap any event to hear and inspect it.</em></div>
+      <div class="picking-motion ${currentIndex == null ? "is-ready" : "is-playing"}" data-motion="${escapeHtml(motion.direction)}" aria-live="polite">
+        <section class="picking-motion-now"><span>${currentIndex == null ? "Start with" : `Now · event ${motionIndex + 1}`}</span><b><i>${escapeHtml(motion.glyph)}</i>${escapeHtml(motion.label)}</b><p>${escapeHtml(motion.cue)}</p></section>
+        <div class="picking-motion-visual" aria-hidden="true"><i class="pick-shape"></i><b></b><b></b><b></b><span>${motionEvent.accent ? "ACCENT" : "EVEN"}</span></div>
+        <section class="picking-motion-next"><span>Prepare next</span><b><i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}</b><p>${escapeHtml(nextMotion.cue)}</p></section>
+      </div>
+      <div class="picking-stroke-key"><span><b>↓ D</b> downstroke</span><span><b>↑ U</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><em>Tap an event to hear it and see the motion.</em></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
-      <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
-      <aside class="picking-evidence"><span>Evidence boundary</span><p>${escapeHtml(exercise.evidence)}</p><a href="${exercise.sourceHref}" target="_blank" rel="noreferrer">${escapeHtml(exercise.sourceLabel)} ↗</a><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></aside>`;
+      <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section class="picking-theory"><span>Theory inside the motion</span><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}</b><p>${escapeHtml(exercise.theory)}</p><small>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</small></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
+      <details class="picking-evidence"><summary>Research source + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><a href="${exercise.sourceHref}" target="_blank" rel="noreferrer">${escapeHtml(exercise.sourceLabel)} ↗</a><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
     $("pickingLesson").querySelectorAll("[data-picking-step]").forEach((button) => button.onclick = () => {
       stopPlay();
       const index = +button.getAttribute("data-picking-step");
       state.picking.pathIndex = index;
-      AU.playPath([session.nodes[index]], 0.35, { onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
+      readyPracticeAudio(true).then((ready) => {
+        if (!ready) return;
+        AU.playPath([session.nodes[index]], 0.35, { referenceVoice: chordReferenceVoice(), onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
+      });
       renderPickingLab();
     });
 
@@ -2936,7 +3003,13 @@
       button.classList.toggle("active", button.getAttribute("data-picking-route") === state.picking.route));
     document.querySelectorAll("[data-picking-subdivision]").forEach((button) =>
       button.classList.toggle("active", +button.getAttribute("data-picking-subdivision") === state.picking.subdivision));
-    $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "⊓ down" : "V up"}`;
+    const variants = exercise.variants || [];
+    $("pickingVariantChoice").classList.toggle("hidden", !variants.length);
+    $("pickingVariantButtons").innerHTML = variants.map((variant) => `<button data-picking-variant="${escapeHtml(variant.id)}" class="${variant.id === state.picking.variant ? "active" : ""}">${escapeHtml(variant.label)}</button>`).join("");
+    $("pickingVariantButtons").querySelectorAll("[data-picking-variant]").forEach((button) => button.onclick = () => {
+      stopPlay(); state.picking.variant = button.getAttribute("data-picking-variant"); state.picking.cleanPasses = 0; renderPickingLab();
+    });
+    $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "↓ downstroke" : "↑ upstroke"}`;
     $("btnPickingPlay").textContent = state.picking.playing ? `Playing ${state.picking.runIndex + 1}/${state.picking.repeats}…` : "▶ Play run";
     $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3);
     $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p>`;
@@ -2975,6 +3048,7 @@
     const beatSpacing = 60 / state.bpm;
     const noteSpacing = beatSpacing / state.picking.subdivision;
     AU.playPath(session.nodes, noteSpacing, {
+      referenceVoice: chordReferenceVoice(),
       metronome: state.picking.metronome,
       beatSpacing,
       pulse: session.pulse,
@@ -2993,8 +3067,9 @@
     });
   }
 
-  function playPickingExercise() {
+  async function playPickingExercise() {
     stopPlay();
+    if (!await readyPracticeAudio(true)) return;
     const plan = pickingRunPlan();
     if (!plan.length) return;
     const token = ++pickingRunToken;
@@ -3176,7 +3251,7 @@
     const progressions = M.PROGRESSIONS[state.modeId];
     const { chords } = currentProgression();
     root.innerHTML = `
-      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key / home ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}</span></div>
+      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}</span></div>
         <label>Home <select id="soloTonic">${M.TONICS.map((tonic) =>
           `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label></div>
       <div class="solo-mode-grid">${M.MODE_ORDER.map((modeId) => {
@@ -4540,7 +4615,17 @@
       state.chordVoice = event.target.value;
       saveUiPreferences();
       if (state.chordVoice === "studio") AU.prepareStudioPiano();
+      updateAudioReadyStatus(AU.audioStatus());
     };
+    if ($("btnSoundCheck")) $("btnSoundCheck").onclick = playSoundCheck;
+    $("pickingVoiceSel").onchange = (event) => {
+      state.chordVoice = event.target.value;
+      if ($("voiceSel")) $("voiceSel").value = state.chordVoice;
+      saveUiPreferences();
+      if (state.chordVoice === "studio") AU.prepareStudioPiano();
+      updateAudioReadyStatus(AU.audioStatus());
+    };
+    $("btnPickingSoundCheck").onclick = playSoundCheck;
     if ($("tglPickup")) $("tglPickup").onchange = (event) => {
       state.pickupV2 = event.target.checked;
       saveUiPreferences();
@@ -4775,7 +4860,7 @@
     };
     $("btnStroke").onclick = () => {
       state.lab.firstStroke = state.lab.firstStroke === "down" ? "up" : "down";
-      $("btnStroke").textContent = "Start: " + (state.lab.firstStroke === "down" ? "⊓ down" : "V up");
+      $("btnStroke").textContent = "Start: " + (state.lab.firstStroke === "down" ? "↓ downstroke" : "↑ upstroke");
       renderLab();
     };
     $("tglUpDown").onchange = (e) => { state.lab.updown = e.target.checked; renderLab(); };
@@ -4863,10 +4948,11 @@
     document.querySelectorAll("[data-guess]").forEach((b) =>
       b.onclick = () => selectColourGuess(b.getAttribute("data-guess")));
 
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", async (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
       if (e.code === "Space") {
         e.preventDefault();
+        if (!await readyPracticeAudio(state.chordVoice === "studio")) return;
         if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : playEarPrompt();
         else if (state.view === "melody") state.melody.prompt ? playMelodyPrompt(false) : newMelodyQuestion();
         else if (state.view === "chordmap") auditionChordMap("strum");
@@ -4936,11 +5022,13 @@
     const player = PP.bootstrap();
     applyPlayerProfile(player);
     loadUiPreferences();
+    document.addEventListener("dromos:audio-state", (event) => updateAudioReadyStatus(event.detail));
     wire();
     syncPersistentControls();
     renderPlayerProfiles(false);
     showTestBadge();
     showReleaseIdentity();
+    updateAudioReadyStatus(AU.audioStatus());
     $("bpm").value = state.bpm; $("bpmVal").textContent = state.bpm;
     C.mount({ context: coachContext, onAction: useCoachAction, profileId: player.id });
     setView(player.preferences.view);

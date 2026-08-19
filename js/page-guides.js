@@ -39,7 +39,7 @@
       purpose: "Understand a song's chord map",
       answer: "Choose a home and dromos, then learn one common progression as numbered chord jobs.",
       result: "The chord names change with the key, but the Roman-numeral map keeps the same musical meaning.",
-      steps: ["Choose Scale / dromos, then choose Key / home.", "Choose one card under Common song maps and read its Roman numerals from left to right.", "Press ▶ Play, point to each chord, and say its number before its name."],
+      steps: ["Choose Scale / dromos, then choose Key.", "Choose one card under Common song maps and read its Roman numerals from left to right.", "Press ▶ Play, point to each chord, and say its number before its name."],
       done: "You can sing or say where the progression returns home without looking at the fretboard.",
       why: "Remembering a map by function lets you recognize and transpose the same movement in another song or key.",
       terms: [["Dromos", "The selected note collection and its characteristic melodic/harmonic behavior."], ["Roman numeral", "A chord's numbered job in the current key; uppercase usually means major and lowercase means minor."], ["Progression", "An ordered path of chords."]],
@@ -49,7 +49,7 @@
       purpose: "See every chord inside a scale",
       answer: "Use the Matrix as a reference: choose a key, then click one chord to learn how to play, enter, and leave it.",
       result: "Each row is one scale; each numbered column is the chord built on that scale degree.",
-      steps: ["Choose Key / home and leave Triads selected for the clearest foundation.", "Read across one scale row, then click the chord you want to understand.", "Use Play it, Outline it, Enter it, and Leave it in order before opening a sister scale."],
+      steps: ["Choose Key and leave Triads selected for the clearest foundation.", "Read across one scale row, then click the chord you want to understand.", "Use Play it, Outline it, Enter it, and Leave it in order before opening a sister scale."],
       done: "You can name the selected chord's number, find a usable shape, and hear one likely next chord.",
       why: "The table separates chords that mathematically belong to the scale from chords that the verified Song Maps actually use often.",
       terms: [["Scale degree", "A note's numbered position in the selected scale."], ["Derived only", "The chord belongs to the notes, but this curriculum does not claim it is a common working chord."], ["Sister scale", "A closely related scale reached through shared notes, one changed color, or a documented progression door."]],
@@ -148,12 +148,12 @@
     picking: {
       purpose: "Make the pick serve the music",
       answer: "Loop one exact movement until it is easy; then evolve only the position, key, or both while the attack and pulse stay unchanged.",
-      result: "The Picking Lab turns right-hand mechanics into nine instrument-specific exercises with visible strokes, fretboard animation, a count-in/metronome, and a run map through practical shapes or circle-of-fourths keys.",
-      steps: ["Leave Down–up clock selected, choose Loop, and match every displayed D/U attack at a tempo where the hand stays loose.", "Choose Evolve only after the loop is stable; move through practical positions, keys, or both while keeping the same subdivision and Greek pulse.", "Finish with Triad arpeggio → next 3rd, log three clean passes, and raise only 4 BPM."],
+      result: "The Picking Lab turns right-hand mechanics into ten instrument-specific exercises with plain-language stroke arrows, fretboard animation, theory, a count-in/metronome, and a run map through practical shapes or circle-of-fourths keys.",
+      steps: ["Set Key, Scale / dromos, and Greek pulse; then match every ↓ downstroke and ↑ upstroke at a tempo where the hand stays loose.", "Compare Pennanen's horizontal, tiered, strict-alternate, and glide ideas while keeping the same notes and listening for the timbre or accent change.", "Finish with Triad arpeggio → next 3rd, log three clean passes, and raise only 4 BPM."],
       done: "The pulse and note destination remain clear through a course change, accent, tremolo burst, or ornament—and you can stop without tightening.",
       why: "Speed is useful only when attack, time, timbre, and harmonic destination survive. Small measurable drills reveal which part fails before it reaches a song.",
-      terms: [["Loop", "Repeat the same key, route, and position so one motor problem can settle."], ["Evolve", "Keep the exercise intact while the trainer advances one chosen variable."], ["Circle of 4ths", "A practical key route: D → G → C → F, continuing through all twelve keys."], ["Clean pass", "One complete repetition with even time, relaxed motion, and the exercise's listening goal intact."]],
-      targetId: "pickingExerciseRail"
+      terms: [["↓ / D", "Downstroke: the pick moves toward the floor."], ["↑ / U", "Upstroke: the pick returns toward you."], ["Glide", "One directed pick gesture continues through an adjacent course."], ["Clean pass", "One complete repetition with even time, relaxed motion, and the exercise's listening goal intact."]],
+      targetId: "pickingTonicSel"
     },
     stylesFoundation: {
       purpose: "Build transferable musical habits",
@@ -189,7 +189,7 @@
       purpose: "Turn a named idea into something playable",
       answer: "Choose a source-backed concept, then practise the exact notes, timing, listening goal, and pass test shown for your current key and dromos.",
       result: "Every entry separates what the research actually supports from the new Dromos exercise built from it.",
-      steps: ["Choose Key / home and Scale / dromos, then select one category and example.", "Read What the source supports before following the numbered Use it now steps.", "Press Hear the note path, perform the drill, and use its Pass when test before opening it in Solo."],
+      steps: ["Choose Key and Scale / dromos, then select one category and example.", "Read What the source supports before following the numbered Use it now steps.", "Press Hear the note path, perform the drill, and use its Pass when test before opening it in Solo."],
       done: "You can demonstrate the idea on your instrument and explain both its musical purpose and its evidence boundary.",
       why: "A famous name is not an instruction. Concrete notes, timing, listening criteria, and honest attribution turn inspiration into repeatable practice without inventing a player's lick.",
       terms: [["Tactical example", "A playable sequence of actions with specific notes or functions and a success test."], ["Source-bounded", "The app states exactly what the source supports and labels the generated drill as an adaptation, not a transcription."], ["Note path", "A pitch-only preview; articulation and groove still come from your hands and the selected exercise."]],

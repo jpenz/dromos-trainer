@@ -31,8 +31,15 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="tglPickingMetronome"/);
   assert.match(html, /id="tglPickingCountIn"/);
   assert.match(html, /id="pickingBpm"[^>]*min="40"[^>]*max="180"/);
-  assert.match(html, /js\/picking-lab\.js\?v=29/);
+  assert.match(html, /js\/picking-lab\.js\?v=31/);
   assert.match(read("js/picking-lab.js"), /Horizontal ↔ tiered A\/B/);
+  assert.match(read("js/picking-lab.js"), /Alternate ↔ glide triplets/);
+  assert.match(read("js/picking-lab.js"), /D–D–U.*U–D–D/,
+    "Pennanen's documented glide families need an explicit, source-bounded comparison");
+  assert.match(html, /id="pickingTonicSel"[^>]*aria-describedby="pickingKeyHelp"/,
+    "Picking must expose Key as an explained first-screen control");
+  assert.match(read("js/app.js"), /glyph: "↓"[^\n]*label: "Downstroke"/);
+  assert.match(read("js/app.js"), /glyph: "↑"[^\n]*label: "Upstroke"/);
   assert.match(read("js/picking-lab.js"), /not a .*transcription|not copied|not his prescribed exercise/i);
   assert.match(html, /id="panelMelody"/);
   assert.match(html, /id="melodyScaleRail"/);
@@ -57,7 +64,7 @@ test("the installable app shell links its offline assets", () => {
     "the working-role legend must describe a direct return without overclaiming a formal cadence");
   assert.match(html, /js\/chord-map\.js\?v=17/);
   assert.match(html, /js\/chord-path\.js\?v=25/);
-  assert.match(html, /js\/page-guides\.js\?v=29/);
+  assert.match(html, /js\/page-guides\.js\?v=31/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -127,6 +134,12 @@ test("the installable app shell links its offline assets", () => {
     "ear checks must use one explicit reference voice independent of the visual instrument");
   assert.match(read("js/audio.js"), /STUDIO_PIANO_SAMPLES/,
     "ear checks need the sampled studio-piano reference instead of a synthesized instrument default");
+  assert.match(read("js/audio.js"), /function ensureRunning\(\)/,
+    "iPad playback needs an awaitable AudioContext unlock path");
+  assert.match(read("js/audio.js"), /document\.addEventListener\("pointerdown", prime/,
+    "audio must start inside the earliest user gesture");
+  assert.match(html, /id="btnSoundCheck"/);
+  assert.match(html, /id="audioReadyStatus"/);
   assert.match(html, /id="btnEarStop"/);
   assert.match(html, /id="earReveal"/);
   assert.doesNotMatch(read("js/app.js"), /filter\(\(i\) => cycle\[i\]\.fn !== "V"\)/,
@@ -167,11 +180,11 @@ test("the installable app shell links its offline assets", () => {
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
   assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "29"/,
+  assert.match(read("api/release.js"), /appVersion: "31"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=29/);
-  assert.match(html, /js\/fretboard\.js\?v=19/);
-  assert.match(html, /js\/app\.js\?v=29/);
+  assert.match(html, /css\/styles\.css\?v=31/);
+  assert.match(html, /js\/fretboard\.js\?v=31/);
+  assert.match(html, /js\/app\.js\?v=31/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.

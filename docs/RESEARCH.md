@@ -208,16 +208,20 @@ sequence: map rhythm/form, map dromos/harmony, choose a melodic target/route, th
 decide articulation and instrument role. It links to the publications as a study
 shelf; it does not reproduce their exercises, notation, recordings or songs.
 
-The dedicated Picking Lab turns that consequence into a playable nine-step route.
+The dedicated Picking Lab turns that consequence into a playable ten-step route.
 Trigas supports an instrument-specific progression joining picking, arpeggio,
 ornament, rhythm, dromos, and improvisation studies; the public Pafranidis sample
 separately verifies plectrum direction, open-course work, arpeggios, tremolo, and
 tremolo exercises. Pennanen supplies the key analytical distinction: horizontal
 playing follows a linear array with more position movement, while tiered playing
 crosses courses with fewer shifts, and a course change can create a musically useful
-or disruptive timbre change. Dromos therefore teaches even attack and grouping first,
+or disruptive timbre change. He also documents that strict alternate picking is not
+axiomatic in bouzouki practice: traditional and individual player grammars can use
+same-direction glide/sweep strokes, including D–D–U and U–D–D triplet/sextuplet
+families, with a corresponding accent consequence. Dromos therefore teaches even attack and grouping first,
 then exposes course crossings, then A/B compares horizontal and tiered routes before
-adding tremolo, ornaments, and chord-target arpeggios. The exact notes and 2–4–6–8
+comparing strict-alternate and route-aligned glide grammar, then adds tremolo,
+ornaments, and chord-target arpeggios. The exact notes and 2–4–6–8
 burst ladder are app-authored, visibly labelled as such, and never attributed to those
 authors as transcriptions.
 

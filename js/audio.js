@@ -15,6 +15,20 @@
   let playbackGeneration = 0;
   let studioLoadPromise = null;
   let studioLoadState = "idle";
+  let unlockPromise = null;
+
+  function audioStatus() {
+    return {
+      state: ctx ? ctx.state : "idle",
+      ready: !!ctx && ctx.state === "running",
+      studio: studioLoadState
+    };
+  }
+
+  function announceAudioState() {
+    if (typeof document === "undefined" || typeof CustomEvent === "undefined") return;
+    document.dispatchEvent(new CustomEvent("dromos:audio-state", { detail: audioStatus() }));
+  }
 
   // One velocity layer sampled every minor 3rd is enough for a stable ear-
   // training reference without shipping a full piano ROM. Adjacent notes are
@@ -48,9 +62,31 @@
       compressor.release.value = 0.18;
       output.gain.value = 0.68;
       master.connect(compressor); compressor.connect(output); output.connect(ctx.destination);
+      ctx.addEventListener("statechange", announceAudioState);
     }
-    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     return ctx;
+  }
+
+  // Safari/iPadOS can leave an AudioContext suspended after a tab switch or
+  // while a sample is being decoded. Call this directly from the user's tap,
+  // await the state transition, and only then schedule audible work.
+  function ensureRunning() {
+    const context = ensure();
+    if (context.state === "running") {
+      announceAudioState();
+      return Promise.resolve(true);
+    }
+    if (unlockPromise) return unlockPromise;
+    const resumeAttempt = Promise.resolve(context.resume()).then(() => context.state === "running").catch(() => false);
+    const resumeTimeout = new Promise((resolve) => setTimeout(() => resolve(context.state === "running"), 1600));
+    // A few WebKit builds have left resume() pending indefinitely after an app
+    // switch. Never strand the interface on "Starting audio…"; release the
+    // lock and let the next explicit tap retry inside a fresh user gesture.
+    unlockPromise = Promise.race([resumeAttempt, resumeTimeout]).then((running) => {
+      announceAudioState();
+      return running;
+    }).finally(() => { unlockPromise = null; });
+    return unlockPromise;
   }
 
   // A real user gesture is still the most dependable audio unlock on iPadOS.
@@ -62,6 +98,7 @@
     source.buffer = context.createBuffer(1, 1, context.sampleRate);
     source.connect(master);
     source.start();
+    return ensureRunning();
   }
 
   function voiceGain(noteCount, role) {
@@ -356,7 +393,7 @@
     notes.forEach((n, i) => {
       const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
       const when = t0 + i * sp;
-      if (!silent) playNoteAt(n.freq, when, Math.max(0.9, sp * 2.4), voiceGain(1, "path"));
+      if (!silent) playNoteAt(n.freq, when, Math.max(0.9, sp * 2.4), voiceGain(1, "path"), o.referenceVoice);
       if (o.onStep) {
         pathTimers.push(setTimeout(() => o.onStep(i, silent), Math.max(0, (when - ctx.currentTime) * 1000)));
       }
@@ -539,12 +576,16 @@
   }
 
   if (typeof document !== "undefined") {
-    document.addEventListener("pointerup", prime, { once: true, capture: true });
-    document.addEventListener("touchend", prime, { once: true, capture: true });
+    // pointerdown occurs before the button click handler and gives iPadOS the
+    // longest possible user-activation window. Every later playback control
+    // also calls ensureRunning, so audio can recover after app switching.
+    document.addEventListener("pointerdown", prime, { once: true, capture: true });
+    document.addEventListener("touchstart", prime, { once: true, capture: true, passive: true });
+    document.addEventListener("visibilitychange", announceAudioState);
   }
 
   window.AudioEngine = {
-    ensure, prime, voiceGain, prepareStudioPiano, playReferenceChord, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
+    ensure, ensureRunning, prime, audioStatus, voiceGain, prepareStudioPiano, playReferenceChord, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
     startTransport, stopTransport, isPlaying,
     studioStatus: () => studioLoadState,
     // Absolute audio-clock time, for callers that schedule multi-part gestures

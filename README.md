@@ -90,7 +90,7 @@ you, physically, that only two dots move.
 The core technique and ear routine that supports the target map.
 
 **Picking path.** Runs the mode as a path across the neck with **strict alternate
-picking** marked on every note (⊓ down, V up), and every string change classified:
+picking** marked on every note (↓ downstroke, ↑ upstroke), and every string change classified:
 
 - **Green solid** = *outside* picking — the pick sweeps around the string pair
 - **Red dashed** = *inside* picking — the pick is trapped between the strings, and
@@ -101,10 +101,11 @@ that is what changes the crossing pattern. `◀ below` / `above ▶` walk the sa
 to the core positions above and below. Loose wrist, pick barely clearing the string,
 and drop the tempo until every crossing is clean.
 
-The standalone **Picking Lab** turns that feedback into a nine-exercise curriculum:
+The standalone **Picking Lab** turns that feedback into a ten-exercise curriculum:
 even attack, Greek grouped accents, tremolo bursts, isolated and mixed course
-crossings, horizontal-versus-tiered route and timbre comparisons, ornaments, and a
-triad-arpeggio arrival on the coming chord's 3rd. Each exercise has an animated
+crossings, horizontal-versus-tiered route and timbre comparisons, a Pennanen-bounded
+strict-alternate versus glide/sweep A/B, ornaments, and a triad-arpeggio arrival on
+the coming chord's 3rd. Each exercise has an animated pick-motion cue, a theory link,
 event rail, an exact three-step instruction, a listening goal, a pass test, and a
 direct evidence link. Artist/method observations and Dromos-authored exercises are
 labelled separately; no published exercise or recorded lick is represented as a
@@ -115,6 +116,9 @@ shape for consistency. **Evolve** keeps the drill and pulse fixed while moving
 through verified neck positions, circle-of-fourths keys, or both. Runs may use a
 grouped one-bar count-in and metronome; the roadmap previews every stage, and an
 evolved run starts again from the key/position where the previous run finished.
+The selected practice sound is shown inside the lab. Sampled piano is the stable
+default, and **Test sound** explicitly unlocks or restores Web Audio after an iPad
+tab/app switch instead of leaving a silent playback button.
 
 **Audiation cells.** Start with 3 notes, add one each pass to the octave, then take
 one away back down to 3. The **last note is the target**: playback leaves a *silent
