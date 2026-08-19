@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => readFileSync(path.join(root, file), "utf8");
 
-test("the shell exposes nine primary destinations including the standalone matrix", () => {
+test("the shell exposes eleven primary destinations including Melody, Picking, and the standalone matrix", () => {
   const html = read("index.html");
-  ["today", "hear", "harmony", "matrix", "solo", "repertoire", "learn", "coach", "progress"].forEach((nav) => {
+  ["today", "hear", "melody", "harmony", "matrix", "solo", "picking", "repertoire", "learn", "coach", "progress"].forEach((nav) => {
     assert.match(html, new RegExp(`data-nav="${nav}"`), `missing primary destination ${nav}`);
   });
   // Full Cycle and ii–V–I folded into the Changes Gym as key-count settings;
@@ -36,6 +36,8 @@ test("the shell exposes nine primary destinations including the standalone matri
   assert.match(html, /data-solo-focus="sweet"/, "the sweet 2→3 landing lens must exist");
   assert.match(html, /data-solo-focus="pedal"/, "the one-note (common tone) lens must exist");
   assert.match(html, /class="transport-bar"/);
+  assert.match(html, /id="cycleRoadmap"/, "Changes Gym needs a readable six-chord look-ahead");
+  assert.match(html, /id="panelMelody"/, "melody-to-harmony practice must be a standalone destination");
 });
 
 test("playback speaks the redesigned musical language", () => {
@@ -55,6 +57,16 @@ test("playback speaks the redesigned musical language", () => {
   assert.doesNotMatch(app, /referenceVoice: "guitar"/, "playback must not hardcode the chord voice");
   assert.match(read("js/audio.js"), /function playPianoNoteAt/, "a piano reference voice must exist");
   assert.match(read("js/practice.js"), /sweet-lean/, "the sweet 2→3 melodic route must exist");
+  assert.match(app, /function renderCycleRoadmap/, "the pivot map must expose six upcoming chords from the shared journey");
+  assert.match(app, /class="solo-progression-roadmap"/, "Solo must keep the complete progression and every selected target above the neck");
+  assert.match(app, /function renderMelodyLab/, "the melody note must route into an interactive harmony comparison");
+  assert.match(app, /navigator\.mediaDevices\.getUserMedia/, "sing-back must use an explicit browser microphone grant");
+  assert.match(app, /function startPitchListening/, "melody practice must connect sung recall to the revealed degree");
+  assert.match(app, /Never connect the microphone to destination/, "the microphone must not create a speaker feedback path");
+  assert.match(read("js/pitch-lab.js"), /analyzeAgainstTarget/, "live vocal feedback must distinguish pitch class from tuning accuracy");
+  assert.match(read("js/pitch-lab.js"), /never uploads or records/, "the microphone privacy boundary must be explicit in the implementation");
+  assert.match(read("js/audio.js"), /playSequence\(notes, spacing, when, referenceVoice\)/,
+    "single-note ear prompts must use the same pitch-stable reference voice as chord prompts");
 });
 
 test("the held tonic stays audible and visible, not implied", () => {

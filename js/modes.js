@@ -262,6 +262,21 @@
     });
   }
 
+  function movementPolicy(modeId) {
+    if (modeId === "ousak") {
+      return {
+        status: "verified-mobile",
+        label: "Verified ascending alternatives",
+        detail: "Hollow 2nd and 6th dots are ascending options. The descending trainer returns through the core fixed-fret Ousak collection; it does not claim one universal regional intonation."
+      };
+    }
+    return {
+      status: "fixed-collection",
+      label: "Model boundary",
+      detail: `This trainer currently uses the same declared ${MODES[modeId].name} pitch collection ascending and descending. No additional directional form is encoded or implied.`
+    };
+  }
+
   // A road map has two related jobs: show the complete seven-note material and
   // make its directional chunks obvious. We use the practical 1–4 / 5–8 split
   // here (the upper tonic completes the second tetrachord), rather than claiming
@@ -488,7 +503,7 @@
   window.Modes = {
     MODES, MODE_ORDER, PROGRESSIONS, TONICS, QUALITY, DEGREE_LABEL, PENTATONIC,
     parseName, nameFor, simplify,
-    scaleOf, flavourPcs, pentatonicOf, tetrachordsOf, mobileTonesOf, buildChord, buildProgression, descendingRun,
+    scaleOf, flavourPcs, pentatonicOf, tetrachordsOf, mobileTonesOf, movementPolicy, buildChord, buildProgression, descendingRun,
     selfTest
   };
 })();

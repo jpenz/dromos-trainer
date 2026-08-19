@@ -1,5 +1,10 @@
 # Handoff: review brief for the next model
 
+> **Current-state note (2026-08-17):** this review records an earlier release.
+> FR-63/MI-32 now add explicit, on-device Melody sing-back. The statements below
+> that the app has no microphone are historical and must not override the live
+> requirements or `docs/PITCH_SINGBACK_DECISION.md`.
+
 Copy everything below the line into the reviewing model, with the repo attached
 or cloned. It is written to be self-contained: it states what the app is, what
 just changed and why, what is deliberately NOT there, and the exact standards

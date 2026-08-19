@@ -1,7 +1,7 @@
 /* profiles.js — validated, named practice profiles stored on this device.
  *
  * These are intentionally not presented as authenticated cloud accounts.
- * Each player receives separate preferences, ear progress, and an anonymous
+ * Each player receives separate preferences, ear and sing-back progress, and an anonymous
  * server coach session without putting transient drills or imported music in
  * localStorage.
  */
@@ -10,7 +10,7 @@
 
   const STORAGE_KEY = "dromos-trainer-player-profiles-v1";
   const TUNINGS = ["guitar", "bouzouki4", "laouto4", "bouzouki3", "guitarDropD"];
-  const VIEWS = ["cycle", "prog", "chordmap", "ear", "triads", "solo", "styles", "video", "analyze", "concepts", "coach"];
+  const VIEWS = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "analyze", "concepts", "coach", "progress"];
   const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
   const MODES = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
   const CYCLE_MODES = ["full", "iiVI", "pivot"];
@@ -61,6 +61,7 @@
     return {
       earColour: score(raw.earColour),
       earMap: score(raw.earMap),
+      singPitch: score(raw.singPitch),
       completedExercises: raw.completedExercises && typeof raw.completedExercises === "object" && !Array.isArray(raw.completedExercises)
         ? Object.fromEntries(Object.entries(raw.completedExercises).slice(0, 80).map(([key, count]) => [String(key).slice(0, 50), Math.max(0, Math.floor(Number(count) || 0))])) : {},
       lastPracticedAt: typeof raw.lastPracticedAt === "string" ? raw.lastPracticedAt.slice(0, 32) : null
@@ -179,6 +180,11 @@
           item.attempts += 1;
           if (event.correct) { item.correct += 1; item.streak += 1; item.best = Math.max(item.best, item.streak); }
           else item.streak = 0;
+        } else if (event.kind === "sing") {
+          const item = profile.progress.singPitch;
+          item.attempts += 1;
+          if (event.correct) { item.correct += 1; item.streak += 1; item.best = Math.max(item.best, item.streak); }
+          else item.streak = 0;
         } else if (event.kind === "complete") {
           const key = safeName(event.exercise, "practice");
           profile.progress.completedExercises[key] = (profile.progress.completedExercises[key] || 0) + 1;
@@ -207,9 +213,11 @@
     const add = (name, pass) => results.push({ name, pass });
     add("first player is Dre on four-course bouzouki", first.displayName === "Dre" && first.preferences.tuningId === "bouzouki4");
     testStore.recordProgress({ kind: "ear", drill: "colour", correct: true });
+    testStore.recordProgress({ kind: "sing", correct: true });
     const second = testStore.create("Alex", { tuningId: "guitar" });
     add("profiles keep independent instruments", second.preferences.tuningId === "guitar" && testStore.list()[0].preferences.tuningId === "bouzouki4");
     add("profiles keep independent ear progress", second.progress.earColour.attempts === 0 && testStore.list()[0].progress.earColour.correct === 1);
+    add("profiles keep independent sing-back progress", second.progress.singPitch.attempts === 0 && testStore.list()[0].progress.singPitch.correct === 1);
     testStore.updatePreferences({ tuningId: "unknown", bpm: 999 });
     add("invalid preferences fall back safely", testStore.active().preferences.tuningId === "bouzouki4" && testStore.active().preferences.bpm === 200);
     testStore.remove(second.id);

@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=19" />
+  <link rel="stylesheet" href="css/styles.css?v=29" />
 </head>
 <body>
   <div class="app">
@@ -21,11 +21,15 @@
         <span class="nav-wordmark">Dromos</span>
       </div>
       <nav class="nav-list" aria-label="Practice areas">
+        <span class="nav-group-label">Practice</span>
         <button data-nav="today">Today</button>
-        <button data-nav="hear">Hear</button>
+        <button data-nav="hear">Ear</button>
+        <button data-nav="melody">Melody</button>
         <button data-nav="harmony">Harmony</button>
-        <button data-nav="matrix">Matrix</button>
         <button data-nav="solo">Solo</button>
+        <button data-nav="picking">Picking</button>
+        <span class="nav-group-label">Reference &amp; support</span>
+        <button data-nav="matrix">Matrix</button>
         <button data-nav="repertoire">Repertoire</button>
         <button data-nav="learn">Learn</button>
         <button data-nav="coach">Coach</button>
@@ -103,12 +107,14 @@
           <nav id="learnTabs" class="mode-tabs hidden" aria-label="Learn area">
             <button data-view="styles">Greek Pulse</button>
             <button data-view="video">Video Study</button>
+            <button data-view="examples">Tactical Examples</button>
             <button data-view="concepts">Concepts</button>
           </nav>
           <!-- direct view shortcuts kept for assistive tech, deep links and tests -->
           <nav class="visually-hidden" aria-hidden="true">
             <button data-view="cycle" tabindex="-1">Hear movement</button>
             <button data-view="ear" tabindex="-1">Ear checks</button>
+            <button data-view="melody" tabindex="-1">Melody to harmony</button>
             <button data-view="chordmap" tabindex="-1">Harmony matrix</button>
             <button data-view="solo" tabindex="-1">Solo road</button>
             <button data-view="analyze" tabindex="-1">Analyze</button>
@@ -120,6 +126,7 @@
         <section id="journeyBand" class="journey-band" aria-label="Harmonic journey">
           <section id="changeGuide" class="change-guide" aria-label="Current and next chord" aria-live="off"></section>
           <div id="journeyAnnouncement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+          <section id="cycleRoadmap" class="cycle-roadmap hidden" aria-label="Six-chord look-ahead"></section>
           <div id="pivotBanner" class="pivot-banner"></div>
           <section id="keymapWrap" class="keymap-wrap" aria-labelledby="keymapTitle">
             <header><div><span>Moving key centers</span><b id="keymapTitle">Old I becomes the next ii</b></div><p>Tap a key to jump to its ii and hear that starting chord. “Next” marks a role change, not another chord.</p></header>
@@ -127,6 +134,21 @@
           </section>
           <div id="progStrip" class="prog-strip hidden"></div>
           <div id="triadStrip" class="prog-strip hidden"></div>
+          <section id="pickingSetup" class="picking-setup hidden" aria-labelledby="pickingSetupTitle">
+            <header>
+              <div><span class="panel-label">Picking Lab</span><h2 id="pickingSetupTitle">Make the right hand serve the phrase.</h2></div>
+              <p>Follow the order once, then return to the category that fails inside real music. Every route follows the selected instrument.</p>
+            </header>
+            <div class="picking-context music-context">
+              <label for="pickingTonicSel">Key / home<select id="pickingTonicSel"></select></label>
+              <div class="grow"><span class="panel-label">Scale / dromos</span><div class="seg seg-5" aria-label="Picking scale or dromos">
+                <button data-picking-mode="major">Major</button><button data-picking-mode="minor">Natural minor</button><button data-picking-mode="harmonicMinor">Harmonic minor</button><button data-picking-mode="ousak">Ousak</button><button data-picking-mode="hijaz">Hijaz</button>
+              </div></div>
+              <label for="pickingPulseSel">Greek pulse<select id="pickingPulseSel"></select></label>
+            </div>
+            <nav id="pickingCategories" class="picking-categories" aria-label="Picking exercise categories"></nav>
+            <div id="pickingExerciseRail" class="picking-exercise-rail" aria-label="Picking curriculum order"></div>
+          </section>
         </section>
 
         <!-- ================= Instrument stage ================= -->
@@ -269,10 +291,15 @@
 
             <!-- Triads / comp -->
             <div id="panelTriads" class="panel hidden">
-              <span class="panel-label">Comping &amp; chord soloing</span>
-              <p class="ear-hint">Every triad shape of the current chord, all over the neck.
-                The highlighted one is the <b>least-movement</b> choice from the previous
-                chord — that is what hitting the changes looks like under the hand.</p>
+              <span class="panel-label">Comping · pulse before fills</span>
+              <p class="ear-hint"><b>First make the dance audible with muted accents.</b>
+                Then add the bass/chord skeleton; only free the right hand when those anchors
+                survive. The shapes below are the harmony layer, not the starting point.</p>
+              <section id="compSkeleton" class="comp-skeleton" aria-label="Greek pulse comping skeleton"></section>
+              <span class="panel-label">Close-position chord route</span>
+              <p class="ear-hint">The highlighted triad is the <b>least-movement</b> choice from
+                the previous chord. Put it on the chord slots in the skeleton above; keep bass
+                slots sparse enough that the root direction remains audible.</p>
               <div class="row tonic-row">
                 <label for="setSel">Strings</label>
                 <select id="setSel"></select>
@@ -387,6 +414,125 @@
               <button id="btnLabPlay" class="tbtn primary">▶ Play (Space)</button>
             </div>
 
+            <!-- Dedicated picking curriculum -->
+            <div id="panelPicking" class="panel picking-panel hidden">
+              <section id="pickingLesson" class="picking-lesson" aria-live="polite"></section>
+              <section class="picking-runner" aria-labelledby="pickingRunnerTitle">
+                <header><div><span class="panel-label">Practice engine</span><h3 id="pickingRunnerTitle">Repeat it exactly—or evolve one variable.</h3></div><p id="pickingRunSummary"></p></header>
+                <div class="picking-runner-grid">
+                  <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop</button><button data-picking-run="evolve">Evolve</button></div></div>
+                  <label class="picking-tempo" for="pickingBpm">Tempo <span><input id="pickingBpm" type="range" min="40" max="180" step="1" /><output id="pickingBpmVal" for="pickingBpm">84 BPM</output></span></label>
+                  <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
+                  <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="both">Keys + positions</option></select></label>
+                  <label class="check"><input type="checkbox" id="tglPickingMetronome" checked /> Metronome</label>
+                  <label class="check"><input type="checkbox" id="tglPickingCountIn" checked /> One-bar count-in</label>
+                </div>
+                <div id="pickingRunMap" class="picking-run-map" aria-label="Picking practice run roadmap"></div>
+              </section>
+              <section class="picking-controls" aria-label="Picking playback and progress">
+                <div>
+                  <span class="panel-label">Subdivision</span>
+                  <div class="seg" aria-label="Notes per beat">
+                    <button data-picking-subdivision="2">8ths</button>
+                    <button data-picking-subdivision="3">Triplets</button>
+                    <button data-picking-subdivision="4">16ths</button>
+                  </div>
+                </div>
+                <div>
+                  <span class="panel-label">First stroke</span>
+                  <button id="btnPickingStroke" class="mini">Start · ⊓ down</button>
+                </div>
+                <div id="pickingRouteChoice" class="hidden">
+                  <span class="panel-label">Pennanen route comparison</span>
+                  <div class="seg">
+                    <button data-picking-route="horizontal">Horizontal</button>
+                    <button data-picking-route="tiered">Tiered</button>
+                  </div>
+                </div>
+                <div class="picking-actions">
+                  <button id="btnPickingPlay" class="mini primary-mini">▶ Play drill</button>
+                  <button id="btnPickingStop" class="mini">■ Stop</button>
+                  <button id="btnPickingClean" class="mini">Log clean pass</button>
+                  <button id="btnPickingTempoUp" class="mini hidden">Ready · +4 BPM</button>
+                </div>
+              </section>
+              <div id="pickingPasses" class="picking-passes" aria-live="polite"></div>
+            </div>
+
+            <!-- Melody to harmony -->
+            <div id="panelMelody" class="panel melody-lab hidden">
+              <header class="melody-hero">
+                <span class="panel-label">Melody → Harmony</span>
+                <h2>Hear one note. Name its job. Try the chords beneath it.</h2>
+                <p>The melody never determines one automatic chord. This lab shows every lawful option, then separates trainer-evidenced routes from scale-derived possibilities.</p>
+              </header>
+              <section class="melody-setup music-context" aria-label="Melody lab setup">
+                <label for="melodyTonicSel">Known home<select id="melodyTonicSel"></select></label>
+                <div class="grow">
+                  <span class="panel-label">Scale / dromos</span>
+                  <div class="seg seg-5 melody-mode-grid">
+                    <button data-melody-mode="major">Major</button>
+                    <button data-melody-mode="minor">Natural minor</button>
+                    <button data-melody-mode="harmonicMinor">Harmonic minor</button>
+                    <button data-melody-mode="ousak">Ousak</button>
+                    <button data-melody-mode="hijaz">Hijaz</button>
+                  </div>
+                </div>
+                <div>
+                  <span class="panel-label">Harmony depth</span>
+                  <div class="seg melody-depth">
+                    <button data-melody-depth="triad">Triads</button>
+                    <button data-melody-depth="seventh">7ths</button>
+                  </div>
+                </div>
+              </section>
+              <section class="melody-question" aria-labelledby="melodyQuestionTitle">
+                <div class="melody-question-head"><div><span>1 · Hear + identify</span><h3 id="melodyQuestionTitle">Set your home, then start a note</h3></div><div id="melodyScore" class="melody-score">0 / 0</div></div>
+                <div class="melody-actions">
+                  <button id="btnMelodyHome" class="mini">♪ Hear home</button>
+                  <button id="btnMelodyNew" class="mini primary-mini">▶ Start next note</button>
+                  <button id="btnMelodyReplay" class="mini">↻ Replay</button>
+                  <button id="btnMelodyStop" class="mini">■ Stop</button>
+                </div>
+                <div id="melodyAudioStatus" class="ear-audio-status" role="status" aria-live="polite">Known home first · sampled studio piano</div>
+                <div id="melodyScaleRail" class="melody-scale-rail" aria-label="Scale-degree answer choices"></div>
+                <div id="melodyChoices" class="melody-choices"></div>
+                <div class="melody-check-row"><button id="btnMelodyHint" class="mini">Give one hint</button><button id="btnMelodyCheck" class="mini primary-mini">Check + build harmony map</button></div>
+                <p id="melodyFeedback" class="melody-feedback">The home stays known so the question trains relative hearing, not perfect pitch.</p>
+              </section>
+              <section id="melodyReveal" class="melody-reveal hidden" aria-live="polite">
+                <div id="melodyIdentity" class="melody-identity"></div>
+                <div class="melody-workflow-grid">
+                  <section aria-labelledby="melodyCandidatesTitle"><div class="melody-section-head"><span>2 · Put harmony under it</span><h3 id="melodyCandidatesTitle">Chord colours</h3></div><div id="melodyCandidates" class="melody-candidates"></div></section>
+                  <section aria-labelledby="melodyNextTitle"><div class="melody-section-head"><span>3 · Anticipate</span><h3 id="melodyNextTitle">What can follow?</h3></div><div id="melodyNext" class="melody-next"></div></section>
+                </div>
+                <section class="melody-enhance" aria-labelledby="melodyMovesTitle"><div class="melody-section-head"><span>4 · Make an answer line</span><h3 id="melodyMovesTitle">Counter-melody and top-voice moves</h3></div><div id="melodyMoves" class="melody-moves"></div></section>
+                <section id="melodySing" class="melody-sing" aria-labelledby="melodySingTitle">
+                  <div class="melody-section-head"><span>5 · Sing it back</span><h3 id="melodySingTitle">Make the degree audible without the instrument</h3></div>
+                  <div class="sing-grid">
+                    <div class="sing-target-card">
+                      <span>Target · any octave</span><strong id="singTargetName">—</strong><b id="singTargetRole">Check the note first</b>
+                      <p>Hear it once, stop the reference, then hold the pitch. The microphone never plays through the speakers.</p>
+                      <div class="sing-actions"><button id="btnSingTarget" class="mini">♪ Hear target</button><button id="btnSingStart" class="mini primary-mini">● Enable mic + sing</button><button id="btnSingStop" class="mini" disabled>■ Stop mic</button></div>
+                      <label class="sing-input-label" for="singInputSel">Input device<select id="singInputSel" disabled><option value="">Default system input</option></select></label>
+                    </div>
+                    <div class="sing-feedback-card">
+                      <div class="sing-live"><span>Detected</span><strong id="singDetectedNote">—</strong><b id="singDetectedHz">Waiting for a clear pitch</b></div>
+                      <div id="singGauge" class="pitch-gauge" role="meter" aria-label="Pitch distance from target" aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0">
+                        <span class="gauge-flat">flat</span><span class="gauge-center">target</span><span class="gauge-sharp">sharp</span><i id="singNeedle"></i>
+                      </div>
+                      <div class="sing-readouts"><span><b id="singCents">—</b>accuracy</span><span><b id="singStabilityText">—</b>stability</span><span><b id="singHold">0.0 s</b>in tune</span></div>
+                      <div class="sing-stability" aria-hidden="true"><i id="singStabilityFill"></i></div>
+                      <p id="singInstruction">Start the mic, sing on “ah,” and keep the needle near the center for one second.</p>
+                    </div>
+                  </div>
+                  <div id="singStatus" class="sing-status" role="status" aria-live="polite">Microphone off · audio is analyzed only on this device and is never recorded or uploaded.</div>
+                  <p class="melody-boundary"><b>Input note:</b> laptops and desktop browsers can expose built-in, AirPods, and class-compliant interface inputs. iPadOS/Safari may follow the system-routed microphone even when an external device is connected, so this page always names the input the browser actually reports.</p>
+                </section>
+                <p class="melody-boundary"><b>Evidence boundary:</b> chord membership is derived from the selected scale; “can follow” appears only when that exact degree-to-degree move exists in this trainer’s documented progression bank.</p>
+              </section>
+            </div>
+
             <!-- Ear trainer -->
             <div id="panelEar" class="panel hidden">
               <header class="ear-start">
@@ -466,6 +612,11 @@
               <div id="styleExplorer" class="style-explorer hidden"></div>
             </div>
 
+            <!-- Source-bounded tactical examples -->
+            <div id="panelExamples" class="panel hidden">
+              <div id="tacticalExamples" class="tactical-examples"></div>
+            </div>
+
             <!-- Analyzer -->
             <div id="panelAnalyze" class="panel hidden">
               <span class="panel-label">Study analyzer</span>
@@ -520,7 +671,7 @@
           <aside id="readout" class="readout" aria-label="Chord inspector"></aside>
         </section>
 
-        <div class="hint">Space plays · ← → steps · number keys follow the navigation</div>
+        <div id="keyboardHint" class="hint">Space plays · ← → steps · number keys follow the navigation</div>
       </main>
 
       <!-- ================= Transport ================= -->
@@ -558,13 +709,16 @@
   </div>
 
   <script src="js/tuning.js?v=14"></script>
-  <script src="js/profiles.js?v=15"></script>
+  <script src="js/profiles.js?v=16"></script>
   <script src="js/theory.js?v=14"></script>
   <script src="js/harmony-journey.js?v=15"></script>
-  <script src="js/modes.js?v=17"></script>
+  <script src="js/modes.js?v=20"></script>
   <script src="js/chord-map.js?v=17"></script>
+  <script src="js/chord-path.js?v=25"></script>
+  <script src="js/melody-harmony.js?v=27"></script>
+  <script src="js/pitch-lab.js?v=23"></script>
   <script src="js/ear-drills.js?v=14"></script>
-  <script src="js/styles.js?v=14"></script>
+  <script src="js/styles.js?v=20"></script>
   <script src="js/analysis.js?v=14"></script>
   <script src="js/studies.js?v=14"></script>
   <script src="js/musicxml.js?v=14"></script>
@@ -572,12 +726,15 @@
   <script src="js/video.js?v=14"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/toolkit.js?v=1"></script>
+  <script src="js/picking-lab.js?v=29"></script>
+  <script src="js/toolkit.js?v=27"></script>
+  <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=19"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=16"></script>
-  <script src="js/app.js?v=19"></script>
+  <script src="js/audio.js?v=29"></script>
+  <script src="js/page-guides.js?v=29"></script>
+  <script src="js/app.js?v=29"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

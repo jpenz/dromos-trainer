@@ -208,7 +208,22 @@ sequence: map rhythm/form, map dromos/harmony, choose a melodic target/route, th
 decide articulation and instrument role. It links to the publications as a study
 shelf; it does not reproduce their exercises, notation, recordings or songs.
 
+The dedicated Picking Lab turns that consequence into a playable nine-step route.
+Trigas supports an instrument-specific progression joining picking, arpeggio,
+ornament, rhythm, dromos, and improvisation studies; the public Pafranidis sample
+separately verifies plectrum direction, open-course work, arpeggios, tremolo, and
+tremolo exercises. Pennanen supplies the key analytical distinction: horizontal
+playing follows a linear array with more position movement, while tiered playing
+crosses courses with fewer shifts, and a course change can create a musically useful
+or disruptive timbre change. Dromos therefore teaches even attack and grouping first,
+then exposes course crossings, then A/B compares horizontal and tiered routes before
+adding tremolo, ornaments, and chord-target arpeggios. The exact notes and 2–4–6–8
+burst ladder are app-authored, visibly labelled as such, and never attributed to those
+authors as transcriptions.
+
 - [Trigas: three-string five-book method and scope](https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-three-string-bouzouki/)
+- [Pennanen: *The Poetics of the Little Finger*](https://taju.uniarts.fi/bitstreams/782c4f90-3fb7-4058-bf6b-9631b2c55bb7/download)
+- [Pafranidis: public sample of *Complete Method for Three-Stringed Bouzouki, Baglamas & Tzouras*](https://fagottobooks.gr/blog/wp-content/uploads/2020/04/trixordo-sample.pdf)
 - [Trigas: four-string five-book method and scope](https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-four-string-bouzouki/)
 - [Trigas: advanced three-string Volume 3](https://www.trigas.gr/en/book/methodos-gia-trichordo-bouzouki-no-3/)
 - [Trigas: 2 Instrumentals for three-string bouzouki](https://www.trigas.gr/en/book/vangelis-trigkas-12-organika-gia-trichordo-bouzouki/)
@@ -266,6 +281,64 @@ position, not an authoritative transcription of a performer’s fingering.
   supports using mutually exclusive, collectively exhaustive groups to communicate
   a complex analysis clearly. The musical categories remain a pedagogical model,
   not a claim that lived music has only one interpretation.
+
+## Named source → tactical example policy
+
+A player name is useful only when it changes what the learner does. Release 27
+therefore places the concrete drill beside the attribution and separates two layers:
+
+1. **What the source supports.** A short, conservative statement of the finding.
+2. **What Dromos added.** Transposing notes/functions, ordered actions, a listening
+   goal and a pass test. This layer is always labelled as an original exercise—not a
+   transcription or a claim that the named musician played the generated notes.
+
+The research behind the first tactical-example index is:
+
+- Georgios Papasolomontos's University of Ioannina repository thesis,
+  [Morphological and harmonic analysis of Manolis Chiotis's introductory taximia](https://olympias.lib.uoi.gr/jspui/handle/teiep/8069),
+  analyzes 10 of a catalogued 74 taximia. Its conclusion separates three kinds of
+  imitation—restatement at another pitch, same-pitch restatement, and variation—and
+  reports I–IV–V–I plus VII-region tension in the six analyzed major/minor examples.
+  It also documents sweep, slide, tremolo and penia, and its analysis of *Anoixe kai
+  metaniosa* describes a second voice in 6ths followed by parallel 3rds. Those
+  observations generate four distinct drills; the app does not copy the thesis's
+  notated phrases.
+- The same thesis records Manolis Karantinis's Nicosia seminar teaching on **anasa**:
+  separating taximi phrases with breath so expressive emphasis can be placed. The
+  app turns that into “short phrase → two silent counts → named chord 3rd,” which is
+  an authored pacing drill rather than a seminar transcription.
+- Risto Pekka Pennanen's open-access chapter,
+  [The Poetics of the Little Finger](https://taju.uniarts.fi/items/5897add1-8de2-482f-be1d-6bfe70ca6831),
+  distinguishes horizontal movement along a course from tiered movement across
+  courses. It also warns that a compact across-course route may introduce undesirable
+  timbre changes on octave-doubled courses. The practical comparison therefore asks
+  for the same 1–2–3–4–5 line by both routes and makes even tone—not minimum motion—the
+  choice criterion. The earlier claim that Pennanen documented a generic “stock
+  formula deck” was removed; the card deck is now plainly app-authored.
+- Nikolaos Ordoulidis's University of Leeds thesis,
+  [The Recording Career of Vasilis Tsitsanis](https://etheses.whiterose.ac.uk/id/eprint/3230/1/Ordoulidis_Final.Thesis.pdf),
+  supports treating taximi as non-rhythmic improvisation based on the song's dromos,
+  commonly but not exclusively in an introductory role. That evidence supports a
+  lower-zone → upper development → tonic close form exercise, not one universal seyir
+  for every repertoire item.
+- The University of Crete record for Despoina Mazaraki's
+  [The Folk Clarinet in Greece](https://anemi.lib.uoc.gr/metadata/f/b/4/metadata-01-0000494.tkl)
+  and later scholarly discussion distinguish ornaments that emphasize a note from
+  melismatic additions within the melody. The app explicitly marks its plucked-string
+  exercise as a cross-instrument adaptation because clarinet blowing, glissando and
+  microtonal behavior cannot simply be renamed as bouzouki technique.
+- Iantheia Calhoun's 2022
+  [systematic vocalization study](https://eric.ed.gov/?id=EJ1367821) found significant
+  improvement in sung jazz-melody accuracy and self-efficacy; instrumental
+  improvisation gains were promising but not statistically conclusive. The app keeps
+  the claim at that strength and uses singing as a low-cost hear-first practice step,
+  not as proven mastery of improvisation.
+
+The index is organized by the player's decision—**Targets & cadences, Build a phrase,
+Touch/time/breath, Neck organization, and Dromos/form**—rather than by celebrity. A
+Chiotis, Pennanen, Pagiatis, Karantinis or other name can appear in more than one
+category only when a distinct documented observation produces a distinct practice
+job.
 
 ## Design commitments now
 

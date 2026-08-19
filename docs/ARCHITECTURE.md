@@ -7,8 +7,9 @@ not laziness: it was built on a machine with no Node, and it means the app opens
 double-clicking `index.html`, works offline, and will still run in ten years. Before
 adding a framework or a bundler, read NFR-01/02 in [REQUIREMENTS.md](REQUIREMENTS.md).
 
-Modules attach one global each (`window.Theory`, `window.Modes`, `window.Fretboard`,
-`window.AudioEngine`) and are loaded in dependency order by `index.html`.
+Modules attach one global each (`window.Theory`, `window.Modes`, `window.ChordMap`,
+`window.ChordPath`, `window.TacticalExamples`, `window.PickingLab`, `window.Fretboard`, `window.AudioEngine`, `window.PitchLab`) and
+are loaded in dependency order by `index.html`.
 
 ## Module map
 
@@ -19,9 +20,14 @@ index.html
   └─ js/theory.js   ──►  Theory     pure. the ii–V–I pivot CYCLE only
   └─ js/harmony-journey.js ► HarmonyJourney shared current/next sequence model
   └─ js/modes.js    ──►  Modes      pure. dromoi, spelling, progression banks
+  └─ js/chord-map.js ─►  ChordMap   pure. derived harmony + scale relationships
+  └─ js/chord-path.js►  ChordPath  pure. arpeggios, connectors, successors + doors
+  └─ js/tactical-examples.js ► TacticalExamples pure. sourced claims + generated drills
+  └─ js/picking-lab.js ► PickingLab pure. plectrum curriculum + event/run plans
   └─ js/triads.js   ──►  Triads     pure. inversion catalog + route optimizer
   └─ js/fretboard.js──►  Fretboard  grip finding + SVG rendering (DOM out only)
   └─ js/audio.js    ──►  AudioEngine Web Audio synth + bar transport
+  └─ js/pitch-lab.js──►  PitchLab   pure. YIN pitch detection + target scoring
   └─ js/app.js      ──►  (controller) state, views, wiring. the only place
                                      that knows about both music and DOM
 ```
@@ -29,6 +35,35 @@ index.html
 **Dependency rule:** `theory.js` and `modes.js` must never touch the DOM.
 `fretboard.js` never touches audio. `app.js` is the only module allowed to know
 about everything. Keeping this true is what makes the theory testable.
+
+`pitch-lab.js` is also pure: it accepts `Float32Array` samples and returns pitch,
+clarity, cents, and a target classification. Only `app.js` may request microphone
+permission, own a `MediaStream`, or update the DOM. The stream feeds an analyser
+but never the audio destination, so there is no monitor/feedback path. See
+[PITCH_SINGBACK_DECISION.md](PITCH_SINGBACK_DECISION.md).
+
+`chord-path.js` is the Matrix's evidence boundary. It may derive chord-tone cells,
+scale-neighbour connectors, instrument paths, and triad/seventh extensions, but a
+successor exists only when the same chord is followed by that chord in
+`Modes.PROGRESSIONS`. Mode/key doors reuse `ChordMap.relationships()` and state
+whether the sounding chord holds, its root holds while colour changes, or the
+explicit major-I-to-new-ii cycle rule applies. `app.js` renders and sounds this
+model; it must not add an unsupported route in player-facing copy.
+
+`tactical-examples.js` is the named-source evidence boundary. The source record says
+only what a publication documents; a separate builder creates the current
+tonic/dromos note path and practice instructions. The rendered page must always show
+both layers and the explicit “not a transcription” boundary. `toolkit.js` links each
+tool to one example ID, while `app.js` owns navigation, audio preview, and the handoff
+back into Solo. A citation must never be used as decoration for an invented lick.
+
+`picking-lab.js` applies the same boundary to plectrum technique. It stores what a
+source actually supports, the original Dromos drill built from that observation,
+stroke/ornament event plans, and measurable pass criteria. `practice.js` remains the
+single source for tuning-aware paths and crossing classification; `app.js` combines
+the two with the selected Greek pulse and current/next chord. This prevents a method
+catalogue entry or Pennanen's motor analysis from being misrepresented as a copied
+exercise or an artist transcription.
 
 ## The two engines
 
@@ -113,6 +148,17 @@ local profile namespaces the opaque Coach token and therefore has separate anony
 Neon history. This is not authentication or cloud sync; a future account system must
 validate provider identity server-side and explicitly claim anonymous history.
 
+## Teaching-header boundary
+
+`PageGuides` owns the learner-facing purpose, three actions, success check,
+plain-language reason, definitions, and first-control target for every workspace and
+meaningful sub-exercise. It is pure curriculum data and selection logic: it does not
+read the DOM or change practice state. `app.js` supplies the current view/subview and
+music context, renders the answer-first pyramid, and performs the optional
+“Show me where” focus movement. The outcome and complete action path remain visible;
+only definitions and basic control help live in a disclosure. This keeps educational
+copy testable and prevents individual pages from inventing incompatible onboarding.
+
 ## Audio
 
 `AudioEngine` renders a normalized **hybrid plucked string**: a Karplus–Strong
@@ -122,7 +168,8 @@ increases. High-pass cleanup, instrument-specific filtering, a dynamics compress
 and a conservative output stage protect against summed clipping. No samples, library,
 or network are required.
 
-Ear checks use a single warm guitar reference voice and chord cadences only, twice.
+Ear checks use a self-hosted, pitch-stable sampled piano reference and chord cadences
+only, twice, with an additive warm-keys fallback when samples are unavailable.
 The selected instrument still controls the visual/playable map; it does not change
 the Recall reference. Bass, percussion, and scale runs are off for ear questions.
 

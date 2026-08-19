@@ -17,7 +17,33 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-view="concepts"/);
   assert.match(html, /data-view="coach"/);
   assert.match(html, /data-view="video"/);
+  assert.match(html, /data-view="examples"/);
   assert.match(html, /data-view="chordmap"/);
+  assert.match(html, /data-view="melody"/);
+  assert.match(html, /data-nav="melody"/);
+  assert.match(html, /data-nav="picking"/);
+  assert.match(html, /id="pickingSetup"/);
+  assert.match(html, /id="panelPicking"/);
+  assert.match(html, /id="pickingExerciseRail"/);
+  assert.match(html, /id="pickingRunMap"/);
+  assert.match(html, /data-picking-run="loop"/);
+  assert.match(html, /data-picking-run="evolve"/);
+  assert.match(html, /id="tglPickingMetronome"/);
+  assert.match(html, /id="tglPickingCountIn"/);
+  assert.match(html, /id="pickingBpm"[^>]*min="40"[^>]*max="180"/);
+  assert.match(html, /js\/picking-lab\.js\?v=29/);
+  assert.match(read("js/picking-lab.js"), /Horizontal ↔ tiered A\/B/);
+  assert.match(read("js/picking-lab.js"), /not a .*transcription|not copied|not his prescribed exercise/i);
+  assert.match(html, /id="panelMelody"/);
+  assert.match(html, /id="melodyScaleRail"/);
+  assert.match(html, /id="melodyCandidates"/);
+  assert.match(html, /id="melodyNext"/);
+  assert.match(html, /id="melodyMoves"/);
+  assert.match(html, /js\/melody-harmony\.js\?v=27/);
+  assert.match(html, /id="btnSingStart"/);
+  assert.match(html, /id="singInputSel"/);
+  assert.match(html, /id="singGauge"/);
+  assert.match(html, /js\/pitch-lab\.js\?v=23/);
   assert.match(html, /data-nav="matrix"/);
   assert.match(html, /id="panelChordMap"/);
   assert.match(html, /id="chordMapRoad"/);
@@ -30,6 +56,8 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /Returns directly to home/,
     "the working-role legend must describe a direct return without overclaiming a formal cadence");
   assert.match(html, /js\/chord-map\.js\?v=17/);
+  assert.match(html, /js\/chord-path\.js\?v=25/);
+  assert.match(html, /js\/page-guides\.js\?v=29/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -69,6 +97,16 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="btnEarMapCheck"/);
   assert.match(html, /id="btnEarCheck"/);
   assert.match(html, /id="videoStudy"/);
+  assert.match(html, /id="panelExamples"/);
+  assert.match(html, /id="tacticalExamples"/);
+  assert.match(html, /js\/tactical-examples\.js\?v=27/);
+  assert.match(read("js/app.js"), /function renderTacticalExamples/);
+  assert.match(read("js/app.js"), /function tacticalInstrumentRoute/);
+  assert.match(read("js/app.js"), /Math\.min\(15, tuning\.frets\)/,
+    "tactical examples need a bounded route on the selected instrument");
+  assert.match(read("js/app.js"), /data-open-tactical-example/);
+  assert.match(read("js/tactical-examples.js"), /not a transcription/,
+    "generated tactical drills must not masquerade as a named player's lick");
   assert.match(read("js/coach.js"), /coachFreeTierConsent/);
   assert.match(read("api/release.js"), /VERCEL_GIT_COMMIT_SHA/);
   assert.match(html, /js\/profiles\.js/);
@@ -100,24 +138,40 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/app.js"), /function checkEarMap/);
   assert.match(read("js/ear-drills.js"), /harmonicMinor/);
   assert.match(read("js/app.js"), /function renderPageGuide/);
+  assert.match(read("js/app.js"), /Answer first/);
+  assert.match(read("js/app.js"), /Show me where/);
+  assert.match(read("js/page-guides.js"), /every guide has the full answer-first pyramid/);
   assert.match(read("js/app.js"), /function renderChordMap/);
+  assert.match(read("js/app.js"), /function renderChordPathInline/,
+    "clicking a Matrix chord must open the four-question chord path in its selected row");
+  assert.match(read("js/app.js"), /data-chord-path-lens/);
+  assert.match(read("js/app.js"), /data-chord-path-shape/);
+  assert.match(read("js/app.js"), /data-chord-path-approach/);
+  assert.match(read("js/app.js"), /data-chord-path-successor/);
+  assert.match(read("js/chord-path.js"), /Modes\.PROGRESSIONS|M\.PROGRESSIONS/,
+    "successor suggestions must come from the verified progression bank");
   assert.match(read("js/app.js"), /targetNowPcs: \[target\.pc\]/,
     "Chord Map must render the current R/3/5 target from the same derived chord used by audio");
   assert.match(read("js/app.js"), /AU\.playSequence\(chord\.notes, 0\.38\)/,
     "the visible R→3rd→5th sequence must be audible");
-  assert.match(read("js/app.js"), /function stopPlay\(\) \{[^}]*AU\.stopAll\(\);/,
+  assert.match(read("js/app.js"), /function stopPlay\(\) \{[\s\S]{0,700}AU\.stopAll\(\);/,
     "changing a drill must clear path timers and ringing voices as well as transport");
   assert.match(read("js/audio.js"), /function stopAll\(\)/);
+  assert.match(read("js/audio.js"), /countInBeats[\s\S]{0,900}o\.metronome/,
+    "picking runs need a cancel-safe count-in and metronome on the shared audio clock");
+  assert.match(read("js/app.js"), /PK\.buildPracticePlan/,
+    "Picking Loop and Evolve must share the tested pure run planner");
   assert.match(read("sw.js"), /fetch\(event\.request\)[\s\S]*caches\.match\(event\.request\)/,
     "online sessions must prefer the deployed app and use cache only as an offline fallback");
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "19"/,
+  assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
+  assert.match(read("api/release.js"), /appVersion: "29"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=19/);
+  assert.match(html, /css\/styles\.css\?v=29/);
   assert.match(html, /js\/fretboard\.js\?v=19/);
-  assert.match(html, /js\/app\.js\?v=19/);
+  assert.match(html, /js\/app\.js\?v=29/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.
@@ -177,4 +231,34 @@ test("the full fretboard never widens the page and folds on phones", () => {
   assert.doesNotMatch(css, /#fretboard[^{}]*\{[^}]*min-width:/);
   assert.match(read("js/fretboard.js"), /matchMedia\("\(max-width: 620px\)"\)/);
   assert.match(read("js/fretboard.js"), /data-neck-layout/);
+});
+
+test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
+  const app = read("js/app.js");
+  const toolkit = read("js/toolkit.js");
+  assert.match(app, /role="tab" aria-selected="\$\{p\.id === tk\.pillar\}" aria-controls="soloToolkitPanel" tabindex=/,
+    "pillar choices need complete tab semantics and roving focus");
+  assert.match(app, /role="toolbar" aria-label=/,
+    "tool choices are a toolbar, not a second incomplete tab interface");
+  assert.match(app, /requestAnimationFrame\(\(\) => focusToolkitControl/,
+    "a keyboard selection must restore focus after render replaces its source button");
+  assert.match(app, /data-tk-formula-slot/);
+  assert.match(app, /TK\.swapFormulaCard/,
+    "Formula Bank's promised card swap must be an actual interaction");
+  assert.doesNotMatch(toolkit, /map ghosts the shape/,
+    "Motif Ladder cannot promise a fretboard ghost that is not rendered");
+  assert.doesNotMatch(toolkit, /second voice is under your eyes/,
+    "Thirds Shadow must describe its written rail rather than imply a neck overlay");
+});
+
+test("Comp starts from a Greek pulse skeleton and transport actually enters the page", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  assert.match(html, /id="compSkeleton"/);
+  assert.match(app, /S\.compPlan\(state\.groove\.styleId, state\.triads\.rhythmLevel\)/);
+  assert.match(app, /data-comp-level/);
+  assert.match(app, /state\.view === "triads"[^]*pb = \{ kind: "triads"/,
+    "Play on Comp must start a real progression transport");
+  assert.match(app, /state\.view === "triads"[^]*updateCompPulse\(beatInBar\)/,
+    "transport must move a visible cursor through the selected pulse");
 });

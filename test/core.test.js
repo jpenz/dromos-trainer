@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/toolkit.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/picking-lab.js", "js/toolkit.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -158,6 +158,22 @@ test("the soloist toolkit is MECE, sourced, and never pretends to hear you", () 
     "Cadence Ramp is documented for major/minor taximia, not dromos-based ones");
 });
 
+test("every Solo Toolkit claim opens a source-bounded tactical example", () => {
+  const { SoloToolkit, TacticalExamples, Modes } = loadCore();
+  const linked = SoloToolkit.TOOLS.map((tool) => TacticalExamples.byId(tool.exampleId));
+  assert.ok(linked.every(Boolean), "each toolkit tool needs a real example record");
+  assert.equal(new Set(SoloToolkit.TOOLS.map((tool) => tool.exampleId)).size, SoloToolkit.TOOLS.length,
+    "tools should not collapse distinct teaching jobs into one generic example");
+  assert.ok(TacticalExamples.byId("pennanen-tactility"), "Pennanen's documented neck-tactility concept needs its own practical comparison");
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    TacticalExamples.available({ tonic, modeId, instrument: "Test" }).forEach((example) => {
+      assert.match(example.boundary, /not a transcription/i);
+      assert.ok(example.steps.length >= 3);
+      assert.ok(example.notes.every((note) => Number.isFinite(note.freq)));
+    });
+  }));
+});
+
 test("Greek style pulses are complete and never prescribe a dromos", () => {
   const { StyleLibrary } = loadCore();
   const zeibekiko = StyleLibrary.byId("zeibekiko");
@@ -165,6 +181,46 @@ test("Greek style pulses are complete and never prescribe a dromos", () => {
   assert.equal(StyleLibrary.beatMap(zeibekiko).length, 9);
   StyleLibrary.STYLES.forEach((style) => {
     assert.match(style.route, /dromos|Song Map/i, style.title + " must separate pulse from harmonic colour");
+  });
+});
+
+test("Comp curriculum stays skeleton-first across every Greek pulse preset", () => {
+  const { StyleLibrary } = loadCore();
+  assert.ok(StyleLibrary.byId("hasaposerviko"), "fast hasapiko needs its own selectable pulse preset");
+  StyleLibrary.STYLES.forEach((style) => {
+    [1, 2, 3].forEach((level) => {
+      const plan = StyleLibrary.compPlan(style.id, level);
+      assert.equal(plan.level, level);
+      assert.equal(plan.slots.length, plan.units, `${style.id} level ${level} covers every pulse unit`);
+      assert.ok(plan.slots.some((slot) => !["space", "free"].includes(slot.action)), `${style.id} level ${level} keeps audible anchors`);
+    });
+  });
+  const zeibekiko = StyleLibrary.compPlan("zeibekiko", 2);
+  assert.deepEqual(Array.from(zeibekiko.slots.filter((slot) => slot.action !== "space"), (slot) => slot.unit), [1, 3, 5, 7]);
+  assert.deepEqual(Array.from(zeibekiko.slots.slice(7), (slot) => slot.action), ["space", "space"], "the 8–9 tail must stay unfilled");
+  const hasapiko = StyleLibrary.compPlan("hasapiko", 2);
+  assert.deepEqual(Array.from(hasapiko.slots, (slot) => slot.action), ["bass", "chord", "walk", "chord"]);
+  const sparseTsifteteli = StyleLibrary.compPlan("tsifteteli", 1);
+  assert.deepEqual(Array.from(sparseTsifteteli.slots.filter((slot) => slot.action === "accent"), (slot) => slot.unit), [1, 4]);
+  const fullTsifteteli = StyleLibrary.compPlan("tsifteteli", 2);
+  assert.deepEqual(Array.from(fullTsifteteli.groups), [3, 3, 2]);
+  assert.equal(fullTsifteteli.units, 8, "3+3+2 is a separate eight-subdivision level, not the sparse 1/4 stress");
+});
+
+test("Solo Road discloses exactly what is and is not modelled descending", () => {
+  const { Modes } = loadCore();
+  Modes.MODE_ORDER.forEach((modeId) => {
+    const policy = Modes.movementPolicy(modeId);
+    assert.ok(policy.label && policy.detail);
+    if (modeId === "ousak") {
+      assert.equal(policy.status, "verified-mobile");
+      assert.match(policy.detail, /ascending options/i);
+      assert.match(policy.detail, /descending trainer returns through the core/i);
+    } else {
+      assert.equal(policy.status, "fixed-collection");
+      assert.match(policy.detail, /same declared .* ascending and descending/i);
+      assert.match(policy.detail, /No additional directional form/i);
+    }
   });
 });
 
@@ -239,6 +295,69 @@ test("Chord Map labels prominence as trainer evidence, not a genre claim", () =>
   assert.match(ousakSecond.practiceNote, /fixed-fret harmony/i);
 });
 
+test("Chord Path stays instrument-playable, scale-locked, and evidence-bound for every Matrix degree at both depths", () => {
+  const { Modes, ChordMap, ChordPath, Tuning } = loadCore();
+  const restore = Tuning.currentId();
+  const toneKey = (chord, depth) => chord.notes.slice(0, depth === "seventh" ? 4 : 3)
+    .map((note) => note.pc).sort((a, b) => a - b).join(",");
+  let chordsChecked = 0;
+  let routesChecked = 0;
+
+  ["triad", "seventh"].forEach((depth) => Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    const scalePcs = new Set(Modes.scaleOf(tonic, modeId).map((note) => note.pc));
+    ChordMap.harmonize(tonic, modeId, depth).forEach((chord) => {
+      const plan = ChordPath.build(tonic, modeId, chord, depth, 1);
+      assert.equal(plan.arpeggios.length, 3, `${tonic} ${modeId} ${chord.symbol} needs three chord-tone cells`);
+      assert.equal(plan.approaches.length, 3, `${tonic} ${modeId} ${chord.symbol} needs three connector choices`);
+      plan.approaches.forEach((approach) => {
+        assert.ok(approach.notes.every((note) => scalePcs.has(note.pc)), `${approach.label} must stay inside ${tonic} ${modeId}`);
+        assert.equal(approach.notes.at(-1).pc, chord.notes[1].pc, `${approach.label} must land on the selected 3rd`);
+      });
+      assert.equal(plan.extension.chord.degreeIndex, chord.degreeIndex, "triad/seventh enhancement stays on the selected scale degree");
+
+      plan.successors.forEach((successor) => {
+        successor.maps.forEach((evidence) => {
+          const progression = Modes.PROGRESSIONS[modeId].find((item) => item.id === evidence.id);
+          assert.ok(progression, `${successor.chord.symbol} needs a real progression source`);
+          const sequence = ChordPath.progressionChords(tonic, modeId, progression, depth);
+          assert.ok(sequence.some((candidate, index) => index < sequence.length - 1 &&
+            toneKey(candidate, depth) === toneKey(chord, depth) &&
+            toneKey(sequence[index + 1], depth) === toneKey(successor.chord, depth)),
+          `${chord.symbol} → ${successor.chord.symbol} must be exact adjacency in ${progression.id}`);
+          routesChecked++;
+        });
+      });
+
+      plan.doors.forEach((door) => {
+        const target = ChordMap.harmonize(door.tonic, door.modeId, depth)[door.targetDegree];
+        assert.equal(toneKey(target, depth), toneKey(door.targetChord, depth), "a door opens the exact chord it describes");
+        if (door.kind === "pivot") assert.equal(toneKey(chord, depth), toneKey(door.targetChord, depth), "a pivot must hold the same sounding chord");
+        if (door.kind === "recolour") assert.equal(chord.rootPc, door.targetChord.rootPc, "a recolour door keeps the root");
+        if (door.kind === "role-change") {
+          assert.equal(modeId, "major");
+          assert.equal(chord.degreeIndex, 0);
+          assert.equal(door.targetDegree, 1);
+        }
+      });
+      chordsChecked++;
+    });
+  })));
+
+  Tuning.TUNINGS.forEach((tuning) => {
+    Tuning.set(tuning.id);
+    const chord = ChordMap.harmonize("D", "hijaz")[0];
+    ChordPath.approaches("D", "hijaz", chord, 1).forEach((approach) => {
+      const path = ChordPath.instrumentPath(approach.notes);
+      assert.ok(path, `${approach.label} needs a path on ${tuning.name}`);
+      assert.ok(path.frets.every((fret) => fret >= 0 && fret <= 15), `${tuning.name} connector stays at fret 15 or below`);
+      assert.equal(new Set(path.placements.map((placement) => placement.stringIndex)).size, 1, `${tuning.name} connector stays on one course`);
+    });
+  });
+  Tuning.set(restore);
+  assert.equal(chordsChecked, 840);
+  assert.ok(routesChecked > 0);
+});
+
 test("Harmony Matrix derives truthful seventh chords for all 60 key-scale rows", () => {
   const { Modes, ChordMap, Tuning, Fretboard } = loadCore();
   const intervalByRole = { R: 0, b3: 3, 3: 4, b5: 6, 5: 7, "#5": 8, bb7: 9, b7: 10, 7: 11 };
@@ -277,6 +396,56 @@ test("Harmony Matrix separates working roles from derived harmony", () => {
   assert.equal(major[2].workingRole.id, "derived", "iii stays visible without being promoted to a documented working chord");
   const naturalMinor = ChordMap.harmonize("D", "minor");
   assert.equal(naturalMinor[6].workingRole.id, "cadence", "natural-minor ♭VII resolves into i in the verified maps");
+});
+
+test("Melody Harmony separates note identity, lawful chord membership, and route evidence", () => {
+  const { Modes, MelodyHarmony } = loadCore();
+  let prompts = 0;
+  Modes.TONICS.forEach((tonic) => Modes.MODE_ORDER.forEach((modeId) => {
+    for (let degreeIndex = 0; degreeIndex < 7; degreeIndex++) {
+      const prompt = MelodyHarmony.buildPrompt({ tonic, modeId, degreeIndex, depth: "triad" });
+      assert.equal(prompt.note.pc, prompt.scale[degreeIndex].pc);
+      assert.equal(prompt.candidates.length, 3, `${tonic} ${modeId} degree ${degreeIndex + 1} belongs to three stacked triads`);
+      prompt.candidates.forEach((candidate) => {
+        assert.ok(candidate.chord.notes.some((note) => note.pc === prompt.note.pc),
+          `${candidate.chord.symbol} must actually contain the heard pitch`);
+        candidate.successors.forEach((successor) => successor.routes.forEach((route) => {
+          const progression = Modes.PROGRESSIONS[modeId].find((item) => item.id === route.id);
+          assert.ok(progression.chords.some(([offset], index) =>
+            offset === candidate.chord.scaleNote.off && progression.chords[(index + 1) % progression.chords.length][0] === successor.nextOffset),
+          `${candidate.chord.roman} → ${successor.chord.degreeLabel} must be an exact trainer-map adjacency`);
+        }));
+      });
+      prompts++;
+    }
+  }));
+  assert.equal(prompts, 420);
+});
+
+test("Melody Harmony counter-lines stay audible and disclose unsupported routes", () => {
+  const { MelodyHarmony } = loadCore();
+  const prompt = MelodyHarmony.buildPrompt({ tonic: "D", modeId: "hijaz", degreeIndex: 2 });
+  assert.equal(prompt.note.name, "F♯");
+  assert.equal(prompt.note.degree, "3");
+  const derived = prompt.candidates.find((candidate) => candidate.chord.degreeIndex === 2);
+  assert.equal(derived.evidenceKind, "derived-only");
+  assert.equal(derived.successors.length, 0, "the app must not invent a next chord for Hijaz iii°");
+  const home = prompt.candidates.find((candidate) => candidate.chord.degreeIndex === 0);
+  const successor = home.successors[0];
+  const moves = MelodyHarmony.enhancementMoves(prompt, home, successor);
+  assert.ok(moves.some((move) => move.id === "guide-thread"));
+  assert.ok(moves.some((move) => move.id === "third-shadow"));
+  moves.forEach((move) => move.notes.forEach((note) => {
+    assert.ok(Number.isFinite(note.midi));
+    assert.ok(Number.isFinite(note.freq));
+  }));
+
+  const ousakHome = MelodyHarmony.buildPrompt({ tonic: "A", modeId: "ousak", degreeIndex: 0 });
+  const ousakCandidate = ousakHome.candidates.find((candidate) => candidate.chord.degreeIndex === 0);
+  const ousakMove = MelodyHarmony.enhancementMoves(ousakHome, ousakCandidate, ousakCandidate.successors[0])
+    .find((move) => move.id === "guide-thread");
+  assert.equal(ousakMove.notes[1].name, "B♭", "A should take the half-step into the next B♭ chord, not leap to its 3rd");
+  assert.match(ousakMove.label, /nearest chord tone/i);
 });
 
 test("Harmony Matrix scale doors state exact, parallel, and cycle evidence", () => {
