@@ -183,11 +183,12 @@ test("the installable app shell links its offline assets", () => {
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
   assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "32"/,
+  assert.match(read("api/release.js"), /appVersion: "33"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=32/);
-  assert.match(html, /js\/fretboard\.js\?v=31/);
-  assert.match(html, /js\/app\.js\?v=32/);
+  assert.match(html, /css\/styles\.css\?v=33/);
+  assert.match(html, /js\/fretboard\.js\?v=33/);
+  assert.match(html, /js\/audio\.js\?v=33/);
+  assert.match(html, /js\/app\.js\?v=33/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.
@@ -208,6 +209,8 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
   const css = read("css/styles.css");
   assert.match(app, /solo: \{ section: "targets", focus: "third"/,
     "the first Solo experience must target each chord's actual 3rd");
+  assert.match(app, /neckZone: "both", allTargets: true/,
+    "the default Solo lesson must expose the target in both halves of the neck");
   assert.match(app, /class="solo-neck-hud"/);
   assert.match(app, /Play now · \$\{escapeHtml\(cur\.degreeLabel\)\}/);
   assert.match(app, /Prepare next · \$\{escapeHtml\(next\.degreeLabel\)\}/);
@@ -222,20 +225,65 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
     "the scale layer must not repaint a scale degree over a chord-role target");
   assert.match(app, /nextGrip: layers\.next \? nextGrip : null/,
     "the coming chord must be a complete playable dashed triad, not only a text label");
-  assert.match(app, /targetScope: "positions"/);
-  assert.match(app, /targetNowPlacements: currentTargetPlacements/);
-  assert.match(app, /targetNextPlacements: layers\.next \? nextTargetPlacements : \[\]/);
+  assert.match(app, /targetNotes: state\.solo\.section === "targets" && state\.solo\.allTargets \? targetNotes : null/);
+  assert.match(app, /targetScope: state\.solo\.allTargets \? "all" : "positions"/);
+  assert.match(app, /targetNowPlacements: state\.solo\.allTargets \? null : currentTargetPlacements/);
+  assert.match(app, /targetNextPlacements: state\.solo\.allTargets \? null : layers\.next \? nextTargetPlacements : \[\]/);
   assert.match(fretboard, /nowPositionSet\.has\(key\)/);
   assert.match(fretboard, /nextPositionSet\.has\(key\)/,
-    "Now/Next rings must be limited to the selected playable addresses");
+    "shape-only mode must still limit rings to the selected playable addresses");
+  assert.match(app, /data-solo-neck-zone="\$\{id\}"/);
+  assert.match(app, /function applySoloNeckFocus/);
+  assert.match(fretboard, /for \(let row = 0; row < ROWS; row\+\+\)/,
+    "the nearest-target tracer must repeat in both rendered neck rows");
   assert.match(app, /state\.solo\.layers\.scale = key === "scale"/);
   assert.match(app, /state\.solo\.layers\.pentatonic = key === "pentatonic"/,
     "full scale and pentatonic must be clear alternative backgrounds");
   assert.match(css, /body\[data-view="solo"\]\[data-solo-section="targets"\] main \{ width: min\(1360px, 100%\)/);
   assert.match(css, /\.solo-neck-hud\.lean-phase/,
     "the next target must receive a visible pre-arrival state");
+  assert.match(css, /\.solo-neck-zones/);
+  assert.match(css, /\.fb-dot\.neck-muted/);
   assert.match(css, /svg\.lean-phase \.fb-dot\.next-shape/,
     "the complete coming triad must brighten before the chord boundary");
+});
+
+test("Picking articulation and Harmony references use separate honest voices", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  const audio = read("js/audio.js");
+  assert.match(html, /value="bouzouki" selected>Bouzouki pick · clear paired courses/);
+  assert.doesNotMatch(html, /value="clean">Clean guitar/);
+  assert.doesNotMatch(html, /value="auto">Match selected instrument/);
+  assert.match(app, /picking: \{[^}]*voice: "bouzouki"/);
+  assert.match(app, /function pickingReferenceVoice/);
+  assert.match(app, /function playPickingSoundCheck/);
+  assert.match(audio, /paired\.detune\.setValueAtTime\(3\.8, when\)/,
+    "the practice pluck needs a short paired-course attack, not reverb or a drone");
+  assert.match(audio, /function trainingNoteDuration/);
+});
+
+test("Harmony progression workout transposes verified modal routes", () => {
+  const app = read("js/app.js");
+  assert.match(app, /function cycleCompingEntries/);
+  assert.match(app, /const PRACTICE_KEY_OFFSETS = \[0, 5, 10, 3, 8, 1\]/);
+  assert.match(app, /id="cycleWorkoutTonic"/);
+  assert.match(app, /Why this route:/);
+  assert.match(app, /Same Greek\/modal route, transposed by fourths/);
+  assert.match(app, /journey\.label = "Progression workout"/,
+    "the Now card must not mislabel a modal workout as Song Map");
+  assert.match(app, /Course-safe 4/,
+    "non-guitar instruments must not receive six-string guitar grips");
+});
+
+test("focus colours retain labels, shape cues, and readable secondary text", () => {
+  const css = read("css/styles.css");
+  assert.match(css, /--bg: #0F1418/);
+  assert.match(css, /--text: #F7F4EC/);
+  assert.match(css, /--muted: rgba\(247, 244, 236, 0\.78\)/);
+  assert.match(css, /--faint: rgba\(247, 244, 236, 0\.64\)/);
+  assert.match(css, /\.dot-next-ring[^}]*stroke-dasharray/,
+    "Next must remain dashed so timing is not encoded by colour alone");
 });
 
 test("the full fretboard never widens the page and folds on phones", () => {

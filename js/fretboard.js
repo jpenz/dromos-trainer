@@ -447,24 +447,30 @@
       const fromFret = Math.max(0, range.from == null ? 0 : range.from);
       const toFret = Math.min(N_FRETS, range.to == null ? N_FRETS : range.to);
       for (let s = 0; s < NSTR; s++) {
-        let best = null;
-        for (let fa = fromFret; fa <= toFret; fa++) {
-          if ((((OPEN[s] + fa) % 12) + 12) % 12 !== opts.tracer.fromPc) continue;
-          for (let fb = fromFret; fb <= toFret; fb++) {
-            if ((((OPEN[s] + fb) % 12) + 12) % 12 !== opts.tracer.toPc) continue;
-            const span = Math.abs(fb - fa);
-            if (span >= 1 && span <= 3 && (!best || span < best.span)) best = { fa, fb, span };
+        // The 24-fret neck is rendered in two rows. Teach the same nearest-note
+        // motion in each row instead of drawing one example near fret 5 and
+        // leaving the second octave visually unexplained.
+        for (let row = 0; row < ROWS; row++) {
+          const rowFrom = Math.max(fromFret, row === 0 ? 0 : row * FRETS_PER_ROW + 1);
+          const rowTo = Math.min(toFret, (row + 1) * FRETS_PER_ROW);
+          let best = null;
+          for (let fa = rowFrom; fa <= rowTo; fa++) {
+            if ((((OPEN[s] + fa) % 12) + 12) % 12 !== opts.tracer.fromPc) continue;
+            for (let fb = rowFrom; fb <= rowTo; fb++) {
+              if ((((OPEN[s] + fb) % 12) + 12) % 12 !== opts.tracer.toPc) continue;
+              const span = Math.abs(fb - fa);
+              if (span >= 1 && span <= 3 && (!best || span < best.span)) best = { fa, fb, span };
+            }
           }
+          if (!best) continue;
+          const y = yForString(LAST - s, best.fa) - 20;
+          const xa = best.fa === 0 ? GEO.padL : xForFret(best.fa);
+          const xb = best.fb === 0 ? GEO.padL : xForFret(best.fb);
+          const x1 = opts.lefty ? width - xa : xa;
+          const x2 = opts.lefty ? width - xb : xb;
+          g.appendChild(el("line", { x1, y1: y, x2, y2: y, class: "tracer-line" }));
+          g.appendChild(el("text", { x: x2, y: y + 3, "text-anchor": "middle", class: "tracer-head" }, x2 >= x1 ? "▸" : "◂"));
         }
-        if (!best) continue;
-        if (fretRow(best.fa) !== fretRow(best.fb)) continue;
-        const y = yForString(LAST - s, best.fa) - 20;
-        const xa = best.fa === 0 ? GEO.padL : xForFret(best.fa);
-        const xb = best.fb === 0 ? GEO.padL : xForFret(best.fb);
-        const x1 = opts.lefty ? width - xa : xa;
-        const x2 = opts.lefty ? width - xb : xb;
-        g.appendChild(el("line", { x1, y1: y, x2, y2: y, class: "tracer-line" }));
-        g.appendChild(el("text", { x: x2, y: y + 3, "text-anchor": "middle", class: "tracer-head" }, x2 >= x1 ? "▸" : "◂"));
       }
     }
 

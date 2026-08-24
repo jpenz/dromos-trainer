@@ -41,7 +41,7 @@
     // --- triads ---
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true, rhythmLevel: 1 },
     // --- solo lab ---
-    solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [],
+    solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [], neckZone: "both", allTargets: true,
       // Soloist Toolkit (FR-58): active pillar/tool and the phrase-arc phase.
       toolkit: { pillar: "land", toolId: "arrivals", phase: 0, formulaDeck: [0, 1, 2, 3] },
       // visual layers on the Changes map: the scale road and the targets are
@@ -66,7 +66,7 @@
       variant: "alternate",
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
-      runIndex: null, activeSegment: null
+      runIndex: null, activeSegment: null, voice: "bouzouki"
     },
     // --- shared ---
     labelMode: "interval",
@@ -98,19 +98,25 @@
   function loadUiPreferences() {
     try {
       const raw = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || "{}");
-      if (["studio", "clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
+      // Old modeled clean/match voices migrate to the reliable piano. Picking
+      // has its own short paired-course voice and no longer changes harmony.
+      if (["studio", "piano"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
+      if (["bouzouki", "studio", "piano"].includes(raw.pickingVoice)) state.picking.voice = raw.pickingVoice;
       if (typeof raw.pickupV2 === "boolean") state.pickupV2 = raw.pickupV2;
       if ([1, 3, 6].includes(raw.gymKeys)) state.gym.keys = raw.gymKeys;
       if (typeof raw.gymSkeleton === "boolean") state.gym.skeleton = raw.gymSkeleton;
     } catch { /* first run or blocked storage */ }
   }
   function saveUiPreferences() {
-    try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickupV2: state.pickupV2, gymKeys: state.gym.keys, gymSkeleton: state.gym.skeleton })); } catch { /* private mode */ }
+    try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickingVoice: state.picking.voice, pickupV2: state.pickupV2, gymKeys: state.gym.keys, gymSkeleton: state.gym.skeleton })); } catch { /* private mode */ }
   }
-  // "studio" is a real sampled piano reference; "piano" is the zero-network
-  // additive fallback; "auto" matches the selected instrument.
+  // Harmony keeps a pitch-stable piano. Technique defaults to a short paired-
+  // course pluck so attack timing is audible without changing ear-test timbre.
   function chordReferenceVoice() {
-    return state.chordVoice === "studio" ? "studio" : state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
+    return state.chordVoice === "piano" ? "piano" : "studio";
+  }
+  function pickingReferenceVoice() {
+    return ["studio", "piano"].includes(state.picking.voice) ? state.picking.voice : "bouzouki";
   }
 
   function updateAudioReadyStatus(status, message) {
@@ -124,14 +130,14 @@
     });
   }
 
-  async function readyPracticeAudio(loadSelectedVoice) {
+  async function readyPracticeAudio(referenceVoice) {
     updateAudioReadyStatus({ state: "starting", ready: false, studio: AU.studioStatus() }, "Starting audio…");
     const running = await AU.ensureRunning();
     if (!running) {
       updateAudioReadyStatus(AU.audioStatus(), "Audio is blocked · tap Test sound again");
       return false;
     }
-    if (loadSelectedVoice && chordReferenceVoice() === "studio") {
+    if (referenceVoice === "studio") {
       updateAudioReadyStatus({ state: "running", ready: true, studio: "loading" });
       await AU.prepareStudioPiano();
     }
@@ -141,10 +147,18 @@
 
   async function playSoundCheck() {
     stopPlay();
-    if (!await readyPracticeAudio(true)) return;
     const voice = chordReferenceVoice();
+    if (!await readyPracticeAudio(voice)) return;
     AU.playSequence([60, 64, 67, 72].map((midi) => ({ freq: T.midiToFreq(midi) })), 0.22, undefined, voice);
-    updateAudioReadyStatus(AU.audioStatus(), `${voice === "studio" ? "Sampled piano" : voice === "piano" ? "Warm keys" : voice === "guitar" ? "Clean guitar" : "Instrument voice"} playing`);
+    updateAudioReadyStatus(AU.audioStatus(), `${voice === "studio" ? "Sampled piano" : "Warm keys"} playing`);
+  }
+
+  async function playPickingSoundCheck() {
+    stopPlay();
+    const voice = pickingReferenceVoice();
+    if (!await readyPracticeAudio(voice)) return;
+    AU.playSequence([62, 64, 65, 67, 69, 70, 72, 74].map((midi) => ({ freq: T.midiToFreq(midi) })), 0.18, undefined, voice);
+    updateAudioReadyStatus(AU.audioStatus(), `${voice === "bouzouki" ? "Bouzouki pick" : voice === "studio" ? "Sampled piano" : "Warm keys"} playing · separate attacks`);
   }
   const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -515,10 +529,46 @@
     });
   }
 
+  function renderProgressionWorkoutRoadmap(entries, cursor) {
+    const root = $("cycleRoadmap");
+    if (!root || !entries.length) return;
+    const count = Math.min(6, entries.length);
+    const visible = Array.from({ length: count }, (_, offset) => entries[(cursor + offset) % entries.length]);
+    root.classList.remove("hidden");
+    root.innerHTML = `<header><div><span>Progression roadmap · next ${count}</span><b>Same Greek/modal route, transposed by fourths</b></div><p>Orange is sounding · turquoise is next · the key label changes only at a complete progression boundary.</p></header>
+      <div class="cycle-roadmap-grid">${visible.map((entry, offset) => `<button data-cycle-workout-step="${entries.indexOf(entry)}" class="roadmap-chord${offset === 0 ? " now" : ""}${offset === 1 ? " next" : ""}">
+        <span>${offset === 0 ? "Now" : offset === 1 ? "Next" : `+${offset}`} · key ${escapeHtml(entry.tonic)}</span><strong>${escapeHtml(entry.chord.degreeLabel)}</strong><b>${escapeHtml(entry.chord.symbol)}</b><small>${escapeHtml(M.MODES[state.modeId].name)} · ${escapeHtml(currentProgression().prog.label)}</small></button>`).join("")}</div>`;
+    root.querySelectorAll("[data-cycle-workout-step]").forEach((button) => button.onclick = () => {
+      stopPlay(); state.cycleComping.step = +button.getAttribute("data-cycle-workout-step"); state.cycleComping.voicingIndex = 0; renderCycle(); auditionCurrent("block");
+    });
+  }
+
   // The gym's playable sequence: keys*3 chords starting at the current key
   // group, wrapping around the six-key wheel.
   function gymSequence(idx) {
     return HJ.sequenceForKeyCount(state.gym.anchor == null ? idx : state.gym.anchor, cycle, state.gym.keys);
+  }
+
+  // Progression workouts move by fourths: a standard transposition route that
+  // keeps the selected Greek/modal progression intact instead of pretending
+  // every map has the major ii-V-I pivot's special whole-step modulation.
+  const PRACTICE_KEY_OFFSETS = [0, 5, 10, 3, 8, 1];
+  function practiceTonicAt(startTonic, offset) {
+    const pc = (M.parseName(startTonic).pc + offset + 12) % 12;
+    return M.TONICS.find((name) => M.parseName(name).pc === pc) || startTonic;
+  }
+  function cycleCompingEntries() {
+    const count = Math.max(1, Math.min(state.gym.keys, PRACTICE_KEY_OFFSETS.length));
+    const entries = [];
+    PRACTICE_KEY_OFFSETS.slice(0, count).forEach((offset, keyIndex) => {
+      const tonic = practiceTonicAt(state.tonic, offset);
+      const built = M.buildProgression(tonic, state.modeId, state.progId);
+      built.chords.forEach((chord, chordIndex) => entries.push({
+        keyIndex, chordIndex, tonic,
+        chord: Object.assign({}, chord, { key: tonic })
+      }));
+    });
+    return entries;
   }
 
   function songJourney(chords, step) {
@@ -553,7 +603,14 @@
 
   function cycleChordVoicings(chord) {
     const kind = state.cycleComping.kind;
-    if (kind === "full") return GV ? GV.fullVoicings(chord) : [];
+    // Six-string CAGED/barre forms are useful on guitar, but they are not a
+    // valid visual answer for a three- or four-course instrument. Bouzouki and
+    // laouto use a course-safe four-note search instead of silently drawing a
+    // guitar grip with impossible string indexes.
+    if (kind === "full") {
+      const isGuitar = /^guitar/.test(window.Tuning.currentId());
+      return isGuitar && GV ? GV.fullVoicings(chord) : compactFourVoicings(chord);
+    }
     if (kind === "triad") {
       const triadId = TR.TRIAD_OF[chord.quality] || "maj";
       return TR.allShapes(chord.rootPc, triadId, spellPc)
@@ -570,32 +627,48 @@
     if (c.focus !== "chords") { root.innerHTML = ""; return; }
     const mode = M.MODES[state.modeId];
     const progressions = M.PROGRESSIONS[state.modeId];
-    const { chords, prog } = currentProgression();
+    const { prog } = currentProgression();
+    const entries = cycleCompingEntries();
+    const chords = entries.map((entry) => entry.chord);
     c.step = Math.min(c.step, chords.length - 1);
-    const chord = chords[c.step];
+    const entry = entries[c.step];
+    const chord = entry.chord;
     const voicings = cycleChordVoicings(chord);
     c.voicingIndex = Math.min(c.voicingIndex, Math.max(0, voicings.length - 1));
+    const isGuitar = /^guitar/.test(window.Tuning.currentId());
     const kindCopy = {
-      full: ["Full 6", "open + E/A-family"],
+      full: isGuitar ? ["Full 6", "open + E/A-family"] : ["Course-safe 4", "playable on this tuning"],
       triad: ["Triad 3", "nearest 3-string forms"],
       four: ["Compact 4", "root + colour + guide"]
     };
     root.innerHTML = `
-      <p class="cycle-voicing-help"><b>Practical guitar chords:</b> choose the actual dromos progression, then select a full/open form, a triad, or a compact four-note voicing. The selected form stays at fret 15 or below.</p>
+      <p class="cycle-voicing-help"><b>Progression workout:</b> choose a key, dromos, and common route. One key learns the sound; three or six transpose the same route by fourths. The original ii–V–I wheel remains in Voice-led triad route.</p>
+      <div class="cycle-workout-key"><label for="cycleWorkoutTonic">Starting key<select id="cycleWorkoutTonic">${M.TONICS.map((tonic) => `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label><span>${state.gym.keys} key${state.gym.keys === 1 ? "" : "s"} · same progression</span></div>
       <span class="panel-label">Dromos · ${mode.name} ${mode.greek}</span>
       <div class="cycle-mode-grid">${M.MODE_ORDER.map((modeId) => `<button data-cycle-chord-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}">${M.MODES[modeId].name}</button>`).join("")}</div>
       <div class="cycle-progression-list">${progressions.map((item) => `<button data-cycle-prog="${item.id}" class="${item.id === prog.id ? "active" : ""}"><b>${item.label}</b><span>${item.tag}</span></button>`).join("")}</div>
+      <p class="cycle-voicing-help"><b>Why this route:</b> ${escapeHtml(prog.why)}</p>
+      <div class="cycle-key-route" aria-label="Progression transposition route">${Array.from(new Set(entries.map((item) => item.tonic))).map((tonic, keyIndex) => `<button data-cycle-workout-key="${keyIndex}" class="${keyIndex === entry.keyIndex ? "active" : ""}"><i>${keyIndex + 1}</i><b>${tonic}</b><span>${escapeHtml(prog.label)}</span></button>`).join("")}</div>
       <span class="panel-label">Voicing weight</span>
       <div class="cycle-voice-kinds">${Object.entries(kindCopy).map(([id, [label, detail]]) => `<button data-cycle-voice-kind="${id}" class="${id === c.kind ? "active" : ""}"><b>${label}</b><span>${detail}</span></button>`).join("")}</div>
-      <div class="cycle-chord-steps">${chords.map((item, index) => `<button data-cycle-chord-step="${index}" class="${index === c.step ? "active" : ""}"><i>${item.degreeLabel}</i><b>${item.symbol}</b></button>`).join("<span class=\"pchip-arrow\">→</span>")}</div>
+      <div class="cycle-chord-steps">${entries.map((item, index) => `<button data-cycle-chord-step="${index}" class="${index === c.step ? "active" : ""}"><i>${item.chord.degreeLabel}</i><b>${item.chord.symbol}</b><span>${item.tonic}</span></button>`).join("<span class=\"pchip-arrow\">→</span>")}</div>
       ${voicings.length ? `<div class="cycle-voicing-options">${voicings.map((item, index) => `<button data-cycle-voicing="${index}" class="${index === c.voicingIndex ? "active" : ""}"><b>${item.label}</b><span>${item.family} · frets ${item.lowFret}–${item.highFret || Math.max(...item.placements.map((placement) => placement.fret))}</span></button>`).join("")}</div>` : `<p class="cycle-voicing-help"><b>No six-string full form is defined for ${chord.symbol}.</b> Use Compact 4: it keeps the chord's defining tones without inventing an awkward barre.</p>`}
       <p class="cycle-voicing-help">Hear/think: roots locate the chord, 3rds name major or minor colour, and 7ths carry dominant pull. Prefer the smallest useful move; a full shape is an option, not a requirement.</p>`;
+    $("cycleWorkoutTonic").onchange = (event) => {
+      stopPlay(); state.tonic = event.target.value; c.step = 0; c.voicingIndex = 0; persistPreferences(); renderCycle();
+    };
     root.querySelectorAll("[data-cycle-chord-mode]").forEach((button) => button.onclick = () => {
       stopPlay(); state.modeId = button.getAttribute("data-cycle-chord-mode"); state.progId = M.PROGRESSIONS[state.modeId][0].id;
       state.progStep = 0; c.step = 0; c.voicingIndex = 0; renderCycle();
     });
     root.querySelectorAll("[data-cycle-prog]").forEach((button) => button.onclick = () => {
       stopPlay(); state.progId = button.getAttribute("data-cycle-prog"); state.progStep = 0; c.step = 0; c.voicingIndex = 0; renderCycle();
+    });
+    root.querySelectorAll("[data-cycle-workout-key]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const keyIndex = +button.getAttribute("data-cycle-workout-key");
+      const target = entries.findIndex((item) => item.keyIndex === keyIndex);
+      c.step = Math.max(0, target); c.voicingIndex = 0; renderCycle(); auditionCurrent("block");
     });
     root.querySelectorAll("[data-cycle-voice-kind]").forEach((button) => button.onclick = () => {
       stopPlay(); c.kind = button.getAttribute("data-cycle-voice-kind"); c.voicingIndex = 0; renderCycle();
@@ -712,11 +785,13 @@
   }
 
   function renderCycleComping() {
-    $("cycleRoadmap").classList.add("hidden");
-    const { chords } = currentProgression();
+    const entries = cycleCompingEntries();
+    const chords = entries.map((entry) => entry.chord);
     const c = state.cycleComping;
+    c.step = Math.min(c.step, Math.max(0, chords.length - 1));
     const chord = chords[Math.min(c.step, chords.length - 1)];
     const journey = songJourney(chords, c.step);
+    journey.label = "Progression workout";
     const voicings = cycleChordVoicings(chord);
     const voicing = voicings[c.voicingIndex];
     const nextVoicings = journey.next ? cycleChordVoicings(journey.next.chord) : [];
@@ -725,13 +800,15 @@
       FB.render(svg(), { labelMode: state.labelMode, lefty: state.lefty });
       $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span></div><div class="ro-foot">Full/open forms are a guitar-specific vocabulary. Switch to guitar for six-string forms, or choose Compact 4 for a playable chord-tone set on this tuning.</div>`;
       renderChangeGuide(journey, null, nextVoicing);
+      renderProgressionWorkoutRoadmap(entries, c.step);
       return;
     }
     FB.render(svg(), { grip: { placements: voicing.placements }, nextGrip: nextVoicing ? { placements: nextVoicing.placements } : null, labelMode: state.labelMode, lefty: state.lefty, flavourPcs: M.flavourPcs(state.tonic, state.modeId) });
-    svg().setAttribute("aria-label", `guitar ${voicing.label} for ${chord.symbol}`);
+    svg().setAttribute("aria-label", `${window.Tuning.current().name} ${voicing.label} for ${chord.symbol} in key ${entries[c.step].tonic}`);
     const tones = voicing.placements.slice().reverse().map((placement) => `<div class="note-chip held" data-group="${placement.note.colorGroup}"><span class="chip-role">${placement.note.roleLabel}</span><span class="chip-name">${placement.note.name}</span><span class="chip-tag">fret ${placement.fret}</span></div>`).join("");
-    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span><span class="ro-key">${voicing.label}</span></div><div class="tri-tags"><span class="tri-set">${voicing.family}</span><span class="tri-fret">frets ${voicing.lowFret}–${voicing.highFret || Math.max(...voicing.placements.map((placement) => placement.fret))}</span></div><div class="ro-notes">${tones}</div><div class="ro-foot">Play the lowest note as a bass cue, then listen for the 3rd${chord.notes.some((note) => note.role === "7" || note.role === "b7") ? " and 7th" : ""}. On the next chord, keep common tones and move the remaining voice by the shortest musical distance.</div>`;
+    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span><span class="ro-key">key ${entries[c.step].tonic} · ${voicing.label}</span></div><div class="tri-tags"><span class="tri-set">${voicing.family}</span><span class="tri-fret">frets ${voicing.lowFret}–${voicing.highFret || Math.max(...voicing.placements.map((placement) => placement.fret))}</span></div><div class="ro-notes">${tones}</div><div class="ro-foot">Play the lowest note as a bass cue, then listen for the 3rd${chord.notes.some((note) => note.role === "7" || note.role === "b7") ? " and 7th" : ""}. Finish the complete route before the next key begins; its Roman numerals stay the same while every chord name moves.</div>`;
     renderChangeGuide(journey, voicing, nextVoicing);
+    renderProgressionWorkoutRoadmap(entries, c.step);
   }
 
   function renderCycle() {
@@ -776,7 +853,7 @@
     setCycleIndex(seq[(pos + delta + seq.length) % seq.length]);
   }
   function stepCycleComping(delta) {
-    const { chords } = currentProgression();
+    const chords = cycleCompingEntries();
     const c = state.cycleComping;
     c.step = (c.step + delta + chords.length) % chords.length;
     c.voicingIndex = 0;
@@ -2943,7 +3020,7 @@
     $("pickingMoveSel").disabled = state.picking.runMode !== "evolve";
     $("tglPickingMetronome").checked = state.picking.metronome;
     $("tglPickingCountIn").checked = state.picking.countIn;
-    $("pickingVoiceSel").value = state.chordVoice;
+    $("pickingVoiceSel").value = state.picking.voice;
     const movementLabel = state.picking.movement === "key" ? "circle-of-fourths keys"
       : state.picking.movement === "both" ? "keys and practical positions" : "practical positions";
     $("pickingRunSummary").textContent = state.picking.runMode === "loop"
@@ -2999,9 +3076,10 @@
       stopPlay();
       const index = +button.getAttribute("data-picking-step");
       state.picking.pathIndex = index;
-      readyPracticeAudio(true).then((ready) => {
+      const voice = pickingReferenceVoice();
+      readyPracticeAudio(voice).then((ready) => {
         if (!ready) return;
-        AU.playPath([session.nodes[index]], 0.35, { referenceVoice: chordReferenceVoice(), onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
+        AU.playPath([session.nodes[index]], 0.35, { referenceVoice: voice, onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
       });
       renderPickingLab();
     });
@@ -3056,7 +3134,7 @@
     const beatSpacing = 60 / state.bpm;
     const noteSpacing = beatSpacing / state.picking.subdivision;
     AU.playPath(session.nodes, noteSpacing, {
-      referenceVoice: chordReferenceVoice(),
+      referenceVoice: pickingReferenceVoice(),
       metronome: state.picking.metronome,
       beatSpacing,
       pulse: session.pulse,
@@ -3077,7 +3155,7 @@
 
   async function playPickingExercise() {
     stopPlay();
-    if (!await readyPracticeAudio(true)) return;
+    if (!await readyPracticeAudio(pickingReferenceVoice())) return;
     const plan = pickingRunPlan();
     if (!plan.length) return;
     const token = ++pickingRunToken;
@@ -3849,6 +3927,28 @@
       b.classList.toggle("active", b.getAttribute("data-solo-focus") === state.solo.focus));
   }
 
+  function soloTargetAddresses(note, fromFret, toFret, limit) {
+    if (!note) return [];
+    const courseNames = window.Tuning.names();
+    return FB.allTonePositions([note])
+      .filter((placement) => placement.fret >= fromFret && placement.fret <= toFret)
+      .sort((a, b) => a.fret - b.fret || b.stringIndex - a.stringIndex)
+      .slice(0, limit || 3)
+      .map((placement) => `${courseNames[placement.stringIndex]} course · ${placement.fret ? `fret ${placement.fret}` : "open"}`);
+  }
+
+  function applySoloNeckFocus() {
+    const node = svg();
+    if (!node) return;
+    const zone = state.solo.neckZone || "both";
+    node.setAttribute("data-solo-neck-zone", zone);
+    node.querySelectorAll(".fb-dot[data-fret]").forEach((dot) => {
+      const fret = Number(dot.getAttribute("data-fret"));
+      const outside = zone === "first" ? fret > 12 : zone === "second" ? fret < 13 : false;
+      dot.classList.toggle("neck-muted", outside);
+    });
+  }
+
   // Layer chips live directly above the fretboard so the player can stack
   // the scale road, the pentatonic frame, triad shapes, and the now/next
   // landing targets without ever covering the neck.
@@ -3896,6 +3996,19 @@
         <div class="solo-hud-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b><small>hear the destination before the chord changes</small></div>
         <article class="solo-hud-card next"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · turquoise target becomes orange on arrival</small></article>
       </section>
+      <section class="solo-neck-zones" aria-label="Target locations in both halves of the neck">
+        <header><div><span>Same target · two neck zones</span><b>Find ${escapeHtml(nowTarget.roleLabel)} ${escapeHtml(nowTarget.name)} now, then ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)} next</b></div><button data-solo-target-scope aria-pressed="${state.solo.allTargets}">${state.solo.allTargets ? "All target positions" : "Shape landing only"}</button></header>
+        ${[["first", "Zone 1", 0, 12], ["second", "Zone 2", 13, 24]].map(([id, label, from, to]) => {
+          const nowPlaces = soloTargetAddresses(nowTarget, from, Math.min(to, FB.N_FRETS), 3);
+          const nextPlaces = soloTargetAddresses(nextTarget, from, Math.min(to, FB.N_FRETS), 3);
+          return `<button data-solo-neck-zone="${id}" class="solo-neck-zone-card${state.solo.neckZone === id ? " active" : ""}">
+            <span>${label} · frets ${from}–${Math.min(to, FB.N_FRETS)}</span>
+            <b><i>Now</i> ${escapeHtml(nowPlaces.join(" · ") || "not available")}</b>
+            <b><i>Next</i> ${escapeHtml(nextPlaces.join(" · ") || "not available")}</b>
+          </button>`;
+        }).join("")}
+        <button data-solo-neck-zone="both" class="solo-neck-zone-card both${state.solo.neckZone === "both" ? " active" : ""}"><span>Whole neck</span><b><i>Now + Next</i> keep both rows visible</b><small>Recommended for learning the repeated map</small></button>
+      </section>
       <div class="solo-layer-row">
         <span class="solo-layer-label">Background</span>
         ${chip("scale", layers.scale, "lc-scale", `${state.tonic} ${mode.name} · two tetrachords`)}
@@ -3926,6 +4039,17 @@
         renderSolo();
       };
     });
+    root.querySelectorAll("[data-solo-neck-zone]").forEach((button) => {
+      button.onclick = () => {
+        state.solo.neckZone = button.getAttribute("data-solo-neck-zone");
+        renderSolo();
+      };
+    });
+    const targetScopeButton = root.querySelector("[data-solo-target-scope]");
+    if (targetScopeButton) targetScopeButton.onclick = () => {
+      state.solo.allTargets = !state.solo.allTargets;
+      renderSolo();
+    };
   }
 
   function triadSeatHtml(cur, curTargets) {
@@ -3963,12 +4087,22 @@
     const triadId = TR.TRIAD_OF[cur.quality] || "maj";
     const allTriads = TR.allShapes(cur.rootPc, triadId, spellPc);
     // The view is deliberately whole-neck so the selected scale remains a
-    // complete map. Harmonic emphasis stays local: one playable current triad,
-    // one voice-led coming triad, and only their selected landing addresses.
+    // complete map. The playable current/coming shapes stay compact, while the
+    // selected target pitch is repeated in both 0–12 and 13–24 so the learner
+    // can recognise the same harmonic job anywhere on the instrument.
     const overlayRange = { from: 0, to: FB.N_FRETS };
     const pentatonic = M.pentatonicOf(state.tonic, state.modeId);
 
     const layers = state.solo.layers;
+    const targetNotes = [];
+    const targetPcs = new Set();
+    curTargets.concat(layers.next ? nextTargets : []).forEach((note) => {
+      if (targetPcs.has(note.pc)) return;
+      targetPcs.add(note.pc);
+      targetNotes.push(Object.assign({}, note, {
+        roleLabel: targetRoleLabel(note, "target", focus), colorGroup: "target"
+      }));
+    });
     // The landing thread. Not every change has a stepwise lean (in D major the
     // sweet 2→3 is E→C♯, a minor 3rd), so the tracer connects the NEAREST pair
     // of now/next targets rather than a fixed pair, and stays silent when the
@@ -3984,14 +4118,17 @@
       // of the dromos stay legible UNDER the pentatonic frame and the targets.
       roadNotes: state.solo.section === "targets" && layers.scale ? soloBackgroundRoad() : null,
       roadQuiet: true,
-      targetPlacements: state.solo.section === "targets" ? targetPlacements : null,
+      targetNotes: state.solo.section === "targets" && state.solo.allTargets ? targetNotes : null,
+      targetPlacements: state.solo.section === "targets" && !state.solo.allTargets ? targetPlacements : null,
       targetNowPcs: curTargets.map((note) => note.pc),
       targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],
-      targetNowPlacements: currentTargetPlacements,
-      targetNextPlacements: layers.next ? nextTargetPlacements : [],
-      targetScope: "positions",
+      targetNowPlacements: state.solo.allTargets ? null : currentTargetPlacements,
+      targetNextPlacements: state.solo.allTargets ? null : layers.next ? nextTargetPlacements : [],
+      targetScope: state.solo.allTargets ? "all" : "positions",
       tracer: layers.next && thread && currentLanding && nextLanding
-        ? { fromPc: thread.from.pc, toPc: thread.to.pc, fromPlacement: currentLanding, toPlacement: nextLanding }
+        ? state.solo.allTargets
+          ? { fromPc: thread.from.pc, toPc: thread.to.pc }
+          : { fromPc: thread.from.pc, toPc: thread.to.pc, fromPlacement: currentLanding, toPlacement: nextLanding }
         : null,
       overlayRange,
       largeNeck: true,
@@ -4001,6 +4138,7 @@
     });
     svg().setAttribute("aria-label", `${window.Tuning.current().name} soloing map: ${state.tonic} ${M.MODES[state.modeId].name} background; play ${cur.degreeLabel} ${cur.symbol} triad ${triadSpelling(cur)}, targeting ${soloTargetLabel(curTargets)}; prepare ${next.degreeLabel} ${next.symbol} triad ${triadSpelling(next)}, targeting ${soloTargetLabel(nextTargets)}`);
     applyMapChoreo();
+    applySoloNeckFocus();
     renderSoloLayerChips(cur, next, curTargets, nextTargets, thread);
     renderSoloToolkit();
 
@@ -4011,15 +4149,18 @@
       ? "Connect the 3rd and 7th with the smallest move you can hear; the line should explain the harmony even without a chord."
       : "This change uses triads: hear the 3rd as the colour, then land on the root when you want the resolution to feel final.";
     const route = P.melodicRoute(state.solo.routeId);
+    const targetScopeSentence = state.solo.allTargets
+      ? "The target ring repeats at every playable address in both neck zones; the solid and dashed shapes show the compact voice-led choice under one hand."
+      : "The target ring is limited to the compact voice-led shape; switch to All target positions to learn the same note across both neck zones.";
     const focusSentence = focus === "triad"
-      ? "The solid shape is the current voice-led triad; the dashed shape is the coming triad. The selected background stays quiet so R, 3rd, and 5th remain readable."
+      ? `The solid shape is the current voice-led triad; the dashed shape is the coming triad. ${targetScopeSentence}`
       : focus === "guide"
-        ? "The solid and dashed shapes show the current and coming triads; the rings narrow the change to one nearby guide-tone decision."
+        ? `The solid and dashed shapes show the current and coming triads. ${targetScopeSentence}`
         : focus === "sweet"
           ? "One nearby ring marks the 2nd and one marks the chord's 3rd: sit on the 2, then let it fall or rise into the 3rd exactly when the harmony moves. That lean is where Greek melodies live."
           : focus === "pedal"
             ? "The two rings are playable addresses for the SAME note inside the moving shapes. Hold it through the progression and listen to the harmony re-name it."
-            : "The solid shape is the chord sounding now; the dashed shape is the chord coming next. Land on the orange 3rd, pre-hear the turquoise 3rd, and use the selected scale background only to connect them.";
+            : `The solid shape is the chord sounding now; the dashed shape is the chord coming next. ${targetScopeSentence}`;
     const pedalInfo = focus === "pedal" ? commonTone() : null;
     const pedalTable = pedalInfo ? `<div class="pedal-table">${chords.map((chordItem, chordIndex) => {
       const role = pedalRole(pedalInfo.pc, chordItem);
@@ -4276,6 +4417,14 @@
     document.querySelectorAll("[data-gym-keys]").forEach((button) =>
       button.classList.toggle("active", +button.getAttribute("data-gym-keys") === state.gym.keys));
     if ($("tglGymSkeleton")) $("tglGymSkeleton").checked = state.gym.skeleton;
+    const progressionWorkout = state.cycleComping.focus === "chords";
+    if ($("gymRouteNote")) $("gymRouteNote").textContent = progressionWorkout
+      ? "Choose one verified progression, then keep its Roman numerals fixed while the key moves by fourths. One key learns it; three or six test recall."
+      : "Not the circle of fifths: each key drops a whole step because every old I becomes the next key's ii. Six keys, then it loops.";
+    if ($("gymHonesty")) $("gymHonesty").textContent = progressionWorkout
+      ? "The progression comes from the selected Major, minor, Ousak, or Hijaz bank. Transposition is a practice route—not a claim that a performance modulates this way."
+      : "A voice-leading gym, not folklore. Greek bands usually re-center with a taximi or a relative-key move. Train your ear here, then try the real thing.";
+    if ($("btnTaximiBridge")) $("btnTaximiBridge").classList.toggle("hidden", progressionWorkout);
   }
 
   // Taximi capstone drone (Solo lab step 5): unmetered, tonic of the current
@@ -4336,8 +4485,8 @@
     }
     const pulse = currentPulse();
     if (state.view === "cycle" && state.cycleComping.focus === "chords") {
-      const { chords } = currentProgression();
-      pb = { kind: "comping", len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
+      const chords = cycleCompingEntries().map((entry) => entry.chord);
+      pb = { kind: "comping", chords, len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
     } else if (state.view === "cycle") {
       const seq = gymSequence(state.index);
       pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
@@ -4387,7 +4536,7 @@
           setTimeout(animateChangeGuide, delay);
           const heldPos = pb.pos;
           setTimeout(() => markHeldBar(heldPos), delay);
-          const heldChords = currentProgression().chords;
+          const heldChords = pb.kind === "comping" ? pb.chords : currentProgression().chords;
           if (pb.barsLeft === 0) {
             schedulePickup(heldChords[(pb.pos + 1) % heldChords.length], when);
           }
@@ -4401,7 +4550,7 @@
           pb.pos = next % pb.len;
         }
         pb.started = true;
-        const chords = currentProgression().chords;
+        const chords = pb.kind === "comping" ? pb.chords : currentProgression().chords;
         const c = chords[pb.pos];
         const nextChord = chords[(pb.pos + 1) % chords.length] || c;
         setTimeout(() => {
@@ -4459,7 +4608,8 @@
     AU.ensure();
     if (state.view === "cycle") {
       if (state.cycleComping.focus === "chords") {
-        const chord = currentProgression().chords[state.cycleComping.step];
+        const chord = cycleCompingEntries()[state.cycleComping.step]?.chord;
+        if (!chord) return;
         AU.playChord(chord.notes, style || state.strumStyle, undefined, chordReferenceVoice());
       } else {
         const shape = cycleTriadPath()[state.index];
@@ -4627,13 +4777,12 @@
     };
     if ($("btnSoundCheck")) $("btnSoundCheck").onclick = playSoundCheck;
     $("pickingVoiceSel").onchange = (event) => {
-      state.chordVoice = event.target.value;
-      if ($("voiceSel")) $("voiceSel").value = state.chordVoice;
+      state.picking.voice = ["bouzouki", "studio", "piano"].includes(event.target.value) ? event.target.value : "bouzouki";
       saveUiPreferences();
-      if (state.chordVoice === "studio") AU.prepareStudioPiano();
+      if (state.picking.voice === "studio") AU.prepareStudioPiano();
       updateAudioReadyStatus(AU.audioStatus());
     };
-    $("btnPickingSoundCheck").onclick = playSoundCheck;
+    $("btnPickingSoundCheck").onclick = playPickingSoundCheck;
     if ($("tglPickup")) $("tglPickup").onchange = (event) => {
       state.pickupV2 = event.target.checked;
       saveUiPreferences();
@@ -4668,6 +4817,7 @@
       stopPlay(); cancelTaximiBridge();
       state.gym.keys = +button.getAttribute("data-gym-keys");
       state.gym.anchor = Math.floor(state.index / 3) * 3;
+      if (state.cycleComping.focus === "chords") { state.cycleComping.step = 0; state.cycleComping.voicingIndex = 0; }
       saveUiPreferences();
       renderCycle();
       renderPageGuide();
@@ -4960,7 +5110,8 @@
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
       if (e.code === "Space") {
         e.preventDefault();
-        if (!await readyPracticeAudio(state.chordVoice === "studio")) return;
+        const voice = state.view === "picking" ? pickingReferenceVoice() : chordReferenceVoice();
+        if (!await readyPracticeAudio(voice)) return;
         if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : playEarPrompt();
         else if (state.view === "melody") state.melody.prompt ? playMelodyPrompt(false) : newMelodyQuestion();
         else if (state.view === "chordmap") auditionChordMap("strum");

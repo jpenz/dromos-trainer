@@ -84,9 +84,9 @@ test("the held tonic stays audible and visible, not implied", () => {
 
 test("the design system defines the redesigned tokens", () => {
   const css = read("css/styles.css");
-  assert.match(css, /--terracotta: #D4763B/);
-  assert.match(css, /--turquoise: #52A89D/);
-  assert.match(css, /--aegean: #5B87B5/);
+  assert.match(css, /--terracotta: #F19A55/);
+  assert.match(css, /--turquoise: #43C7C2/);
+  assert.match(css, /--aegean: #65A7E8/);
   assert.match(css, /--font-display: "Fraunces"/);
   assert.match(css, /env\(safe-area-inset-bottom\)/, "safe areas must be respected");
   assert.match(css, /prefers-reduced-motion: reduce/);

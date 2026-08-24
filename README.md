@@ -306,6 +306,12 @@ Everything — grips, scale paths, overlays — redraws for the selected instrum
 When a chord has more notes than the instrument has strings, it thins automatically —
 the 5th goes first, then the root, so the guide tones survive.
 
+Picking and harmony intentionally use different reference sounds. Picking defaults
+to a short paired-course bouzouki model so `ta–ka` attacks stay separate; Harmony
+and scored ear work default to the self-hosted sampled piano. In Solo, target rings
+repeat across both fret 0–12 and fret 13–24 zones while the solid/dashed triads show
+the compact shape to play now and prepare next.
+
 Also: tempo 40–200 BPM, metronome, loop, note-names vs intervals, ghost tones,
 neck-position cycling, and a left-handed neck.
 

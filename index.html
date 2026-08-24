@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=32" />
+  <link rel="stylesheet" href="css/styles.css?v=33" />
 </head>
 <body>
   <div class="app">
@@ -198,14 +198,14 @@
                   <label class="gym-skeleton"><input type="checkbox" id="tglGymSkeleton" /> Skeleton first — one whole note per chord: just the 3rd. Start every new key count here.</label>
                   <button id="btnTaximiBridge" class="mini" title="Drone on the next tonic. Set the new dromos with a free phrase, then the band comes back in.">Taximi bridge</button>
                 </div>
-                <p class="gym-note">Not the circle of fifths: each key drops a whole step because every old I becomes the next key's ii. Six keys, then it loops.</p>
-                <p class="gym-honesty">A voice-leading gym, not folklore. Greek bands usually re-center with a taximi or a relative-key move. Train your ear here, then try the real thing.</p>
+                <p id="gymRouteNote" class="gym-note">Not the circle of fifths: each key drops a whole step because every old I becomes the next key's ii. Six keys, then it loops.</p>
+                <p id="gymHonesty" class="gym-honesty">A voice-leading gym, not folklore. Greek bands usually re-center with a taximi or a relative-key move. Train your ear here, then try the real thing.</p>
               </div>
               <div class="cycle-workbench">
                 <span class="panel-label">What do you want to practise?</span>
                 <div class="seg">
                   <button data-cycle-focus="hear" class="active">Voice-led triad route</button>
-                  <button data-cycle-focus="chords">Chord library</button>
+                  <button data-cycle-focus="chords">Greek progression workout</button>
                 </div>
                 <div id="cyclePathControls" class="cycle-path-controls">
                   <p class="workbench-note"><b>One register, one string set, all 18 changes.</b> The route is optimized as a complete loop so every displayed shape is playable under one hand.</p>
@@ -425,7 +425,7 @@
                   <label class="picking-tempo" for="pickingBpm">Tempo <span><input id="pickingBpm" type="range" min="40" max="180" step="1" /><output id="pickingBpmVal" for="pickingBpm">84 BPM</output></span></label>
                   <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
                   <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="both">Keys + positions</option></select></label>
-                  <label for="pickingVoiceSel">Practice sound<select id="pickingVoiceSel"><option value="studio">Studio piano · sampled</option><option value="clean">Clean guitar · modeled</option><option value="piano">Warm keys · offline</option><option value="auto">Match instrument</option></select></label>
+                  <label for="pickingVoiceSel">Practice sound<select id="pickingVoiceSel"><option value="bouzouki" selected>Bouzouki pick · clear paired courses</option><option value="studio">Studio piano · pitch check</option><option value="piano">Warm keys · offline fallback</option></select></label>
                   <label class="check"><input type="checkbox" id="tglPickingMetronome" checked /> Metronome</label>
                   <label class="check"><input type="checkbox" id="tglPickingCountIn" checked /> One-bar count-in</label>
                   <div class="picking-sound-check"><button id="btnPickingSoundCheck" class="mini sound-check" type="button">♪ Test sound</button><small id="pickingAudioReadyStatus" class="audio-ready-status" role="status" aria-live="polite">Tap if audio is silent</small></div>
@@ -700,9 +700,7 @@
           <label class="voice-pick" for="voiceSel">Practice sound
             <select id="voiceSel" aria-label="Chord sound">
               <option value="studio" selected>Studio piano · sampled</option>
-              <option value="clean">Clean guitar · modeled</option>
               <option value="piano">Warm keys · offline fallback</option>
-              <option value="auto">Match instrument</option>
             </select>
           </label>
           <div class="audition">
@@ -740,11 +738,11 @@
   <script src="js/toolkit.js?v=27"></script>
   <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
-  <script src="js/fretboard.js?v=31"></script>
+  <script src="js/fretboard.js?v=33"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=31"></script>
+  <script src="js/audio.js?v=33"></script>
   <script src="js/page-guides.js?v=31"></script>
-  <script src="js/app.js?v=32"></script>
+  <script src="js/app.js?v=33"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

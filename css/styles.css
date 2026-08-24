@@ -1,49 +1,50 @@
 /* ========================================================================
    Dromos Trainer · design/kombai-v14 — "Guided Focus"
-   One token system, one practice shell. Charcoal foundation, warm ivory
-   text, Aegean blue for navigation/neutral info, terracotta for the
-   current chord, muted turquoise for the next chord and targets.
+   One token system, one practice shell. Deep Aegean charcoal foundation,
+   warm ivory text, blue for navigation, amber-orange for the current chord,
+   and turquoise for the coming chord. Meaning is repeated in text and shape;
+   colour is never the only cue.
    ======================================================================== */
 
 :root {
   /* foundations */
-  --bg: #14110F;
-  --bg2: #181411;
-  --panel: #201B17;
-  --panel2: #27211B;
-  --raised: #1B1815;
-  --line: rgba(242, 237, 227, 0.13);
-  --line-strong: rgba(242, 237, 227, 0.24);
-  --text: #F2EDE3;
-  --muted: rgba(242, 237, 227, 0.72);
-  --faint: rgba(242, 237, 227, 0.5);
+  --bg: #0F1418;
+  --bg2: #12191E;
+  --panel: #182127;
+  --panel2: #202B32;
+  --raised: #151C21;
+  --line: rgba(247, 244, 236, 0.15);
+  --line-strong: rgba(247, 244, 236, 0.28);
+  --text: #F7F4EC;
+  --muted: rgba(247, 244, 236, 0.78);
+  --faint: rgba(247, 244, 236, 0.64);
 
   /* musical meaning */
-  --aegean: #5B87B5;
-  --aegean-bright: #7BA3CC;
-  --aegean-soft: rgba(91, 135, 181, 0.13);
-  --terracotta: #D4763B;
-  --terracotta-bright: #E0854A;
-  --terracotta-soft: rgba(212, 118, 59, 0.14);
-  --turquoise: #52A89D;
-  --turquoise-soft: rgba(82, 168, 157, 0.13);
-  --violet: #8B7BB5;
-  --amber: #D9A441;
-  --amber-soft: rgba(217, 164, 65, 0.14);
-  --ok: #6FC2A0;
-  --danger: #D96A5B;
+  --aegean: #65A7E8;
+  --aegean-bright: #8BC2F3;
+  --aegean-soft: rgba(101, 167, 232, 0.14);
+  --terracotta: #F19A55;
+  --terracotta-bright: #FFB16F;
+  --terracotta-soft: rgba(241, 154, 85, 0.15);
+  --turquoise: #43C7C2;
+  --turquoise-soft: rgba(67, 199, 194, 0.14);
+  --violet: #B194F4;
+  --amber: #F2C14E;
+  --amber-soft: rgba(242, 193, 78, 0.14);
+  --ok: #69D3AA;
+  --danger: #F08072;
 
   /* legacy aliases (interval families + accent) */
   --accent: var(--terracotta);
   /* Interval fills are separate from time: terracotta is reserved for Now. */
-  --c-root: #D9A441;
-  --c-third: #6B95C2;
-  --c-fifth: #52A89D;
-  --c-seventh: #8B7BB5;
-  --flavour: #D9A441;
-  --fn-ii: #6B95C2;
-  --fn-v: #D9A441;
-  --fn-i: #52A89D;
+  --c-root: #F2C14E;
+  --c-third: #69A7FF;
+  --c-fifth: #55C7A7;
+  --c-seventh: #B194F4;
+  --flavour: #F2C14E;
+  --fn-ii: #69A7FF;
+  --fn-v: #F2C14E;
+  --fn-i: #55C7A7;
 
   /* type */
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
@@ -80,7 +81,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
   outline-offset: 2px;
   border-radius: 4px;
 }
-::selection { background: rgba(212, 118, 59, 0.35); }
+::selection { background: rgba(241, 154, 85, 0.36); }
 
 .hidden { display: none !important; }
 .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; border: 0 !important; }
@@ -136,7 +137,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   min-height: 56px; padding: 8px 28px;
   border-bottom: 1px solid var(--line);
-  background: rgba(20, 17, 15, 0.92);
+  background: rgba(15, 20, 24, 0.94);
   backdrop-filter: blur(10px);
 }
 .page-title { font-size: 13.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
@@ -502,6 +503,31 @@ main {
 .solo-hud-motion { display: grid; place-content: center; gap: 2px; text-align: center; background: var(--panel); }
 .solo-hud-motion b { color: var(--text); font-family: var(--font-mono); font-size: 12px; }
 .solo-hud-motion small { color: var(--faint); font-size: 9.5px; line-height: 1.35; }
+.solo-neck-zones {
+  flex: 1 0 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px;
+  padding: 9px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg2);
+}
+.solo-neck-zones > header {
+  grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.solo-neck-zones > header > div { display: grid; gap: 1px; }
+.solo-neck-zones > header span { color: var(--aegean-bright); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.solo-neck-zones > header b { color: var(--text); font-size: 11px; }
+.solo-neck-zones > header button {
+  min-height: 32px; padding: 5px 10px; border: 1px solid var(--aegean); border-radius: 999px;
+  background: var(--aegean-soft); color: var(--aegean-bright); font-size: 10px; font-weight: 700;
+}
+.solo-neck-zone-card {
+  display: grid; gap: 3px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--raised); color: var(--muted); text-align: left; transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.solo-neck-zone-card > span { color: var(--faint); font-size: 8.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.solo-neck-zone-card b { overflow: hidden; color: var(--muted); font-family: var(--font-mono); font-size: 9.5px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.solo-neck-zone-card b i { color: var(--terracotta-bright); font-family: var(--font-sans); font-size: 8px; font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; }
+.solo-neck-zone-card b + b i { color: var(--turquoise); }
+.solo-neck-zone-card small { color: var(--faint); font-size: 9px; }
+.solo-neck-zone-card:hover { border-color: var(--line-strong); }
+.solo-neck-zone-card.active { border-color: var(--aegean); background: var(--aegean-soft); box-shadow: inset 0 0 0 1px rgba(101, 167, 232, 0.18); }
 .solo-layer-row { flex: 1 0 100%; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .solo-layer-label { color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .solo-layer-divider { align-self: stretch; width: 1px; min-height: 30px; margin: 2px 5px; background: var(--line); }
@@ -510,7 +536,7 @@ main {
   .solo-hud-card.next { animation: solo-hud-next 2.4s ease-in-out 2; }
 }
 .solo-neck-hud.lean-phase .solo-hud-card.next,
-.solo-neck-hud.arrive-phase .solo-hud-card.next { border-color: var(--turquoise); box-shadow: 0 0 0 2px rgba(82, 168, 157, 0.2); opacity: 1; }
+.solo-neck-hud.arrive-phase .solo-hud-card.next { border-color: var(--turquoise); box-shadow: 0 0 0 2px rgba(67, 199, 194, 0.22); opacity: 1; }
 .solo-neck-hud.arrive-phase .solo-hud-card.now { opacity: 0.58; }
 @keyframes solo-hud-arrive { from { transform: translateY(5px); opacity: 0.55; } to { transform: none; opacity: 1; } }
 @keyframes solo-hud-next { 0%, 100% { opacity: 0.76; } 50% { opacity: 1; } }
@@ -538,6 +564,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .fb-dot.target-now .dot-bg { stroke: var(--terracotta); stroke-width: 2; }
 .fb-dot.target-next .dot-bg { stroke: var(--turquoise); stroke-width: 1.5; }
 .fb-dot.target-next { opacity: 0.82; }
+.fb-dot.neck-muted { opacity: 0.08 !important; }
 @media (prefers-reduced-motion: no-preference) {
   .fb-dot.target-now { animation: target-arrive 0.7s var(--ease) 1; transform-box: fill-box; transform-origin: center; }
   .fb-dot.target-next .dot-next-ring, .dot-next-ring { animation: next-ring-breathe 2.4s ease-in-out 2; }
@@ -556,8 +583,8 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 #fretboard { width: 100%; height: auto; display: block; }
 
 /* fretboard svg */
-.fb-face { fill: #251C15; stroke: #33271C; }
-.fb-nut { fill: #E5DECC; }
+.fb-face { fill: #111B21; stroke: #2A3942; }
+.fb-nut { fill: #E9E4D8; }
 .fb-fret { stroke: #57503F; stroke-width: 2; }
 .fb-string { stroke: #B9AF98; opacity: 0.75; }
 .fb-inlay { fill: #3B3225; }
@@ -565,7 +592,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .fb-openname { fill: var(--muted); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
 
 .fb-dot .dot-bg { stroke: rgba(0, 0, 0, 0.4); stroke-width: 1.5; }
-.fb-dot .dot-label { fill: #14110F; font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; pointer-events: none; }
+.fb-dot .dot-label { fill: #0F1418; font-family: var(--font-mono); font-size: 12.5px; font-weight: 650; pointer-events: none; }
 .fb-dot .moved-arrow { fill: #F2EDE3; font-size: 15px; font-weight: 700; }
 .fb-dot { transition: opacity 0.25s; }
 
@@ -784,6 +811,16 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .cycle-progression-list button b { color: var(--text); font-size: 11px; }
 .cycle-progression-list button span { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.05em; }
 .cycle-progression-list button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.cycle-workout-key { display: flex; align-items: end; justify-content: space-between; gap: 10px; padding: 8px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg2); }
+.cycle-workout-key label { display: grid; gap: 3px; color: var(--faint); font-size: 8.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.cycle-workout-key select { min-width: 110px; min-height: 34px; padding: 5px 8px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--raised); color: var(--text); font-weight: 650; }
+.cycle-workout-key > span { color: var(--aegean-bright); font-size: 10px; font-weight: 650; }
+.cycle-key-route { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 5px; }
+.cycle-key-route button { display: grid; grid-template-columns: auto 1fr; gap: 0 6px; min-height: 42px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); text-align: left; }
+.cycle-key-route button i { grid-row: 1 / 3; align-self: center; color: var(--faint); font-family: var(--font-mono); font-size: 10px; font-style: normal; }
+.cycle-key-route button b { color: var(--text); font-family: var(--font-display); font-size: 15px; line-height: 1; }
+.cycle-key-route button span { overflow: hidden; color: var(--faint); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.cycle-key-route button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .cycle-voice-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .cycle-voice-kinds button { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 7px 4px; }
 .cycle-voice-kinds button b { color: var(--text); font-size: 10.5px; }
@@ -793,6 +830,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .cycle-chord-steps button { flex: 0 0 auto; display: grid; grid-template-columns: auto auto; gap: 5px; min-height: 40px; padding: 6px 8px; align-items: center; }
 .cycle-chord-steps button i { color: var(--terracotta-bright); font-family: var(--font-display); font-size: 11px; font-style: normal; }
 .cycle-chord-steps button b { color: var(--text); font-family: var(--font-mono); font-size: 11.5px; }
+.cycle-chord-steps button span { grid-column: 1 / -1; color: var(--faint); font-size: 8px; text-align: center; }
 .cycle-chord-steps button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .cycle-voicing-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
 .cycle-voicing-options button { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 44px; padding: 8px; text-align: left; }
@@ -1796,7 +1834,7 @@ body[data-view="melody"] main { max-width: 1180px; }
     width: 100%; height: auto; min-height: 58px;
     padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
     border-right: 0; border-top: 1px solid var(--line-strong);
-    background: rgba(20, 17, 15, 0.97);
+    background: rgba(15, 20, 24, 0.97);
     backdrop-filter: blur(12px);
   }
   .nav-brand, .nav-foot, .nav-group-label { display: none; }
@@ -1853,6 +1891,9 @@ body[data-view="melody"] main { max-width: 1180px; }
   .solo-hud-card strong { font-size: 22px; }
   .solo-hud-card b { font-size: 11px; }
   .solo-hud-card small, .solo-hud-motion small { display: none; }
+  .solo-neck-zones { grid-template-columns: 1fr; }
+  .solo-neck-zones > header { align-items: flex-start; flex-direction: column; }
+  .solo-neck-zone-card b { white-space: normal; }
   .legend { gap: 10px; }
   .legend-note { margin-left: 0; }
   .guess-grid, .ear-family-choices { grid-template-columns: 1fr; }
@@ -2246,6 +2287,18 @@ body[data-view="picking"] .guide-answer h1 { font-size: clamp(19px, 2vw, 25px); 
 body[data-view="picking"] .guide-first { padding-block: 7px; }
 body[data-view="picking"] .guide-workflow > summary { padding-block: 7px; }
 body[data-view="picking"] .picking-setup > header { display: none; }
+
+/* Follow Changes is an instrument-on-stand workspace. Preserve the answer-first
+   promise, but remove the repeated prose already restated by the Now/Next HUD so
+   the roadmap and neck begin inside a short laptop/iPad viewport. */
+body[data-view="solo"][data-solo-section="targets"] main { gap: 11px; padding-top: 14px; }
+body[data-view="solo"][data-solo-section="targets"] .coach-cue,
+body[data-view="solo"][data-solo-section="targets"] .mode-purpose { display: none; }
+body[data-view="solo"][data-solo-section="targets"] .guide-answer { padding: 14px 18px 12px; }
+body[data-view="solo"][data-solo-section="targets"] .guide-answer h1 { font-size: clamp(21px, 2.2vw, 30px); }
+body[data-view="solo"][data-solo-section="targets"] .guide-answer > p { display: none; }
+body[data-view="solo"][data-solo-section="targets"] .guide-first,
+body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { padding-block: 7px; }
 
 .audio-ready-status { display: inline-flex; align-items: center; min-height: 24px; color: var(--faint); font-size: 9px; line-height: 1.25; }
 .audio-ready-status[data-state="ready"] { color: var(--turquoise); }
