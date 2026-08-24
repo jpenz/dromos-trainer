@@ -43,6 +43,7 @@
   }
 
   function item(chord, sourceIndex, holdI) {
+    const declaredBars = Number(chord && chord.durationBars);
     return {
       id: `${sourceIndex}:${chord.symbol}`,
       sourceIndex,
@@ -50,7 +51,10 @@
       symbol: chord.symbol,
       functionLabel: chord.degreeLabel || chord.fn || "chord",
       keyLabel: chord.key || "",
-      durationBars: holdI && isTonicFn(chord) ? 2 : 1
+      durationBars: Number.isFinite(declaredBars) && declaredBars > 0
+        ? Math.round(declaredBars)
+        : holdI && isTonicFn(chord) ? 2 : 1,
+      phraseRole: chord.phraseRole || (isTonicFn(chord) ? "Resolve" : "Move")
     };
   }
 

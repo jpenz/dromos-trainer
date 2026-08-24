@@ -62,6 +62,12 @@ adjacent `I of the old key → ii of the next key` pair; use Pair controls to ch
 Five modal/harmonic maps, each with a ranked bank of the progressions that actually earn their
 place, and a one-line reason for each.
 
+Every bank entry is a complete solo-training phrase rather than a chord list that
+only resolves by implication. Two- and three-chord cadences run for four bars;
+longer routes run for eight. The final tonic is shown, sounded, and held for two
+bars before the loop starts again, and the roadmap names each chord's job:
+**Establish → Move → Cadence → Resolve**.
+
 | Mode | On D | Signature move |
 |---|---|---|
 | **Major** | `D E F♯ G A B C♯` | `Em7 – A7 – Dmaj7` |

@@ -183,12 +183,12 @@ test("the installable app shell links its offline assets", () => {
     "the road must use the selected instrument's fret range");
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
   assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "33"/,
+  assert.match(read("api/release.js"), /appVersion: "34"/,
     "the public deployment identity must match the current offline shell release");
   assert.match(html, /css\/styles\.css\?v=33/);
   assert.match(html, /js\/fretboard\.js\?v=33/);
   assert.match(html, /js\/audio\.js\?v=33/);
-  assert.match(html, /js\/app\.js\?v=33/);
+  assert.match(html, /js\/app\.js\?v=34/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.

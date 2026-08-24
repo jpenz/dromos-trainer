@@ -85,6 +85,40 @@ test("progression chords carry the bare roman function that playback holds and p
   assert.notEqual(majorJourney.transition.kind, "pivot", "same-key loops must not claim a pivot reinterpretation");
 });
 
+test("every selectable progression is a resolved 4- or 8-bar solo phrase", () => {
+  const { Modes, HarmonyJourney } = loadCore();
+  Modes.MODE_ORDER.forEach((modeId) => {
+    Modes.PROGRESSIONS[modeId].forEach((progression) => {
+      const built = Modes.buildProgression("D", modeId, progression.id);
+      const last = built.chords.at(-1);
+      const totalBars = built.chords.reduce((sum, chord) => sum + chord.durationBars, 0);
+      assert.equal(last.rootPc, Modes.parseName("D").pc, `${modeId} ${progression.id} must land on tonic`);
+      assert.match(last.fn, /^i$/i, `${modeId} ${progression.id} must end on I/i`);
+      assert.equal(last.phraseRole, "Resolve");
+      assert.equal(last.durationBars, 2, "the final home needs time to register before the loop");
+      assert.ok([4, 8].includes(totalBars), `${modeId} ${progression.id} has an irregular ${totalBars}-bar loop`);
+      assert.equal(new Set(built.chords.map((chord) => chord.phraseBars)).size, 1,
+        "every chord must agree on the phrase boundary");
+      let expectedStart = 1;
+      built.chords.forEach((chord) => {
+        assert.equal(chord.startsAtBar, expectedStart, `${chord.symbol} needs a contiguous visible bar address`);
+        expectedStart += chord.durationBars;
+      });
+      assert.equal(expectedStart - 1, totalBars);
+      const journey = HarmonyJourney.buildJourney({ kind: "song", chords: built.chords, step: 0, loop: true, holdI: false });
+      assert.deepEqual(Array.from(journey.items, (item) => item.durationBars),
+        Array.from(built.chords, (chord) => chord.durationBars),
+        "roadmap timing must survive even when the Changes-cycle hold toggle is off");
+    });
+  });
+
+  const turnaround = Modes.buildProgression("D", "major", "I-vi-ii-V");
+  assert.equal(turnaround.prog.label, "I – vi – ii – V – I");
+  assert.equal(turnaround.chords.map((chord) => chord.symbol).join(" "), "Dmaj7 Bm7 Em7 A7 Dmaj7");
+  assert.equal(turnaround.chords.map((chord) => chord.durationBars).join(" "), "2 1 1 2 2");
+  assert.equal(turnaround.chords.map((chord) => chord.phraseRole).join(" "), "Establish Move Move Cadence Resolve");
+});
+
 test("the Changes Gym is four 4/4 bars per key: ii · V · I · I, then the pivot", () => {
   const { Theory, HarmonyJourney, StyleLibrary } = loadCore();
   const cycle = Theory.buildCycle();

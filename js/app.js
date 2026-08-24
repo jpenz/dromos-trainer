@@ -537,7 +537,7 @@
     root.classList.remove("hidden");
     root.innerHTML = `<header><div><span>Progression roadmap · next ${count}</span><b>Same Greek/modal route, transposed by fourths</b></div><p>Orange is sounding · turquoise is next · the key label changes only at a complete progression boundary.</p></header>
       <div class="cycle-roadmap-grid">${visible.map((entry, offset) => `<button data-cycle-workout-step="${entries.indexOf(entry)}" class="roadmap-chord${offset === 0 ? " now" : ""}${offset === 1 ? " next" : ""}">
-        <span>${offset === 0 ? "Now" : offset === 1 ? "Next" : `+${offset}`} · key ${escapeHtml(entry.tonic)}</span><strong>${escapeHtml(entry.chord.degreeLabel)}</strong><b>${escapeHtml(entry.chord.symbol)}</b><small>${escapeHtml(M.MODES[state.modeId].name)} · ${escapeHtml(currentProgression().prog.label)}</small></button>`).join("")}</div>`;
+        <span>${offset === 0 ? "Now" : offset === 1 ? "Next" : `+${offset}`} · key ${escapeHtml(entry.tonic)}</span><strong>${escapeHtml(entry.chord.degreeLabel)}</strong><b>${escapeHtml(entry.chord.symbol)}</b><small>${escapeHtml(entry.chord.phraseRole)} · ${entry.chord.durationBars} bar${entry.chord.durationBars === 1 ? "" : "s"} · ${escapeHtml(M.MODES[state.modeId].name)}</small></button>`).join("")}</div>`;
     root.querySelectorAll("[data-cycle-workout-step]").forEach((button) => button.onclick = () => {
       stopPlay(); state.cycleComping.step = +button.getAttribute("data-cycle-workout-step"); state.cycleComping.voicingIndex = 0; renderCycle(); auditionCurrent("block");
     });
@@ -3976,10 +3976,12 @@
     const tool = activeTool();
     const roadmap = progression.chords.map((chord, index) => {
       const target = preferredSoloTarget(soloTargets(chord, state.solo.focus));
+      const status = index === state.progStep ? "Now" : index === (state.progStep + 1) % progression.chords.length ? "Next" : chord.phraseRole;
+      const endBar = chord.startsAtBar + barsFor(chord) - 1;
       return `<button data-solo-roadmap-step="${index}" class="solo-roadmap-card${index === state.progStep ? " now" : ""}${index === (state.progStep + 1) % progression.chords.length ? " next" : ""}">
-        <span>${index === state.progStep ? "Now" : index === (state.progStep + 1) % progression.chords.length ? "Next" : `Bar ${index + 1}`}</span>
+        <span>${status} · bar${endBar === chord.startsAtBar ? "" : "s"} ${chord.startsAtBar}${endBar === chord.startsAtBar ? "" : `–${endBar}`}</span>
         <strong>${escapeHtml(chord.degreeLabel)}</strong><b>${escapeHtml(chord.symbol)}</b>
-        <small>target ${escapeHtml(target.roleLabel)} · ${escapeHtml(target.name)}${barsFor(chord) > 1 ? " · 2 bars" : ""}</small></button>`;
+        <small>${escapeHtml(chord.phraseRole)} · target ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</small></button>`;
     }).join("");
     const motion = holds
       ? `${nowTarget.name} holds · the chord changes its meaning`
@@ -3988,7 +3990,7 @@
       : `${nowTarget.name} → ${nextTarget.name} · pre-hear the leap`;
     root.innerHTML = `
       <section class="solo-progression-roadmap" aria-label="Complete Solo progression and landing targets">
-        <header><div><span>Full progression · ${escapeHtml(progression.prog.label)}</span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)} · ${escapeHtml(landingLensName(state.solo.focus))}</b></div><p>${tool ? `<strong>${escapeHtml(tool.name)}</strong> · ${escapeHtml(tool.exercise.split(".")[0])}.` : "Say each target before its chord arrives."}</p></header>
+        <header><div><span>Full progression · ${escapeHtml(progression.prog.label)} · ${progression.chords[0].phraseBars}-bar resolved phrase</span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)} · ${escapeHtml(landingLensName(state.solo.focus))}</b></div><p>${tool ? `<strong>${escapeHtml(tool.name)}</strong> · ${escapeHtml(tool.exercise.split(".")[0])}.` : "Say each target before its chord arrives."}</p></header>
         <div class="solo-roadmap-grid">${roadmap}</div>
       </section>
       <section class="solo-neck-hud" aria-label="Current and next solo landing" aria-live="polite">
@@ -4354,9 +4356,15 @@
   // Prefer the bare roman function; degreeLabel is the display fallback and
   // scaleDegree last (it is numeric, "1"/"2", and must never win over romans).
   function functionTag(c) { return String((c && (c.fn || c.degreeLabel || c.scaleDegree)) || ""); }
-  // Every phrase is ii · V · I · I by default: the tonic holds for two bars,
-  // then the phrase resets (loop) or pivots to the next key (pivot wheel).
-  function barsFor(c) { return state.holdI && /^i$/i.test(functionTag(c)) ? 2 : 1; }
+  // Progression-bank chords own explicit 4-/8-bar phrase timing. The Changes
+  // cycle has no such metadata and retains its user-controlled ii · V · I · I
+  // fallback. Keeping the rule here makes visuals, bass motion, and transport
+  // consult the same duration instead of guessing from a chord's name.
+  function barsFor(c) {
+    const declared = Number(c && c.durationBars);
+    if (Number.isFinite(declared) && declared > 0) return Math.round(declared);
+    return state.holdI && /^i$/i.test(functionTag(c)) ? 2 : 1;
+  }
   function isTowardIi(c) { return /^ii(?![iv])/i.test(functionTag(c)); }
 
   // Skeleton mode: the documented first "playing the changes" exercise — one

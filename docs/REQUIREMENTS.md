@@ -77,6 +77,7 @@ Status: `DONE` shipped & verified · `WIP` in progress · `TODO` agreed, not sta
 | **FR-71** | Role-specific reference voices | DONE | — | `js/audio.js`, `js/app.js`, `index.html` | Harmony exposes only the honest sampled-piano and offline-key references. Picking owns a separate persisted selector and defaults to a short, lightly detuned paired-course model with note duration bounded by attack spacing. Switching a Picking sound never changes the scored Harmony/Ear reference. |
 | **FR-72** | Two-zone Solo target map | DONE | — | `js/app.js`, `js/fretboard.js`, `css/styles.css` | Solo defaults to every playable occurrence of the selected Now/Next target across frets 0–12 and 13–24 while retaining one compact current/coming voice-led triad. Named zone controls can dim either half, address cards identify course/fret examples in both halves, a shape-only scope remains available, and nearest-target tracers repeat once per rendered neck row. |
 | **FR-73** | Transposable Greek progression workout | DONE | — | `js/app.js`, `js/modes.js`, `css/styles.css` | Changes Gym's progression workout selects a starting key, one of the five verified dromoi, and a progression from that dromos's bank, then repeats the complete route through one, three, or six keys by fourths. The six-chord look-ahead, key boundaries, rationale, playback, and chord/voicing selection all use the same flattened sequence. Non-guitar instruments receive course-safe grips rather than six-string guitar diagrams. |
+| **FR-74** | Resolved Solo phrase clock | DONE | — | `js/modes.js`, `js/harmony-journey.js`, `js/app.js` | Every selectable progression explicitly lands on its tonic and carries one shared 4- or 8-bar plan into the roadmap, Harmony journey, bass motion, Comp/Triad/Solo transport, and transposed workout. The visible cards name Establish, Move, Cadence, and Resolve; the final tonic lasts two bars before a loop restarts. |
 | **FR-17** | Headless test runner | DONE | — | `package.json`, `test/` | `npm test` runs theory, dromos pentatonic, laouto, and app-shell regressions without a browser |
 | **FR-18** | Persist stable player state | DONE | — | `js/profiles.js`, `js/app.js` | Tonic, mode, progression, tuning, tempo, view, ear scores, and compact sing-back counts survive reload per named local player; unanswered prompts, imported score content, timers, device identifiers, and audio are deliberately excluded |
 | **FR-19** | Printable one-page chart | TODO | — | — | Print stylesheet producing a music-stand sheet of the current mode |
@@ -135,6 +136,7 @@ choice.** Each is asserted by a self-test where marked.
 | **MI-40** | Reference timbre follows the teaching job. A scored chord or ear prompt never uses an approximate instrument model; an articulation drill never inherits a long chord envelope. The paired-course Picking voice has separate persisted state, short bounded duration, no sustaining oscillator, and a cancel-safe Test sound. | ✅ — `AudioEngine.selfTest()` duration/gain checks + separate-selector and no-drone source contracts in `npm test` |
 | **MI-41** | A whole-neck Solo target means every playable address, not one preferred grip. Now and Next remain distinguishable by words plus solid/dashed ring geometry, duplicate pitches give Now precedence, zone filtering never changes the underlying notes, and the compact triads remain real playable grips for the selected tuning. | ✅ — app/fretboard/CSS contracts + five-tuning theory and browser verification |
 | **MI-42** | Progression transposition changes tonic only: degree labels, chord qualities, mode identity, order, and rationale stay attached to the selected verified progression. A key changes only after a complete progression boundary, and instrument diagrams never contain a string index outside the selected tuning. | ✅ — exhaustive progression coherence tests + Changes workout source/browser regression |
+| **MI-43** | Every progression-bank route ends on I/i in its declared tonic, contains exactly one final Resolve role, lasts exactly 4 or 8 bars, and holds that resolution for two bars. Explicit progression timing overrides the unrelated Changes-cycle “hold I” toggle so the screen, audio, and next-loop boundary cannot disagree. | ✅ — `Modes.selfTest()` + exhaustive progression/HarmonyJourney timing regression in `npm test` |
 ### The reference tables
 
 **MI-07b — progression banks, tonic D** (and A for Hijaz)
@@ -142,7 +144,7 @@ choice.** Each is asserted by a self-test where marked.
 | Mode | Progression | Chords |
 |---|---|---|
 | Major | ii – V – I | `Em7 A7 Dmaj7` |
-| Major | I – vi – ii – V | `Dmaj7 Bm7 Em7 A7` |
+| Major | I – vi – ii – V – I | `Dmaj7 Bm7 Em7 A7 Dmaj7` |
 | Major | IV – V – I | `G A D` |
 | Major | ♭VII – I | `C D` |
 | Natural minor | i – III – i | `Dm F Dm` |
@@ -213,7 +215,7 @@ choice.** Each is asserted by a self-test where marked.
 | Module | Requirements | Invariants | Test entry point |
 |---|---|---|---|
 | `js/theory.js` | FR-01 | MI-01, MI-02, MI-03, MI-07a | `Theory.selfTest()` |
-| `js/modes.js`, `js/ear-drills.js` | FR-08, FR-09, FR-10, FR-12, FR-13, FR-28, FR-46, FR-55, FR-60 | MI-04, MI-05, MI-06, MI-07b, MI-08, MI-15, MI-25, MI-29 | `Modes.selfTest()` + `EarDrills.selfTest()` + exhaustive display/sound and movement-policy audits in `npm test` |
+| `js/modes.js`, `js/ear-drills.js` | FR-08, FR-09, FR-10, FR-12, FR-13, FR-28, FR-46, FR-55, FR-60, FR-74 | MI-04, MI-05, MI-06, MI-07b, MI-08, MI-15, MI-25, MI-29, MI-43 | `Modes.selfTest()` + `EarDrills.selfTest()` + exhaustive display/sound, movement-policy, and resolved-phrase audits in `npm test` |
 | `js/chord-map.js` | FR-54, FR-56 | MI-04, MI-07c, MI-07d, MI-10, MI-12, MI-26 | `ChordMap.selfTest()` + exhaustive triad/seventh, scale-door, and 60-map/5-tuning checks in `npm test` |
 | `js/chord-path.js` | FR-64 | MI-12, MI-21, MI-26, MI-33 | `ChordPath.selfTest()` + exhaustive scale-lock, exact-adjacency, door-identity, and five-tuning connector regressions in `npm test` |
 | `js/page-guides.js` | FR-65 | MI-34 | `PageGuides.selfTest()` + every-workspace/subview resolution, real-target, visible-answer, and responsive-stack checks in `test/page-guides.test.js` |
@@ -235,7 +237,7 @@ choice.** Each is asserted by a self-test where marked.
 | `js/tuning.js` | FR-24, FR-29 | MI-12 | via the other suites |
 | `js/triads.js` | FR-25, FR-26, FR-49, FR-56 | MI-12, MI-13, MI-14, MI-24 | `Triads.selfTest()` + exhaustive compact-seventh grip checks in `npm test` |
 | `js/audio.js` | FR-05, FR-06, FR-23, FR-50, FR-55, FR-61, FR-68 | MI-06, MI-22, MI-25, MI-37 | `AudioEngine.selfTest()` + shared-clock count-in/metronome and stop/replay regression |
-| `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15, FR-45…47, FR-49…51, FR-56…73 | MI-22, MI-26…42 | visual + answer-first page guides, Solo/Changes roadmaps, Matrix Chord Path, Melody Lab/sing-back, tactical examples, Picking Lab/run routing, toolkit focus, Comp transport/pulse regression + `npm test` |
+| `js/app.js` | FR-04, FR-07, FR-12, FR-14, FR-15, FR-45…47, FR-49…51, FR-56…74 | MI-22, MI-26…43 | visual + answer-first page guides, Solo/Changes roadmaps, resolved phrase timing, Matrix Chord Path, Melody Lab/sing-back, tactical examples, Picking Lab/run routing, toolkit focus, Comp transport/pulse regression + `npm test` |
 | `js/video.js` | FR-48 | MI-20 | catalog self-test + host-controlled embed |
 | `index.html`, `sw.js` | FR-27, FR-30, FR-47…48 | — | `npm test` + browser verification |
 

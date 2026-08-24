@@ -141,9 +141,9 @@
       { id: "ii-V-I", label: "ii – V – I", tag: "core", tier: "Laiko · Westernized", group: "Cadences", earSafe: true,
         chords: [[2, "m7"], [7, "dom7"], [0, "maj7"]],
         why: "The engine of the Westernized laiko layer. Everything else is a variation." },
-      { id: "I-vi-ii-V", label: "I – vi – ii – V", tag: "core", tier: "Laiko · Westernized", group: "Turnarounds", earSafe: true,
-        chords: [[0, "maj7"], [9, "m7"], [2, "m7"], [7, "dom7"]],
-        why: "Loops forever — the best ear-training vamp there is." },
+      { id: "I-vi-ii-V", label: "I – vi – ii – V – I", tag: "core", tier: "Laiko · Westernized", group: "Turnarounds", earSafe: true,
+        chords: [[0, "maj7"], [9, "m7"], [2, "m7"], [7, "dom7"], [0, "maj7"]],
+        why: "A complete turnaround sentence: establish home, move through vi–ii–V, then hear the tonic resolve before repeating." },
       { id: "IV-V-I", label: "IV – V – I", tag: "folk", tier: "Modal / folk practice", group: "Song endings", earSafe: true,
         chords: [[5, "maj"], [7, "maj"], [0, "maj"]],
         why: "No leading-tone 7th. The dimotiko cadence, not the jazz one." },
@@ -347,9 +347,33 @@
     };
   }
 
+  // Solo practice needs a phrase, not an arbitrary list that only resolves by
+  // wrapping. Two- and three-chord cadences occupy four bars; longer routes
+  // occupy eight. Every plan gives the final tonic enough time to register,
+  // while the five-chord turnaround also gives its opening home and V a full
+  // two-bar hearing window. These values travel with the chord so roadmap,
+  // transport, bass motion, and every transposed workout share one clock.
+  const PHRASE_TIMING = {
+    2: [2, 2],
+    3: [1, 1, 2],
+    4: [2, 2, 2, 2],
+    5: [2, 1, 1, 2, 2]
+  };
+
+  function phraseTiming(length) {
+    const declared = PHRASE_TIMING[length];
+    if (declared) return declared.slice();
+    const fallback = Array.from({ length }, () => 1);
+    if (fallback.length) fallback[fallback.length - 1] = 2;
+    return fallback;
+  }
+
   function buildProgression(tonicName, modeId, progId) {
     const prog = PROGRESSIONS[modeId].find((p) => p.id === progId) || PROGRESSIONS[modeId][0];
     const functionLabels = prog.label.split(/\s+–\s+/);
+    const timing = phraseTiming(prog.chords.length);
+    const phraseBars = timing.reduce((sum, bars) => sum + bars, 0);
+    let startsAtBar = 1;
     let prevBottom = null;
     const chords = prog.chords.map(([deg, q], index) => {
       const c = buildChord(tonicName, modeId, deg, q, prevBottom);
@@ -359,6 +383,17 @@
       // playback can hold the tonic and place the five-of-two pickup by
       // function, exactly as it does for the theory cycle.
       c.fn = (functionLabels[index] || "").replace(/[^ivIV♭]/g, "");
+      c.durationBars = timing[index];
+      c.startsAtBar = startsAtBar;
+      c.phraseBars = phraseBars;
+      c.phraseRole = index === prog.chords.length - 1
+        ? "Resolve"
+        : index === prog.chords.length - 2
+          ? "Cadence"
+          : index === 0 && /^i$/i.test(c.fn)
+            ? "Establish"
+            : "Move";
+      startsAtBar += c.durationBars;
       prevBottom = c.bottomMidi;
       return c;
     });
@@ -381,6 +416,7 @@
   // Locks the documented chord spellings (docs/REQUIREMENTS.md, MI-07).
   const EXPECTED = {
     "D|major|ii-V-I": "Em7 A7 Dmaj7",
+    "D|major|I-vi-ii-V": "Dmaj7 Bm7 Em7 A7 Dmaj7",
     "D|major|IV-V-I": "G A D",
     "D|minor|i-bVII-i": "Dm C Dm",
     "D|minor|iv-bVII-i": "Gm C Dm",
@@ -403,6 +439,28 @@
       if (!pass) ok = false;
       results.push({ i: k, want: EXPECTED[k], got, pass });
     });
+
+    // Every selectable practice route is a complete, regularly timed phrase.
+    // This catches both theory regressions (a route ending on V) and UI/audio
+    // drift (missing or malformed duration metadata) before deployment.
+    MODE_ORDER.forEach((modeId) => PROGRESSIONS[modeId].forEach((progression) => {
+      const built = buildProgression("D", modeId, progression.id);
+      const last = built.chords[built.chords.length - 1];
+      const bars = built.chords.reduce((sum, chord) => sum + chord.durationBars, 0);
+      const roles = built.chords.map((chord) => chord.phraseRole);
+      const pass = !!last && /^i$/i.test(last.fn) && last.rootPc === parseName("D").pc
+        && last.phraseRole === "Resolve" && last.durationBars === 2
+        && (bars === 4 || bars === 8)
+        && built.chords.every((chord) => chord.phraseBars === bars && chord.startsAtBar >= 1)
+        && roles.filter((role) => role === "Resolve").length === 1;
+      if (!pass) ok = false;
+      results.push({
+        i: `${modeId}|${progression.id} resolved phrase`,
+        want: "tonic Resolve in a 4- or 8-bar phrase",
+        got: `${last ? `${last.fn} ${last.phraseRole}` : "missing"} · ${bars} bars`,
+        pass
+      });
+    }));
 
     // scale spellings that must use one letter per degree
     const scaleChecks = {
@@ -503,7 +561,7 @@
   window.Modes = {
     MODES, MODE_ORDER, PROGRESSIONS, TONICS, QUALITY, DEGREE_LABEL, PENTATONIC,
     parseName, nameFor, simplify,
-    scaleOf, flavourPcs, pentatonicOf, tetrachordsOf, mobileTonesOf, movementPolicy, buildChord, buildProgression, descendingRun,
+    scaleOf, flavourPcs, pentatonicOf, tetrachordsOf, mobileTonesOf, movementPolicy, buildChord, buildProgression, phraseTiming, descendingRun,
     selfTest
   };
 })();
