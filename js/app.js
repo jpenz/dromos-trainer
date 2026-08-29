@@ -2529,6 +2529,29 @@
     return notes.map((note) => `${note.name} (${note.roleLabel})`).join(" · ");
   }
 
+  // Which landing target suits where you are in the phrase. The phrase roles
+  // (Establish / Move / Cadence / Resolve) come from the progression's own
+  // timing metadata, so this advice transposes with the route and never
+  // hardcodes a key. It is a suggestion the player can ignore — the lens
+  // stays whatever they picked.
+  const ROLE_ADVICE = {
+    Establish: { lens: "root", why: "state the home clearly before you colour it" },
+    Move: { lens: "third", why: "the 3rd names each chord as it passes" },
+    Cadence: { lens: "guide", why: "guide tones make the pull to home audible" },
+    Resolve: { lens: "root", why: "land the root and let the phrase close" }
+  };
+  function roleAdviceHtml(chord) {
+    const advice = chord && ROLE_ADVICE[chord.phraseRole];
+    if (!advice) return "";
+    const suits = advice.lens === state.solo.focus;
+    return `<p class="role-advice${suits ? " suits" : ""}">
+      <span>${escapeHtml(chord.phraseRole)}</span>
+      ${suits
+        ? `Your target fits this bar — ${escapeHtml(advice.why)}.`
+        : `On this bar, try <button data-role-lens="${advice.lens}">${escapeHtml(landingLensName(advice.lens))}</button> — ${escapeHtml(advice.why)}.`}
+    </p>`;
+  }
+
   function landingLensName(focus) {
     if (focus === "root") return "roots";
     if (focus === "seam") return "resting tones";
@@ -4036,9 +4059,9 @@
         <div class="solo-roadmap-grid">${roadmap}</div>
       </section>
       <section class="solo-neck-hud" aria-label="Current and next solo landing" aria-live="polite">
-        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · orange ring is the note to land on</small></article>
+        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · the orange <b>circle</b> is the note to land on now</small></article>
         <div class="solo-hud-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b><small>hear the destination before the chord changes</small></div>
-        <article class="solo-hud-card next"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · turquoise target becomes orange on arrival</small></article>
+        <article class="solo-hud-card next"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · the turquoise <b>diamond</b> is where you are aiming; it becomes an orange circle on arrival</small></article>
       </section>
       <section class="solo-neck-zones" aria-label="Target locations in both halves of the neck">
         <header><div><span>Same target · two neck zones</span><b>Find ${escapeHtml(nowTarget.roleLabel)} ${escapeHtml(nowTarget.name)} now, then ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)} next</b></div><button data-solo-target-scope aria-pressed="${state.solo.allTargets}">${state.solo.allTargets ? "All target positions" : "Shape landing only"}</button></header>
@@ -4063,7 +4086,7 @@
         <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Current triad</span>
         ${chip("next", layers.next, "lc-next", "Coming triad")}
         ${chip("triads", layers.triads, "lc-triad", "Other current positions")}
-        <span class="layer-note">background is quiet · solid = play now · dashed = prepare next · ring = selected target</span>
+        <span class="layer-note">background is quiet · solid = play now · dashed = prepare next · <b>circle = land now</b> · <b>diamond = aim next</b></span>
       </div>`;
     root.querySelectorAll("[data-solo-roadmap-step]").forEach((button) => {
       button.onclick = () => {
@@ -4222,6 +4245,7 @@
       <div class="triad-landscape-key"><span class="landscape-solid">solid</span> play ${cur.symbol} now · <span class="landscape-faint">dashed</span> prepare ${next.symbol} · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
       <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
       <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
+      ${roleAdviceHtml(cur)}
       ${thread
         ? `<p class="solo-thread"><b>The thread:</b> ${escapeHtml(thread.from.name)} → ${escapeHtml(thread.to.name)}, ${thread.distance === 1 ? "a half step" : thread.distance === 2 ? "a whole step" : "three frets"} on one string. The neck draws it; play only that move and the change is already audible.</p>`
         : `<p class="solo-thread quiet"><b>No stepwise thread here:</b> the closest landing is a leap, so aim with your ear and let the pentatonic carry you there.</p>`}
@@ -4244,6 +4268,12 @@
         <button class="solo-open-route" data-open-solo-path>Practise this route in Shape →</button>
       </div></section>
       <section id="soloTimingMatrix" class="solo-timing-matrix"></section>`;
+    // The phrase-role suggestion renders inside the recipe, so it binds here.
+    $("soloRecipe").querySelectorAll("[data-role-lens]").forEach((b) => b.onclick = () => {
+      state.solo.focus = b.getAttribute("data-role-lens");
+      syncSoloFocusButtons();
+      renderSolo();
+    });
     $("soloRecipe").querySelector("[data-open-solo-path]").onclick = () => setSoloSection("path");
     const leanBtn = $("soloRecipe").querySelector("[data-hear-lean]");
     leanBtn.onclick = () => {

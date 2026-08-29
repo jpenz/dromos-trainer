@@ -212,6 +212,21 @@ test("landing lenses target the right notes, and now/next differ by SHAPE", () =
     });
   });
 
+  // Phrase-role advice must cover every role the progression model emits,
+  // and must only ever suggest a lens the UI actually offers.
+  const html2 = readFileSync(path.join(root, "index.html"), "utf8");
+  const offeredLenses = new Set([...html2.matchAll(/data-solo-focus="([a-z]+)"/g)].map((m) => m[1]));
+  const roles = [...app.matchAll(/^\s{4}(Establish|Move|Cadence|Resolve): \{ lens: "([a-z]+)"/gm)];
+  assert.equal(roles.length, 4, "every phrase role needs landing advice");
+  roles.forEach(([, role, lens]) => {
+    assert.ok(offeredLenses.has(lens), `role ${role} suggests lens "${lens}" which the UI does not offer`);
+  });
+
+  // Copy must describe the SHAPE encoding, not colour alone — otherwise the
+  // legend contradicts the neck for a colour-blind player.
+  assert.match(app, /circle/i, "the legend must name the circle");
+  assert.match(app, /diamond/i, "the legend must name the diamond");
+
   // Approach notes are labelled by direction, never by a scale degree that
   // would read as the current chord's own interval.
   assert.match(app, /role: "approach", roleLabel: arrow/,
