@@ -543,7 +543,9 @@ main {
 
 /* now/next landing targets */
 .dot-now-ring { fill: none; stroke: var(--terracotta); stroke-width: 2.5; }
-.dot-next-ring { fill: none; stroke: var(--turquoise); stroke-width: 2; stroke-dasharray: 4 3; opacity: 0.85; }
+/* Next targets are a DIAMOND, now targets a circle: shape carries the
+   meaning so it survives colour-blindness and peripheral vision. */
+.dot-next-ring { fill: none; stroke: var(--turquoise); stroke-width: 2.2; stroke-dasharray: 4 3; opacity: 0.9; stroke-linejoin: round; }
 /* Change choreography: the lean pulse previews the next landing; the arrival
    ignites it while the old target falls back. Driven by svg-level classes. */
 svg.lean-phase .dot-next-ring { opacity: 1; stroke-width: 3; stroke-dasharray: none; }
@@ -2350,3 +2352,13 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
   .picking-evidence nav { min-width: 0; }
   .picking-run-map { grid-template-columns: 1fr 1fr; }
 }
+
+/* Landing targets grouped by WHAT you are aiming at, so the list reads as a
+   taxonomy instead of eight loose buttons. */
+.landing-groups { display: grid; gap: 8px; margin-bottom: 10px; }
+.landing-group > span { display: block; margin-bottom: 4px; color: var(--faint); font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.landing-group .seg { width: 100%; }
+.seg-2 { grid-template-columns: repeat(2, 1fr); }
+.seg-4 { grid-template-columns: repeat(4, 1fr); }
+.lens-import { margin-left: 4px; padding: 1px 4px; border-radius: 999px; background: rgba(91,135,181,0.22); color: var(--aegean); font-size: 8px; font-style: normal; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+@media (max-width: 720px) { .seg-4 { grid-template-columns: repeat(2, 1fr); } }

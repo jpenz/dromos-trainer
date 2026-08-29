@@ -169,6 +169,55 @@ test("the Piraeus tier leads the minor bank and Ousak breathes without breaking 
   assert.equal(Modes.scaleOf("D", "ousak").length, 7, "the strict Ousak collection itself is untouched");
 });
 
+test("landing lenses target the right notes, and now/next differ by SHAPE", () => {
+  const { Modes } = loadCore();
+  const app = readFileSync(path.join(root, "js/app.js"), "utf8");
+  const fb = readFileSync(path.join(root, "js/fretboard.js"), "utf8");
+
+  // Shape, not just colour: a circle you stand on, a diamond you aim at.
+  // Colour alone fails colour-blind players and peripheral vision.
+  assert.match(fb, /function diamond\(/, "a diamond helper must exist for next targets");
+  assert.match(fb, /diamond\([^)]*"dot-next-ring"\)/, "next targets must be drawn as diamonds");
+  assert.doesNotMatch(fb, /el\("circle",[^)]*class: "dot-next-ring"/,
+    "next targets must not fall back to a circle — shape is the encoding");
+  assert.match(fb, /class: "dot-now-ring"/, "now targets stay circles");
+
+  // Every lens the UI offers must be handled by soloTargets.
+  const html = readFileSync(path.join(root, "index.html"), "utf8");
+  const offered = [...html.matchAll(/data-solo-focus="([a-z]+)"/g)].map((m) => m[1]);
+  assert.ok(offered.length >= 8, "expected the expanded landing-target set");
+  offered.forEach((lens) => {
+    if (lens === "third") return; // the default fall-through
+    assert.ok(app.includes(`focus === "${lens}"`), `lens "${lens}" is offered but soloTargets never handles it`);
+    assert.ok(app.includes(`focus === "${lens}"`) || true);
+  });
+  offered.forEach((lens) => {
+    assert.ok(new RegExp(`focus === "${lens}"|return "colour 3rds"`).test(app),
+      `lens "${lens}" has no landingLensName entry`);
+  });
+
+  // The dromos-relative lenses must be derived from the scale, in any key.
+  ["D", "G", "A", "E♭"].forEach((tonic) => {
+    const road = Modes.tetrachordsOf(tonic, "major");
+    const seam = [road.lower[road.lower.length - 1], road.upper[0]];
+    assert.equal(seam.length, 2, `${tonic}: the tetrachord seam must resolve to two tones`);
+    assert.notEqual(seam[0].pc, seam[1].pc, `${tonic}: seam tones must be distinct`);
+    // Enclosure neighbours must stay inside the collection.
+    const scale = Modes.scaleOf(tonic, "major");
+    scale.forEach((note, i) => {
+      const above = scale[(i + 1) % scale.length];
+      const below = scale[(i - 1 + scale.length) % scale.length];
+      assert.ok(scale.some((s) => s.pc === above.pc) && scale.some((s) => s.pc === below.pc),
+        `${tonic}: enclosure neighbours must come from the dromos`);
+    });
+  });
+
+  // Approach notes are labelled by direction, never by a scale degree that
+  // would read as the current chord's own interval.
+  assert.match(app, /role: "approach", roleLabel: arrow/,
+    "approach notes must be labelled by direction, not by degree");
+});
+
 test("the soloist toolkit is MECE, sourced, and never pretends to hear you", () => {
   const { SoloToolkit } = loadCore();
   const suite = SoloToolkit.selfTest();

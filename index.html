@@ -333,12 +333,30 @@
                 <p class="ear-hint"><b>Read the neck while the harmony moves:</b> the full scale stays visible, the solid shape is the chord under your hand, and the rings tell you which note to land on now and next.</p>
                 <div id="soloToolkit" class="solo-toolkit" aria-label="Soloist toolkit"></div>
                 <span class="panel-label">Landing target</span>
-                <div class="seg seg-5">
-                  <button data-solo-focus="third" class="active">3rds · start here</button>
-                  <button data-solo-focus="sweet">Lean 2→3</button>
-                  <button data-solo-focus="triad">Triad tones</button>
-                  <button data-solo-focus="guide">Guide tones</button>
-                  <button data-solo-focus="pedal">Common tone</button>
+                <div class="landing-groups">
+                  <div class="landing-group">
+                    <span>Aim at the chord</span>
+                    <div class="seg seg-4">
+                      <button data-solo-focus="third" class="active">3rds · start here</button>
+                      <button data-solo-focus="root">Roots</button>
+                      <button data-solo-focus="guide">Guide tones</button>
+                      <button data-solo-focus="triad">Triad tones</button>
+                    </div>
+                  </div>
+                  <div class="landing-group">
+                    <span>Aim at the dromos</span>
+                    <div class="seg seg-2">
+                      <button data-solo-focus="sweet">Lean ♭2→3</button>
+                      <button data-solo-focus="seam">Resting tones</button>
+                    </div>
+                  </div>
+                  <div class="landing-group">
+                    <span>Aim by motion</span>
+                    <div class="seg seg-2">
+                      <button data-solo-focus="pedal">Common tone</button>
+                      <button data-solo-focus="enclose">Enclose <i class="lens-import">import</i></button>
+                    </div>
+                  </div>
                 </div>
                 <div id="soloRecipe" class="solo-recipe"></div>
               </div>

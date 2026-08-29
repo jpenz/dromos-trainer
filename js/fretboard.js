@@ -136,6 +136,15 @@
     return e;
   }
 
+  // A diamond outline, used for "next" targets so shape (not just colour)
+  // distinguishes where you are from where you are going.
+  function diamond(cx, cy, rr, cls) {
+    return el("polygon", {
+      points: `${cx},${cy - rr} ${cx + rr},${cy} ${cx},${cy + rr} ${cx - rr},${cy}`,
+      class: cls
+    });
+  }
+
   const GEO = {
     padL: 54, padR: 24, padT: 30, padB: 26,
     fretW: 66, stringGap: 34, nutW: 8
@@ -296,10 +305,13 @@
       if (isTarget && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-target-ring" }));
       }
+      // Now vs next is encoded in SHAPE as well as colour: a circle you are
+      // standing on, a diamond you are aiming at. Colour alone fails for
+      // colour-blind players and in the corner of the eye while playing.
       if (isNow && kind !== "ghost") {
         gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-now-ring" }));
       } else if (isNext && kind !== "ghost") {
-        gg.appendChild(el("circle", { cx, cy, r: r + 7, class: "dot-next-ring" }));
+        gg.appendChild(diamond(cx, cy, r + 9, "dot-next-ring"));
       }
       gg.appendChild(el("circle", { cx, cy, r, class: "dot-bg" }));
       let label = p.note.roleLabel || p.note.degree;
@@ -359,7 +371,7 @@
         if (n.note.isFlavour) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: 16, class: "dot-flavour-ring" }));
         if (isTarget) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-target-ring" }));
         if (isNow) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-now-ring" }));
-        else if (isNext) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-next-ring" }));
+        else if (isNext) gg.appendChild(diamond(cx(n), cy(n), isCur ? 25 : 22, "dot-next-ring"));
         gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 15 : 12, class: "dot-bg" }));
         const label = opts.labelMode === "note" ? n.note.name : n.note.degree;
         gg.appendChild(el("text", { x: cx(n), y: cy(n) + 4, "text-anchor": "middle", class: "dot-label" }, label));

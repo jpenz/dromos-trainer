@@ -2530,6 +2530,9 @@
   }
 
   function landingLensName(focus) {
+    if (focus === "root") return "roots";
+    if (focus === "seam") return "resting tones";
+    if (focus === "enclose") return "enclosed 3rds";
     if (focus === "triad") return "triad tones";
     if (focus === "guide") return "guide tones";
     if (focus === "sweet") return "sweet 2→3 leans";
@@ -3458,6 +3461,45 @@
 
   function soloTargets(chord, focus) {
     const third = chordTone(chord, "3") || chordTone(chord, "b3");
+    if (focus === "root") {
+      // The most final landing there is. Useful precisely because it is
+      // blunt: it ends a phrase rather than colouring one.
+      const root = chordTone(chord, "R");
+      return root ? [root] : chord.notes.slice(0, 1);
+    }
+    if (focus === "seam") {
+      // The dromos's own gravity rather than the chord's: the tones joining
+      // the two tetrachords (degrees 4 and 5) are where a modal line rests
+      // before it decides to go home. This is the app's tetrachord road
+      // used as a landing target, not a claim about any particular song.
+      const road = M.tetrachordsOf(state.tonic, state.modeId);
+      const seam = [road.lower[road.lower.length - 1], road.upper[0]]
+        .filter(Boolean)
+        .map((note) => ({ pc: note.pc, name: note.name, role: note.degree, roleLabel: note.degree, degree: note.degree }));
+      return seam.length ? seam : chord.notes.slice(0, 1);
+    }
+    if (focus === "enclose") {
+      // Surround the target from a step above and a step below inside the
+      // dromos, then land on it. A borrowed device (bebop enclosure), so the
+      // UI labels it an import; the neighbours are taken from the dromos so
+      // the approach never leaves the collection.
+      if (!third) return chord.notes.slice(0, 1);
+      const scale = M.scaleOf(state.tonic, state.modeId);
+      const idx = scale.findIndex((note) => note.pc === third.pc);
+      const out = [third];
+      if (idx >= 0) {
+        const above = scale[(idx + 1) % scale.length];
+        const below = scale[(idx - 1 + scale.length) % scale.length];
+        // Label approach notes by DIRECTION, not by scale degree: inside a
+        // chord readout "F♯ (3)" reads as that chord's 3rd, which it is not.
+        [[below, "↓"], [above, "↑"]].forEach(([note, arrow]) => {
+          if (note && note.pc !== third.pc) {
+            out.push({ pc: note.pc, name: note.name, role: "approach", roleLabel: arrow, degree: note.degree });
+          }
+        });
+      }
+      return out;
+    }
     if (focus === "sweet") {
       // The practical Greek "sweet" move: the scale's 2nd (or ♭2 in Ousak and
       // Hijaz) leaning into the chord's 3rd exactly when the change arrives.
