@@ -6,7 +6,7 @@
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
     PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
-    PG = window.PageGuides, TE = window.TacticalExamples, PK = window.PickingLab;
+    PG = window.PageGuides, TE = window.TacticalExamples, BK = window.BouzoukiKnowledge, PK = window.PickingLab;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -41,7 +41,7 @@
     // --- triads ---
     triads: { step: 0, stringSet: null, zone: "mid", showAll: true, rhythmLevel: 1 },
     // --- solo lab ---
-    solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [],
+    solo: { section: "targets", focus: "third", lens: "full", oneCourse: false, phraseId: "ladder", routeId: "nearest-link", matrixBeat: 0, matrixPlan: [], neckZone: "both", allTargets: true,
       // Soloist Toolkit (FR-58): active pillar/tool and the phrase-arc phase.
       toolkit: { pillar: "land", toolId: "arrivals", phase: 0, formulaDeck: [0, 1, 2, 3] },
       // visual layers on the Changes map: the scale road and the targets are
@@ -63,9 +63,10 @@
     // --- dedicated plectrum curriculum ---
     picking: {
       category: "all", exerciseId: "down-up-clock", route: "horizontal",
+      variant: "alternate",
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
-      runIndex: null, activeSegment: null
+      runIndex: null, activeSegment: null, voice: "bouzouki"
     },
     // --- shared ---
     labelMode: "interval",
@@ -97,19 +98,67 @@
   function loadUiPreferences() {
     try {
       const raw = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || "{}");
-      if (["studio", "clean", "piano", "auto"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
+      // Old modeled clean/match voices migrate to the reliable piano. Picking
+      // has its own short paired-course voice and no longer changes harmony.
+      if (["studio", "piano"].includes(raw.chordVoice)) state.chordVoice = raw.chordVoice;
+      if (["bouzouki", "studio", "piano"].includes(raw.pickingVoice)) state.picking.voice = raw.pickingVoice;
       if (typeof raw.pickupV2 === "boolean") state.pickupV2 = raw.pickupV2;
       if ([1, 3, 6].includes(raw.gymKeys)) state.gym.keys = raw.gymKeys;
       if (typeof raw.gymSkeleton === "boolean") state.gym.skeleton = raw.gymSkeleton;
     } catch { /* first run or blocked storage */ }
   }
   function saveUiPreferences() {
-    try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickupV2: state.pickupV2, gymKeys: state.gym.keys, gymSkeleton: state.gym.skeleton })); } catch { /* private mode */ }
+    try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ chordVoice: state.chordVoice, pickingVoice: state.picking.voice, pickupV2: state.pickupV2, gymKeys: state.gym.keys, gymSkeleton: state.gym.skeleton })); } catch { /* private mode */ }
   }
-  // "studio" is a real sampled piano reference; "piano" is the zero-network
-  // additive fallback; "auto" matches the selected instrument.
+  // Harmony keeps a pitch-stable piano. Technique defaults to a short paired-
+  // course pluck so attack timing is audible without changing ear-test timbre.
   function chordReferenceVoice() {
-    return state.chordVoice === "studio" ? "studio" : state.chordVoice === "piano" ? "piano" : state.chordVoice === "auto" ? undefined : "guitar";
+    return state.chordVoice === "piano" ? "piano" : "studio";
+  }
+  function pickingReferenceVoice() {
+    return ["studio", "piano"].includes(state.picking.voice) ? state.picking.voice : "bouzouki";
+  }
+
+  function updateAudioReadyStatus(status, message) {
+    const snapshot = status || AU.audioStatus();
+    const copy = message || (snapshot.ready
+      ? snapshot.studio === "loading" ? "Sound on · loading sampled piano…" : "Sound ready"
+      : snapshot.state === "suspended" || snapshot.state === "interrupted" ? "Tap Test sound to restore audio" : "Tap Test sound if audio is silent");
+    [$("audioReadyStatus"), $("pickingAudioReadyStatus")].filter(Boolean).forEach((target) => {
+      target.dataset.state = snapshot.ready ? "ready" : snapshot.state;
+      target.textContent = copy;
+    });
+  }
+
+  async function readyPracticeAudio(referenceVoice) {
+    updateAudioReadyStatus({ state: "starting", ready: false, studio: AU.studioStatus() }, "Starting audio…");
+    const running = await AU.ensureRunning();
+    if (!running) {
+      updateAudioReadyStatus(AU.audioStatus(), "Audio is blocked · tap Test sound again");
+      return false;
+    }
+    if (referenceVoice === "studio") {
+      updateAudioReadyStatus({ state: "running", ready: true, studio: "loading" });
+      await AU.prepareStudioPiano();
+    }
+    updateAudioReadyStatus(AU.audioStatus());
+    return true;
+  }
+
+  async function playSoundCheck() {
+    stopPlay();
+    const voice = chordReferenceVoice();
+    if (!await readyPracticeAudio(voice)) return;
+    AU.playSequence([60, 64, 67, 72].map((midi) => ({ freq: T.midiToFreq(midi) })), 0.22, undefined, voice);
+    updateAudioReadyStatus(AU.audioStatus(), `${voice === "studio" ? "Sampled piano" : "Warm keys"} playing`);
+  }
+
+  async function playPickingSoundCheck() {
+    stopPlay();
+    const voice = pickingReferenceVoice();
+    if (!await readyPracticeAudio(voice)) return;
+    AU.playSequence([62, 64, 65, 67, 69, 70, 72, 74].map((midi) => ({ freq: T.midiToFreq(midi) })), 0.18, undefined, voice);
+    updateAudioReadyStatus(AU.audioStatus(), `${voice === "bouzouki" ? "Bouzouki pick" : voice === "studio" ? "Sampled piano" : "Warm keys"} playing · separate attacks`);
   }
   const escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -320,9 +369,12 @@
     });
     $("pageGuide").innerHTML = `<article class="learning-pyramid" data-guide-key="${escapeHtml(guide.key)}">
       <header class="guide-answer"><span>Answer first · ${escapeHtml(guide.purpose)}</span><h1>${escapeHtml(guide.answer)}</h1><p>${escapeHtml(guide.result)}</p><small>Current setup · ${escapeHtml(pageGuideContext())}</small></header>
-      <ol class="guide-steps" aria-label="How to use this page">${guide.steps.map((step, index) => `<li class="${index === 0 ? "is-first" : ""}"><i>${index + 1}</i><div><span>${index === 0 ? "Start here" : index === 1 ? "Then" : "Finish"}</span><b>${escapeHtml(step)}</b>${index === 0 ? `<button type="button" data-guide-target="${escapeHtml(guide.targetId)}">Show me where</button>` : ""}</div></li>`).join("")}</ol>
-      <div class="guide-reason"><div><span>What to listen or look for</span><p>${escapeHtml(guide.why)}</p></div><div class="guide-success"><span>You are ready to move on when…</span><b>${escapeHtml(guide.done)}</b></div></div>
-      <details class="guide-explain"><summary>New here? Explain the words and screen controls</summary><div><dl>${guide.terms.map(([term, meaning]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(meaning)}</dd></div>`).join("")}</dl><p><b>Using the screen:</b> Tap a button once. The selected choice is highlighted. You may change choices until an exercise says <i>Check</i>. Use <i>Stop</i> whenever you need silence; changing pages also stops the sound.</p></div></details>
+      <div class="guide-first"><i>1</i><div><span>Start here</span><b>${escapeHtml(guide.steps[0])}</b></div><button type="button" data-guide-target="${escapeHtml(guide.targetId)}">Show me where</button></div>
+      <details class="guide-workflow"><summary><span>Open the complete practice guide</span><b>3 steps · listening goal · success test</b></summary><div class="guide-workflow-body">
+        <ol class="guide-steps" aria-label="How to use this page">${guide.steps.map((step, index) => `<li class="${index === 0 ? "is-first" : ""}"><i>${index + 1}</i><div><span>${index === 0 ? "Start here" : index === 1 ? "Then" : "Finish"}</span><b>${escapeHtml(step)}</b></div></li>`).join("")}</ol>
+        <div class="guide-reason"><div><span>What to listen or look for</span><p>${escapeHtml(guide.why)}</p></div><div class="guide-success"><span>You are ready to move on when…</span><b>${escapeHtml(guide.done)}</b></div></div>
+        <details class="guide-explain"><summary>New here? Explain the words and screen controls</summary><div><dl>${guide.terms.map(([term, meaning]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(meaning)}</dd></div>`).join("")}</dl><p><b>Using the screen:</b> Tap a button once. The selected choice is highlighted. You may change choices until an exercise says <i>Check</i>. Use <i>Stop</i> whenever you need silence; changing pages also stops the sound.</p></div></details>
+      </div></details>
     </article>`;
     $("pageGuide").querySelector("[data-guide-target]").onclick = (event) => focusPageGuideTarget(event.currentTarget.getAttribute("data-guide-target"));
   }
@@ -477,10 +529,46 @@
     });
   }
 
+  function renderProgressionWorkoutRoadmap(entries, cursor) {
+    const root = $("cycleRoadmap");
+    if (!root || !entries.length) return;
+    const count = Math.min(6, entries.length);
+    const visible = Array.from({ length: count }, (_, offset) => entries[(cursor + offset) % entries.length]);
+    root.classList.remove("hidden");
+    root.innerHTML = `<header><div><span>Progression roadmap · next ${count}</span><b>Same Greek/modal route, transposed by fourths</b></div><p>Orange is sounding · turquoise is next · the key label changes only at a complete progression boundary.</p></header>
+      <div class="cycle-roadmap-grid">${visible.map((entry, offset) => `<button data-cycle-workout-step="${entries.indexOf(entry)}" class="roadmap-chord${offset === 0 ? " now" : ""}${offset === 1 ? " next" : ""}">
+        <span>${offset === 0 ? "Now" : offset === 1 ? "Next" : `+${offset}`} · key ${escapeHtml(entry.tonic)}</span><strong>${escapeHtml(entry.chord.degreeLabel)}</strong><b>${escapeHtml(entry.chord.symbol)}</b><small>${escapeHtml(entry.chord.phraseRole)} · ${entry.chord.durationBars} bar${entry.chord.durationBars === 1 ? "" : "s"} · ${escapeHtml(M.MODES[state.modeId].name)}</small></button>`).join("")}</div>`;
+    root.querySelectorAll("[data-cycle-workout-step]").forEach((button) => button.onclick = () => {
+      stopPlay(); state.cycleComping.step = +button.getAttribute("data-cycle-workout-step"); state.cycleComping.voicingIndex = 0; renderCycle(); auditionCurrent("block");
+    });
+  }
+
   // The gym's playable sequence: keys*3 chords starting at the current key
   // group, wrapping around the six-key wheel.
   function gymSequence(idx) {
     return HJ.sequenceForKeyCount(state.gym.anchor == null ? idx : state.gym.anchor, cycle, state.gym.keys);
+  }
+
+  // Progression workouts move by fourths: a standard transposition route that
+  // keeps the selected Greek/modal progression intact instead of pretending
+  // every map has the major ii-V-I pivot's special whole-step modulation.
+  const PRACTICE_KEY_OFFSETS = [0, 5, 10, 3, 8, 1];
+  function practiceTonicAt(startTonic, offset) {
+    const pc = (M.parseName(startTonic).pc + offset + 12) % 12;
+    return M.TONICS.find((name) => M.parseName(name).pc === pc) || startTonic;
+  }
+  function cycleCompingEntries() {
+    const count = Math.max(1, Math.min(state.gym.keys, PRACTICE_KEY_OFFSETS.length));
+    const entries = [];
+    PRACTICE_KEY_OFFSETS.slice(0, count).forEach((offset, keyIndex) => {
+      const tonic = practiceTonicAt(state.tonic, offset);
+      const built = M.buildProgression(tonic, state.modeId, state.progId);
+      built.chords.forEach((chord, chordIndex) => entries.push({
+        keyIndex, chordIndex, tonic,
+        chord: Object.assign({}, chord, { key: tonic })
+      }));
+    });
+    return entries;
   }
 
   function songJourney(chords, step) {
@@ -515,7 +603,14 @@
 
   function cycleChordVoicings(chord) {
     const kind = state.cycleComping.kind;
-    if (kind === "full") return GV ? GV.fullVoicings(chord) : [];
+    // Six-string CAGED/barre forms are useful on guitar, but they are not a
+    // valid visual answer for a three- or four-course instrument. Bouzouki and
+    // laouto use a course-safe four-note search instead of silently drawing a
+    // guitar grip with impossible string indexes.
+    if (kind === "full") {
+      const isGuitar = /^guitar/.test(window.Tuning.currentId());
+      return isGuitar && GV ? GV.fullVoicings(chord) : compactFourVoicings(chord);
+    }
     if (kind === "triad") {
       const triadId = TR.TRIAD_OF[chord.quality] || "maj";
       return TR.allShapes(chord.rootPc, triadId, spellPc)
@@ -532,32 +627,48 @@
     if (c.focus !== "chords") { root.innerHTML = ""; return; }
     const mode = M.MODES[state.modeId];
     const progressions = M.PROGRESSIONS[state.modeId];
-    const { chords, prog } = currentProgression();
+    const { prog } = currentProgression();
+    const entries = cycleCompingEntries();
+    const chords = entries.map((entry) => entry.chord);
     c.step = Math.min(c.step, chords.length - 1);
-    const chord = chords[c.step];
+    const entry = entries[c.step];
+    const chord = entry.chord;
     const voicings = cycleChordVoicings(chord);
     c.voicingIndex = Math.min(c.voicingIndex, Math.max(0, voicings.length - 1));
+    const isGuitar = /^guitar/.test(window.Tuning.currentId());
     const kindCopy = {
-      full: ["Full 6", "open + E/A-family"],
+      full: isGuitar ? ["Full 6", "open + E/A-family"] : ["Course-safe 4", "playable on this tuning"],
       triad: ["Triad 3", "nearest 3-string forms"],
       four: ["Compact 4", "root + colour + guide"]
     };
     root.innerHTML = `
-      <p class="cycle-voicing-help"><b>Practical guitar chords:</b> choose the actual dromos progression, then select a full/open form, a triad, or a compact four-note voicing. The selected form stays at fret 15 or below.</p>
+      <p class="cycle-voicing-help"><b>Progression workout:</b> choose a key, dromos, and common route. One key learns the sound; three or six transpose the same route by fourths. The original ii–V–I wheel remains in Voice-led triad route.</p>
+      <div class="cycle-workout-key"><label for="cycleWorkoutTonic">Starting key<select id="cycleWorkoutTonic">${M.TONICS.map((tonic) => `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label><span>${state.gym.keys} key${state.gym.keys === 1 ? "" : "s"} · same progression</span></div>
       <span class="panel-label">Dromos · ${mode.name} ${mode.greek}</span>
       <div class="cycle-mode-grid">${M.MODE_ORDER.map((modeId) => `<button data-cycle-chord-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}">${M.MODES[modeId].name}</button>`).join("")}</div>
       <div class="cycle-progression-list">${progressions.map((item) => `<button data-cycle-prog="${item.id}" class="${item.id === prog.id ? "active" : ""}"><b>${item.label}</b><span>${item.tag}</span></button>`).join("")}</div>
+      <p class="cycle-voicing-help"><b>Why this route:</b> ${escapeHtml(prog.why)}</p>
+      <div class="cycle-key-route" aria-label="Progression transposition route">${Array.from(new Set(entries.map((item) => item.tonic))).map((tonic, keyIndex) => `<button data-cycle-workout-key="${keyIndex}" class="${keyIndex === entry.keyIndex ? "active" : ""}"><i>${keyIndex + 1}</i><b>${tonic}</b><span>${escapeHtml(prog.label)}</span></button>`).join("")}</div>
       <span class="panel-label">Voicing weight</span>
       <div class="cycle-voice-kinds">${Object.entries(kindCopy).map(([id, [label, detail]]) => `<button data-cycle-voice-kind="${id}" class="${id === c.kind ? "active" : ""}"><b>${label}</b><span>${detail}</span></button>`).join("")}</div>
-      <div class="cycle-chord-steps">${chords.map((item, index) => `<button data-cycle-chord-step="${index}" class="${index === c.step ? "active" : ""}"><i>${item.degreeLabel}</i><b>${item.symbol}</b></button>`).join("<span class=\"pchip-arrow\">→</span>")}</div>
+      <div class="cycle-chord-steps">${entries.map((item, index) => `<button data-cycle-chord-step="${index}" class="${index === c.step ? "active" : ""}"><i>${item.chord.degreeLabel}</i><b>${item.chord.symbol}</b><span>${item.tonic}</span></button>`).join("<span class=\"pchip-arrow\">→</span>")}</div>
       ${voicings.length ? `<div class="cycle-voicing-options">${voicings.map((item, index) => `<button data-cycle-voicing="${index}" class="${index === c.voicingIndex ? "active" : ""}"><b>${item.label}</b><span>${item.family} · frets ${item.lowFret}–${item.highFret || Math.max(...item.placements.map((placement) => placement.fret))}</span></button>`).join("")}</div>` : `<p class="cycle-voicing-help"><b>No six-string full form is defined for ${chord.symbol}.</b> Use Compact 4: it keeps the chord's defining tones without inventing an awkward barre.</p>`}
       <p class="cycle-voicing-help">Hear/think: roots locate the chord, 3rds name major or minor colour, and 7ths carry dominant pull. Prefer the smallest useful move; a full shape is an option, not a requirement.</p>`;
+    $("cycleWorkoutTonic").onchange = (event) => {
+      stopPlay(); state.tonic = event.target.value; c.step = 0; c.voicingIndex = 0; persistPreferences(); renderCycle();
+    };
     root.querySelectorAll("[data-cycle-chord-mode]").forEach((button) => button.onclick = () => {
       stopPlay(); state.modeId = button.getAttribute("data-cycle-chord-mode"); state.progId = M.PROGRESSIONS[state.modeId][0].id;
       state.progStep = 0; c.step = 0; c.voicingIndex = 0; renderCycle();
     });
     root.querySelectorAll("[data-cycle-prog]").forEach((button) => button.onclick = () => {
       stopPlay(); state.progId = button.getAttribute("data-cycle-prog"); state.progStep = 0; c.step = 0; c.voicingIndex = 0; renderCycle();
+    });
+    root.querySelectorAll("[data-cycle-workout-key]").forEach((button) => button.onclick = () => {
+      stopPlay();
+      const keyIndex = +button.getAttribute("data-cycle-workout-key");
+      const target = entries.findIndex((item) => item.keyIndex === keyIndex);
+      c.step = Math.max(0, target); c.voicingIndex = 0; renderCycle(); auditionCurrent("block");
     });
     root.querySelectorAll("[data-cycle-voice-kind]").forEach((button) => button.onclick = () => {
       stopPlay(); c.kind = button.getAttribute("data-cycle-voice-kind"); c.voicingIndex = 0; renderCycle();
@@ -674,11 +785,13 @@
   }
 
   function renderCycleComping() {
-    $("cycleRoadmap").classList.add("hidden");
-    const { chords } = currentProgression();
+    const entries = cycleCompingEntries();
+    const chords = entries.map((entry) => entry.chord);
     const c = state.cycleComping;
+    c.step = Math.min(c.step, Math.max(0, chords.length - 1));
     const chord = chords[Math.min(c.step, chords.length - 1)];
     const journey = songJourney(chords, c.step);
+    journey.label = "Progression workout";
     const voicings = cycleChordVoicings(chord);
     const voicing = voicings[c.voicingIndex];
     const nextVoicings = journey.next ? cycleChordVoicings(journey.next.chord) : [];
@@ -687,13 +800,15 @@
       FB.render(svg(), { labelMode: state.labelMode, lefty: state.lefty });
       $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span></div><div class="ro-foot">Full/open forms are a guitar-specific vocabulary. Switch to guitar for six-string forms, or choose Compact 4 for a playable chord-tone set on this tuning.</div>`;
       renderChangeGuide(journey, null, nextVoicing);
+      renderProgressionWorkoutRoadmap(entries, c.step);
       return;
     }
     FB.render(svg(), { grip: { placements: voicing.placements }, nextGrip: nextVoicing ? { placements: nextVoicing.placements } : null, labelMode: state.labelMode, lefty: state.lefty, flavourPcs: M.flavourPcs(state.tonic, state.modeId) });
-    svg().setAttribute("aria-label", `guitar ${voicing.label} for ${chord.symbol}`);
+    svg().setAttribute("aria-label", `${window.Tuning.current().name} ${voicing.label} for ${chord.symbol} in key ${entries[c.step].tonic}`);
     const tones = voicing.placements.slice().reverse().map((placement) => `<div class="note-chip held" data-group="${placement.note.colorGroup}"><span class="chip-role">${placement.note.roleLabel}</span><span class="chip-name">${placement.note.name}</span><span class="chip-tag">fret ${placement.fret}</span></div>`).join("");
-    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span><span class="ro-key">${voicing.label}</span></div><div class="tri-tags"><span class="tri-set">${voicing.family}</span><span class="tri-fret">frets ${voicing.lowFret}–${voicing.highFret || Math.max(...voicing.placements.map((placement) => placement.fret))}</span></div><div class="ro-notes">${tones}</div><div class="ro-foot">Play the lowest note as a bass cue, then listen for the 3rd${chord.notes.some((note) => note.role === "7" || note.role === "b7") ? " and 7th" : ""}. On the next chord, keep common tones and move the remaining voice by the shortest musical distance.</div>`;
+    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${chord.degreeLabel}</span><span class="ro-symbol">${chord.symbol}</span><span class="ro-key">key ${entries[c.step].tonic} · ${voicing.label}</span></div><div class="tri-tags"><span class="tri-set">${voicing.family}</span><span class="tri-fret">frets ${voicing.lowFret}–${voicing.highFret || Math.max(...voicing.placements.map((placement) => placement.fret))}</span></div><div class="ro-notes">${tones}</div><div class="ro-foot">Play the lowest note as a bass cue, then listen for the 3rd${chord.notes.some((note) => note.role === "7" || note.role === "b7") ? " and 7th" : ""}. Finish the complete route before the next key begins; its Roman numerals stay the same while every chord name moves.</div>`;
     renderChangeGuide(journey, voicing, nextVoicing);
+    renderProgressionWorkoutRoadmap(entries, c.step);
   }
 
   function renderCycle() {
@@ -738,7 +853,7 @@
     setCycleIndex(seq[(pos + delta + seq.length) % seq.length]);
   }
   function stepCycleComping(delta) {
-    const { chords } = currentProgression();
+    const chords = cycleCompingEntries();
     const c = state.cycleComping;
     c.step = (c.step + delta + chords.length) % chords.length;
     c.voicingIndex = 0;
@@ -1421,7 +1536,7 @@
     root.innerHTML = `
       <section class="examples-context" aria-label="Tactical example key and scale">
         <div><span>All examples recalculate</span><b>Choose the same home and dromos as the music you are practising.</b></div>
-        <label for="examplesTonicSel">Key / home<select id="examplesTonicSel">${M.TONICS.map((tonic) => `<option value="${escapeHtml(tonic)}"${tonic === state.tonic ? " selected" : ""}>${escapeHtml(tonic)}</option>`).join("")}</select></label>
+        <label for="examplesTonicSel">Key<select id="examplesTonicSel">${M.TONICS.map((tonic) => `<option value="${escapeHtml(tonic)}"${tonic === state.tonic ? " selected" : ""}>${escapeHtml(tonic)}</option>`).join("")}</select></label>
         <div class="seg seg-5" aria-label="Tactical example scale or dromos">${M.MODE_ORDER.map((modeId) => `<button data-example-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}">${escapeHtml(M.MODES[modeId].name)}</button>`).join("")}</div>
       </section>
       <section class="examples-filter" aria-label="Tactical example categories">
@@ -2414,7 +2529,33 @@
     return notes.map((note) => `${note.name} (${note.roleLabel})`).join(" · ");
   }
 
+  // Which landing target suits where you are in the phrase. The phrase roles
+  // (Establish / Move / Cadence / Resolve) come from the progression's own
+  // timing metadata, so this advice transposes with the route and never
+  // hardcodes a key. It is a suggestion the player can ignore — the lens
+  // stays whatever they picked.
+  const ROLE_ADVICE = {
+    Establish: { lens: "root", why: "state the home clearly before you colour it" },
+    Move: { lens: "third", why: "the 3rd names each chord as it passes" },
+    Cadence: { lens: "guide", why: "guide tones make the pull to home audible" },
+    Resolve: { lens: "root", why: "land the root and let the phrase close" }
+  };
+  function roleAdviceHtml(chord) {
+    const advice = chord && ROLE_ADVICE[chord.phraseRole];
+    if (!advice) return "";
+    const suits = advice.lens === state.solo.focus;
+    return `<p class="role-advice${suits ? " suits" : ""}">
+      <span>${escapeHtml(chord.phraseRole)}</span>
+      ${suits
+        ? `Your target fits this bar — ${escapeHtml(advice.why)}.`
+        : `On this bar, try <button data-role-lens="${advice.lens}">${escapeHtml(landingLensName(advice.lens))}</button> — ${escapeHtml(advice.why)}.`}
+    </p>`;
+  }
+
   function landingLensName(focus) {
+    if (focus === "root") return "roots";
+    if (focus === "seam") return "resting tones";
+    if (focus === "enclose") return "enclosed 3rds";
     if (focus === "triad") return "triad tones";
     if (focus === "guide") return "guide tones";
     if (focus === "sweet") return "sweet 2→3 leans";
@@ -2773,7 +2914,7 @@
     const path = P.buildPath(context.tonic, state.modeId, {
       layout, position: context.position, startDegree: state.lab.startDegree,
       startString: state.lab.startString, firstStroke: state.picking.firstStroke,
-      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings"
+      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings" || exercise.id === "triplet-grammar"
     });
     const { chords } = M.buildProgression(context.tonic, state.modeId, state.progId);
     const index = Math.min(state.progStep, chords.length - 1);
@@ -2785,7 +2926,7 @@
     const resolved = Object.assign({ tonic: state.tonic, position: state.lab.position }, context || {});
     const base = pickingBaseNodes(exercise, resolved);
     const pulse = S.beatMap(S.byId(state.groove.styleId));
-    const nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke);
+    const nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke, state.picking.variant);
     let priorPick = state.picking.firstStroke;
     for (let index = 0; index < nodes.length; index++) {
       const node = nodes[index];
@@ -2811,7 +2952,7 @@
     const options = {
       layout, position: state.lab.position, startDegree: state.lab.startDegree,
       startString: state.lab.startString, firstStroke: state.picking.firstStroke,
-      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings"
+      updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings" || exercise.id === "triplet-grammar"
     };
     const positions = P.positionsFor(tonic, state.modeId, options, state.lab.position).filter((item) => item.lowFret <= 15);
     if (!positions.some((item) => item.position === state.lab.position)) {
@@ -2831,7 +2972,9 @@
 
   function selectPickingExercise(id) {
     stopPlay();
-    state.picking.exerciseId = PK.byId(id).id;
+    const exercise = PK.byId(id);
+    state.picking.exerciseId = exercise.id;
+    state.picking.variant = exercise.variants && exercise.variants.length ? exercise.variants[0].id : "alternate";
     state.picking.pathIndex = null;
     state.picking.cleanPasses = 0;
     renderPickingLab();
@@ -2851,6 +2994,7 @@
 
   function renderPickingSetup() {
     const exercise = pickingExercise();
+    const currentPhase = BK.phaseForExercise(exercise.id);
     $("pickingTonicSel").innerHTML = M.TONICS.map((name) => `<option value="${name}"${name === state.tonic ? " selected" : ""}>${name}</option>`).join("");
     $("pickingTonicSel").onchange = (event) => {
       stopPlay(); state.tonic = event.target.value; state.progStep = 0; state.picking.cleanPasses = 0;
@@ -2860,6 +3004,9 @@
       button.classList.toggle("active", button.getAttribute("data-picking-mode") === state.modeId));
     $("pickingPulseSel").innerHTML = S.STYLES.map((style) => `<option value="${style.id}"${style.id === state.groove.styleId ? " selected" : ""}>${escapeHtml(style.title)} · ${escapeHtml(style.meter)} · ${escapeHtml(style.pulse)}</option>`).join("");
     $("pickingPulseSel").onchange = (event) => { selectGrooveStyle(event.target.value); renderPickingLab(); renderPageGuide(); };
+    $("pickingMasterySpine").innerHTML = BK.MASTERY_PHASES.map((phase) =>
+      `<span class="${phase.id === currentPhase.id ? "active" : ""}"><i>${phase.step}</i><b>${escapeHtml(phase.label)}</b><small>${escapeHtml(phase.short)}</small></span>`
+    ).join("");
 
     const categories = [{ id: "all", label: "All", detail: "recommended order" }].concat(PK.CATEGORIES);
     $("pickingCategories").innerHTML = categories.map((category) => `<button data-picking-category="${category.id}" class="${state.picking.category === category.id ? "active" : ""}"><b>${escapeHtml(category.label)}</b><span>${escapeHtml(category.detail)}</span></button>`).join("");
@@ -2873,7 +3020,19 @@
   }
 
   function pickingTechniqueName(mark) {
-    return ({ D: "down", U: "up", H: "hammer", P: "pull", SL: "slide" })[mark] || mark || "hold";
+    return ({ D: "downstroke", U: "upstroke", DG: "downstroke glide", UG: "upstroke glide", H: "hammer-on", P: "pull-off", SL: "slide" })[mark] || mark || "hold";
+  }
+
+  function pickingTechniqueMeta(mark) {
+    return ({
+      D: { glyph: "↓", short: "TA · DOWN", label: "Ta · downstroke", cue: "Pick moves toward the floor. Make one compact, clean attack.", direction: "down" },
+      U: { glyph: "↑", short: "KA · UP", label: "Ka · upstroke", cue: "Pick returns toward you. Match the timing and volume of the downstroke.", direction: "up" },
+      DG: { glyph: "↓↘", short: "GLIDE", label: "Downstroke glide", cue: "Continue the same down motion through the adjacent course; do not reset the hand.", direction: "down-glide" },
+      UG: { glyph: "↑↖", short: "GLIDE", label: "Upstroke glide", cue: "Continue the same up motion through the adjacent course; keep it one connected gesture.", direction: "up-glide" },
+      H: { glyph: "H", short: "HAMMER", label: "Hammer-on", cue: "Do not pick again. The left hand places the next attack exactly in time.", direction: "legato" },
+      P: { glyph: "P", short: "PULL", label: "Pull-off", cue: "Do not pick again. Release sideways enough for the lower note to speak in time.", direction: "legato" },
+      SL: { glyph: "SL", short: "SLIDE", label: "Slide", cue: "Keep finger pressure while the hand connects the two frets as one syllable.", direction: "legato" }
+    })[mark] || { glyph: "·", short: "HOLD", label: "Hold", cue: "Let the previous note continue.", direction: "hold" };
   }
 
   function renderPickingRunPlan() {
@@ -2887,6 +3046,7 @@
     $("pickingMoveSel").disabled = state.picking.runMode !== "evolve";
     $("tglPickingMetronome").checked = state.picking.metronome;
     $("tglPickingCountIn").checked = state.picking.countIn;
+    $("pickingVoiceSel").value = state.picking.voice;
     const movementLabel = state.picking.movement === "key" ? "circle-of-fourths keys"
       : state.picking.movement === "both" ? "keys and practical positions" : "practical positions";
     $("pickingRunSummary").textContent = state.picking.runMode === "loop"
@@ -2913,21 +3073,40 @@
     svg().setAttribute("aria-label", `${window.Tuning.current().name} ${exercise.title} picking path`);
 
     const category = PK.CATEGORIES.find((item) => item.id === exercise.category);
+    const mastery = BK.phaseForExercise(exercise.id);
+    const articulation = PK.ARTICULATIONS[exercise.articulation];
+    const evidenceSources = exercise.sourceIds.map((id) => BK.sourceById(id)).filter(Boolean);
+    const motionIndex = currentIndex == null ? 0 : currentIndex;
+    const motionEvent = session.nodes[motionIndex] || {};
+    const nextMotionEvent = session.nodes[(motionIndex + 1) % Math.max(1, session.nodes.length)] || {};
+    const motion = pickingTechniqueMeta(motionEvent.technique);
+    const nextMotion = pickingTechniqueMeta(nextMotionEvent.technique);
     const rail = session.nodes.map((node, index) => {
       const note = node.note || {};
       const detail = node.crossing ? node.crossing : node.burst ? `${node.burst}-stroke burst` : node.phrase || "";
-      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong>${escapeHtml(node.technique || "·")}</strong><b>${escapeHtml(state.labelMode === "note" ? note.name || "·" : note.roleLabel || note.degree || "·")}</b><small>${escapeHtml(detail)}</small></button>`;
+      const mark = pickingTechniqueMeta(node.technique);
+      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u><small>${escapeHtml(mark.short)}</small></strong><b>${escapeHtml(state.labelMode === "note" ? note.name || "·" : note.roleLabel || note.degree || "·")}</b><small>${escapeHtml(detail)}</small></button>`;
     }).join("");
-    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · ${escapeHtml(category.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><i>${escapeHtml(window.Tuning.current().name)}</i></header>
-      <div class="picking-stroke-key"><span><b>D</b> down</span><span><b>U</b> up</span><span><b>H</b> hammer</span><span><b>P</b> pull</span><span><b>SL</b> slide</span><em>Tap any event to hear and inspect it.</em></div>
+    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · stage ${mastery.step} · ${escapeHtml(mastery.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i><b>${escapeHtml(articulation.label)}</b></div></header>
+      <div class="picking-articulation"><span>${escapeHtml(articulation.mnemonic)}</span><b>${escapeHtml(articulation.label)}</b><p>${escapeHtml(articulation.detail)}</p></div>
+      <div class="picking-motion ${currentIndex == null ? "is-ready" : "is-playing"}" data-motion="${escapeHtml(motion.direction)}" aria-live="polite">
+        <section class="picking-motion-now"><span>${currentIndex == null ? "Start with" : `Now · event ${motionIndex + 1}`}</span><b><i>${escapeHtml(motion.glyph)}</i>${escapeHtml(motion.label)}</b><p>${escapeHtml(motion.cue)}</p></section>
+        <div class="picking-motion-visual" aria-hidden="true"><i class="pick-shape"></i><b></b><b></b><b></b><span>${motionEvent.accent ? "ACCENT" : "EVEN"}</span></div>
+        <section class="picking-motion-next"><span>Prepare next</span><b><i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}</b><p>${escapeHtml(nextMotion.cue)}</p></section>
+      </div>
+      <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><em>Tap an event to hear it and see the motion.</em></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
-      <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
-      <aside class="picking-evidence"><span>Evidence boundary</span><p>${escapeHtml(exercise.evidence)}</p><a href="${exercise.sourceHref}" target="_blank" rel="noreferrer">${escapeHtml(exercise.sourceLabel)} ↗</a><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></aside>`;
+      <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section class="picking-theory"><span>Theory inside the motion</span><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}</b><p>${escapeHtml(exercise.theory)}</p><small>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</small></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
+      <details class="picking-evidence"><summary>${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
     $("pickingLesson").querySelectorAll("[data-picking-step]").forEach((button) => button.onclick = () => {
       stopPlay();
       const index = +button.getAttribute("data-picking-step");
       state.picking.pathIndex = index;
-      AU.playPath([session.nodes[index]], 0.35, { onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
+      const voice = pickingReferenceVoice();
+      readyPracticeAudio(voice).then((ready) => {
+        if (!ready) return;
+        AU.playPath([session.nodes[index]], 0.35, { referenceVoice: voice, onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
+      });
       renderPickingLab();
     });
 
@@ -2936,7 +3115,13 @@
       button.classList.toggle("active", button.getAttribute("data-picking-route") === state.picking.route));
     document.querySelectorAll("[data-picking-subdivision]").forEach((button) =>
       button.classList.toggle("active", +button.getAttribute("data-picking-subdivision") === state.picking.subdivision));
-    $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "⊓ down" : "V up"}`;
+    const variants = exercise.variants || [];
+    $("pickingVariantChoice").classList.toggle("hidden", !variants.length);
+    $("pickingVariantButtons").innerHTML = variants.map((variant) => `<button data-picking-variant="${escapeHtml(variant.id)}" class="${variant.id === state.picking.variant ? "active" : ""}">${escapeHtml(variant.label)}</button>`).join("");
+    $("pickingVariantButtons").querySelectorAll("[data-picking-variant]").forEach((button) => button.onclick = () => {
+      stopPlay(); state.picking.variant = button.getAttribute("data-picking-variant"); state.picking.cleanPasses = 0; renderPickingLab();
+    });
+    $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "↓ downstroke" : "↑ upstroke"}`;
     $("btnPickingPlay").textContent = state.picking.playing ? `Playing ${state.picking.runIndex + 1}/${state.picking.repeats}…` : "▶ Play run";
     $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3);
     $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p>`;
@@ -2975,6 +3160,7 @@
     const beatSpacing = 60 / state.bpm;
     const noteSpacing = beatSpacing / state.picking.subdivision;
     AU.playPath(session.nodes, noteSpacing, {
+      referenceVoice: pickingReferenceVoice(),
       metronome: state.picking.metronome,
       beatSpacing,
       pulse: session.pulse,
@@ -2993,8 +3179,9 @@
     });
   }
 
-  function playPickingExercise() {
+  async function playPickingExercise() {
     stopPlay();
+    if (!await readyPracticeAudio(pickingReferenceVoice())) return;
     const plan = pickingRunPlan();
     if (!plan.length) return;
     const token = ++pickingRunToken;
@@ -3176,7 +3363,7 @@
     const progressions = M.PROGRESSIONS[state.modeId];
     const { chords } = currentProgression();
     root.innerHTML = `
-      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key / home ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}</span></div>
+      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}</span></div>
         <label>Home <select id="soloTonic">${M.TONICS.map((tonic) =>
           `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label></div>
       <div class="solo-mode-grid">${M.MODE_ORDER.map((modeId) => {
@@ -3297,6 +3484,45 @@
 
   function soloTargets(chord, focus) {
     const third = chordTone(chord, "3") || chordTone(chord, "b3");
+    if (focus === "root") {
+      // The most final landing there is. Useful precisely because it is
+      // blunt: it ends a phrase rather than colouring one.
+      const root = chordTone(chord, "R");
+      return root ? [root] : chord.notes.slice(0, 1);
+    }
+    if (focus === "seam") {
+      // The dromos's own gravity rather than the chord's: the tones joining
+      // the two tetrachords (degrees 4 and 5) are where a modal line rests
+      // before it decides to go home. This is the app's tetrachord road
+      // used as a landing target, not a claim about any particular song.
+      const road = M.tetrachordsOf(state.tonic, state.modeId);
+      const seam = [road.lower[road.lower.length - 1], road.upper[0]]
+        .filter(Boolean)
+        .map((note) => ({ pc: note.pc, name: note.name, role: note.degree, roleLabel: note.degree, degree: note.degree }));
+      return seam.length ? seam : chord.notes.slice(0, 1);
+    }
+    if (focus === "enclose") {
+      // Surround the target from a step above and a step below inside the
+      // dromos, then land on it. A borrowed device (bebop enclosure), so the
+      // UI labels it an import; the neighbours are taken from the dromos so
+      // the approach never leaves the collection.
+      if (!third) return chord.notes.slice(0, 1);
+      const scale = M.scaleOf(state.tonic, state.modeId);
+      const idx = scale.findIndex((note) => note.pc === third.pc);
+      const out = [third];
+      if (idx >= 0) {
+        const above = scale[(idx + 1) % scale.length];
+        const below = scale[(idx - 1 + scale.length) % scale.length];
+        // Label approach notes by DIRECTION, not by scale degree: inside a
+        // chord readout "F♯ (3)" reads as that chord's 3rd, which it is not.
+        [[below, "↓"], [above, "↑"]].forEach(([note, arrow]) => {
+          if (note && note.pc !== third.pc) {
+            out.push({ pc: note.pc, name: note.name, role: "approach", roleLabel: arrow, degree: note.degree });
+          }
+        });
+      }
+      return out;
+    }
     if (focus === "sweet") {
       // The practical Greek "sweet" move: the scale's 2nd (or ♭2 in Ousak and
       // Hijaz) leaning into the chord's 3rd exactly when the change arrives.
@@ -3766,6 +3992,28 @@
       b.classList.toggle("active", b.getAttribute("data-solo-focus") === state.solo.focus));
   }
 
+  function soloTargetAddresses(note, fromFret, toFret, limit) {
+    if (!note) return [];
+    const courseNames = window.Tuning.names();
+    return FB.allTonePositions([note])
+      .filter((placement) => placement.fret >= fromFret && placement.fret <= toFret)
+      .sort((a, b) => a.fret - b.fret || b.stringIndex - a.stringIndex)
+      .slice(0, limit || 3)
+      .map((placement) => `${courseNames[placement.stringIndex]} course · ${placement.fret ? `fret ${placement.fret}` : "open"}`);
+  }
+
+  function applySoloNeckFocus() {
+    const node = svg();
+    if (!node) return;
+    const zone = state.solo.neckZone || "both";
+    node.setAttribute("data-solo-neck-zone", zone);
+    node.querySelectorAll(".fb-dot[data-fret]").forEach((dot) => {
+      const fret = Number(dot.getAttribute("data-fret"));
+      const outside = zone === "first" ? fret > 12 : zone === "second" ? fret < 13 : false;
+      dot.classList.toggle("neck-muted", outside);
+    });
+  }
+
   // Layer chips live directly above the fretboard so the player can stack
   // the scale road, the pentatonic frame, triad shapes, and the now/next
   // landing targets without ever covering the neck.
@@ -3793,10 +4041,12 @@
     const tool = activeTool();
     const roadmap = progression.chords.map((chord, index) => {
       const target = preferredSoloTarget(soloTargets(chord, state.solo.focus));
+      const status = index === state.progStep ? "Now" : index === (state.progStep + 1) % progression.chords.length ? "Next" : chord.phraseRole;
+      const endBar = chord.startsAtBar + barsFor(chord) - 1;
       return `<button data-solo-roadmap-step="${index}" class="solo-roadmap-card${index === state.progStep ? " now" : ""}${index === (state.progStep + 1) % progression.chords.length ? " next" : ""}">
-        <span>${index === state.progStep ? "Now" : index === (state.progStep + 1) % progression.chords.length ? "Next" : `Bar ${index + 1}`}</span>
+        <span>${status} · bar${endBar === chord.startsAtBar ? "" : "s"} ${chord.startsAtBar}${endBar === chord.startsAtBar ? "" : `–${endBar}`}</span>
         <strong>${escapeHtml(chord.degreeLabel)}</strong><b>${escapeHtml(chord.symbol)}</b>
-        <small>target ${escapeHtml(target.roleLabel)} · ${escapeHtml(target.name)}${barsFor(chord) > 1 ? " · 2 bars" : ""}</small></button>`;
+        <small>${escapeHtml(chord.phraseRole)} · target ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</small></button>`;
     }).join("");
     const motion = holds
       ? `${nowTarget.name} holds · the chord changes its meaning`
@@ -3805,13 +4055,26 @@
       : `${nowTarget.name} → ${nextTarget.name} · pre-hear the leap`;
     root.innerHTML = `
       <section class="solo-progression-roadmap" aria-label="Complete Solo progression and landing targets">
-        <header><div><span>Full progression · ${escapeHtml(progression.prog.label)}</span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)} · ${escapeHtml(landingLensName(state.solo.focus))}</b></div><p>${tool ? `<strong>${escapeHtml(tool.name)}</strong> · ${escapeHtml(tool.exercise.split(".")[0])}.` : "Say each target before its chord arrives."}</p></header>
+        <header><div><span>Full progression · ${escapeHtml(progression.prog.label)} · ${progression.chords[0].phraseBars}-bar resolved phrase</span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)} · ${escapeHtml(landingLensName(state.solo.focus))}</b></div><p>${tool ? `<strong>${escapeHtml(tool.name)}</strong> · ${escapeHtml(tool.exercise.split(".")[0])}.` : "Say each target before its chord arrives."}</p></header>
         <div class="solo-roadmap-grid">${roadmap}</div>
       </section>
       <section class="solo-neck-hud" aria-label="Current and next solo landing" aria-live="polite">
-        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · orange ring is the note to land on</small></article>
+        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · the orange <b>circle</b> is the note to land on now</small></article>
         <div class="solo-hud-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b><small>hear the destination before the chord changes</small></div>
-        <article class="solo-hud-card next"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · turquoise target becomes orange on arrival</small></article>
+        <article class="solo-hud-card next"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · the turquoise <b>diamond</b> is where you are aiming; it becomes an orange circle on arrival</small></article>
+      </section>
+      <section class="solo-neck-zones" aria-label="Target locations in both halves of the neck">
+        <header><div><span>Same target · two neck zones</span><b>Find ${escapeHtml(nowTarget.roleLabel)} ${escapeHtml(nowTarget.name)} now, then ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)} next</b></div><button data-solo-target-scope aria-pressed="${state.solo.allTargets}">${state.solo.allTargets ? "All target positions" : "Shape landing only"}</button></header>
+        ${[["first", "Zone 1", 0, 12], ["second", "Zone 2", 13, 24]].map(([id, label, from, to]) => {
+          const nowPlaces = soloTargetAddresses(nowTarget, from, Math.min(to, FB.N_FRETS), 3);
+          const nextPlaces = soloTargetAddresses(nextTarget, from, Math.min(to, FB.N_FRETS), 3);
+          return `<button data-solo-neck-zone="${id}" class="solo-neck-zone-card${state.solo.neckZone === id ? " active" : ""}">
+            <span>${label} · frets ${from}–${Math.min(to, FB.N_FRETS)}</span>
+            <b><i>Now</i> ${escapeHtml(nowPlaces.join(" · ") || "not available")}</b>
+            <b><i>Next</i> ${escapeHtml(nextPlaces.join(" · ") || "not available")}</b>
+          </button>`;
+        }).join("")}
+        <button data-solo-neck-zone="both" class="solo-neck-zone-card both${state.solo.neckZone === "both" ? " active" : ""}"><span>Whole neck</span><b><i>Now + Next</i> keep both rows visible</b><small>Recommended for learning the repeated map</small></button>
       </section>
       <div class="solo-layer-row">
         <span class="solo-layer-label">Background</span>
@@ -3823,7 +4086,7 @@
         <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Current triad</span>
         ${chip("next", layers.next, "lc-next", "Coming triad")}
         ${chip("triads", layers.triads, "lc-triad", "Other current positions")}
-        <span class="layer-note">background is quiet · solid = play now · dashed = prepare next · ring = selected target</span>
+        <span class="layer-note">background is quiet · solid = play now · dashed = prepare next · <b>circle = land now</b> · <b>diamond = aim next</b></span>
       </div>`;
     root.querySelectorAll("[data-solo-roadmap-step]").forEach((button) => {
       button.onclick = () => {
@@ -3843,6 +4106,17 @@
         renderSolo();
       };
     });
+    root.querySelectorAll("[data-solo-neck-zone]").forEach((button) => {
+      button.onclick = () => {
+        state.solo.neckZone = button.getAttribute("data-solo-neck-zone");
+        renderSolo();
+      };
+    });
+    const targetScopeButton = root.querySelector("[data-solo-target-scope]");
+    if (targetScopeButton) targetScopeButton.onclick = () => {
+      state.solo.allTargets = !state.solo.allTargets;
+      renderSolo();
+    };
   }
 
   function triadSeatHtml(cur, curTargets) {
@@ -3880,12 +4154,22 @@
     const triadId = TR.TRIAD_OF[cur.quality] || "maj";
     const allTriads = TR.allShapes(cur.rootPc, triadId, spellPc);
     // The view is deliberately whole-neck so the selected scale remains a
-    // complete map. Harmonic emphasis stays local: one playable current triad,
-    // one voice-led coming triad, and only their selected landing addresses.
+    // complete map. The playable current/coming shapes stay compact, while the
+    // selected target pitch is repeated in both 0–12 and 13–24 so the learner
+    // can recognise the same harmonic job anywhere on the instrument.
     const overlayRange = { from: 0, to: FB.N_FRETS };
     const pentatonic = M.pentatonicOf(state.tonic, state.modeId);
 
     const layers = state.solo.layers;
+    const targetNotes = [];
+    const targetPcs = new Set();
+    curTargets.concat(layers.next ? nextTargets : []).forEach((note) => {
+      if (targetPcs.has(note.pc)) return;
+      targetPcs.add(note.pc);
+      targetNotes.push(Object.assign({}, note, {
+        roleLabel: targetRoleLabel(note, "target", focus), colorGroup: "target"
+      }));
+    });
     // The landing thread. Not every change has a stepwise lean (in D major the
     // sweet 2→3 is E→C♯, a minor 3rd), so the tracer connects the NEAREST pair
     // of now/next targets rather than a fixed pair, and stays silent when the
@@ -3901,14 +4185,17 @@
       // of the dromos stay legible UNDER the pentatonic frame and the targets.
       roadNotes: state.solo.section === "targets" && layers.scale ? soloBackgroundRoad() : null,
       roadQuiet: true,
-      targetPlacements: state.solo.section === "targets" ? targetPlacements : null,
+      targetNotes: state.solo.section === "targets" && state.solo.allTargets ? targetNotes : null,
+      targetPlacements: state.solo.section === "targets" && !state.solo.allTargets ? targetPlacements : null,
       targetNowPcs: curTargets.map((note) => note.pc),
       targetNextPcs: layers.next ? nextTargets.map((note) => note.pc) : [],
-      targetNowPlacements: currentTargetPlacements,
-      targetNextPlacements: layers.next ? nextTargetPlacements : [],
-      targetScope: "positions",
+      targetNowPlacements: state.solo.allTargets ? null : currentTargetPlacements,
+      targetNextPlacements: state.solo.allTargets ? null : layers.next ? nextTargetPlacements : [],
+      targetScope: state.solo.allTargets ? "all" : "positions",
       tracer: layers.next && thread && currentLanding && nextLanding
-        ? { fromPc: thread.from.pc, toPc: thread.to.pc, fromPlacement: currentLanding, toPlacement: nextLanding }
+        ? state.solo.allTargets
+          ? { fromPc: thread.from.pc, toPc: thread.to.pc }
+          : { fromPc: thread.from.pc, toPc: thread.to.pc, fromPlacement: currentLanding, toPlacement: nextLanding }
         : null,
       overlayRange,
       largeNeck: true,
@@ -3918,6 +4205,7 @@
     });
     svg().setAttribute("aria-label", `${window.Tuning.current().name} soloing map: ${state.tonic} ${M.MODES[state.modeId].name} background; play ${cur.degreeLabel} ${cur.symbol} triad ${triadSpelling(cur)}, targeting ${soloTargetLabel(curTargets)}; prepare ${next.degreeLabel} ${next.symbol} triad ${triadSpelling(next)}, targeting ${soloTargetLabel(nextTargets)}`);
     applyMapChoreo();
+    applySoloNeckFocus();
     renderSoloLayerChips(cur, next, curTargets, nextTargets, thread);
     renderSoloToolkit();
 
@@ -3928,15 +4216,18 @@
       ? "Connect the 3rd and 7th with the smallest move you can hear; the line should explain the harmony even without a chord."
       : "This change uses triads: hear the 3rd as the colour, then land on the root when you want the resolution to feel final.";
     const route = P.melodicRoute(state.solo.routeId);
+    const targetScopeSentence = state.solo.allTargets
+      ? "The target ring repeats at every playable address in both neck zones; the solid and dashed shapes show the compact voice-led choice under one hand."
+      : "The target ring is limited to the compact voice-led shape; switch to All target positions to learn the same note across both neck zones.";
     const focusSentence = focus === "triad"
-      ? "The solid shape is the current voice-led triad; the dashed shape is the coming triad. The selected background stays quiet so R, 3rd, and 5th remain readable."
+      ? `The solid shape is the current voice-led triad; the dashed shape is the coming triad. ${targetScopeSentence}`
       : focus === "guide"
-        ? "The solid and dashed shapes show the current and coming triads; the rings narrow the change to one nearby guide-tone decision."
+        ? `The solid and dashed shapes show the current and coming triads. ${targetScopeSentence}`
         : focus === "sweet"
           ? "One nearby ring marks the 2nd and one marks the chord's 3rd: sit on the 2, then let it fall or rise into the 3rd exactly when the harmony moves. That lean is where Greek melodies live."
           : focus === "pedal"
             ? "The two rings are playable addresses for the SAME note inside the moving shapes. Hold it through the progression and listen to the harmony re-name it."
-            : "The solid shape is the chord sounding now; the dashed shape is the chord coming next. Land on the orange 3rd, pre-hear the turquoise 3rd, and use the selected scale background only to connect them.";
+            : `The solid shape is the chord sounding now; the dashed shape is the chord coming next. ${targetScopeSentence}`;
     const pedalInfo = focus === "pedal" ? commonTone() : null;
     const pedalTable = pedalInfo ? `<div class="pedal-table">${chords.map((chordItem, chordIndex) => {
       const role = pedalRole(pedalInfo.pc, chordItem);
@@ -3954,6 +4245,7 @@
       <div class="triad-landscape-key"><span class="landscape-solid">solid</span> play ${cur.symbol} now · <span class="landscape-faint">dashed</span> prepare ${next.symbol} · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
       <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
       <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
+      ${roleAdviceHtml(cur)}
       ${thread
         ? `<p class="solo-thread"><b>The thread:</b> ${escapeHtml(thread.from.name)} → ${escapeHtml(thread.to.name)}, ${thread.distance === 1 ? "a half step" : thread.distance === 2 ? "a whole step" : "three frets"} on one string. The neck draws it; play only that move and the change is already audible.</p>`
         : `<p class="solo-thread quiet"><b>No stepwise thread here:</b> the closest landing is a leap, so aim with your ear and let the pentatonic carry you there.</p>`}
@@ -3976,6 +4268,12 @@
         <button class="solo-open-route" data-open-solo-path>Practise this route in Shape →</button>
       </div></section>
       <section id="soloTimingMatrix" class="solo-timing-matrix"></section>`;
+    // The phrase-role suggestion renders inside the recipe, so it binds here.
+    $("soloRecipe").querySelectorAll("[data-role-lens]").forEach((b) => b.onclick = () => {
+      state.solo.focus = b.getAttribute("data-role-lens");
+      syncSoloFocusButtons();
+      renderSolo();
+    });
     $("soloRecipe").querySelector("[data-open-solo-path]").onclick = () => setSoloSection("path");
     const leanBtn = $("soloRecipe").querySelector("[data-hear-lean]");
     leanBtn.onclick = () => {
@@ -4130,9 +4428,15 @@
   // Prefer the bare roman function; degreeLabel is the display fallback and
   // scaleDegree last (it is numeric, "1"/"2", and must never win over romans).
   function functionTag(c) { return String((c && (c.fn || c.degreeLabel || c.scaleDegree)) || ""); }
-  // Every phrase is ii · V · I · I by default: the tonic holds for two bars,
-  // then the phrase resets (loop) or pivots to the next key (pivot wheel).
-  function barsFor(c) { return state.holdI && /^i$/i.test(functionTag(c)) ? 2 : 1; }
+  // Progression-bank chords own explicit 4-/8-bar phrase timing. The Changes
+  // cycle has no such metadata and retains its user-controlled ii · V · I · I
+  // fallback. Keeping the rule here makes visuals, bass motion, and transport
+  // consult the same duration instead of guessing from a chord's name.
+  function barsFor(c) {
+    const declared = Number(c && c.durationBars);
+    if (Number.isFinite(declared) && declared > 0) return Math.round(declared);
+    return state.holdI && /^i$/i.test(functionTag(c)) ? 2 : 1;
+  }
   function isTowardIi(c) { return /^ii(?![iv])/i.test(functionTag(c)); }
 
   // Skeleton mode: the documented first "playing the changes" exercise — one
@@ -4193,6 +4497,14 @@
     document.querySelectorAll("[data-gym-keys]").forEach((button) =>
       button.classList.toggle("active", +button.getAttribute("data-gym-keys") === state.gym.keys));
     if ($("tglGymSkeleton")) $("tglGymSkeleton").checked = state.gym.skeleton;
+    const progressionWorkout = state.cycleComping.focus === "chords";
+    if ($("gymRouteNote")) $("gymRouteNote").textContent = progressionWorkout
+      ? "Choose one verified progression, then keep its Roman numerals fixed while the key moves by fourths. One key learns it; three or six test recall."
+      : "Not the circle of fifths: each key drops a whole step because every old I becomes the next key's ii. Six keys, then it loops.";
+    if ($("gymHonesty")) $("gymHonesty").textContent = progressionWorkout
+      ? "The progression comes from the selected Major, minor, Ousak, or Hijaz bank. Transposition is a practice route—not a claim that a performance modulates this way."
+      : "A voice-leading gym, not folklore. Greek bands usually re-center with a taximi or a relative-key move. Train your ear here, then try the real thing.";
+    if ($("btnTaximiBridge")) $("btnTaximiBridge").classList.toggle("hidden", progressionWorkout);
   }
 
   // Taximi capstone drone (Solo lab step 5): unmetered, tonic of the current
@@ -4253,8 +4565,8 @@
     }
     const pulse = currentPulse();
     if (state.view === "cycle" && state.cycleComping.focus === "chords") {
-      const { chords } = currentProgression();
-      pb = { kind: "comping", len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
+      const chords = cycleCompingEntries().map((entry) => entry.chord);
+      pb = { kind: "comping", chords, len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
     } else if (state.view === "cycle") {
       const seq = gymSequence(state.index);
       pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
@@ -4304,7 +4616,7 @@
           setTimeout(animateChangeGuide, delay);
           const heldPos = pb.pos;
           setTimeout(() => markHeldBar(heldPos), delay);
-          const heldChords = currentProgression().chords;
+          const heldChords = pb.kind === "comping" ? pb.chords : currentProgression().chords;
           if (pb.barsLeft === 0) {
             schedulePickup(heldChords[(pb.pos + 1) % heldChords.length], when);
           }
@@ -4318,7 +4630,7 @@
           pb.pos = next % pb.len;
         }
         pb.started = true;
-        const chords = currentProgression().chords;
+        const chords = pb.kind === "comping" ? pb.chords : currentProgression().chords;
         const c = chords[pb.pos];
         const nextChord = chords[(pb.pos + 1) % chords.length] || c;
         setTimeout(() => {
@@ -4376,7 +4688,8 @@
     AU.ensure();
     if (state.view === "cycle") {
       if (state.cycleComping.focus === "chords") {
-        const chord = currentProgression().chords[state.cycleComping.step];
+        const chord = cycleCompingEntries()[state.cycleComping.step]?.chord;
+        if (!chord) return;
         AU.playChord(chord.notes, style || state.strumStyle, undefined, chordReferenceVoice());
       } else {
         const shape = cycleTriadPath()[state.index];
@@ -4540,7 +4853,16 @@
       state.chordVoice = event.target.value;
       saveUiPreferences();
       if (state.chordVoice === "studio") AU.prepareStudioPiano();
+      updateAudioReadyStatus(AU.audioStatus());
     };
+    if ($("btnSoundCheck")) $("btnSoundCheck").onclick = playSoundCheck;
+    $("pickingVoiceSel").onchange = (event) => {
+      state.picking.voice = ["bouzouki", "studio", "piano"].includes(event.target.value) ? event.target.value : "bouzouki";
+      saveUiPreferences();
+      if (state.picking.voice === "studio") AU.prepareStudioPiano();
+      updateAudioReadyStatus(AU.audioStatus());
+    };
+    $("btnPickingSoundCheck").onclick = playPickingSoundCheck;
     if ($("tglPickup")) $("tglPickup").onchange = (event) => {
       state.pickupV2 = event.target.checked;
       saveUiPreferences();
@@ -4575,6 +4897,7 @@
       stopPlay(); cancelTaximiBridge();
       state.gym.keys = +button.getAttribute("data-gym-keys");
       state.gym.anchor = Math.floor(state.index / 3) * 3;
+      if (state.cycleComping.focus === "chords") { state.cycleComping.step = 0; state.cycleComping.voicingIndex = 0; }
       saveUiPreferences();
       renderCycle();
       renderPageGuide();
@@ -4775,7 +5098,7 @@
     };
     $("btnStroke").onclick = () => {
       state.lab.firstStroke = state.lab.firstStroke === "down" ? "up" : "down";
-      $("btnStroke").textContent = "Start: " + (state.lab.firstStroke === "down" ? "⊓ down" : "V up");
+      $("btnStroke").textContent = "Start: " + (state.lab.firstStroke === "down" ? "↓ downstroke" : "↑ upstroke");
       renderLab();
     };
     $("tglUpDown").onchange = (e) => { state.lab.updown = e.target.checked; renderLab(); };
@@ -4863,10 +5186,12 @@
     document.querySelectorAll("[data-guess]").forEach((b) =>
       b.onclick = () => selectColourGuess(b.getAttribute("data-guess")));
 
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", async (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
       if (e.code === "Space") {
         e.preventDefault();
+        const voice = state.view === "picking" ? pickingReferenceVoice() : chordReferenceVoice();
+        if (!await readyPracticeAudio(voice)) return;
         if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : playEarPrompt();
         else if (state.view === "melody") state.melody.prompt ? playMelodyPrompt(false) : newMelodyQuestion();
         else if (state.view === "chordmap") auditionChordMap("strum");
@@ -4911,7 +5236,7 @@
   }
 
   function showTestBadge() {
-    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), PK.selfTest(), TK.selfTest(), TE.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
+    const suites = [T.selfTest(), HJ.selfTest(), PP.selfTest(), M.selfTest(), CM.selfTest(), CP.selfTest(), PG.selfTest(), MH.selfTest(), PL.selfTest(), E.selfTest(), S.selfTest(), A.selfTest(), U.selfTest(), Q.selfTest(), R.selfTest(), V.selfTest(), C.selfTest(), P.selfTest(), BK.selfTest(), PK.selfTest(), TK.selfTest(), TE.selfTest(), TR.selfTest(), GV.selfTest(), AU.selfTest()];
     const all = suites.reduce((a, s) => a.concat(s.results), []);
     const ok = suites.every((s) => s.ok);
     const nPass = all.filter((x) => x.pass).length;
@@ -4936,11 +5261,13 @@
     const player = PP.bootstrap();
     applyPlayerProfile(player);
     loadUiPreferences();
+    document.addEventListener("dromos:audio-state", (event) => updateAudioReadyStatus(event.detail));
     wire();
     syncPersistentControls();
     renderPlayerProfiles(false);
     showTestBadge();
     showReleaseIdentity();
+    updateAudioReadyStatus(AU.audioStatus());
     $("bpm").value = state.bpm; $("bpmVal").textContent = state.bpm;
     C.mount({ context: coachContext, onAction: useCoachAction, profileId: player.id });
     setView(player.preferences.view);

@@ -15,6 +15,20 @@
   let playbackGeneration = 0;
   let studioLoadPromise = null;
   let studioLoadState = "idle";
+  let unlockPromise = null;
+
+  function audioStatus() {
+    return {
+      state: ctx ? ctx.state : "idle",
+      ready: !!ctx && ctx.state === "running",
+      studio: studioLoadState
+    };
+  }
+
+  function announceAudioState() {
+    if (typeof document === "undefined" || typeof CustomEvent === "undefined") return;
+    document.dispatchEvent(new CustomEvent("dromos:audio-state", { detail: audioStatus() }));
+  }
 
   // One velocity layer sampled every minor 3rd is enough for a stable ear-
   // training reference without shipping a full piano ROM. Adjacent notes are
@@ -48,9 +62,31 @@
       compressor.release.value = 0.18;
       output.gain.value = 0.68;
       master.connect(compressor); compressor.connect(output); output.connect(ctx.destination);
+      ctx.addEventListener("statechange", announceAudioState);
     }
-    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     return ctx;
+  }
+
+  // Safari/iPadOS can leave an AudioContext suspended after a tab switch or
+  // while a sample is being decoded. Call this directly from the user's tap,
+  // await the state transition, and only then schedule audible work.
+  function ensureRunning() {
+    const context = ensure();
+    if (context.state === "running") {
+      announceAudioState();
+      return Promise.resolve(true);
+    }
+    if (unlockPromise) return unlockPromise;
+    const resumeAttempt = Promise.resolve(context.resume()).then(() => context.state === "running").catch(() => false);
+    const resumeTimeout = new Promise((resolve) => setTimeout(() => resolve(context.state === "running"), 1600));
+    // A few WebKit builds have left resume() pending indefinitely after an app
+    // switch. Never strand the interface on "Starting audio…"; release the
+    // lock and let the next explicit tap retry inside a fresh user gesture.
+    unlockPromise = Promise.race([resumeAttempt, resumeTimeout]).then((running) => {
+      announceAudioState();
+      return running;
+    }).finally(() => { unlockPromise = null; });
+    return unlockPromise;
   }
 
   // A real user gesture is still the most dependable audio unlock on iPadOS.
@@ -62,12 +98,26 @@
     source.buffer = context.createBuffer(1, 1, context.sampleRate);
     source.connect(master);
     source.start();
+    return ensureRunning();
   }
 
   function voiceGain(noteCount, role) {
     const count = Math.max(1, Number(noteCount) || 1);
     const base = role === "sequence" ? 0.30 : role === "path" ? 0.28 : 0.46 / Math.sqrt(count);
     return Math.max(0.15, Math.min(0.31, base));
+  }
+
+  function isPluckedVoice(voice) {
+    return !["studio", "piano"].includes(voice);
+  }
+
+  // Fast training lines need separation between attacks. Long synthesized
+  // tails smear ta-ka timing into a drone; harmony voices may ring longer.
+  function trainingNoteDuration(spacing, voice) {
+    const sp = Math.max(0.05, Number(spacing) || 0.3);
+    return isPluckedVoice(voice)
+      ? Math.max(0.24, Math.min(0.68, sp * 1.72))
+      : Math.max(0.58, Math.min(1.05, sp * 2.15));
   }
 
   // Build a plucked-string buffer for a frequency (cached by rounded freq).
@@ -92,7 +142,7 @@
     }
     // Longer decay coefficients: a practice chord should still be ringing when
     // the bar ends, the way a real course does, instead of dying mid-bar.
-    const decay = voice === "bouzouki" ? 0.9982 : voice === "laouto" ? 0.9986 : 0.9989;
+    const decay = voice === "bouzouki" ? 0.99735 : voice === "laouto" ? 0.9982 : 0.99845;
     const blend = voice === "bouzouki" ? 0.46 : voice === "laouto" ? 0.49 : 0.53;
     for (let i = 0; i < len; i++) {
       if (i < N) { y[i] = noise[i]; }
@@ -215,7 +265,16 @@
     const b = pluckBuffer(freq, dur, voice);
     const src = ctx.createBufferSource();
     src.buffer = b;
+    const paired = voice === "bouzouki" ? ctx.createBufferSource() : null;
+    if (paired) {
+      paired.buffer = b;
+      // A second slightly sharp course creates the short paired-string bloom
+      // of a bouzouki/mandolin attack without reverb or a sustaining drone.
+      paired.detune.setValueAtTime(3.8, when);
+    }
     const g = ctx.createGain();
+    const attackA = ctx.createGain();
+    const attackB = paired ? ctx.createGain() : null;
     const tone = ctx.createBiquadFilter();
     const cleanup = ctx.createBiquadFilter();
     const body = ctx.createBiquadFilter();
@@ -231,24 +290,33 @@
     body.frequency.value = voice === "bouzouki" ? 330 : voice === "laouto" ? 220 : 185;
     body.Q.value = 0.75;
     body.gain.value = 1.6;
-    g.gain.value = gain == null ? 0.24 : gain;
+    const level = gain == null ? 0.24 : gain;
+    g.gain.setValueAtTime(level, when);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + Math.max(0.18, Math.min(dur, voice === "bouzouki" ? 0.72 : 1.15)));
+    attackA.gain.value = paired ? 0.64 : 1;
+    if (attackB) attackB.gain.value = 0.42;
     // The fundamental oscillator exists to give the pluck its body, NOT to
     // sustain. Anything longer reads as a synth drone humming under the chord
     // after the strings have decayed, so it is an attack thump only.
-    const thump = Math.min(dur, 0.11);
+    const thump = Math.min(dur, 0.075);
     fundamental.type = "triangle";
     fundamental.frequency.setValueAtTime(freq, when);
     fundamentalGain.gain.setValueAtTime(0.0001, when);
-    fundamentalGain.gain.exponentialRampToValueAtTime(0.05, when + 0.006);
+    fundamentalGain.gain.exponentialRampToValueAtTime(voice === "bouzouki" ? 0.0002 : 0.026, when + 0.006);
     fundamentalGain.gain.exponentialRampToValueAtTime(0.0001, when + thump);
-    src.connect(cleanup); cleanup.connect(tone); tone.connect(body); body.connect(g);
+    src.connect(attackA); attackA.connect(cleanup);
+    if (paired) { paired.connect(attackB); attackB.connect(cleanup); }
+    cleanup.connect(tone); tone.connect(body); body.connect(g);
     fundamental.connect(fundamentalGain); fundamentalGain.connect(g); g.connect(master);
     activeSources.push(src, fundamental);
+    if (paired) activeSources.push(paired);
     const untrack = (item) => { activeSources = activeSources.filter((source) => source !== item); };
     src.onended = () => untrack(src);
     fundamental.onended = () => untrack(fundamental);
+    if (paired) paired.onended = () => untrack(paired);
     src.start(when);
     src.stop(when + dur + 0.05);
+    if (paired) { paired.start(when + 0.0035); paired.stop(when + dur + 0.055); }
     fundamental.start(when);
     fundamental.stop(when + thump + 0.03);
   }
@@ -286,7 +354,9 @@
     ensure();
     const sp = spacing == null ? 0.26 : spacing;
     const t0 = when == null ? ctx.currentTime + 0.02 : when;
-    notes.forEach((n, i) => playNoteAt(n.freq, t0 + i * sp, 1.4, voiceGain(1, "sequence"), referenceVoice));
+    const voice = referenceVoice || instrumentVoice();
+    const duration = trainingNoteDuration(sp, voice);
+    notes.forEach((n, i) => playNoteAt(n.freq, t0 + i * sp, duration, voiceGain(1, "sequence"), voice));
     return t0 + notes.length * sp;
   }
 
@@ -356,7 +426,8 @@
     notes.forEach((n, i) => {
       const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
       const when = t0 + i * sp;
-      if (!silent) playNoteAt(n.freq, when, Math.max(0.9, sp * 2.4), voiceGain(1, "path"));
+      const voice = o.referenceVoice || instrumentVoice();
+      if (!silent) playNoteAt(n.freq, when, trainingNoteDuration(sp, voice), voiceGain(1, "path"), voice);
       if (o.onStep) {
         pathTimers.push(setTimeout(() => o.onStep(i, silent), Math.max(0, (when - ctx.currentTime) * 1000)));
       }
@@ -533,18 +604,26 @@
     add("six-note chord is quieter per voice than triad", true, voiceGain(6, "chord") < voiceGain(3, "chord"));
     add("single path note remains speaker-safe", true, voiceGain(1, "path") <= 0.3);
     add("gain floor preserves quiet chord audibility", true, voiceGain(8, "chord") >= 0.15);
+    add("bouzouki attacks remain separated in a slow eighth-note line", true,
+      trainingNoteDuration(0.5, "bouzouki") <= 0.68);
+    add("bouzouki attacks are shorter than warm-key references", true,
+      trainingNoteDuration(0.24, "bouzouki") < trainingNoteDuration(0.24, "piano"));
     add("studio samples never repitch more than two semitones in the teaching range", true,
       Array.from({ length: 49 }, (_, index) => 36 + index).every((midi) => Math.abs(nearestStudioSample(midi).midi - midi) <= 2));
     return { ok, results };
   }
 
   if (typeof document !== "undefined") {
-    document.addEventListener("pointerup", prime, { once: true, capture: true });
-    document.addEventListener("touchend", prime, { once: true, capture: true });
+    // pointerdown occurs before the button click handler and gives iPadOS the
+    // longest possible user-activation window. Every later playback control
+    // also calls ensureRunning, so audio can recover after app switching.
+    document.addEventListener("pointerdown", prime, { once: true, capture: true });
+    document.addEventListener("touchstart", prime, { once: true, capture: true, passive: true });
+    document.addEventListener("visibilitychange", announceAudioState);
   }
 
   window.AudioEngine = {
-    ensure, prime, voiceGain, prepareStudioPiano, playReferenceChord, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
+    ensure, ensureRunning, prime, audioStatus, voiceGain, trainingNoteDuration, prepareStudioPiano, playReferenceChord, playChord, playSequence, playPrompt, playProgressionPrompt, playPath, stopPath, stopAll, click,
     startTransport, stopTransport, isPlaying,
     studioStatus: () => studioLoadState,
     // Absolute audio-clock time, for callers that schedule multi-part gestures

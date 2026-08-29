@@ -24,6 +24,13 @@ function, and executing a useful shape or line before the next chord arrives.
 Run the loop on one progression and one position before changing key, dromos, or
 instrument. The default 20-minute session is four minutes per step.
 
+Picking Lab is the motor-to-music path inside steps 3 and 4. Its fixed order is
+**ta–ka attack → coordination → neck route → phrase language → performance
+transfer**. Articulated lines receive one pick attack per displayed note. Tremolo is
+an explicit sustain exercise, not the default pronunciation of a scale or phrase.
+See [BOUZOUKI_MASTERY.md](BOUZOUKI_MASTERY.md) for the source hierarchy, exercise
+gates, and lawful-ingestion boundary.
+
 ## Teaching principles
 
 1. **Function before shape.** `ii–V–I` is heard and named before it is fingered.
@@ -58,6 +65,9 @@ principles behind these decisions.
 - Guitar, drop-D guitar, tetrachordo bouzouki, trichordo bouzouki, and mainland
   laouto.
 - Solo Lab target map: pentatonic frame plus current/next 3rd or guide-tone targets.
+- Picking Lab: 13 provenance-labelled exercises progressing from ta–ka attack to a
+  chord-target arrival, with articulation contracts, measured gates, looping, and
+  key/position evolution.
 - Foundation & Styles: a modern improvisation foundation, then selectable Zeibekiko,
   Kalamatianos, Hasapiko, Tsifteteli, and Roumba pulse maps. A style controls
   phrase placement and accompaniment role; Song Map still controls dromos and harmony.

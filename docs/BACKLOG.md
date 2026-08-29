@@ -29,6 +29,18 @@ Ordered roughly by value. Promote an item into the table in
 
 **Musical — these serve [SOLOING.md](SOLOING.md) directly, in priority order**
 
+- **Licensed bouzouki source annotation and teacher review.** Register owned editions
+  and lesson access for Trigas, Avlonitis, Karantinis, Filippatos, and other methods;
+  store concept/page/timecode metadata rather than copied notation. Validate stroke
+  vocabulary, practical fingerings, and dromos phrase claims with trichordo and
+  tetrachordo teachers before scoring them.
+- **Recorded/licensed bouzouki reference set.** A dry, pitch-stable sample family
+  with controlled attack, tremolo layers, and velocity variation would improve
+  technique demonstration. Release 33 adds a short modeled paired-course default;
+  retain that as the offline fallback and keep sampled piano as the neutral ear-test
+  reference. Candidate samples must have verified redistribution rights (for
+  example a purpose-recorded set or an explicitly CC0 library), not only a usable URL.
+
 - **Loop / backing player.** You cannot practise soloing without the changes playing
   underneath. The transport already schedules chords; this is mostly UI. *Highest
   value remaining.* (Promote with FR-32.)

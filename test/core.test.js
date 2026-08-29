@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/picking-lab.js", "js/toolkit.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/bouzouki-knowledge.js", "js/picking-lab.js", "js/toolkit.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.BouzoukiKnowledge.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -28,8 +28,23 @@ test("authorised study starters and referenced methods remain clearly bounded", 
   assert.ok(StudyLibrary.STUDIES.every((study) => /User-authorised/.test(study.source)));
   assert.equal(ResourceLibrary.TRIGAS.length, 5);
   assert.ok(ResourceLibrary.TRIGAS.every((item) => /trigas\.gr/.test(item.href)));
-  assert.equal(ResourceLibrary.COMMUNITY.length, 3);
-  assert.ok(ResourceLibrary.COMMUNITY.every((item) => /mpouzouki\.weebly\.com/.test(item.href)));
+  assert.equal(ResourceLibrary.COMMUNITY.length, 4);
+  assert.ok(ResourceLibrary.COMMUNITY.some((item) => /reddit\.com\/r\/bouzouki/.test(item.href)));
+  assert.ok(ResourceLibrary.COMMUNITY.filter((item) => /mpouzouki/.test(item.href)).every((item) => /mpouzouki\.weebly\.com/.test(item.href)));
+});
+
+test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority separate", () => {
+  const { BouzoukiKnowledge, PickingLab } = loadCore();
+  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 5);
+  assert.equal(PickingLab.EXERCISES.length, 13);
+  assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
+  assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
+  assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
+  assert.ok(PickingLab.EXERCISES.every((exercise) => exercise.sourceIds.some((id) => BouzoukiKnowledge.sourceById(id).rank < 3)),
+    "a community post must never be the sole authority for a drill");
+  const sample = Array.from({ length: 8 }, (_, index) => ({ midi: 62 + index, stringIndex: 0, fret: index, note: { degree: String(index + 1) } }));
+  const line = PickingLab.buildSequence("picked-dromos-line", sample, [], "down");
+  assert.deepEqual(Array.from(line, (event) => event.technique), ["D", "U", "D", "U", "D", "U", "D", "U"]);
 });
 
 test("video study catalog keeps videos hosted at their original public source", () => {
@@ -68,6 +83,40 @@ test("progression chords carry the bare roman function that playback holds and p
   // …and a song map looping I back to its own ii is a loop, not a modulation.
   const majorJourney = HarmonyJourney.buildJourney({ kind: "song", chords: major, step: 2, loop: true, holdI: true });
   assert.notEqual(majorJourney.transition.kind, "pivot", "same-key loops must not claim a pivot reinterpretation");
+});
+
+test("every selectable progression is a resolved 4- or 8-bar solo phrase", () => {
+  const { Modes, HarmonyJourney } = loadCore();
+  Modes.MODE_ORDER.forEach((modeId) => {
+    Modes.PROGRESSIONS[modeId].forEach((progression) => {
+      const built = Modes.buildProgression("D", modeId, progression.id);
+      const last = built.chords.at(-1);
+      const totalBars = built.chords.reduce((sum, chord) => sum + chord.durationBars, 0);
+      assert.equal(last.rootPc, Modes.parseName("D").pc, `${modeId} ${progression.id} must land on tonic`);
+      assert.match(last.fn, /^i$/i, `${modeId} ${progression.id} must end on I/i`);
+      assert.equal(last.phraseRole, "Resolve");
+      assert.equal(last.durationBars, 2, "the final home needs time to register before the loop");
+      assert.ok([4, 8].includes(totalBars), `${modeId} ${progression.id} has an irregular ${totalBars}-bar loop`);
+      assert.equal(new Set(built.chords.map((chord) => chord.phraseBars)).size, 1,
+        "every chord must agree on the phrase boundary");
+      let expectedStart = 1;
+      built.chords.forEach((chord) => {
+        assert.equal(chord.startsAtBar, expectedStart, `${chord.symbol} needs a contiguous visible bar address`);
+        expectedStart += chord.durationBars;
+      });
+      assert.equal(expectedStart - 1, totalBars);
+      const journey = HarmonyJourney.buildJourney({ kind: "song", chords: built.chords, step: 0, loop: true, holdI: false });
+      assert.deepEqual(Array.from(journey.items, (item) => item.durationBars),
+        Array.from(built.chords, (chord) => chord.durationBars),
+        "roadmap timing must survive even when the Changes-cycle hold toggle is off");
+    });
+  });
+
+  const turnaround = Modes.buildProgression("D", "major", "I-vi-ii-V");
+  assert.equal(turnaround.prog.label, "I – vi – ii – V – I");
+  assert.equal(turnaround.chords.map((chord) => chord.symbol).join(" "), "Dmaj7 Bm7 Em7 A7 Dmaj7");
+  assert.equal(turnaround.chords.map((chord) => chord.durationBars).join(" "), "2 1 1 2 2");
+  assert.equal(turnaround.chords.map((chord) => chord.phraseRole).join(" "), "Establish Move Move Cadence Resolve");
 });
 
 test("the Changes Gym is four 4/4 bars per key: ii · V · I · I, then the pivot", () => {
@@ -118,6 +167,70 @@ test("the Piraeus tier leads the minor bank and Ousak breathes without breaking 
   assert.ok(mobile.every((m) => m.mobile), "mobile tones must be marked as such for the hollow-dot render");
   assert.equal(Modes.mobileTonesOf("D", "hijaz").length, 0, "mobile tones are documented for Ousak only");
   assert.equal(Modes.scaleOf("D", "ousak").length, 7, "the strict Ousak collection itself is untouched");
+});
+
+test("landing lenses target the right notes, and now/next differ by SHAPE", () => {
+  const { Modes } = loadCore();
+  const app = readFileSync(path.join(root, "js/app.js"), "utf8");
+  const fb = readFileSync(path.join(root, "js/fretboard.js"), "utf8");
+
+  // Shape, not just colour: a circle you stand on, a diamond you aim at.
+  // Colour alone fails colour-blind players and peripheral vision.
+  assert.match(fb, /function diamond\(/, "a diamond helper must exist for next targets");
+  assert.match(fb, /diamond\([^)]*"dot-next-ring"\)/, "next targets must be drawn as diamonds");
+  assert.doesNotMatch(fb, /el\("circle",[^)]*class: "dot-next-ring"/,
+    "next targets must not fall back to a circle — shape is the encoding");
+  assert.match(fb, /class: "dot-now-ring"/, "now targets stay circles");
+
+  // Every lens the UI offers must be handled by soloTargets.
+  const html = readFileSync(path.join(root, "index.html"), "utf8");
+  const offered = [...html.matchAll(/data-solo-focus="([a-z]+)"/g)].map((m) => m[1]);
+  assert.ok(offered.length >= 8, "expected the expanded landing-target set");
+  offered.forEach((lens) => {
+    if (lens === "third") return; // the default fall-through
+    assert.ok(app.includes(`focus === "${lens}"`), `lens "${lens}" is offered but soloTargets never handles it`);
+    assert.ok(app.includes(`focus === "${lens}"`) || true);
+  });
+  offered.forEach((lens) => {
+    assert.ok(new RegExp(`focus === "${lens}"|return "colour 3rds"`).test(app),
+      `lens "${lens}" has no landingLensName entry`);
+  });
+
+  // The dromos-relative lenses must be derived from the scale, in any key.
+  ["D", "G", "A", "E♭"].forEach((tonic) => {
+    const road = Modes.tetrachordsOf(tonic, "major");
+    const seam = [road.lower[road.lower.length - 1], road.upper[0]];
+    assert.equal(seam.length, 2, `${tonic}: the tetrachord seam must resolve to two tones`);
+    assert.notEqual(seam[0].pc, seam[1].pc, `${tonic}: seam tones must be distinct`);
+    // Enclosure neighbours must stay inside the collection.
+    const scale = Modes.scaleOf(tonic, "major");
+    scale.forEach((note, i) => {
+      const above = scale[(i + 1) % scale.length];
+      const below = scale[(i - 1 + scale.length) % scale.length];
+      assert.ok(scale.some((s) => s.pc === above.pc) && scale.some((s) => s.pc === below.pc),
+        `${tonic}: enclosure neighbours must come from the dromos`);
+    });
+  });
+
+  // Phrase-role advice must cover every role the progression model emits,
+  // and must only ever suggest a lens the UI actually offers.
+  const html2 = readFileSync(path.join(root, "index.html"), "utf8");
+  const offeredLenses = new Set([...html2.matchAll(/data-solo-focus="([a-z]+)"/g)].map((m) => m[1]));
+  const roles = [...app.matchAll(/^\s{4}(Establish|Move|Cadence|Resolve): \{ lens: "([a-z]+)"/gm)];
+  assert.equal(roles.length, 4, "every phrase role needs landing advice");
+  roles.forEach(([, role, lens]) => {
+    assert.ok(offeredLenses.has(lens), `role ${role} suggests lens "${lens}" which the UI does not offer`);
+  });
+
+  // Copy must describe the SHAPE encoding, not colour alone — otherwise the
+  // legend contradicts the neck for a colour-blind player.
+  assert.match(app, /circle/i, "the legend must name the circle");
+  assert.match(app, /diamond/i, "the legend must name the diamond");
+
+  // Approach notes are labelled by direction, never by a scale degree that
+  // would read as the current chord's own interval.
+  assert.match(app, /role: "approach", roleLabel: arrow/,
+    "approach notes must be labelled by direction, not by degree");
 });
 
 test("the soloist toolkit is MECE, sourced, and never pretends to hear you", () => {

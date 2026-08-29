@@ -40,6 +40,36 @@
 
   const OTHER = [
     {
+      title: "Giorgos Avlonitis · 101 Dexterity Exercises for Bouzouki",
+      focus: "A 172-page graded four-course (and transferable) technical method covering plectrum, finger strengthening, diminished scales and soloist dexterity, with audio.",
+      use: "Use the owned book beside Dromos's adaptive key/position engine. The app supplies original degree windows and progress gates; it does not reproduce the 101 exercises or CD.",
+      href: "https://fagottobooks.gr/en/1037-4_979-0-801151-59-9.html"
+    },
+    {
+      title: "Pavlos Pafranidis · Complete Method for Three-Stringed Bouzouki",
+      focus: "A progressive trichordo, baglamas and tzouras method combining theory, tablature, plectrum direction, open courses, scales, arpeggios and tremolo with audio.",
+      use: "Primary reference for the Picking Lab's attack-first order and for keeping articulated lines separate from later tremolo study.",
+      href: "https://fagottobooks.gr/en/4582-trixordo-bouzouki-1.html"
+    },
+    {
+      title: "Manolis Karantinis · official video lessons",
+      focus: "Instrument setup and plectrum, modes/chords/improvisation, technique, historical-player references, and separate phraseology series across major Greek modes.",
+      use: "Use an owned lesson in Video Study, then label the phrase's dromos, contour, target, articulation and pulse. Dromos does not restream or transcribe the paid material.",
+      href: "https://karantinis.com/video-lessons/"
+    },
+    {
+      title: "Nikos Filippatos · BouzoukiLand",
+      focus: "A long-running public educational video channel for bouzouki and Greek-music study, created by a formally trained performer and teacher.",
+      use: "A public demonstration layer for A/B looping and learner-friendly explanations; source videos stay with YouTube and any Dromos drill remains independently authored.",
+      href: "https://www.youtube.com/@BouzoukiLand"
+    },
+    {
+      title: "Giorgos Kriyonas · Technique for Trichordo, Baglamas and Tzouras",
+      focus: "Compact technical study progressing along one course, descending, linking positions, crossing two/three courses, and practising thirds and sixths.",
+      use: "A useful owned companion for position-link, course-crossing and dyad work; catalog scope informs the taxonomy, not copied notation.",
+      href: "https://fagottobooks.gr/el/1188-19_979-080-11-5515-3.html"
+    },
+    {
       title: "Manolis Michalakis · Folk scales and improvisations",
       focus: "Folk scales, harmonization, technique, phrases, positions, improvisation and repertoire.",
       use: "Strong complement for the app’s dromos map, phrase route and position choices.",
@@ -76,6 +106,12 @@
   // not surface its unverified scans, downloads, or recordings as curriculum
   // material; users must confirm rights for anything outside public embeds.
   const COMMUNITY = [
+    {
+      title: "r/bouzouki · learner questions and resource leads",
+      focus: "Community discussion repeatedly surfaces confusion about Greek versus Irish bouzouki, down/up control, tremolo, pick angle, practice pace, tunings and method choices.",
+      use: "Use only to discover learner language and candidate UX problems. A Reddit post never defines theory, historical fact, or mandatory technique without a stronger source.",
+      href: "https://www.reddit.com/r/bouzouki/"
+    },
     {
       title: "The Bouzouki Learning Website · public lesson index",
       focus: "A community directory that groups RIALAS, Tomer Avizov, Thanos Corner, Savvas Chrysanthou and Ramazouki lesson pages.",

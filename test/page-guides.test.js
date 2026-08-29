@@ -36,10 +36,12 @@ test("every Show me where action points to a real control or section", () => {
   });
 });
 
-test("the answer and three steps stay visible while definitions remain optional", () => {
+test("the answer and first action stay visible while the full guide remains one tap away", () => {
   const app = read("js/app.js");
   const css = read("css/styles.css");
   assert.match(app, /<header class="guide-answer"/);
+  assert.match(app, /<div class="guide-first"/);
+  assert.match(app, /<details class="guide-workflow"/);
   assert.match(app, /<ol class="guide-steps"/);
   assert.match(app, /<details class="guide-explain"/);
   assert.doesNotMatch(app, /<details[^>]*><header class="guide-answer"/,

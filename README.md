@@ -62,6 +62,12 @@ adjacent `I of the old key → ii of the next key` pair; use Pair controls to ch
 Five modal/harmonic maps, each with a ranked bank of the progressions that actually earn their
 place, and a one-line reason for each.
 
+Every bank entry is a complete solo-training phrase rather than a chord list that
+only resolves by implication. Two- and three-chord cadences run for four bars;
+longer routes run for eight. The final tonic is shown, sounded, and held for two
+bars before the loop starts again, and the roadmap names each chord's job:
+**Establish → Move → Cadence → Resolve**.
+
 | Mode | On D | Signature move |
 |---|---|---|
 | **Major** | `D E F♯ G A B C♯` | `Em7 – A7 – Dmaj7` |
@@ -90,7 +96,7 @@ you, physically, that only two dots move.
 The core technique and ear routine that supports the target map.
 
 **Picking path.** Runs the mode as a path across the neck with **strict alternate
-picking** marked on every note (⊓ down, V up), and every string change classified:
+picking** marked on every note (↓ downstroke, ↑ upstroke), and every string change classified:
 
 - **Green solid** = *outside* picking — the pick sweeps around the string pair
 - **Red dashed** = *inside* picking — the pick is trapped between the strings, and
@@ -101,13 +107,16 @@ that is what changes the crossing pattern. `◀ below` / `above ▶` walk the sa
 to the core positions above and below. Loose wrist, pick barely clearing the string,
 and drop the tempo until every crossing is clean.
 
-The standalone **Picking Lab** turns that feedback into a nine-exercise curriculum:
-even attack, Greek grouped accents, tremolo bursts, isolated and mixed course
-crossings, horizontal-versus-tiered route and timbre comparisons, ornaments, and a
-triad-arpeggio arrival on the coming chord's 3rd. Each exercise has an animated
-event rail, an exact three-step instruction, a listening goal, a pass test, and a
-direct evidence link. Artist/method observations and Dromos-authored exercises are
-labelled separately; no published exercise or recorded lick is represented as a
+The standalone **Picking Lab** turns that feedback into a 13-exercise, five-stage
+mastery spine: ta–ka attack, hand/course coordination, neck-route choice, phrase
+language, then performance transfer. **Every note picked** is the explicit default
+for articulated lines; tremolo is a later, separately labelled sustain choice.
+Exercises add grouped accents, graded degree windows, isolated and mixed crossings,
+horizontal-versus-tiered route and timbre comparisons, a Pennanen-bounded
+strict-alternate versus glide/sweep A/B, ornaments, a generic dromos contour, and a
+triad-arpeggio arrival on the coming chord's 3rd. Each has an animated pick cue,
+theory link, event rail, exact instructions, listening goal, pass test, provenance,
+and a rights boundary. No published exercise or recorded lick is represented as a
 transcription.
 
 Each drill also has a small practice engine. **Loop** repeats the exact key and
@@ -115,6 +124,9 @@ shape for consistency. **Evolve** keeps the drill and pulse fixed while moving
 through verified neck positions, circle-of-fourths keys, or both. Runs may use a
 grouped one-bar count-in and metronome; the roadmap previews every stage, and an
 evolved run starts again from the key/position where the previous run finished.
+The selected practice sound is shown inside the lab. Sampled piano is the stable
+default, and **Test sound** explicitly unlocks or restores Web Audio after an iPad
+tab/app switch instead of leaving a silent playback button.
 
 **Audiation cells.** Start with 3 notes, add one each pass to the octave, then take
 one away back down to 3. The **last note is the target**: playback leaves a *silent
@@ -300,6 +312,12 @@ Everything — grips, scale paths, overlays — redraws for the selected instrum
 When a chord has more notes than the instrument has strings, it thins automatically —
 the 5th goes first, then the root, so the guide tones survive.
 
+Picking and harmony intentionally use different reference sounds. Picking defaults
+to a short paired-course bouzouki model so `ta–ka` attacks stay separate; Harmony
+and scored ear work default to the self-hosted sampled piano. In Solo, target rings
+repeat across both fret 0–12 and fret 13–24 zones while the solid/dashed triads show
+the compact shape to play now and prepare next.
+
 Also: tempo 40–200 BPM, metronome, loop, note-names vs intervals, ghost tones,
 neck-position cycling, and a left-handed neck.
 
@@ -319,6 +337,8 @@ on every page load, asserting generated chords against a hand-verified ground tr
 - [CONTRIBUTING.md](CONTRIBUTING.md) — recipes for adding a progression or a mode
 - [docs/BACKLOG.md](docs/BACKLOG.md) — what is next
 - [docs/CURRICULUM.md](docs/CURRICULUM.md) — product intent, practice loop and curriculum roadmap
+- [docs/BOUZOUKI_MASTERY.md](docs/BOUZOUKI_MASTERY.md) — evidence-ranked picking,
+  phrase, and lawful source-ingestion model
 - [docs/AI_COACH.md](docs/AI_COACH.md) — coach product boundary and design
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Vercel + Neon production setup
 
