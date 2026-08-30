@@ -104,6 +104,10 @@
             <button data-view="triads">Comp</button>
           </nav>
           <p id="modePurpose" class="mode-purpose hidden" aria-live="polite"></p>
+          <nav id="repertoireTabs" class="mode-tabs hidden" aria-label="Repertoire area">
+            <button data-view="songs">Songs</button>
+            <button data-view="analyze">Analyze</button>
+          </nav>
           <nav id="learnTabs" class="mode-tabs hidden" aria-label="Learn area">
             <button data-view="styles">Greek Pulse</button>
             <button data-view="video">Video Study</button>
@@ -117,6 +121,7 @@
             <button data-view="melody" tabindex="-1">Melody to harmony</button>
             <button data-view="chordmap" tabindex="-1">Harmony matrix</button>
             <button data-view="solo" tabindex="-1">Solo road</button>
+            <button data-view="songs" tabindex="-1">Songs</button>
             <button data-view="analyze" tabindex="-1">Analyze</button>
             <button data-view="coach" tabindex="-1">Practice coach</button>
           </nav>
@@ -643,6 +648,16 @@
             </div>
 
             <!-- Analyzer -->
+            <!-- ================= Songs ================= -->
+            <div id="panelSongs" class="panel hidden">
+              <div class="songs-head">
+                <span class="panel-label">Repertoire</span>
+                <span>Charts you play, written the way a band writes them</span>
+              </div>
+              <div id="songList" class="song-list"></div>
+              <div id="songChart" class="song-chart"></div>
+            </div>
+
             <div id="panelAnalyze" class="panel hidden">
               <span class="panel-label">Study analyzer</span>
               <p class="analysis-intro">Enter a chord progression or a chord-aligned line. The result explains the map, strong notes, and a specific next drill. It does not claim to transcribe audio or replace listening.</p>
@@ -754,6 +769,7 @@
   <script src="js/bouzouki-knowledge.js?v=32"></script>
   <script src="js/picking-lab.js?v=32"></script>
   <script src="js/toolkit.js?v=27"></script>
+  <script src="js/songs.js?v=1"></script>
   <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=33"></script>

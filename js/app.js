@@ -5,7 +5,7 @@
   "use strict";
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
-    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
+    PP = window.PlayerProfiles, HJ = window.HarmonyJourney, SL = window.SongLibrary, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
     PG = window.PageGuides, TE = window.TacticalExamples, BK = window.BouzoukiKnowledge, PK = window.PickingLab;
 
   const cycle = T.buildCycle();
@@ -51,6 +51,8 @@
     styles: { section: "foundation", styleId: "zeibekiko" },
     // --- source-bounded tactical example index ---
     examples: { category: "all", selectedId: "chiotis-mimisis" },
+    // --- repertoire songs ---
+    songs: { openId: "ta-mavra-matia-sou", tab: "chart" },
     // --- transparent analysis ---
     analysis: { tonic: "D", modeId: "minor", selected: 0, studyId: null, importStatus: "" },
     // --- scale lab ---
@@ -164,7 +166,7 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   }[character]));
 
-  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "examples", "analyze", "concepts", "coach"];
+  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "examples", "songs", "analyze", "concepts", "coach"];
 
   function stablePreferences() {
     return {
@@ -280,8 +282,8 @@
   // ====================== primary navigation model ======================
   // Primary destinations follow the player's journey: orient, hear, connect
   // melody to harmony, map/comp, then solo. Reference tools follow beneath.
-  const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", melody: "melody", harmony: "cycle", matrix: "chordmap", solo: "solo", picking: "picking", repertoire: "analyze", learn: "styles", coach: "coach", progress: "progress" };
-  const VIEW_NAV = { today: "today", ear: "hear", melody: "melody", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", picking: "picking", analyze: "repertoire", styles: "learn", video: "learn", examples: "learn", concepts: "learn", coach: "coach", progress: "progress" };
+  const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", melody: "melody", harmony: "cycle", matrix: "chordmap", solo: "solo", picking: "picking", repertoire: "songs", learn: "styles", coach: "coach", progress: "progress" };
+  const VIEW_NAV = { today: "today", ear: "hear", melody: "melody", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", picking: "picking", songs: "repertoire", analyze: "repertoire", styles: "learn", video: "learn", examples: "learn", concepts: "learn", coach: "coach", progress: "progress" };
   const NAV_TITLES = { today: "Today", hear: "Ear", melody: "Melody → Harmony", harmony: "Harmony", matrix: "Harmony Matrix", solo: "Solo", picking: "Picking Lab", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
 
   // One sentence per workspace answering "what is this FOR" — the purposes the
@@ -866,6 +868,146 @@
     state.index = (pair[0] + delta * 3 + N) % N;
     state.gym.anchor = state.index;
     renderCycle();
+  }
+
+  // ============================ SONGS ===================================
+  // A repertoire chart, written the way a band writes one: sections, bars,
+  // chords. The app adds what a paper chart cannot — send the song's own
+  // chord vocabulary to the analyzer, or open the Solo map in its home key.
+  function renderSongs() {
+    if (!SL) return;
+    const list = $("songList");
+    if (list) {
+      list.innerHTML = SL.SONGS.map((song) => {
+        const open = song.id === state.songs.openId;
+        return `<button data-song="${escapeHtml(song.id)}" class="song-card${open ? " active" : ""}" aria-pressed="${open}">
+          <b>${escapeHtml(song.title)}</b>
+          <i>${escapeHtml(song.titleGreek || "")}</i>
+          <span>${escapeHtml(song.home)} · ${escapeHtml(song.meter)} · ${escapeHtml(song.feel || "")}${song.arrangement ? " · " + escapeHtml(song.arrangement) : ""}</span>
+        </button>`;
+      }).join("");
+      list.querySelectorAll("[data-song]").forEach((b) => b.onclick = () => {
+        state.songs.openId = b.getAttribute("data-song");
+        renderSongs();
+      });
+    }
+    renderSongChart();
+  }
+
+  // Which dromos explains this chart best? Computed, never asserted: run the
+  // song's own chord vocabulary through the analyzer in every dromos and
+  // count how many chords the mode can name. A chord the mode cannot name is
+  // reported as chromatic — that count IS the evidence.
+  function dromosFit(song) {
+    if (!A || !SL) return [];
+    const map = SL.chordMap(song);
+    return M.MODE_ORDER.map((modeId) => {
+      let named = 0, total = 0;
+      try {
+        const result = A.analyzeProgression(map, { tonic: song.home, modeId });
+        (result.records || []).forEach((record) => {
+          total += 1;
+          if (record.degree && record.degree.label) named += 1;
+        });
+      } catch (error) { return null; }
+      return { modeId, name: M.MODES[modeId].name, named, total, chromatic: total - named };
+    }).filter(Boolean).sort((a, b) => b.named - a.named);
+  }
+
+  function fitHtml(song) {
+    const fit = dromosFit(song);
+    if (!fit.length) return "";
+    const best = fit[0];
+    return `<div class="song-fit">
+      <span>Which dromos explains this chart?</span>
+      ${fit.map((f) => `<b class="${f.modeId === best.modeId ? "best" : ""}">
+        ${escapeHtml(f.name)}<i>${f.named}/${f.total}</i></b>`).join("")}
+      <em>Counted by running the song's own chords through the analyzer: how many can each dromos name, and how many stay chromatic. ${escapeHtml(best.name)} names the most here — the evidence, not a verdict.</em>
+    </div>`;
+  }
+
+  function barHtml(bar) {
+    if (bar.kind === "break") return `<span class="song-break" aria-hidden="true"></span>`;
+    if (bar.kind === "hold") return `<span class="song-bar held"><em>%</em><span class="song-slashes">/ / / /</span></span>`;
+    const chords = bar.chords.map((c) =>
+      `<b class="${c.stab ? "stab" : ""}">${escapeHtml(c.label)}${c.stab ? "<u>!</u>" : ""}</b>`).join("");
+    return `<span class="song-bar${bar.accent ? " accent" : ""}">
+      <span class="song-bar-chords">${chords}</span>
+      <span class="song-slashes">/ / / /</span></span>`;
+  }
+
+  function renderSongChart() {
+    const root = $("songChart");
+    if (!root || !SL) return;
+    const song = SL.byId(state.songs.openId) || SL.SONGS[0];
+    if (!song) { root.innerHTML = ""; return; }
+    const tab = state.songs.tab;
+    const hasLyrics = (song.lyricSections || []).length > 0;
+
+    const chartHtml = song.sections.map((section) => `
+      <section class="song-section">
+        <header><b>${escapeHtml(section.name)}</b>${section.repeat ? `<i>${escapeHtml(section.repeat)}</i>` : ""}</header>
+        ${section.lines.map((line) => `<div class="song-line">${line.map(barHtml).join("")}</div>`).join("")}
+        ${section.alternates ? `<p class="song-alt">${escapeHtml(section.alternates)}</p>` : ""}
+        ${section.cue ? `<p class="song-cue">→ ${escapeHtml(section.cue)}</p>` : ""}
+      </section>`).join("");
+
+    const lyricsHtml = (song.lyricSections || []).map((section) => `
+      <section class="song-section">
+        <header><b>${escapeHtml(section.name)}</b></header>
+        ${section.lines.map((line) => `<div class="lyric-line">${line.map((seg) => `
+          <span class="lyric-seg">
+            <b class="${seg.stab ? "stab" : ""}">${seg.chord ? escapeHtml(seg.chord) : ""}</b>
+            <span>${escapeHtml(seg.text)}</span>
+          </span>`).join("")}</div>`).join("")}
+      </section>`).join("");
+
+    root.innerHTML = `
+      <header class="song-head">
+        <div>
+          <b>${escapeHtml(song.title)}</b>
+          <span>${escapeHtml(song.titleGreek || "")}${song.composer ? " · " + escapeHtml(song.composer) : ""}</span>
+        </div>
+        <div class="song-meta">
+          <span>${escapeHtml(song.home)}</span><span>${escapeHtml(song.meter)}</span>
+          <span>${escapeHtml(song.feel || "")}</span><span>${SL.barCount(song)} bars</span>
+        </div>
+      </header>
+      <p class="song-note">${escapeHtml(song.note || "")}</p>
+      ${fitHtml(song)}
+      <div class="song-tabs" role="tablist">
+        <button role="tab" data-song-tab="chart" aria-selected="${tab === "chart"}" class="${tab === "chart" ? "active" : ""}">Chart</button>
+        ${hasLyrics ? `<button role="tab" data-song-tab="lyrics" aria-selected="${tab === "lyrics"}" class="${tab === "lyrics" ? "active" : ""}">Lyrics</button>` : ""}
+        <span class="song-actions">
+          <button data-song-analyze>Analyze these changes</button>
+          <button data-song-solo>Solo in ${escapeHtml(song.home)}</button>
+        </span>
+      </div>
+      <div class="song-body">${tab === "lyrics" && hasLyrics ? lyricsHtml : chartHtml}</div>
+      <footer class="song-credit">${escapeHtml(song.credit || "")}</footer>`;
+
+    root.querySelectorAll("[data-song-tab]").forEach((b) => b.onclick = () => {
+      state.songs.tab = b.getAttribute("data-song-tab");
+      renderSongChart();
+    });
+    const analyze = root.querySelector("[data-song-analyze]");
+    if (analyze) analyze.onclick = () => {
+      // Hand the analyzer the song's OWN chord vocabulary — no invented map.
+      const field = $("analysisChords");
+      if (field) field.value = SL.chordMap(song);
+      state.analysis.tonic = song.home;
+      const best = dromosFit(song)[0];
+      if (best) state.analysis.modeId = best.modeId;
+      setView("analyze");
+      syncAnalysisControls();
+      const run = $("btnAnalyze");
+      if (run) run.click();
+    };
+    const solo = root.querySelector("[data-song-solo]");
+    if (solo) solo.onclick = () => {
+      state.tonic = song.home;
+      setView("solo");
+    };
   }
 
   // ========================= PROGRESSION VIEW ============================
@@ -4725,9 +4867,10 @@
       b.classList.toggle("active", b.getAttribute("data-nav") === nav));
     if ($("pageTitle")) $("pageTitle").textContent = NAV_TITLES[nav] || "";
     if ($("harmonyTabs")) $("harmonyTabs").classList.toggle("hidden", nav !== "harmony");
+    if ($("repertoireTabs")) $("repertoireTabs").classList.toggle("hidden", nav !== "repertoire");
     if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
     syncHarmonyTabs();
-    ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelPicking", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelExamples", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
+    ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelPicking", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelExamples", "panelSongs", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
     $("stage").classList.toggle("hidden", v === "ear" || v === "melody" || v === "video" || v === "styles" || v === "examples" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
     $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
@@ -4746,6 +4889,7 @@
     else if (v === "video") { $("panelVideo").classList.remove("hidden"); if (V) V.render(); }
     else if (v === "styles") { $("panelStyles").classList.remove("hidden"); renderStyles(); }
     else if (v === "examples") { $("panelExamples").classList.remove("hidden"); renderTacticalExamples(); }
+    else if (v === "songs") { $("panelSongs").classList.remove("hidden"); renderSongs(); }
     else if (v === "analyze") { $("panelAnalyze").classList.remove("hidden"); syncAnalysisControls(); renderAnalyzer(); }
     else if (v === "concepts") { $("panelConcepts").classList.remove("hidden"); renderConcepts(); }
     else if (v === "coach") { $("panelCoach").classList.remove("hidden"); C.render(); }

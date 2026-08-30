@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/bouzouki-knowledge.js", "js/picking-lab.js", "js/toolkit.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/bouzouki-knowledge.js", "js/picking-lab.js", "js/toolkit.js", "js/songs.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.BouzoukiKnowledge.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.BouzoukiKnowledge.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.SongLibrary.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -231,6 +231,41 @@ test("landing lenses target the right notes, and now/next differ by SHAPE", () =
   // would read as the current chord's own interval.
   assert.match(app, /role: "approach", roleLabel: arrow/,
     "approach notes must be labelled by direction, not by degree");
+});
+
+test("a repertoire chart parses, and its dromos fit is computed not asserted", () => {
+  const { SongLibrary, AnalysisEngine, Modes } = loadCore();
+  const song = SongLibrary.byId("ta-mavra-matia-sou");
+  assert.ok(song, "the shipped chart must load");
+
+  // Bars, chords and stabs survive the parser verbatim for display.
+  const opening = song.sections[0].bars.filter((b) => b.kind !== "break");
+  assert.equal(opening[0].chords.map((c) => c.label).join(" "), "Dm E♭ Dm Cm");
+  assert.equal(opening[1].chords[0].stab, true, "a stab must stay a stab");
+
+  // Normalisation is for ANALYSIS only — never for what the player reads.
+  assert.equal(SongLibrary.normaliseChord("E♭maj7"), "Ebmaj7");
+  assert.equal(opening[0].chords[1].label, "E♭", "the chart keeps the author's own spelling");
+
+  // Every chord in the chart must be parseable by the analyzer, or the
+  // song's Analyze button would quietly hand over a chord it cannot name.
+  SongLibrary.chordVocabulary(song).forEach((chord) => {
+    assert.ok(AnalysisEngine.parseChord(chord.normalised),
+      `analyzer cannot parse ${chord.label} (${chord.normalised})`);
+  });
+
+  // The dromos fit must be COMPUTED from the analyzer, and it must actually
+  // discriminate — a fit that ranks every mode equally teaches nothing.
+  const map = SongLibrary.chordMap(song);
+  const fit = Modes.MODE_ORDER.map((modeId) => {
+    const records = AnalysisEngine.analyzeProgression(map, { tonic: song.home, modeId }).records;
+    return { modeId, named: records.filter((r) => r.degree && r.degree.label).length, total: records.length };
+  }).sort((a, b) => b.named - a.named);
+  assert.ok(fit[0].named > fit[fit.length - 1].named, "the fit must discriminate between dromoi");
+  assert.equal(fit[0].modeId, "ousak",
+    "this chart's Cm (minor ♭VII) and E♭ (♭II) are Usak markers — Ousak should name the most chords");
+  assert.ok(fit[0].named < fit[0].total,
+    "and it must stay honest: a Latin arrangement has chords no single dromos explains");
 });
 
 test("the soloist toolkit is MECE, sourced, and never pretends to hear you", () => {
