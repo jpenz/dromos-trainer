@@ -172,7 +172,13 @@
     const phoneFold = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 620px)").matches;
     const availableWidth = svg.parentElement ? svg.parentElement.clientWidth : svg.clientWidth;
     const focusFold = !!opts.largeNeck && N_FRETS > 12 && availableWidth > 0 && availableWidth < N_FRETS * 56;
-    const fold = phoneFold || focusFold;
+    // neckMode lets the player override the automatic choice: "full" keeps
+    // all 24 frets on one row, "split" always folds into two. "auto" (the
+    // default) keeps the responsive behaviour.
+    const neckMode = opts.neckMode || "auto";
+    const fold = neckMode === "split" ? N_FRETS > 12
+      : neckMode === "full" ? false
+      : (phoneFold || focusFold);
     const layout = neckLayout(N_FRETS, fold);
     const FRETS_PER_ROW = layout.fretsPerRow;
     const ROWS = layout.rows;

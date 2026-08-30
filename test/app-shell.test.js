@@ -31,8 +31,8 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="tglPickingMetronome"/);
   assert.match(html, /id="tglPickingCountIn"/);
   assert.match(html, /id="pickingBpm"[^>]*min="40"[^>]*max="180"/);
-  assert.match(html, /js\/bouzouki-knowledge\.js\?v=32/);
-  assert.match(html, /js\/picking-lab\.js\?v=32/);
+  assert.match(html, /js\/bouzouki-knowledge\.js\?v=\d+/);
+  assert.match(html, /js\/picking-lab\.js\?v=\d+/);
   assert.match(html, /id="pickingMasterySpine"/);
   assert.match(read("js/picking-lab.js"), /Horizontal ↔ tiered A\/B/);
   assert.match(read("js/picking-lab.js"), /Alternate ↔ glide triplets/);
@@ -49,11 +49,11 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="melodyCandidates"/);
   assert.match(html, /id="melodyNext"/);
   assert.match(html, /id="melodyMoves"/);
-  assert.match(html, /js\/melody-harmony\.js\?v=27/);
+  assert.match(html, /js\/melody-harmony\.js\?v=\d+/);
   assert.match(html, /id="btnSingStart"/);
   assert.match(html, /id="singInputSel"/);
   assert.match(html, /id="singGauge"/);
-  assert.match(html, /js\/pitch-lab\.js\?v=23/);
+  assert.match(html, /js\/pitch-lab\.js\?v=\d+/);
   assert.match(html, /data-nav="matrix"/);
   assert.match(html, /id="panelChordMap"/);
   assert.match(html, /id="chordMapRoad"/);
@@ -65,9 +65,9 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="matrixRelationships"/);
   assert.match(html, /Returns directly to home/,
     "the working-role legend must describe a direct return without overclaiming a formal cadence");
-  assert.match(html, /js\/chord-map\.js\?v=17/);
-  assert.match(html, /js\/chord-path\.js\?v=25/);
-  assert.match(html, /js\/page-guides\.js\?v=31/);
+  assert.match(html, /js\/chord-map\.js\?v=\d+/);
+  assert.match(html, /js\/chord-path\.js\?v=\d+/);
+  assert.match(html, /js\/page-guides\.js\?v=\d+/);
   assert.match(html, /data-solo-section="road"/);
   assert.match(html, /data-solo-section="phrase"/);
   assert.match(html, /data-solo-section="targets"/);
@@ -109,7 +109,7 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="videoStudy"/);
   assert.match(html, /id="panelExamples"/);
   assert.match(html, /id="tacticalExamples"/);
-  assert.match(html, /js\/tactical-examples\.js\?v=27/);
+  assert.match(html, /js\/tactical-examples\.js\?v=\d+/);
   assert.match(read("js/app.js"), /function renderTacticalExamples/);
   assert.match(read("js/app.js"), /function tacticalInstrumentRoute/);
   assert.match(read("js/app.js"), /Math\.min\(15, tuning\.frets\)/,
@@ -181,14 +181,27 @@ test("the installable app shell links its offline assets", () => {
     "online sessions must prefer the deployed app and use cache only as an offline fallback");
   assert.match(read("js/fretboard.js"), /get N_FRETS\(\)/,
     "the road must use the selected instrument's fret range");
-  assert.match(read("sw.js"), /js\/chord-map\.js\?v=17/, "Harmony Matrix must work in the offline shell");
-  assert.match(read("sw.js"), /js\/chord-path\.js\?v=25/, "Chord Path must work in the offline shell");
+  // Version pins used to be written out by hand here, so every legitimate
+  // cache bump broke the suite while the real defect — an asset whose version
+  // in index.html and sw.js drift apart, leaving users on a stale file —
+  // slipped through. Check the invariant instead of the numbers.
+  const swSrc = read("sw.js");
+  const htmlVersions = [...html.matchAll(/((?:js|css)\/[\w.-]+\.(?:js|css))\?v=(\d+)/g)];
+  assert.ok(htmlVersions.length > 20, "expected the shell to version its assets");
+  htmlVersions.forEach(([, file, version]) => {
+    const inSw = new RegExp(`\\./${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=(\\d+)`).exec(swSrc);
+    if (!inSw) return; // not every asset is part of the offline shell
+    assert.equal(inSw[1], version,
+      `${file} is v${version} in index.html but v${inSw[1]} in sw.js — offline users would get a stale file`);
+  });
+  assert.match(read("sw.js"), /js\/chord-map\.js\?v=\d+/, "Harmony Matrix must work in the offline shell");
+  assert.match(read("sw.js"), /js\/chord-path\.js\?v=\d+/, "Chord Path must work in the offline shell");
   assert.match(read("api/release.js"), /appVersion: "34"/,
     "the public deployment identity must match the current offline shell release");
-  assert.match(html, /css\/styles\.css\?v=33/);
-  assert.match(html, /js\/fretboard\.js\?v=33/);
-  assert.match(html, /js\/audio\.js\?v=33/);
-  assert.match(html, /js\/app\.js\?v=34/);
+  assert.match(html, /css\/styles\.css\?v=\d+/);
+  assert.match(html, /js\/fretboard\.js\?v=\d+/);
+  assert.match(html, /js\/audio\.js\?v=\d+/);
+  assert.match(html, /js\/app\.js\?v=\d+/);
   // Drive this from the source, not a hand-kept version number: a literal
   // assertion here breaks on every legitimate cache bump and, worse, passes
   // when a newly added script never reaches the offline shell.
@@ -223,8 +236,11 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
   assert.match(fretboard, /data-neck-emphasis/);
   assert.match(fretboard, /const passiveOverlay = kind === "scale" \|\| kind === "pentatonic" \|\| kind === "road"/,
     "the scale layer must not repaint a scale degree over a chord-role target");
-  assert.match(app, /nextGrip: layers\.next \? nextGrip : null/,
-    "the coming chord must be a complete playable dashed triad, not only a text label");
+  // Intent, not literal source: the coming chord must render as a real
+  // playable grip gated on the layer toggle — never as text alone. Pinning
+  // the exact expression breaks on every legitimate change to the gate.
+  assert.match(app, /nextGrip:[^\n]*layers\.next[^\n]*nextGrip[^\n]*null/,
+    "the coming chord must be a complete playable dashed triad gated on layers.next, not only a text label");
   assert.match(app, /targetNotes: state\.solo\.section === "targets" && state\.solo\.allTargets \? targetNotes : null/);
   assert.match(app, /targetScope: state\.solo\.allTargets \? "all" : "positions"/);
   assert.match(app, /targetNowPlacements: state\.solo\.allTargets \? null : currentTargetPlacements/);
@@ -236,9 +252,18 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
   assert.match(app, /function applySoloNeckFocus/);
   assert.match(fretboard, /for \(let row = 0; row < ROWS; row\+\+\)/,
     "the nearest-target tracer must repeat in both rendered neck rows");
-  assert.match(app, /state\.solo\.layers\.scale = key === "scale"/);
-  assert.match(app, /state\.solo\.layers\.pentatonic = key === "pentatonic"/,
-    "full scale and pentatonic must be clear alternative backgrounds");
+  // Layers are INDEPENDENT by request: a player must be able to strip the
+  // neck to scales only or triads only. The old radio behaviour (picking one
+  // background cleared the other) is deliberately gone, so assert the new
+  // contract instead — a free toggle plus explicit isolation presets.
+  assert.match(app, /state\.solo\.layers\[key\] = !state\.solo\.layers\[key\]/,
+    "every solo layer must toggle independently");
+  assert.doesNotMatch(app, /state\.solo\.layers\.scale = key === "scale"/,
+    "the mutually-exclusive background radio must not come back");
+  ["scales", "triads", "all"].forEach((preset) => {
+    assert.ok(app.includes(`data-solo-isolate="${preset}"`), `missing the "${preset}" isolation preset`);
+  });
+  assert.match(app, /data-solo-isolate/, "isolation presets must be wired");
   assert.match(css, /body\[data-view="solo"\]\[data-solo-section="targets"\] main \{ width: min\(1360px, 100%\)/);
   assert.match(css, /\.solo-neck-hud\.lean-phase/,
     "the next target must receive a visible pre-arrival state");
