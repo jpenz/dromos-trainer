@@ -30,6 +30,13 @@
   --turquoise-soft: rgba(67, 199, 194, 0.14);
   --violet: #B194F4;
   --amber: #F2C14E;
+  /* Landing signal: a traffic light. Green = play this now, amber = get
+     ready, it is the next arrival. Shape (circle vs diamond) carries the
+     same meaning so the cue survives colour-blindness. */
+  --signal-now: #4ADE80;
+  --signal-now-soft: rgba(74, 222, 128, 0.16);
+  --signal-next: #FACC15;
+  --signal-next-soft: rgba(250, 204, 21, 0.16);
   --amber-soft: rgba(242, 193, 78, 0.14);
   --ok: #69D3AA;
   --danger: #F08072;
@@ -400,7 +407,6 @@ main {
 .key-node small { color: var(--faint); font-size: 9px; }
 .key-node.active { color: var(--terracotta-bright); border-color: var(--terracotta); background: var(--terracotta-soft); }
 .key-node.next { border-color: var(--turquoise); background: var(--turquoise-soft); }
-.key-arrow { display: none; }
 
 /* A readable look-ahead beats an 18-chip miniature: six chords show the
    current cadence, its pivot, and the start of the following key. */
@@ -462,10 +468,10 @@ main {
 .layer-swatch { width: 10px; height: 10px; border-radius: 50%; border: 2px solid transparent; }
 .lc-scale { background: #4E463B; }
 .lc-penta { background: #574E41; }
-.lc-none { background: transparent; border-color: var(--faint); }
+
 .lc-triad { background: var(--c-third); }
-.lc-now { background: transparent; border-color: var(--terracotta); }
-.lc-next { background: transparent; border-color: var(--turquoise); border-style: dashed; }
+.lc-now { background: transparent; border-color: var(--signal-now); }
+.lc-next { background: transparent; border-color: var(--signal-next); border-style: dashed; }
 .layer-chip:not(.on) .layer-swatch { opacity: 0.4; }
 .layer-note { margin-left: auto; color: var(--faint); font-size: 11px; }
 
@@ -542,10 +548,10 @@ main {
 @keyframes solo-hud-next { 0%, 100% { opacity: 0.76; } 50% { opacity: 1; } }
 
 /* now/next landing targets */
-.dot-now-ring { fill: none; stroke: var(--terracotta); stroke-width: 2.5; }
+.dot-now-ring { fill: none; stroke: var(--signal-now); stroke-width: 3; }
 /* Next targets are a DIAMOND, now targets a circle: shape carries the
    meaning so it survives colour-blindness and peripheral vision. */
-.dot-next-ring { fill: none; stroke: var(--turquoise); stroke-width: 2.2; stroke-dasharray: 4 3; opacity: 0.9; stroke-linejoin: round; }
+.dot-next-ring { fill: none; stroke: var(--signal-next); stroke-width: 2.6; stroke-dasharray: 5 3; opacity: 1; stroke-linejoin: round; }
 /* Change choreography: the lean pulse previews the next landing; the arrival
    ignites it while the old target falls back. Driven by svg-level classes. */
 svg.lean-phase .dot-next-ring { opacity: 1; stroke-width: 3; stroke-dasharray: none; }
@@ -563,8 +569,8 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 /* Mobile (ascending) road tones — hollow dots: Ousak breathes. */
 .fb-dot.mobile .dot-bg { fill: transparent; stroke-dasharray: 3 3; opacity: 0.8; }
 .fb-dot.mobile .dot-label { opacity: 0.75; }
-.fb-dot.target-now .dot-bg { stroke: var(--terracotta); stroke-width: 2; }
-.fb-dot.target-next .dot-bg { stroke: var(--turquoise); stroke-width: 1.5; }
+.fb-dot.target-now .dot-bg { stroke: var(--signal-now); stroke-width: 2.4; }
+.fb-dot.target-next .dot-bg { stroke: var(--signal-next); stroke-width: 2; }
 .fb-dot.target-next { opacity: 0.82; }
 .fb-dot.neck-muted { opacity: 0.08 !important; }
 @media (prefers-reduced-motion: no-preference) {
@@ -893,7 +899,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .chord-map-section-head > div { display: grid; gap: 2px; }
 .chord-map-section-head h3 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: 18px; font-weight: 500; }
 .chord-map-section-head p { max-width: 390px; text-align: right; }
-.chord-road-section { min-width: 0; }
+
 .chord-road { display: grid; gap: 7px; min-width: 0; }
 .chord-road-lane { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
 .chord-road-lane > span { color: var(--faint); font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
@@ -907,7 +913,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .chord-road-lane i::before { content: ""; grid-area: 1 / 1; width: 100%; border-top: 1px solid var(--line-strong); }
 .chord-road-lane i span { z-index: 1; grid-area: 1 / 1; padding: 2px 4px; border-radius: 5px; background: var(--panel); font-family: var(--font-mono); font-size: 10px; }
 .chord-road-lane i small { margin-top: 3px; font-size: 7px; letter-spacing: 0.05em; text-transform: uppercase; }
-.chord-degree-grid { display: grid; grid-template-columns: repeat(7, minmax(84px, 1fr)); gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+
 .chord-degree { display: grid; gap: 4px; min-width: 84px; min-height: 118px; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); color: var(--text); text-align: left; transition: all var(--t-fast) var(--ease); }
 .chord-degree > span { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
 .chord-degree i { color: var(--faint); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
@@ -917,19 +923,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .chord-degree em { align-self: end; color: var(--faint); font-size: 8px; font-style: normal; letter-spacing: 0.04em; text-transform: uppercase; }
 .chord-degree:hover { border-color: var(--line-strong); background: var(--panel2); }
 .chord-degree.active { border-color: var(--terracotta); background: var(--terracotta-soft); box-shadow: inset 0 2px 0 var(--terracotta); }
-.chord-compare { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
-.chord-compare summary { cursor: pointer; color: var(--text); font-family: var(--font-display); font-size: 16px; }
-.chord-compare > p { margin: 8px 0 10px; }
-.chord-compare-scroll { max-width: 100%; overflow-x: auto; }
-.chord-compare table { width: 100%; min-width: 760px; border-collapse: separate; border-spacing: 4px; }
-.chord-compare th { padding: 5px; color: var(--faint); font-size: 9px; letter-spacing: 0.06em; text-align: left; text-transform: uppercase; }
-.chord-compare tbody th { color: var(--aegean); font-family: var(--font-mono); text-align: center; }
-.chord-compare td { padding: 0; }
-.chord-compare td button { display: grid; grid-template-columns: auto 1fr; gap: 2px 7px; width: 100%; min-height: 54px; padding: 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--raised); color: var(--text); text-align: left; }
-.chord-compare td button span { color: var(--terracotta-bright); font-family: var(--font-display); font-size: 12px; }
-.chord-compare td button b { font-family: var(--font-mono); font-size: 12px; }
-.chord-compare td button small { grid-column: 1 / -1; color: var(--faint); font-family: var(--font-mono); font-size: 8.5px; }
-.chord-compare td button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+
 .chord-map-evidence { display: grid; gap: 2px; margin-top: 13px; padding: 10px; border-left: 2px solid var(--aegean); background: var(--aegean-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .chord-map-evidence b { color: var(--text); font-size: 12px; }
 .chord-map-evidence span { color: var(--muted); font-size: 10.5px; line-height: 1.4; }
@@ -2424,3 +2418,36 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
 .song-fit b.best { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .song-fit b.best i { color: var(--terracotta-bright); }
 .song-fit em { width: 100%; color: var(--muted); font-size: 11px; }
+
+/* The green target is the one your hand is on: give it real presence so it
+   reads at a glance while playing, not just on inspection. */
+.fb-dot.target-now .dot-bg { filter: drop-shadow(0 0 5px var(--signal-now-soft)); }
+.fb-dot.target-next .dot-bg { filter: drop-shadow(0 0 4px var(--signal-next-soft)); }
+/* Loop wrap: when "next" is the top of the progression again, say so. */
+.solo-hud-card.next.wraps::after { content: "loops back to the top"; display: block; margin-top: 3px; color: var(--signal-next); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.layer-note .sig-now { color: var(--signal-now); }
+.layer-note .sig-next { color: var(--signal-next); }
+
+/* ============ Shape cards: the progression as small patterns ============ */
+.solo-shape-cards { display: grid; gap: 8px; margin: 12px 0; }
+.shape-cards-head { display: grid; gap: 4px; }
+.shape-cards-head span { color: var(--faint); font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.shape-cards-head b { font-family: var(--font-display); font-size: 15px; }
+.shape-cards-head p { margin: 0; color: var(--muted); font-size: 11.5px; }
+.shape-cards { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.shape-card { display: grid; gap: 6px; padding: 9px; border: 1px solid var(--line); border-radius: var(--r-md); }
+.shape-card.now { border-color: var(--signal-now); background: var(--signal-now-soft); }
+.shape-card.next { border-color: var(--signal-next); border-style: dashed; background: var(--signal-next-soft); }
+.shape-card > header { display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; }
+.shape-card > header b { font-family: var(--font-display); font-size: 13px; color: var(--terracotta-bright); }
+.shape-card > header span { font-family: var(--font-mono); font-size: 13px; }
+.shape-card > header em { margin-left: auto; color: var(--faint); font-size: 9.5px; font-style: normal; }
+.shape-grid { display: grid; gap: 2px; }
+.shape-row { display: flex; gap: 2px; align-items: center; }
+.shape-row u { width: 15px; color: var(--faint); font-family: var(--font-mono); font-size: 9.5px; text-decoration: none; }
+.shape-row i { display: grid; place-items: center; flex: 1; min-width: 20px; height: 20px; border-radius: 4px; background: rgba(242,237,227,0.05); color: var(--text); font-family: var(--font-mono); font-size: 10.5px; font-style: normal; }
+.shape-row i.e { background: transparent; border-bottom: 1px solid rgba(242,237,227,0.08); border-radius: 0; height: 20px; }
+.shape-row i.t { background: var(--signal-now-soft); box-shadow: inset 0 0 0 1.5px var(--signal-now); color: var(--text); font-weight: 700; }
+.shape-row.nums i { height: 13px; background: transparent; color: var(--faint); font-size: 9px; }
+.shape-card > footer { color: var(--muted); font-size: 10.5px; }
+.shape-card.empty p { margin: 0; color: var(--faint); font-size: 11px; }

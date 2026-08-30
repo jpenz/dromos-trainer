@@ -46,7 +46,7 @@
       toolkit: { pillar: "land", toolId: "arrivals", phase: 0, formulaDeck: [0, 1, 2, 3] },
       // visual layers on the Changes map: the scale road and the targets are
       // meant to be seen TOGETHER, so both default on.
-      layers: { scale: true, pentatonic: false, triads: false, next: true } },
+      layers: { scale: true, pentatonic: false, triads: false, next: true, shapes: true }, neckMode: "auto" },
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
     // --- source-bounded tactical example index ---
@@ -4190,6 +4190,10 @@
         <strong>${escapeHtml(chord.degreeLabel)}</strong><b>${escapeHtml(chord.symbol)}</b>
         <small>${escapeHtml(chord.phraseRole)} · target ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</small></button>`;
     }).join("");
+    // The loop wrap is the moment players lose: the phrase ends on a held
+    // tonic and the next chord is the top of the progression again. Nothing
+    // on the neck changes across the hold, so say it in words.
+    const wrapsToTop = (state.progStep + 1) % progression.chords.length === 0 && progression.chords.length > 1;
     const motion = holds
       ? `${nowTarget.name} holds · the chord changes its meaning`
       : thread
@@ -4201,9 +4205,9 @@
         <div class="solo-roadmap-grid">${roadmap}</div>
       </section>
       <section class="solo-neck-hud" aria-label="Current and next solo landing" aria-live="polite">
-        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · the orange <b>circle</b> is the note to land on now</small></article>
+        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · the green <b>circle</b> is the note to play now</small></article>
         <div class="solo-hud-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b><small>hear the destination before the chord changes</small></div>
-        <article class="solo-hud-card next"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · the turquoise <b>diamond</b> is where you are aiming; it becomes an orange circle on arrival</small></article>
+        <article class="solo-hud-card next${wrapsToTop ? " wraps" : ""}"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · the amber <b>diamond</b> is where you are aiming; it turns into a green circle when it arrives</small></article>
       </section>
       <section class="solo-neck-zones" aria-label="Target locations in both halves of the neck">
         <header><div><span>Same target · two neck zones</span><b>Find ${escapeHtml(nowTarget.roleLabel)} ${escapeHtml(nowTarget.name)} now, then ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)} next</b></div><button data-solo-target-scope aria-pressed="${state.solo.allTargets}">${state.solo.allTargets ? "All target positions" : "Shape landing only"}</button></header>
@@ -4219,16 +4223,23 @@
         <button data-solo-neck-zone="both" class="solo-neck-zone-card both${state.solo.neckZone === "both" ? " active" : ""}"><span>Whole neck</span><b><i>Now + Next</i> keep both rows visible</b><small>Recommended for learning the repeated map</small></button>
       </section>
       <div class="solo-layer-row">
-        <span class="solo-layer-label">Background</span>
+        <span class="solo-layer-label">Scales</span>
         ${chip("scale", layers.scale, "lc-scale", `${state.tonic} ${mode.name} · two tetrachords`)}
         ${chip("pentatonic", layers.pentatonic, "lc-penta", `${state.tonic} ${M.PENTATONIC[state.modeId]?.name || "Pentatonic"}`)}
-        ${chip("none", !layers.scale && !layers.pentatonic, "lc-none", "Triads only")}
         <span class="solo-layer-divider" aria-hidden="true"></span>
-        <span class="solo-layer-label">Harmony</span>
-        <span class="layer-chip on is-static"><span class="layer-swatch lc-now"></span>Current triad</span>
+        <span class="solo-layer-label">Triads</span>
+        ${chip("shapes", layers.shapes, "lc-now", "Current + coming shape")}
         ${chip("next", layers.next, "lc-next", "Coming triad")}
         ${chip("triads", layers.triads, "lc-triad", "Other current positions")}
-        <span class="layer-note">background is quiet · solid = play now · dashed = prepare next · <b>circle = land now</b> · <b>diamond = aim next</b></span>
+        <span class="solo-layer-divider" aria-hidden="true"></span>
+        <span class="solo-layer-label">Neck</span>
+        ${["auto", "full", "split"].map((m) => `<button data-solo-neck="${m}" class="layer-chip${state.solo.neckMode === m ? " on" : ""}" aria-pressed="${state.solo.neckMode === m}">${m === "auto" ? "Auto" : m === "full" ? "Full 24" : "Split 12+12"}</button>`).join("")}
+        <span class="solo-layer-divider" aria-hidden="true"></span>
+        <span class="solo-layer-label">Isolate</span>
+        <button data-solo-isolate="scales" class="layer-chip">Scales only</button>
+        <button data-solo-isolate="triads" class="layer-chip">Triads only</button>
+        <button data-solo-isolate="all" class="layer-chip">Show all</button>
+        <span class="layer-note"><b class="sig-now">green circle</b> = play now · <b class="sig-next">amber diamond</b> = aim next · every layer is independent, so you can strip the neck to one thing</span>
       </div>`;
     root.querySelectorAll("[data-solo-roadmap-step]").forEach((button) => {
       button.onclick = () => {
@@ -4236,15 +4247,24 @@
         renderSoloMapControls(); renderSolo(); auditionProg();
       };
     });
+    root.querySelectorAll("[data-solo-neck]").forEach((button) => button.onclick = () => {
+      state.solo.neckMode = button.getAttribute("data-solo-neck");
+      renderSolo();
+    });
+    root.querySelectorAll("[data-solo-isolate]").forEach((button) => button.onclick = () => {
+      const mode = button.getAttribute("data-solo-isolate");
+      const L = state.solo.layers;
+      if (mode === "scales") { L.scale = true; L.pentatonic = false; L.shapes = false; L.next = false; L.triads = false; }
+      else if (mode === "triads") { L.scale = false; L.pentatonic = false; L.shapes = true; L.next = true; L.triads = true; }
+      else { L.scale = true; L.pentatonic = false; L.shapes = true; L.next = true; L.triads = false; }
+      renderSolo();
+    });
     root.querySelectorAll("[data-solo-layer]").forEach((button) => {
       button.onclick = () => {
+        // Every layer is independent: a player who wants only the scale, or
+        // only the triads, should be able to strip the neck to it.
         const key = button.getAttribute("data-solo-layer");
-        if (["scale", "pentatonic", "none"].includes(key)) {
-          state.solo.layers.scale = key === "scale";
-          state.solo.layers.pentatonic = key === "pentatonic";
-        } else {
-          state.solo.layers[key] = !state.solo.layers[key];
-        }
+        state.solo.layers[key] = !state.solo.layers[key];
         renderSolo();
       };
     });
@@ -4269,6 +4289,62 @@
     return `<div class="triad-seat"><span>Triad of ${escapeHtml(cur.symbol)}</span>
       ${seats.map((note) => `<b class="${targetPcSet.has(note.pc) ? "seat-target" : ""}">${escapeHtml(note.roleLabel)}<i>${escapeHtml(note.name)}</i></b>`).join("")}
       ${outside.length ? `<em>${outside.map((note) => escapeHtml(note.name)).join(" · ")} sits outside the triad — it leans in and resolves</em>` : `<em>every target sits inside the shape under your hand</em>`}</div>`;
+  }
+
+  // ---- Shape cards: the progression as small, readable triad patterns ----
+  // A player reading a ii–V–I wants to see three shapes and where the target
+  // sits in each, not scan a 24-fret neck three times. Each card is the
+  // voice-led triad for that chord, drawn at its real frets, with every tone
+  // labelled by its role and the active landing target ringed.
+  function shapeCardHtml(chord, shape, index) {
+    if (!shape || !shape.placements || !shape.placements.length) {
+      return `<article class="shape-card empty"><header><b>${escapeHtml(chord.degreeLabel)}</b><span>${escapeHtml(chord.symbol)}</span></header>
+        <p>No compact shape on this instrument.</p></article>`;
+    }
+    const targets = soloTargets(chord, state.solo.focus);
+    const targetPcs = new Set(targets.map((t) => t.pc));
+    const frets = shape.placements.map((p) => p.fret);
+    const lo = Math.max(0, Math.min(...frets) - 1);
+    const hi = Math.max(...frets) + 1;
+    const span = Math.max(3, hi - lo + 1);
+    const strings = window.Tuning.names();
+    const isNow = index === state.progStep;
+    const isNext = index === (state.progStep + 1) % currentProgression().chords.length;
+    const rows = [];
+    for (let s = strings.length - 1; s >= 0; s--) {
+      const cells = [];
+      for (let f = lo; f <= lo + span - 1; f++) {
+        const hit = shape.placements.find((p) => p.stringIndex === s && p.fret === f);
+        if (hit) {
+          const target = targetPcs.has(hit.note.pc);
+          cells.push(`<i class="${target ? "t" : ""}">${escapeHtml(hit.note.roleLabel || "")}</i>`);
+        } else cells.push(`<i class="e"></i>`);
+      }
+      rows.push(`<div class="shape-row"><u>${escapeHtml(strings[s])}</u>${cells.join("")}</div>`);
+    }
+    const fretNums = [];
+    for (let f = lo; f <= lo + span - 1; f++) fretNums.push(`<i>${f}</i>`);
+    return `<article class="shape-card${isNow ? " now" : ""}${isNext ? " next" : ""}" >
+      <header><b>${escapeHtml(chord.degreeLabel)}</b><span>${escapeHtml(chord.symbol)}</span>
+        <em>fret ${lo}</em></header>
+      <div class="shape-grid">${rows.join("")}<div class="shape-row nums"><u></u>${fretNums.join("")}</div></div>
+      <footer>target ${escapeHtml(targets.map((t) => `${t.roleLabel} ${t.name}`).join(" · "))}</footer>
+    </article>`;
+  }
+
+  function renderShapeCards() {
+    const root = $("soloShapeCards");
+    if (!root) return;
+    if (state.view !== "solo" || state.solo.section !== "targets") { root.innerHTML = ""; return; }
+    const { chords, prog } = currentProgression();
+    const path = TR.pathThrough(chords, { startFret: 5, nameFor: spellPc, closeLoop: true });
+    root.innerHTML = `
+      <header class="shape-cards-head">
+        <div><span>Shape patterns · ${escapeHtml(prog.label)}</span>
+        <b>The whole progression as ${chords.length} small patterns</b></div>
+        <p>Each card is the voice-led triad at its real frets. Numbers under the grid are fret numbers; letters inside are the note's role. Ringed cells are the current landing target, so you can read where the ${escapeHtml(landingLensName(state.solo.focus))} sit across the whole ${escapeHtml(prog.label)} without scanning the neck.</p>
+      </header>
+      <div class="shape-cards">${chords.map((chord, i) => shapeCardHtml(chord, path[i], i)).join("")}</div>`;
   }
 
   function renderSolo() {
@@ -4318,8 +4394,8 @@
     // closest move is a leap. Nearest-tone connection is the whole lesson.
     const thread = soloLandingThread(curTargets, nextTargets);
     FB.render(svg(), {
-      grip: activeGrip,
-      nextGrip: layers.next ? nextGrip : null,
+      grip: layers.shapes ? activeGrip : null,
+      nextGrip: layers.shapes && layers.next ? nextGrip : null,
       otherShapes: state.solo.section === "targets" ? allTriads.filter(() => layers.triads) : [],
       pentatonicNotes: state.solo.section === "targets" && layers.pentatonic ? pentatonic : null,
       // The scale background keeps its tetrachord identity: quiet road dots in
@@ -4341,6 +4417,7 @@
         : null,
       overlayRange,
       largeNeck: true,
+      neckMode: state.solo.neckMode,
       flavourPcs: M.flavourPcs(state.tonic, state.modeId),
       labelMode: state.labelMode,
       lefty: state.lefty
@@ -4349,6 +4426,7 @@
     applyMapChoreo();
     applySoloNeckFocus();
     renderSoloLayerChips(cur, next, curTargets, nextTargets, thread);
+    renderShapeCards();
     renderSoloToolkit();
 
     const frame = M.PENTATONIC[state.modeId];
