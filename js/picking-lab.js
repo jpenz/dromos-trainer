@@ -102,7 +102,7 @@
       boundary: "The meter grouping comes from Dromos's documented pulse map; the exact pick-accent drill is an original trainer exercise, not a style transcription."
     },
     {
-      id: "tremolo-ladder", category: "time", order: 23, title: "Tremolo burst ladder",
+      id: "tremolo-ladder", category: "time", order: 24, title: "Tremolo burst ladder",
       short: "Join short, countable bursts into a sustained bouzouki tone.", layout: "horizontal", sequence: "tremolo", count: 20,
       articulation: "tremolo-sustain", sourceIds: ["trigas-method", "pafranidis-sample"],
       theory: "Hold one scale degree long enough to hear its function. Compare the tonic (settled), 3rd (major/minor colour), and characteristic dromos note.",
@@ -187,7 +187,7 @@
       boundary: "The observed stroke families and warning against one universal rule are source-supported. This exact A/B note route is an original Dromos comparison, not a Pennanen or Hiotis transcription."
     },
     {
-      id: "pick-legato", category: "phrase", order: 26, title: "Pick–hammer–pull–slide chain",
+      id: "pick-legato", category: "phrase", order: 27, title: "Pick–hammer–pull–slide chain",
       short: "Make the pick start the syllable and let the left hand shape it.", layout: "horizontal", sequence: "ornament", count: 6,
       articulation: "picked-legato", sourceIds: ["pennanen", "trigas-method"],
       theory: "Decoration has a harmonic destination. Name the final note's scale degree and land it as a chord tone; the ornament connects to that target rather than replacing it.",
@@ -199,7 +199,7 @@
       boundary: "The ornament families are source-supported. This exact six-event chain is an original fixed-fret Dromos drill, not a claim about universal Greek execution."
     },
     {
-      id: "mode-phrase-cell", category: "phrase", order: 27, title: "Dromos contour → home",
+      id: "mode-phrase-cell", category: "phrase", order: 28, title: "Dromos contour → home",
       short: "Turn scale knowledge into a short picked sentence with a named destination.", layout: "horizontal", sequence: "phraseCell", count: 7,
       articulation: "picked-line", sourceIds: ["karantinis-lessons", "pagiatis-dromoi"],
       theory: "Knowing a collection is not the same as speaking with it. Hear the app-authored rise–turn–return contour, then identify the selected dromos degrees and final home.",
@@ -211,7 +211,7 @@
       boundary: "The sources support teaching phraseology beyond scale positions. This generic seven-note contour is an original Dromos scaffold, not a Karantinis phrase, Pagiatis melody, or repertoire transcription."
     },
     {
-      id: "arpeggio-arrival", category: "arpeggio", order: 30, title: "Triad arpeggio → next 3rd",
+      id: "arpeggio-arrival", category: "arpeggio", order: 31, title: "Triad arpeggio → next 3rd",
       short: "Turn picking control into audible harmony.", layout: "arpeggio", sequence: "arpeggio", count: 5,
       articulation: "picked-line", sourceIds: ["trigas-method", "pafranidis-sample"],
       theory: "Root, 3rd, and 5th state the current chord. The next chord's 3rd is the high-information arrival because it reveals that chord's major or minor quality.",
@@ -297,7 +297,7 @@
       boundary: "The grammar is documented; the six-note route is a Dromos generation from the selected dromos, not a transcription."
     },
     {
-      id: "counted-tremolo-groupings", category: "phrase", order: 24, title: "Counted tremolo groupings",
+      id: "counted-tremolo-groupings", category: "phrase", order: 25, title: "Counted tremolo groupings",
       short: "4+1, 6+1, 8+1 - then 4+2 and 6+4: bursts with a controlled landing stroke.", layout: "horizontal", sequence: "countedTremolo", count: 30, subdivision: 4,
       articulation: "tremolo-sustain", sourceIds: ["mandoisland-counted", "bickford-mandolin", "trigas-method"],
       theory: "IMPORT (mandolin pedagogy): counted bursts are the measured bridge toward free tremolo - and they train WHICH stroke you land on, so a tremolo can exit onto a downbeat by design rather than luck.",
@@ -310,7 +310,7 @@
       allStrings: true
     },
     {
-      id: "tremolo-entry-exit", category: "phrase", order: 25, title: "Tremolo entry & exit",
+      id: "tremolo-entry-exit", category: "phrase", order: 26, title: "Tremolo entry & exit",
       short: "A picked line opens into free tremolo mid-phrase, then lands back on the click.", layout: "horizontal", sequence: "entryExit", count: 8,
       articulation: "tremolo-sustain", sourceIds: ["bickford-mandolin", "pennanen", "karantinis-lessons"],
       theory: "The tremolo itself is unmeasured - Bickford's doctrine, a labelled import - but its edges are timed. Entering without a hiccup and exiting onto a note that lands with the click is the actual performing skill.",
@@ -322,7 +322,7 @@
       boundary: "The doctrine is a labelled import; the line is a Dromos generation from the selected dromos, not a transcription."
     },
     {
-      id: "irish-treble", category: "phrase", order: 28, title: "Treble cell (Irish import)",
+      id: "irish-treble", category: "phrase", order: 29, title: "Treble cell (Irish import)",
       short: "Anchor note plus a D-U-D treble - a triplet cell from Irish plectrum pedagogy.", layout: "horizontal", sequence: "trebleCell", count: 8, subdivision: 4,
       articulation: "picked-line", sourceIds: ["irish-treble", "mandoisland-counted"],
       theory: "IMPORT (Irish tenor banjo/mandolin): the treble is a compact triplet ornament - a plain anchor stroke, then D-U-D squeezed into its shadow. It builds exactly the wrist snap fast laiko fills need, and it wears its Irish badge honestly.",
@@ -334,7 +334,7 @@
       boundary: "An Irish plectrum import wearing its badge; it is not a claim about Greek practice, and the cell is a Dromos generation, not a tune quote."
     },
     {
-      id: "era-register-contrast", category: "phrase", order: 29, title: "Two registers: sparse & dense",
+      id: "era-register-contrast", category: "phrase", order: 30, title: "Two registers: sparse & dense",
       short: "The same phrase as sparse accented strokes, then as dense stroke-plus-slide playing.", layout: "horizontal", sequence: "registerContrast", count: 12,
       articulation: "picked-legato", sourceIds: ["pennanen-1999", "pennanen", "filippatos-bouzoukiland"],
       theory: "Era-documented poles of penia style: simple sharp strokes on one side, quick strokes with slides on the other. Train both registers on one phrase so density becomes a choice, not a habit.",
@@ -346,7 +346,7 @@
       boundary: "The registers are documented historical poles; the phrase itself is a Dromos generation and not anyone's recorded lick."
     },
     {
-      id: "chunk-builder", category: "keychange", order: 33, title: "Chunk builder",
+      id: "chunk-builder", category: "keychange", order: 34, title: "Chunk builder",
       short: "Lower tetrachord twice, upper twice, joined octave - rebuilt in each band key.", layout: "horizontal", sequence: "chunkBuilder", count: 20,
       articulation: "picked-line", sourceIds: ["pagiatis-dromoi", "ordoulidis-modes", "trigas-method"],
       theory: "A dromos is two named chunks joined at a seam. Build it as chunks - lower, upper, then the whole road - and the same construction transposes to any tonic, because the chunks are interval structures, not fret memories. Minor band keys rebuild the minor-family version; major keys the major-family: the CHUNKS are the invariant.",
@@ -358,7 +358,7 @@
       boundary: "Chunk construction is the sourced pedagogy; each realisation is a Dromos generation from the app's own scale model, not a copied diagram."
     },
     {
-      id: "ghammaz-pivot", category: "keychange", order: 34, title: "Pivot-note key change",
+      id: "ghammaz-pivot", category: "keychange", order: 35, title: "Pivot-note key change",
       short: "End the home phrase ON the note that is the next key's tonic, then launch its lower chunk.", layout: "horizontal", sequence: "ghammazPivot", count: 12,
       articulation: "picked-line", sourceIds: ["papasolomontos-2017", "ordoulidis-modes", "pagiatis-dromoi"],
       theory: "The band cycle is ordered so every hop's pivot note IS the destination tonic: G to D on the 5th, D to Dm on the shared tonic, Dm to Am on its 5th, Am to E on its 5th, E to Em on the tonic, Em to G on the flat 3. Land the pivot, hold it, and the new key starts under your finger.",
@@ -370,7 +370,7 @@
       boundary: "The pivot mechanic extrapolates documented instant-transposition practice; the phrases are Dromos generations and the cycle order is app design, stated as such."
     },
     {
-      id: "band-key-arpeggio-circuit", category: "arpeggio", order: 35, title: "Band-key arpeggio circuit",
+      id: "band-key-arpeggio-circuit", category: "arpeggio", order: 36, title: "Band-key arpeggio circuit",
       short: "Triads of the active progression, arpeggiated, through all six band keys.", layout: "2nps", sequence: "arpCircuit", count: 24,
       articulation: "picked-line", sourceIds: ["trigas-method", "avlonitis-101", "pagiatis-dromoi"],
       theory: "Arpeggio study through real harmony: each chord of the active progression becomes root-accented triad tones under strict alternation, and the whole circuit runs the band cycle so the SAME harmonic hand lives in every singing key. One string set per session; rotate sets across sessions.",
@@ -383,7 +383,7 @@
       allStrings: true
     },
     {
-      id: "sequence-ladder", category: "phrase", order: 36, title: "Imitation chain (mimisis)",
+      id: "sequence-ladder", category: "phrase", order: 37, title: "Imitation chain (mimisis)",
       short: "State a cell, restate it from the second chord's tone, vary it, resolve.", layout: "horizontal", sequence: "sequenceLadder", count: 18,
       articulation: "picked-line", sourceIds: ["papasolomontos-2017", "pennanen", "karantinis-lessons"],
       theory: "All ten analysed Chiotis taximia are built by mimisis: one cell restated at new levels. The ladder anchors the restatement on the progression's second chord - whatever it is - so the drill works in every dromos, including ones with no IV.",
@@ -395,7 +395,7 @@
       boundary: "Mimisis is the documented device; every cell here is a Dromos generation from the dromos model, never a transcription of anyone's taximi."
     },
     {
-      id: "skeleton-descent", category: "phrase", order: 37, title: "Skeleton descent (minore line)",
+      id: "skeleton-descent", category: "phrase", order: 38, title: "Skeleton descent (minore line)",
       short: "The descending run as skeleton first, then filled - the minore lineage's shape.", layout: "horizontal", sequence: "skeletonDescent", count: 12,
       articulation: "picked-line", sourceIds: ["monemvasitis-minore", "papasolomontos-2017", "pagiatis-dromoi"],
       theory: "The descending line from the octave to the tonic is the spine of the minore taximi lineage. Practise it as a skeleton - every other tone, held - then filled, so speed never outruns the shape.",
@@ -407,7 +407,7 @@
       boundary: "The descent SHAPE is documented lineage; this realisation is a Dromos generation from the scale model and not a copied taximi."
     },
     {
-      id: "instant-transpose", category: "keychange", order: 38, title: "Instant transpose",
+      id: "instant-transpose", category: "keychange", order: 39, title: "Instant transpose",
       short: "One phrase, a cue chord, the same phrase in the cue's key - first attempt counts.", layout: "horizontal", sequence: "instantTranspose", count: 20,
       articulation: "picked-line", sourceIds: ["papasolomontos-2017", "ordoulidis-modes"],
       theory: "Period testimony from the Chiotis circle: keys changed instantly on demand - E major immediately, D major immediately. The drill recreates the demand: a phrase you own, a cue chord, and the same phrase rebuilt in the cue key on the first attempt. Closed movable shapes make this easiest (a labelled fretted-instrument import, not a Greek rule).",
@@ -419,7 +419,7 @@
       boundary: "Testimony documents the skill, not this drill: the phrase and cue mechanics are Dromos generations, and the closed-shape tip is a labelled import."
     },
     {
-      id: "gap-click-pulse", category: "time", order: 39, title: "Gap click on the Greek pulse",
+      id: "gap-click-pulse", category: "time", order: 40, title: "Gap click on the Greek pulse",
       short: "The click thins out - every subdivision, then group starts, then bar one only.", layout: "horizontal", sequence: "pulseAccentMap", count: 16, subdivision: 4,
       articulation: "picked-line", sourceIds: ["allingham-tempo", "measured-tempi", "trigas-method", "verwey-repp-background"],
       variants: [{ id: "every", label: "Click: all" }, { id: "groups", label: "Click: groups" }, { id: "barone", label: "Click: bar 1" }],
@@ -429,7 +429,7 @@
       steps: ["Run the 16ths map with the click on every subdivision until it is easy.", "Thin the click to group starts only; your accents must replace the missing ticks.", "Thin to bar one only: re-enter after each near-silent bar exactly on the click."],
       listen: "When the click disappears, nothing about your playing should notice.",
       pass: "Self-scored: at click-bar-one, three consecutive bars re-enter with the click with no audible correction.",
-      boundary: "Gap-click is universal pedagogy applied to the app's sourced Greek pulses; the stream is a Dromos generation."
+      boundary: "Gap-click is a widespread teaching practice, not research-validated; Dromos applies it to the app's sourced Greek pulses and the stream is a generation."
     },
     {
       id: "full-neck-ladder", category: "route", order: 14, title: "Scale over the whole neck",
@@ -444,7 +444,7 @@
       boundary: "Position study is the sourced pedagogy; no surveyed source prescribes this ladder order - the position sequence is a Dromos generation from the app's own position model."
     },
     {
-      id: "arp-chunks", category: "arpeggio", order: 31, title: "Four-note chord chunks",
+      id: "arp-chunks", category: "arpeggio", order: 32, title: "Four-note chord chunks",
       short: "Root-3rd-5th-octave as one chunk per chord; the octave top launches the next change.", layout: "horizontal", sequence: "arpChunks", count: 16,
       articulation: "picked-line", sourceIds: ["trigas-method", "pagiatis-dromoi"],
       theory: "A chord spelled as one four-note chunk - root, 3rd, 5th, octave - is the smallest unit that both outlines the harmony and hands you a launch note: the octave top sits close to the next chord's nearest tone. Practising the progression as linked chunks is what turns arpeggios into fills you can place inside a song.",
@@ -483,10 +483,10 @@
     {
       id: "through-stroke-landings", category: "time", order: 3, title: "Through-stroke landings",
       short: "Down THROUGH both strings of the course; the pick lands and rests on the next one.", layout: "horizontal", sequence: "throughStroke", count: 32,
-      articulation: "picked-line", sourceIds: ["rosenberg-rest-stroke", "pafranidis-sample"],
+      articulation: "picked-line", sourceIds: ["rosenberg-rest-stroke", "skamnelos-review", "pafranidis-sample"],
       variants: [{ id: "hold1", label: "Hold · 1 beat" }, { id: "holdHalf", label: "Hold · ½ beat" }, { id: "rebound", label: "Rebound" }],
       allStrings: true,
-      theory: "An import wearing its badge: this is the gypsy-jazz/early-plectrum rest stroke, not Greek canon - no method in our surveyed Greek sources codifies it, and the Greek prescription is a perpendicular, minimal-depth tip stroke. As a TRAINING tool it does one thing: the stroke must travel through the course, not at it, so both strings speak and the attack depth stops varying. Design rationale, not a sourced claim: the landing may also teach the hand course spacing by touch. Whether you anchor a finger on the soundboard is a choice with a tradeoff, not a rule.",
+      theory: "An import wearing its badge: this is the gypsy-jazz/early-plectrum rest stroke, not Greek canon - no method in our surveyed Greek sources codifies it, and the Greek prescription is a perpendicular, minimal-depth tip stroke. As a TRAINING tool it does one thing: the stroke must travel through the course, not at it, so both strings speak and the attack depth stops varying. Two warnings from the sources themselves: Greek methods prescribe SHALLOW contact and describe deep digging (skapsimo) as a fault (Skamnelos review), and even Bickford calls always-resting inconvenient - so the landing is a calibration, never your default stroke. Design rationale, not a sourced claim: the landing may also teach the hand course spacing by touch. Whether you anchor a finger on the soundboard is a choice with a tradeoff, not a rule.",
       evidence: "The rest-stroke mechanic (wind up, through, land, free upstroke back) is taught in the Rosenberg Academy gypsy-jazz lessons; the slow, clear attack as the entry point of plectrum work is the Pafranidis sample. The per-course landing sequence and hold tiers are generated.",
       sourceLabel: "Rosenberg rest stroke (import) + Pafranidis attack", sourceHref: "https://rosenbergacademy.com/collections/lessons",
       steps: ["Wrist only, slow click: downstroke through both strings of the lowest course and let the pick REST on the next course for a full beat.", "The upstroke home is a free stroke. Four landings per course, then move to the next course, starting on a downstroke.", "Shorten the hold - one beat, half a beat, immediate rebound - without letting the stroke become a surface tap. On the last course, follow through the same distance into air."],
@@ -497,11 +497,11 @@
     {
       id: "monopenies-passes", category: "time", order: 4, title: "Monopenies: one direction at a time",
       short: "The same line three ways: all downstrokes, all upstrokes, then strict alternation.", layout: "horizontal", sequence: "monopenies", count: 24,
-      articulation: "picked-line", sourceIds: ["praktiki-methodos-scan", "greek-teacher-first-lessons", "stahl-mandolin"],
+      articulation: "picked-line", sourceIds: ["pafranidis-sample", "praktiki-methodos-scan", "greek-teacher-first-lessons", "stahl-mandolin"],
       variants: [{ id: "open", label: "Open courses" }, { id: "fretted", label: "Fretted 1-2-3-4" }],
       allStrings: true,
       theory: "Isolate each stroke direction before recombining them: a pass of only downstrokes (the silent return glides back over the strings), a pass of only upstrokes, then the alternating pass. Documented in a Greek method scan and two independent teacher lessons; the causal story - that this builds each direction to equal strength - is design rationale, labelled as such.",
-      evidence: "The down-only, up-only, then alternating sequence appears in a trichordo method scan (corroborating but weak: unattributed scan); up-only passes are a named drill in Greek teacher lessons; unidirectional stroke drills are also documented in the public-domain Stahl mandolin method (import).",
+      evidence: "The down-only stage is documented in Greek print: Pafranidis opens the trichordo method with Exercise 1, thesi/downbeat, played 'slowly and cleanly'. The full down-up-alternate sequence appears in a method scan (corroborating but weak); the up-only pass is the weakest-documented of the three (teacher material) and ships as the symmetric counterpart; unidirectional drills are also in the Stahl mandolin method (import).",
       sourceLabel: "Greek method scan + teacher lessons + Stahl (import)", sourceHref: "https://www.youtube.com/watch?v=pPe1g2Y-qCM",
       steps: ["Play the traversal with EVERY note a downstroke; the return stroke travels silently above the strings.", "Repeat with every note an upstroke - same tempo, same volume, no cheating the click.", "Finish with strict alternation starting on a down. Each direction passes when a recording of it is as even as your alternating pass."],
       listen: "Whether the up-only pass sounds like the down-only pass; any direction that limps is the one to repeat.",
@@ -536,7 +536,19 @@
       boundary: "The cells, stop placement, and flip logic are Dromos generations; the polarity concept is an import and the academic citations are background, not validation of this drill."
     },
     {
-      id: "triad-ladder", category: "arpeggio", order: 32, title: "Triad ladder up the neck",
+      id: "mair-density-ladder", category: "time", order: 23, title: "Density ladder at one slow tempo",
+      short: "The click never moves: quarters down, 8ths down, 16ths alternate, 32nds alternate.", layout: "horizontal", sequence: "mairLadder", count: 30,
+      articulation: "picked-line", sourceIds: ["mair-pick-technique", "pafranidis-sample"], subdivision: 4,
+      theory: "Speed without chasing the metronome: the tempo stays put (the printed prescription is 50-60 BPM) and the note DENSITY doubles each bar - quarters, eighths, sixteenths, thirty-seconds. The first two passes are downstrokes only, the last two alternate. This is the one concrete printed tempo ladder found in plectrum pedagogy, a classical-mandolin import wearing its badge; by the last bar you are playing a measured tremolo without ever having sped up.",
+      evidence: "The four-bar subdivision ladder at mm 50-60 with 10-20 repetitions is printed in Mair's classical-mandolin pick-technique study (import, labelled); the slow, clean single-direction entry point matches the Pafranidis sample's opening prescription.",
+      sourceLabel: "Mair subdivision ladder (import)", sourceHref: "https://www.marilynnmair.com/articles/mandolin/2003/pick-technique/",
+      steps: ["Set the click slow - the printed band is 50-60 BPM - and play one bar of quarter notes, all downstrokes, each one full and even.", "Double to eighths (still all down), then sixteenths (strict alternation), then thirty-seconds: four bars, one unchanged click.", "Loop the four bars. If the thirty-seconds bar smears, the ladder says stay - repeat the cycle, do not raise the tempo."],
+      listen: "The click: it must feel identical under all four densities, and the 32nds bar should sound like a measured tremolo, not a scramble.",
+      pass: "Self-scored: three consecutive four-bar cycles where every density lands inside the same unchanged click.",
+      boundary: "The printed ladder is Mair's; this looping realisation on a bouzouki course and its pass structure are Dromos generations, not a copied page."
+    },
+    {
+      id: "triad-ladder", category: "arpeggio", order: 33, title: "Triad ladder up the neck",
       short: "The same chord three times up the neck: root position, 1st inversion, 2nd inversion.", layout: "horizontal", sequence: "triadLadder", count: 18,
       articulation: "picked-line", sourceIds: ["polykandriotis-method", "weiss-triad-ladder", "trigas-method"],
       theory: "One chord lives in three neck regions: root position near the nut (1-3-5), first inversion above it (3-5-1), second inversion above that (5-1-3), then back down. One Greek method (Polykandriotis) organizes chords into three neck positions; this drill adopts that frame. The root-then-inversions climbing order is a guitar import, labelled as such. In Evolve with Band keys the ladder rebuilds in every band key, and the shapes become the landing points of the pivot cycle.",
@@ -866,6 +878,29 @@
       });
       baseNodes.forEach((node) => nodes.push(Object.assign(cloneNode(node), { phrase: "full descent" })));
       return alternate(nodes, (index) => nodes[index].phrase === "skeleton", firstStroke);
+    }
+    if (exercise.sequence === "mairLadder") {
+      // One unchanged click, four densities (Mair import): quarters down,
+      // 8ths down, 16ths alternate, 32nds alternate. At subdivision 4 the
+      // durMults are 4 / 2 / 1 / 0.5 - the tempo itself never moves.
+      const target = baseNodes[0];
+      if (!target) return [];
+      const passes = [
+        { label: "quarters · all down", count: 4, durMult: 4, forced: "D" },
+        { label: "8ths · all down", count: 8, durMult: 2, forced: "D" },
+        { label: "16ths · alternate", count: 16, durMult: 1, forced: null },
+        { label: "32nds · alternate", count: 32, durMult: 0.5, forced: null }
+      ];
+      nodes = [];
+      passes.forEach((pass) => {
+        for (let rep = 0; rep < pass.count; rep++) nodes.push(Object.assign(cloneNode(target), {
+          phrase: pass.label, passStart: rep === 0, durMult: pass.durMult, forced: pass.forced
+        }));
+      });
+      const line = alternate(nodes, (index) => !!nodes[index].passStart, firstStroke);
+      return line.map((node, index) => nodes[index].forced
+        ? Object.assign(node, { technique: nodes[index].forced, stroke: "down", crossing: null })
+        : node);
     }
     if (exercise.sequence === "throughStroke") {
       // Rest-stroke trainer (import, labelled): landing downstroke with a

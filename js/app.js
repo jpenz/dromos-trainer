@@ -3459,6 +3459,7 @@
     if (exercise.sequence === "instantTranspose") return { nodes: pickingTransposeNodes(context), current: null, next: null };
     if (exercise.sequence === "featherTouch") return { nodes: pickingOpenCourseNodes().slice(0, 1), current: null, next: null };
     if (exercise.sequence === "throughStroke") return { nodes: pickingOpenCourseNodes(), current: null, next: null };
+    if (exercise.sequence === "mairLadder") return { nodes: pickingOpenCourseNodes().slice(0, 1), current: null, next: null };
     if (exercise.sequence === "monopenies") return { nodes: pickingMonopeniesNodes(context), current: null, next: null };
     if (exercise.sequence === "traversalCountdown") return { nodes: pickingTraversalNodes(), current: null, next: null };
     if (exercise.sequence === "crossingFlip") return { nodes: pickingCrossingCellNodes(context), current: null, next: null };
