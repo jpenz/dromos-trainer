@@ -2142,7 +2142,7 @@ body[data-view="melody"] main { max-width: 1180px; }
 .picking-setup > header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr); gap: 18px; align-items: end; }
 .picking-setup > header h2 { margin: 2px 0 0; font-family: var(--font-display); font-size: clamp(18px, 2vw, 25px); font-weight: 400; }
 .picking-setup > header p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.4; }
-.picking-context { display: grid; grid-template-columns: minmax(250px, 1.35fr) minmax(96px, 0.4fr) minmax(150px, 0.62fr) minmax(190px, 0.8fr); gap: 8px; align-items: start; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
+.picking-context { display: grid; grid-template-columns: minmax(280px, 1.6fr) minmax(210px, 0.8fr); gap: 8px; align-items: start; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
 .picking-context > label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .picking-context > label small { color: var(--faint); font-size: 8px; font-weight: 500; letter-spacing: 0; line-height: 1.2; text-transform: none; }
 .picking-context select { width: 100%; min-height: 40px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
@@ -2476,3 +2476,30 @@ body[data-view="picking"] .fretboard-wrap #fretboard { min-width: 860px; }
 .picking-stroke-key .road-key.lower b { color: var(--turquoise); }
 .picking-stroke-key .road-key.upper b { color: var(--terracotta-bright); }
 .picking-stroke-key .road-key.tonic b { color: var(--amber); }
+
+/* ---- Picking transport: one consistent bottom bar (FR-73) ---- */
+.picking-transport { display: none; }
+body[data-view="picking"] .picking-transport { display: flex; align-items: end; justify-content: center; gap: 18px; }
+.picking-transport .deck-start { min-height: 46px; min-width: 132px; padding: 0 20px; font-size: 15px; }
+.picking-transport .picking-tempo { display: grid; gap: 4px; min-width: 210px; max-width: 300px; flex: 1; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-transport .transport-sub { display: grid; gap: 4px; }
+.picking-transport .transport-sub .seg button { min-height: 40px; }
+.picking-transport .transport-pick { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-transport select { min-height: 40px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
+body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
+@media (max-width: 900px) {
+  /* Compact three-row transport: [Start | speed] / [notes per click] /
+     [key | scale] — a transport, not a second page. */
+  body[data-view="picking"] .picking-transport { gap: 6px 8px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); }
+  .picking-transport .deck-start { flex: 0 0 auto; min-width: 116px; min-height: 44px; padding: 0 14px; font-size: 14px; }
+  .picking-transport .picking-tempo { display: flex; flex: 1 1 0; align-items: center; gap: 7px; min-width: 150px; max-width: none; }
+  .picking-transport .picking-tempo > span { display: flex; flex: 1; align-items: center; gap: 7px; }
+  .picking-transport .picking-tempo input { flex: 1; min-width: 0; }
+  .picking-transport .transport-sub { flex: 1 1 100%; }
+  .picking-transport .transport-sub .panel-label { display: none; }
+  .picking-transport .transport-sub .seg { display: flex; }
+  .picking-transport .transport-sub .seg button { flex: 1; min-height: 40px; }
+  .picking-transport .transport-pick { flex: 1 1 40%; }
+  .picking-transport .transport-help { display: none; }
+}
+.picking-transport .transport-help { color: var(--faint); font-size: 8px; font-weight: 500; letter-spacing: 0; text-transform: none; }
