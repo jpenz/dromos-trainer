@@ -2451,3 +2451,13 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
 .shape-row.nums i { height: 13px; background: transparent; color: var(--faint); font-size: 9px; }
 .shape-card > footer { color: var(--muted); font-size: 10.5px; }
 .shape-card.empty p { margin: 0; color: var(--faint); font-size: 11px; }
+
+/* Tempo ladder honesty labels: documented / estimate / qualitative bands. */
+.picking-band { display: block; margin: 6px 0 0; color: var(--muted); font-size: 11.5px; }
+.picking-band small { display: block; color: var(--faint); font-size: 10px; }
+.picking-band button { padding: 1px 7px; border: 1px solid var(--turquoise); border-radius: 999px; background: transparent; color: var(--turquoise); font-size: 10.5px; }
+.picking-band b { padding: 1px 6px; border-radius: 999px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.band-documented { background: rgba(74,222,128,0.16); color: var(--signal-now); }
+.band-estimate { background: rgba(250,204,21,0.16); color: var(--signal-next); }
+.band-qualitative { background: rgba(242,237,227,0.1); color: var(--muted); }
+.picking-ceiling { margin: 6px 0 0; padding: 6px 9px; border-left: 2px solid var(--terracotta); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--terracotta-soft); font-size: 11.5px; }

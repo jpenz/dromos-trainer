@@ -35,8 +35,8 @@ test("authorised study starters and referenced methods remain clearly bounded", 
 
 test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority separate", () => {
   const { BouzoukiKnowledge, PickingLab } = loadCore();
-  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 5);
-  assert.equal(PickingLab.EXERCISES.length, 13);
+  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 6, "foundation to lead: six stages");
+  assert.equal(PickingLab.EXERCISES.length, 30, "13 original + 17 research-backed additions");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -45,6 +45,60 @@ test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority se
   const sample = Array.from({ length: 8 }, (_, index) => ({ midi: 62 + index, stringIndex: 0, fret: index, note: { degree: String(index + 1) } }));
   const line = PickingLab.buildSequence("picked-dromos-line", sample, [], "down");
   assert.deepEqual(Array.from(line, (event) => event.technique), ["D", "U", "D", "U", "D", "U", "D", "U"]);
+});
+
+test("the band key cycle pivots on notes both keys own, and every exercise generates", () => {
+  const { PickingLab, BouzoukiKnowledge, Modes } = loadCore();
+  // The cycle law: each hop's pivot note IS the destination tonic AND lives
+  // inside the home key's scale — that is what makes the pivot playable
+  // without repositioning. G→D→Dm→Am→E→Em→G, locked.
+  const cycle = PickingLab.BAND_KEY_CYCLE;
+  assert.equal(cycle.map((s) => s.tonic + (s.quality === "minor" ? "m" : "")).join(" "), "G D Dm Am E Em");
+  cycle.forEach((home, index) => {
+    const to = cycle[(index + 1) % cycle.length];
+    const pivotPc = PickingLab.bandPivotPc(index);
+    const toPc = Modes.parseName(to.tonic).pc;
+    assert.equal(pivotPc, toPc, `hop ${index}: pivot must BE the destination tonic`);
+    const homeScale = Modes.scaleOf(home.tonic, home.quality === "minor" ? "minor" : "major");
+    assert.ok(homeScale.some((note) => note.pc === pivotPc),
+      `hop ${home.tonic}${home.quality === "minor" ? "m" : ""}: pivot ${pivotPc} must live in the home scale`);
+  });
+  // Every exercise's sequence id must produce a non-empty event plan from
+  // representative nodes — a registry entry with no builder is a dead card.
+  const flagged = (extra) => Array.from({ length: 12 }, (_, index) => Object.assign({
+    midi: 60 + index, freq: 440, stringIndex: Math.floor(index / 3), fret: index,
+    note: { degree: String((index % 7) + 1), pc: (60 + index) % 12 }
+  }, extra ? extra(index) : null));
+  const nodesFor = (exercise) => {
+    if (exercise.sequence === "skeletonFill") return flagged((i) => ({ skeleton: i % 3 === 0 }));
+    if (exercise.sequence === "chunkBuilder") return flagged((i) => ({ chunk: i < 6 ? "lower" : "upper" }));
+    if (exercise.sequence === "ghammazPivot") return flagged((i) => (i === 6 ? { pivot: true } : i === 7 ? { launch: true } : null));
+    if (exercise.sequence === "arpCircuit") return flagged((i) => ({ chordStart: i % 4 === 0, chordSymbol: "X" }));
+    if (exercise.sequence === "sequenceLadder") return flagged((i) => ({ cellStart: i % 6 === 0, cellPhase: "cell" }));
+    if (exercise.sequence === "instantTranspose") return flagged((i) => (i === 6 ? { cue: true } : { phraseStart: i === 0, keyLabel: "k" }));
+    return flagged();
+  };
+  const pulse = [{ beat: 1, group: 1, first: true }, { beat: 2, group: 1, first: false },
+    { beat: 3, group: 2, first: true }, { beat: 4, group: 2, first: false }];
+  PickingLab.EXERCISES.forEach((exercise) => {
+    const events = PickingLab.buildSequence(exercise.id, nodesFor(exercise), pulse, "down",
+      exercise.variants && exercise.variants.length ? exercise.variants[0].id : undefined);
+    assert.ok(Array.isArray(events) && events.length > 0, `${exercise.id} generated no events`);
+  });
+  // Honesty labels the key plan depends on: the band-preference and set-list
+  // framings must actually ship in the copy, not only in a design doc.
+  const src = readFileSync(path.join(root, "js/picking-lab.js"), "utf8");
+  assert.match(src, /set-list preference, labelled as such/, "E's presence must be labelled set-list preference");
+  assert.match(src, /cycle order(ing)? is (Dromos design|app design)/, "the cycle ordering must be owned as design");
+  assert.match(src, /no bouzouki method|no method book teaches|no surveyed Greek method/i,
+    "the documented pedagogy gap behind the glide drills must be stated");
+  // All-course coverage is a real requirement, not a vibe.
+  assert.ok(PickingLab.EXERCISES.filter((exercise) => exercise.allStrings).length >= 3,
+    "at least three exercises must force coverage of every course");
+  // Six stages, every exercise placed exactly once.
+  const placed = BouzoukiKnowledge.MASTERY_PHASES.flatMap((phase) => phase.exerciseIds);
+  assert.equal(new Set(placed).size, placed.length, "no exercise may sit in two stages");
+  assert.equal(placed.length, PickingLab.EXERCISES.length, "every exercise must sit in exactly one stage");
 });
 
 test("video study catalog keeps videos hosted at their original public source", () => {

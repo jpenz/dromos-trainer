@@ -59,6 +59,69 @@
       boundary: "The public foreword supports an integrated map-to-music curriculum. Dromos does not copy the book's diagrams, melodies, or exercises."
     },
     {
+      id: "pennanen-1999", rank: 1, authority: "Open scholarship",
+      name: "Risto Pekka Pennanen · Bouzouki organology and performance practice (1999, ch. IV)",
+      href: "https://www.academia.edu/6666348/IV_The_organological_development_and_performance_practice_of_the_Greek_bouzouki",
+      supports: ["traditional motor structures", "uniform tone colour aesthetics", "limits of cross-course playing", "era performance practice"],
+      boundary: "Documents observed practice; Dromos drills are generated, and heavy cross-course sweeping is treated as counter-idiomatic per this source, never prescribed."
+    },
+    {
+      id: "papasolomontos-2017", rank: 1, authority: "Academic thesis",
+      name: "Papasolomontos 2017 (TEI Epirus) · analysis of Chiotis introductory taximia",
+      href: "https://olympias.lib.uoi.gr/jspui/bitstream/teiep/8069/1/%CE%A0%CE%A4%CE%A5%CE%A7%CE%99%CE%91%CE%9A%CE%97%20%CE%A0%CE%91%CE%A0%CE%91%CE%A3%CE%9F%CE%9B%CE%9F%CE%9C%CE%A9%CE%9D%CE%A4%CE%9F%CE%A3.pdf",
+      supports: ["mimisis imitation chains", "glide triplet and sextolet grammar", "I-IV-V-I taximi arc", "instant key-change testimony"],
+      boundary: "Transcription analysis of ten taximia. Dromos extrapolates drill patterns from its documented devices and never reproduces the transcriptions."
+    },
+    {
+      id: "monemvasitis-minore", rank: 1, authority: "Academic thesis",
+      name: "UoA thesis · the Minore tou Teke taximi lineage",
+      href: "https://pergamos.lib.uoa.gr/uoa/dl/object/3421083/file.pdf",
+      supports: ["minore taximi formulas", "descending skeleton lines", "measured zeibekiko tempi"],
+      boundary: "Supports the minore lineage and measured recording tempi; melodic skeletons in Dromos are generated from the scale model, not copied from the thesis transcriptions."
+    },
+    {
+      id: "measured-tempi", rank: 1, authority: "Academic thesis",
+      name: "TEI of Epirus thesis · measured Greek dance tempi",
+      href: "https://olympias.lib.uoi.gr/jspui/bitstream/teiep/5871/1/369",
+      supports: ["tsifteteli measured tempo band", "counting-convention differences"],
+      boundary: "Per-recording measurements only. Where a numeric range is not documented (hasapiko), Dromos does not ship a number."
+    },
+    {
+      id: "allingham-tempo", rank: 1, authority: "Peer-reviewed research",
+      name: "Allingham & Wollner 2022 · tempo-management strategies in practice",
+      href: "https://journals.sagepub.com/doi/pdf/10.1177/03057356221129653",
+      supports: ["gradual tempo increase", "slow-fast alternation", "no validated step size"],
+      boundary: "Validates strategies, not numbers: ladder step sizes in Dromos are labelled documented teaching practice, never experimentally optimal."
+    },
+    {
+      id: "bickford-mandolin", rank: 1, authority: "Public-domain method (import)",
+      name: "Bickford Mandolin Method · tremolo doctrine",
+      href: "https://archive.org/download/bickfordmandolin01bick/bickfordmandolin01bick.pdf",
+      supports: ["unmeasured free tremolo rule", "graded tremolo study"],
+      boundary: "A classical mandolin import, labelled as such: it governs how tremolo must FEEL once entered, not Greek phrasing."
+    },
+    {
+      id: "mandoisland-counted", rank: 2, authority: "Teacher resource (import)",
+      name: "MandoIsland · counted tremolo groupings and speed doctrine",
+      href: "https://www.mandoisland.de/eng_tipps_und_tricks.html",
+      supports: ["counted groupings 4+1 6+1 8+1", "finishing-stroke control", "big-motions-first speed work"],
+      boundary: "Mandolin pedagogy import: supplies the counted bridge toward free tremolo; stroke exits are practice scaffolding, not Greek prescription."
+    },
+    {
+      id: "irish-treble", rank: 2, authority: "Teacher resource (import)",
+      name: "Irish tenor banjo/mandolin treble pedagogy (Scahill; Landes)",
+      href: "https://www.pegheadnation.com/string-school/irish-mandolin/",
+      supports: ["anchor-plus-treble triplet cell", "D-U-D treble execution"],
+      boundary: "An Irish plectrum import wearing its badge: a triplet-cell workout, not a claim about Greek practice."
+    },
+    {
+      id: "ordoulidis-modes", rank: 1, authority: "Open scholarship",
+      name: "Nikos Ordoulidis · the Greek popular modes",
+      href: "https://www.scribd.com/document/490472548/ordoulidis-the-greek-popular-modes-pdf",
+      supports: ["dromoi as transposable interval structures", "mode naming practice"],
+      boundary: "Supports that a dromos is an interval structure realisable from any tonic; it does not endorse any specific key choice, which carries its own label in Dromos."
+    },
+    {
       id: "reddit-bouzouki", rank: 3, authority: "Community signal",
       name: "r/bouzouki · recurring learner questions",
       href: "https://www.reddit.com/r/bouzouki/",
@@ -69,34 +132,40 @@
 
   const MASTERY_PHASES = [
     {
-      id: "attack", step: 1, label: "Ta–ka time", short: "↓ ta · ↑ ka",
-      answer: "Build an even down–up clock first. For an articulated line, every written note receives its own pick attack.",
-      gate: "Upstrokes match downstrokes in time, volume, and clarity before tempo rises.",
-      exerciseIds: ["down-up-clock", "picked-dromos-line", "grouped-accents"]
+      id: "attack", step: 1, label: "Ta–ka clock", short: "↓ ta · ↑ ka",
+      answer: "Build an even down–up engine on open courses first, then carry it onto one-position dromos lines with beat-one weight as the first accent vocabulary.",
+      gate: "Self-scored: upstrokes match downstrokes in time, volume, and clarity — confirm on a phone recording before tempo rises.",
+      exerciseIds: ["open-course-penies", "down-up-clock", "picked-dromos-line", "grouped-accents"]
     },
     {
-      id: "coordination", step: 2, label: "Coordination", short: "course + finger order",
-      answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change.",
-      gate: "The course change is no louder, later, or more tense than the notes around it.",
+      id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
+      answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change — every course of the instrument, both crossing directions.",
+      gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recorded take.",
       exerciseIds: ["outside-pairs", "mixed-crossings", "degree-window"]
     },
     {
-      id: "route", step: 3, label: "Neck route", short: "sound chooses the shape",
-      answer: "Compare practical neck routes by both motion and timbre; the shortest fingering is not automatically the best phrase.",
-      gate: "You can play two routes and name the audible reason for choosing one.",
-      exerciseIds: ["tactile-ab", "timbre-echo", "triplet-grammar"]
+      id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",
+      answer: "Note excitement is a trainable layer: the same generated line cycles rhythm formations, pulse-mapped accents, glide triplet families, and skeleton-versus-fill density.",
+      gate: "Self-scored: from a single repeated pitch, your recording makes the active grouping and the accent map identifiable without being told.",
+      exerciseIds: ["tactile-ab", "timbre-echo", "triplet-grammar", "rhythm-formation-ladder", "pulse-accent-map", "skeleton-then-fill", "triplet-drive", "sextolet-glide"]
     },
     {
-      id: "language", step: 4, label: "Phrase language", short: "tremolo is a choice",
-      answer: "Keep note-by-note picking, tremolo sustain, glides, and left-hand ornaments as distinct musical behaviors.",
-      gate: "A listener can hear the target and phrase contour—not only the technique used to reach it.",
-      exerciseIds: ["tremolo-ladder", "pick-legato", "mode-phrase-cell"]
+      id: "voice", step: 4, label: "Articulation voice", short: "tremolo is a choice",
+      answer: "Tremolo, legato, ornament and register are deliberate expressive choices: counted tremolo graduates to free tremolo with clean mid-line entries and exits.",
+      gate: "Self-scored: a recorded tremolo entry shows no hiccup, its exit lands with the click, and the sparse and dense registers are audibly different takes of the same phrase.",
+      exerciseIds: ["tremolo-ladder", "counted-tremolo-groupings", "tremolo-entry-exit", "pick-legato", "mode-phrase-cell", "irish-treble", "era-register-contrast"]
     },
     {
-      id: "performance", step: 5, label: "Performance transfer", short: "hear → target → pulse",
-      answer: "Use the trained attack to reveal the sounding chord, selected dromos, and coming arrival inside a Greek pulse.",
-      gate: "The final target makes the change audible without a visual prompt.",
-      exerciseIds: ["arpeggio-arrival"]
+      id: "harmony-keys", step: 5, label: "Harmony & key moves", short: "chunks travel",
+      answer: "Triad arpeggios run through the active progression, and key change becomes physical: dromoi assembled from named tetrachord chunks, moved around the band cycle on pivot notes.",
+      gate: "Self-scored: the arpeggio circuit completes the band key cycle at one steady tempo, and each key change lands on its pivot note without a stumble.",
+      exerciseIds: ["arpeggio-arrival", "chunk-builder", "ghammaz-pivot", "band-key-arpeggio-circuit"]
+    },
+    {
+      id: "lead", step: 6, label: "Lead & taximi", short: "vocabulary under pressure",
+      answer: "The documented lead devices as generated families: imitation chains, descending minore skeletons, instant transposition on a cue chord, and time that survives a thinning click.",
+      gate: "Self-scored exam in one sitting: a gap-click take with clean re-entry, a sequence ladder that keeps its rhythm through every restatement, and one instant transpose landed on the first attempt.",
+      exerciseIds: ["sequence-ladder", "skeleton-descent", "instant-transpose", "gap-click-pulse"]
     }
   ];
 

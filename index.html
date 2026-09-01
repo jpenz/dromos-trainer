@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=36" />
+  <link rel="stylesheet" href="css/styles.css?v=37" />
 </head>
 <body>
   <div class="app">
@@ -448,7 +448,7 @@
                   <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop</button><button data-picking-run="evolve">Evolve</button></div></div>
                   <label class="picking-tempo" for="pickingBpm">Tempo <span><input id="pickingBpm" type="range" min="40" max="180" step="1" /><output id="pickingBpmVal" for="pickingBpm">84 BPM</output></span></label>
                   <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
-                  <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="both">Keys + positions</option></select></label>
+                  <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="band">Band keys · G D Dm Am E Em</option><option value="both">Keys + positions</option></select></label>
                   <label for="pickingVoiceSel">Practice sound<select id="pickingVoiceSel"><option value="bouzouki" selected>Bouzouki pick · clear paired courses</option><option value="studio">Studio piano · pitch check</option><option value="piano">Warm keys · offline fallback</option></select></label>
                   <label class="check"><input type="checkbox" id="tglPickingMetronome" checked /> Metronome</label>
                   <label class="check"><input type="checkbox" id="tglPickingCountIn" checked /> One-bar count-in</label>
@@ -485,6 +485,7 @@
                   <button id="btnPickingStop" class="mini">■ Stop</button>
                   <button id="btnPickingClean" class="mini">Log clean pass</button>
                   <button id="btnPickingTempoUp" class="mini hidden">Ready · +4 BPM</button>
+                  <button id="btnPickingMiss" class="mini">Missed it · −4 BPM</button>
                 </div>
               </section>
               <div id="pickingPasses" class="picking-passes" aria-live="polite"></div>
@@ -759,7 +760,7 @@
   <script src="js/melody-harmony.js?v=27"></script>
   <script src="js/pitch-lab.js?v=23"></script>
   <script src="js/ear-drills.js?v=14"></script>
-  <script src="js/styles.js?v=20"></script>
+  <script src="js/styles.js?v=37"></script>
   <script src="js/analysis.js?v=14"></script>
   <script src="js/studies.js?v=14"></script>
   <script src="js/musicxml.js?v=14"></script>
@@ -767,17 +768,17 @@
   <script src="js/video.js?v=14"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/bouzouki-knowledge.js?v=32"></script>
-  <script src="js/picking-lab.js?v=32"></script>
+  <script src="js/bouzouki-knowledge.js?v=37"></script>
+  <script src="js/picking-lab.js?v=37"></script>
   <script src="js/toolkit.js?v=27"></script>
   <script src="js/songs.js?v=36"></script>
   <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=36"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=33"></script>
+  <script src="js/audio.js?v=37"></script>
   <script src="js/page-guides.js?v=31"></script>
-  <script src="js/app.js?v=36"></script>
+  <script src="js/app.js?v=37"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
