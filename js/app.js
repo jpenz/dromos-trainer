@@ -64,7 +64,7 @@
     },
     // --- dedicated plectrum curriculum ---
     picking: {
-      category: "all", exerciseId: "down-up-clock", route: "horizontal",
+      category: "all", exerciseId: "down-up-clock", route: "tiered",
       variant: "alternate",
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, rungHistory: [], ceilingBpm: null, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
@@ -3058,7 +3058,7 @@
 
   function pickingScalePathNodes(context, count) {
     const path = P.buildPath(context.tonic, pickingModeId(context), {
-      layout: "horizontal", position: context.position,
+      layout: state.picking.route === "tiered" ? "2nps" : "horizontal", position: context.position,
       startDegree: 1, startString: state.lab.startString, firstStroke: state.picking.firstStroke
     });
     return path ? path.nodes.slice(0, count || path.nodes.length) : [];
@@ -3210,8 +3210,12 @@
     if (exercise.sequence === "sequenceLadder") return { nodes: pickingSequenceLadderNodes(context), current: null, next: null };
     if (exercise.sequence === "skeletonDescent") return { nodes: pickingDescentNodes(context), current: null, next: null };
     if (exercise.sequence === "instantTranspose") return { nodes: pickingTransposeNodes(context), current: null, next: null };
-    const compareLayout = state.picking.route === "tiered" ? "2nps" : "horizontal";
-    const layout = exercise.compare ? compareLayout : exercise.layout;
+    const routedLayout = state.picking.route === "tiered" ? "2nps" : "horizontal";
+    // The route toggle applies to every scale-path drill: "across the
+    // strings" (two notes per course) or "along the string". Drills whose
+    // mechanics REQUIRE a layout (crossing grammars) keep their own.
+    const ROUTE_LOCKED = { "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true };
+    const layout = ROUTE_LOCKED[exercise.id] ? exercise.layout : routedLayout;
     const path = P.buildPath(context.tonic, pickingModeId(context), {
       layout, position: context.position, startDegree: state.lab.startDegree,
       startString: state.lab.startString, firstStroke: state.picking.firstStroke,
@@ -3273,6 +3277,10 @@
   }
 
   function pickingRunPlan() {
+    if (state.picking.runMode === "loop") {
+      // Infinite loop: one stage; the audio engine repeats it seamlessly.
+      return [{ tonic: state.tonic, position: state.lab.position, label: "loop" }];
+    }
     if (state.picking.runMode === "evolve" && state.picking.movement === "band") {
       // The band route: G D Dm Am E Em, ordered so each hop's pivot note IS
       // the destination tonic. Minor slots use the minor-family dromos.
@@ -3364,14 +3372,16 @@
     $("pickingBpmVal").textContent = `${state.bpm} BPM`;
     $("pickingMoveSel").value = state.picking.movement;
     $("pickingMoveSel").disabled = state.picking.runMode !== "evolve";
+    $("pickingRepeatsSel").disabled = state.picking.runMode !== "evolve";
     $("tglPickingMetronome").checked = state.picking.metronome;
     $("tglPickingCountIn").checked = state.picking.countIn;
     $("pickingVoiceSel").value = state.picking.voice;
     const movementLabel = state.picking.movement === "key" ? "circle-of-fourths keys"
+      : state.picking.movement === "band" ? "the band keys G D Dm Am E Em"
       : state.picking.movement === "both" ? "keys and practical positions" : "practical positions";
     $("pickingRunSummary").textContent = state.picking.runMode === "loop"
-      ? `${plan.length} identical ${plan.length === 1 ? "pass" : "passes"}: solve one exact movement before changing it.`
-      : `${plan.length} stages through ${movementLabel}; the next run begins where this one finishes.`;
+      ? "Loop forever repeats one exact movement seamlessly until you press stop."
+      : `${plan.length} stages through ${movementLabel}; each stage starts exactly where the last one ends.`;
     $("pickingRunMap").innerHTML = plan.map((stage, index) => {
       const current = state.picking.playing && index === state.picking.runIndex;
       const complete = state.picking.playing && state.picking.runIndex != null && index < state.picking.runIndex;
@@ -3388,6 +3398,10 @@
     FB.render(svg(), {
       path: session.nodes, pathIndex: currentIndex,
       labelMode: state.labelMode, lefty: state.lefty, showStrokes: true, largeNeck: true,
+      // One unbroken neck for picking: the drill lives in one position, and a
+      // split board makes a simple path look like two puzzles. On narrow
+      // screens the board scrolls inside its own container.
+      neckMode: "full",
       flavourPcs: M.flavourPcs(state.tonic, state.modeId)
     });
     svg().setAttribute("aria-label", `${window.Tuning.current().name} ${exercise.title} picking path`);
@@ -3430,7 +3444,7 @@
       renderPickingLab();
     });
 
-    $("pickingRouteChoice").classList.toggle("hidden", !exercise.compare);
+    $("pickingRouteChoice").classList.toggle("hidden", false);
     document.querySelectorAll("[data-picking-route]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-picking-route") === state.picking.route));
     document.querySelectorAll("[data-picking-subdivision]").forEach((button) =>
@@ -3442,7 +3456,9 @@
       stopPlay(); state.picking.variant = button.getAttribute("data-picking-variant"); state.picking.cleanPasses = 0; renderPickingLab();
     });
     $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "↓ downstroke" : "↑ upstroke"}`;
-    $("btnPickingPlay").textContent = state.picking.playing ? `Playing ${state.picking.runIndex + 1}/${state.picking.repeats}…` : "▶ Play run";
+    $("btnPickingPlay").textContent = state.picking.playing
+      ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.repeats}`)
+      : "▶ Start";
     $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3);
     const band = S.byId(state.groove.styleId).tempoBand;
     const bandHtml = band
@@ -3482,7 +3498,7 @@
     if (state.view === "picking") { renderPickingLab(); renderPageGuide(); }
   }
 
-  function playPickingStage(plan, stageIndex, token) {
+  function playPickingStage(plan, stageIndex, token, startAt) {
     if (token !== pickingRunToken) return;
     if (stageIndex >= plan.length) { finishPickingRun(token, plan); return; }
     const stage = plan[stageIndex];
@@ -3494,16 +3510,22 @@
     renderPickingLab();
     const beatSpacing = 60 / state.bpm;
     const noteSpacing = beatSpacing / state.picking.subdivision;
+    // Loop mode is an INFINITE, seamless loop: one session, scheduled
+    // bar-aligned on the audio clock, until the player presses Stop.
+    const looping = state.picking.runMode === "loop";
     // Gap-click levels: the click thins to group starts, then to bar one.
     const gapLevel = pickingExercise().id === "gap-click-pulse" ? state.picking.variant : null;
     const clickFilter = gapLevel === "groups" ? (beat, pulseBeat) => !!pulseBeat.first
       : gapLevel === "barone" ? (beat, pulseBeat, pulseLength) => beat % pulseLength === 0
       : null;
-    AU.playPath(session.nodes, noteSpacing, {
+    const stageEnd = AU.playPath(session.nodes, noteSpacing, {
       referenceVoice: pickingReferenceVoice(),
       metronome: state.picking.metronome,
       beatSpacing,
       clickFilter,
+      loop: looping,
+      startAt,
+      onDoneLead: 0.35,
       pulse: session.pulse,
       countInBeats: stageIndex === 0 && state.picking.countIn ? session.pulse.length : 0,
       onStep: (index) => {
@@ -3512,10 +3534,18 @@
           renderPickingLab();
         }
       },
-      onDone: () => {
+      onLoop: (iteration) => {
+        if (token !== pickingRunToken) return;
+        state.picking.loopCount = iteration + 1;
+        const play = $("btnPickingPlay");
+        if (play) play.textContent = `■ Stop · loop ${iteration + 1}`;
+      },
+      onDone: looping ? null : () => {
         if (token !== pickingRunToken) return;
         state.picking.pathIndex = null;
-        pickingRunTimer = setTimeout(() => playPickingStage(plan, stageIndex + 1, token), 80);
+        // Evolve stages hand off ON the audio clock: the next stage starts
+        // exactly where this one ended, no restart gap.
+        playPickingStage(plan, stageIndex + 1, token, stageEnd);
       }
     });
   }
@@ -3528,6 +3558,7 @@
     const token = ++pickingRunToken;
     state.picking.playing = true;
     state.picking.runIndex = 0;
+    state.picking.loopCount = 0;
     setPlayingUI(true, "■ Stop picking");
     playPickingStage(plan, 0, token);
   }
@@ -5610,7 +5641,10 @@
       stopPlay(); state.picking.firstStroke = state.picking.firstStroke === "down" ? "up" : "down";
       state.picking.cleanPasses = 0; renderPickingLab();
     };
-    $("btnPickingPlay").onclick = playPickingExercise;
+    $("btnPickingPlay").onclick = () => {
+      if (state.picking.playing) { stopPlay(); renderPickingLab(); return; }
+      playPickingExercise();
+    };
     $("btnPickingStop").onclick = () => { stopPlay(); renderPickingLab(); };
     $("btnPickingClean").onclick = logPickingPass;
     $("btnPickingTempoUp").onclick = raisePickingTempo;

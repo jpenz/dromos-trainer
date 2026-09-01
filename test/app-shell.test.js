@@ -173,7 +173,9 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/app.js"), /function stopPlay\(\) \{[\s\S]{0,700}AU\.stopAll\(\);/,
     "changing a drill must clear path timers and ringing voices as well as transport");
   assert.match(read("js/audio.js"), /function stopAll\(\)/);
-  assert.match(read("js/audio.js"), /countInBeats[\s\S]{0,900}o\.metronome/,
+  // Assert the invariant, not proximity in the source: the count-in clicks
+  // are gated on o.metronome and scheduled beat-by-beat on the audio clock.
+  assert.match(read("js/audio.js"), /if \(o\.metronome\) \{\s*\n\s*for \(let beat = 0; beat < countInBeats; beat\+\+\) click\(/,
     "picking runs need a cancel-safe count-in and metronome on the shared audio clock");
   assert.match(read("js/app.js"), /PK\.buildPracticePlan/,
     "Picking Loop and Evolve must share the tested pure run planner");
@@ -317,9 +319,52 @@ test("the full fretboard never widens the page and folds on phones", () => {
   assert.match(css, /\.stage \{ position: relative; min-width: 0; \}/);
   assert.match(css, /\.fretboard-wrap \{[\s\S]*max-width: 100%;/);
   assert.match(css, /\.fretboard-wrap \{[\s\S]*overflow: hidden/);
-  assert.doesNotMatch(css, /#fretboard[^{}]*\{[^}]*min-width:/);
+  // A min-width on the board is allowed ONLY inside a view-scoped wrap that
+  // scrolls the board within its own frame (the analysis-board idiom); the
+  // page itself must never widen.
+  const minWidthRules = css.match(/[^{}]*#fretboard[^{}]*\{[^}]*min-width:[^}]*\}/g) || [];
+  for (const rule of minWidthRules) {
+    assert.match(rule, /body\[data-view="picking"\] \.fretboard-wrap/,
+      "a #fretboard min-width must be scoped to a scrolling wrap, not the page");
+  }
+  assert.match(css, /body\[data-view="picking"\] \.fretboard-wrap \{ overflow-x: auto; \}/,
+    "the picking wrap must scroll the wide board inside its own frame");
   assert.match(read("js/fretboard.js"), /matchMedia\("\(max-width: 620px\)"\)/);
   assert.match(read("js/fretboard.js"), /data-neck-layout/);
+});
+
+test("picking loops live on the audio clock and the board stays whole", () => {
+  const audio = read("js/audio.js");
+  // Seamless loop: iterations are bar-aligned and scheduled on the audio
+  // clock; the JS timer only queues the next iteration ahead of the seam.
+  assert.match(audio, /const loopSpan = o\.loop \? Math\.max\(barSpan, Math\.ceil\(total \/ barSpan[^)]*\) \* barSpan\) : total;/,
+    "looping drills must pad to whole bars so the click never phase-shifts");
+  assert.match(audio, /const iterStart = t0 \+ iteration \* loopSpan;/,
+    "each iteration starts at an exact audio-clock offset, never currentTime");
+  assert.match(audio, /iterStart \+ loopSpan - 0\.4/,
+    "the next iteration is queued ahead of the seam, not after it");
+  assert.match(audio, /o\.startAt && o\.startAt > ctx\.currentTime \? o\.startAt/,
+    "callers can chain segments gaplessly on the audio clock");
+  const app = read("js/app.js");
+  assert.match(app, /playPickingStage\(plan, stageIndex \+ 1, token, stageEnd\);/,
+    "evolve stages hand off at the exact end time of the previous stage");
+  assert.match(app, /loop: looping,\n\s*startAt,/,
+    "loop mode goes to the audio engine, not a setTimeout restart");
+  assert.doesNotMatch(app, /setTimeout\(\(\) => playPickingStage/,
+    "no JS-timer restarts between picking repeats");
+  assert.match(app, /neckMode: "full",\n\s*flavourPcs: M\.flavourPcs\(state\.tonic, state\.modeId\)\n\s*\}\);\n\s*svg\(\)\.setAttribute\("aria-label", `\$\{window\.Tuning\.current\(\)\.name\} \$\{exercise\.title\} picking path`\);/,
+    "the picking board is one unbroken neck");
+  assert.match(app, /const ROUTE_LOCKED = \{ "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true \};/,
+    "the route toggle applies everywhere except drills whose mechanics fix a layout");
+  assert.match(app, /if \(state\.picking\.playing\) \{ stopPlay\(\); renderPickingLab\(\); return; \}/,
+    "the big button is Start AND Stop — one control for a non-technical player");
+  const html = read("index.html");
+  assert.match(html, /class="deck-start">▶ Start</,
+    "the deck leads with one prominent Start button");
+  assert.match(html, /Loops smoothly until you press stop/,
+    "the deck says in plain words what Start does");
+  assert.match(html, /<details class="deck-advanced">/,
+    "evolve\/stage\/voice options fold away from the first-time player");
 });
 
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
