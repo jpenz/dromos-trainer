@@ -147,7 +147,7 @@
       id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",
       answer: "Note excitement is a trainable layer: the same generated line cycles rhythm formations, pulse-mapped accents, glide triplet families, and skeleton-versus-fill density.",
       gate: "Self-scored: from a single repeated pitch, your recording makes the active grouping and the accent map identifiable without being told.",
-      exerciseIds: ["tactile-ab", "timbre-echo", "triplet-grammar", "rhythm-formation-ladder", "pulse-accent-map", "skeleton-then-fill", "triplet-drive", "sextolet-glide"]
+      exerciseIds: ["rhythm-formation-ladder", "pulse-accent-map", "skeleton-then-fill", "triplet-drive", "triplet-grammar", "sextolet-glide", "tactile-ab", "timbre-echo"]
     },
     {
       id: "voice", step: 4, label: "Articulation voice", short: "tremolo is a choice",
