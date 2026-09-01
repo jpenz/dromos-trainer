@@ -454,6 +454,31 @@
       listen: "The octave tops: each one should sound like a question the next root answers.",
       pass: "Self-scored: the circuit runs through the whole progression with every root landing on the click.",
       boundary: "The sources support arpeggio and chord-motion study; this four-note chunk circuit is a Dromos generation from the app's own progression model, not a copied exercise."
+    },
+    {
+      id: "loose-hand-ladder", category: "time", order: 33, title: "Loose hand, same clock",
+      short: "One pitch, four passes: whisper, half, full, whisper - the grip never tightens.", layout: "horizontal", sequence: "featherTouch", count: 32,
+      articulation: "picked-line", sourceIds: ["pafranidis-sample", "trigas-method", "reddit-bouzouki"],
+      theory: "Volume comes from the size of the wrist swing, not from squeezing the pick. Cycling whisper to full and back on one unchanging pitch isolates that single variable: if the closing whisper pass feels harder than the opening one, the grip tightened somewhere in the middle and never let go.",
+      evidence: "The slow, clear attack as the entry point of plectrum work is the documented method sample (Pafranidis); plectrum study is a named Trigas category; hand tension is a recurring right-hand problem in community threads (rank-3 signal, framing only).",
+      sourceLabel: "Pafranidis slow clear attack", sourceHref: "https://fagottobooks.gr/blog/wp-content/uploads/2020/04/trixordo-sample.pdf",
+      steps: ["Play eight strokes at a whisper - so quiet the note barely speaks - using the biggest, slowest wrist motion that stays in time.", "Grow to half volume, then full, changing only the swing size; thumb and forearm should feel the same at full as at whisper.", "Return to the whisper pass. It must be as easy as the first one; if it is not, the grip crept up - drop tempo and repeat."],
+      listen: "The click stays identical across all four passes; only the size of the note changes.",
+      pass: "Self-scored: on a phone recording, the two whisper passes are indistinguishable and the full pass shows no timing drift.",
+      boundary: "No surveyed source prescribes a tension protocol; the whisper-full-whisper cycle is Dromos practice design around the documented slow-clear-attack entry point. The reference audio plays timing at one volume - the dynamics are yours."
+    },
+    {
+      id: "course-target", category: "cross", order: 34, title: "Name the course, land the course",
+      short: "Isolated single attacks with air between them - the adjacent walk, then the skips.", layout: "horizontal", sequence: "courseTarget", count: 16,
+      articulation: "picked-line", sourceIds: ["avlonitis-101", "pafranidis-sample", "reddit-bouzouki"],
+      allStrings: true,
+      theory: "Accuracy is aim plus recovery: the pick must land on the named course from the air, not find it by sliding off a neighbour. The silence after each attack IS the drill - the hand floats back to neutral and aims again. Skips between non-adjacent courses are where grazing happens, so they get their own passes.",
+      evidence: "Open-course plectrum work is the documented entry sample (Pafranidis); graded dexterity and technical diligence are the declared frame of the Avlonitis collection; hitting unintended strings is a recurring right-hand problem in community threads (rank-3 signal, framing only).",
+      sourceLabel: "Avlonitis dexterity + Pafranidis open courses", sourceHref: "https://fagottobooks.gr/en/1037-4_979-0-801151-59-9.html",
+      steps: ["Say the course name out loud, then attack it once and let the hand float free through the space that follows.", "Walk the courses in order, both directions; every attack must ring clean with no brush of a neighbour.", "Run the skip pairs the same way, then repeat the whole map starting on the opposite stroke."],
+      listen: "The space between attacks: true silence, not the fading buzz of a grazed neighbour course.",
+      pass: "Self-scored: one full map - walk plus skips - lands every named course cleanly at the current tempo, started from either stroke.",
+      boundary: "The isolated-attack targeting map is a Dromos generation; the sources support open-course and dexterity study, not this specific sequence."
     }
   ];
 
@@ -774,6 +799,29 @@
       });
       baseNodes.forEach((node) => nodes.push(Object.assign(cloneNode(node), { phrase: "full descent" })));
       return alternate(nodes, (index) => nodes[index].phrase === "skeleton", firstStroke);
+    }
+    if (exercise.sequence === "featherTouch") {
+      // One pitch, four dynamic passes. The pass labels ride the tiles; the
+      // reference audio carries timing only, at one volume - the screen
+      // never promises dynamics the audio does not play.
+      const target = baseNodes[0];
+      if (!target) return [];
+      nodes = [];
+      ["whisper pass", "half volume", "full volume", "whisper again"].forEach((phase) => {
+        repeatTo([target], 8).forEach((node, index) => nodes.push(Object.assign(node, {
+          phrase: phase, passStart: index === 0
+        })));
+      });
+      return alternate(nodes, (index) => !!nodes[index].passStart, firstStroke);
+    }
+    if (exercise.sequence === "courseTarget") {
+      // Isolated attacks: each note held double so the silence after the
+      // attack is part of the drill. Skip landings carry the accent - they
+      // are where the aim fails first.
+      nodes = baseNodes.map((node) => Object.assign(cloneNode(node), {
+        durMult: 2, phrase: node.skip ? "skip landing" : "adjacent walk"
+      }));
+      return alternate(nodes, (index) => !!baseNodes[index].skip, firstStroke);
     }
     if (exercise.sequence === "neckLadder") {
       // The ladder: same road, each practical position in turn; accents mark
