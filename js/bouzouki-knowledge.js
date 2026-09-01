@@ -122,6 +122,90 @@
       boundary: "Supports that a dromos is an interval structure realisable from any tonic; it does not endorse any specific key choice, which carries its own label in Dromos."
     },
     {
+      id: "rosenberg-rest-stroke", rank: 2, authority: "Professional teacher (import)",
+      name: "Rosenberg Academy · gypsy-jazz rest-stroke lessons",
+      href: "https://rosenbergacademy.com/collections/lessons",
+      supports: ["rest-stroke definition", "down-through-and-land mechanics", "free-upstroke pairing"],
+      boundary: "A gypsy-jazz import, labelled as such: it does not describe Greek penia style, and no Rosenberg lesson content ships in Dromos. Video-backed claims were noted at research time, not re-checked automatically."
+    },
+    {
+      id: "stahl-mandolin", rank: 1, authority: "Public-domain method (import)",
+      name: "Stahl · mandolin method (downstroke rules, D-U-D triplets)",
+      href: "https://brittlebooks.library.illinois.edu/brittlebooks_open/Books2011-10/stahwi0001mani64/stahwi0001mani64v00001/stahwi0001mani64v00001.pdf",
+      supports: ["downstroke on a new string", "unidirectional stroke drills", "D-U-D triplet picking"],
+      boundary: "A public-domain mandolin import; it is not a Greek prescription and its printed exercises are not copied."
+    },
+    {
+      id: "praktiki-methodos-scan", rank: 2, authority: "Method-book scan (unattributed)",
+      name: "Praktiki Methodos · trichordo bouzouki method (scan)",
+      href: "https://pdfcoffee.com/bouzouki-me-tho-dos-h-pdf-pdf-free.html",
+      supports: ["down-only then up-only then alternating pass sequence", "open-course crossing drills"],
+      boundary: "An unattributed scan on a file-sharing host: corroborating but weak evidence that cannot anchor a superlative, and its pages are not reproduced."
+    },
+    {
+      id: "polykandriotis-method", rank: 1, authority: "Author's method",
+      name: "Thanasis Polykandriotis · bouzouki method vol. 1 (three chord positions)",
+      href: "https://polykandriotis.gr/wp-content/uploads/2020/05/vivlio1.pdf",
+      supports: ["chords taught in three neck positions", "picked arpeggio exercises"],
+      boundary: "Supports the three-position chord frame only; the inversion-ladder ordering is not in this source and its exercises are not copied."
+    },
+    {
+      id: "weiss-triad-ladder", rank: 2, authority: "Professional teacher (import)",
+      name: "Weiss · major-triad ladder up the fretboard (guitar)",
+      href: "https://weissguitar.com/guitar_major_triads",
+      supports: ["root-then-inversions climbing order", "triad-tone naming"],
+      boundary: "A guitar import for the climbing order only; it does not describe bouzouki course pairs."
+    },
+    {
+      id: "gilbert-polarity", rank: 2, authority: "Professional teacher (import)",
+      name: "Paul Gilbert via Guitar World · inside vs outside picking",
+      href: "https://www.guitarworld.com/lessons/paul-gilbert-lesson-truth-about-inside-and-outside-picking-video",
+      supports: ["inside/outside crossing polarity", "one-note flip between polarities", "one-note-per-string hardest case"],
+      boundary: "A guitar import naming the two crossing situations; it does not test the Dromos stop-and-flip drill."
+    },
+    {
+      id: "verwey-repp-background", rank: 1, authority: "Peer-reviewed research",
+      name: "Verwey (motor chunking) + Repp (synchronization-continuation)",
+      href: "https://pubmed.ncbi.nlm.nih.gov/12879170/",
+      supports: ["motor chunk boundaries", "continuation timing after the click stops"],
+      boundary: "Background literature: it motivates the silence-re-entry design but does not test this specific drill."
+    },
+    {
+      id: "greek-teacher-first-lessons", rank: 2, authority: "Professional teacher lessons",
+      name: "Greek teacher lessons · course traversal and 1-2-3-4 crossing drills (video)",
+      href: "https://www.youtube.com/watch?v=y_W53UIGzQM",
+      supports: ["repetition-per-course traversal as a first lesson", "fretted 1-2-3-4 across courses", "up-only passes as a named drill"],
+      boundary: "Each video shows one teacher's practice, not the canon; content was noted at research time and is not re-checked automatically."
+    },
+    {
+      id: "challenge-point", rank: 1, authority: "Peer-reviewed research",
+      name: "Guadagnoli & Lee 2004 · challenge point framework",
+      href: "https://pubmed.ncbi.nlm.nih.gov/15130871/",
+      supports: ["difficulty just past comfort aids learning", "task difficulty interacts with skill level"],
+      boundary: "Supports the just-past-comfort principle behind the tempo ladder; it does not validate any specific BPM step size."
+    },
+    {
+      id: "consolidation-rest", rank: 1, authority: "Peer-reviewed research",
+      name: "Motor memory consolidation (Brashers-Krug/Shadmehr line)",
+      href: "https://pmc.ncbi.nlm.nih.gov/articles/PMC33809/",
+      supports: ["skills consolidate between sessions", "gains appear after rest"],
+      boundary: "Supports the retest-tomorrow message; it does not measure bouzouki tasks."
+    },
+    {
+      id: "variable-tempo-blocks", rank: 1, authority: "Peer-reviewed research",
+      name: "Slow-practice and variable-tempo practice studies",
+      href: "https://www.frontiersin.org/journals/human-neuroscience/articles/10.3389/fnhum.2014.00598/full",
+      supports: ["slow practice transfers to speed", "variable-tempo pilot evidence"],
+      boundary: "Pilot-scale and adjacent-instrument evidence; it does not prescribe a bouzouki protocol."
+    },
+    {
+      id: "rembetiko-forum", rank: 3, authority: "Community signal",
+      name: "rembetiko.gr · right-hand technique threads",
+      href: "https://rembetiko.gr/t/%CE%B3%CE%B9%CE%B1-%CF%84%CE%BF-%CE%B4%CE%B5%CE%BE%CE%AF-%CF%87%CE%AD%CF%81%CE%B9-%CF%83%CF%84%CE%BF-%CE%BC%CF%80%CE%BF%CF%85%CE%B6%CE%BF%CF%8D%CE%BA%CE%B9/10103",
+      supports: ["traversal drill corroboration", "learner right-hand questions"],
+      boundary: "Community corroboration only; it never establishes a technique rule by itself."
+    },
+    {
       id: "reddit-bouzouki", rank: 3, authority: "Community signal",
       name: "r/bouzouki · recurring learner questions",
       href: "https://www.reddit.com/r/bouzouki/",
@@ -135,13 +219,13 @@
       id: "attack", step: 1, label: "Ta–ka clock", short: "↓ ta · ↑ ka",
       answer: "Build an even down–up engine on open courses first, then carry it onto one-position dromos lines with beat-one weight as the first accent vocabulary.",
       gate: "Self-scored: upstrokes match downstrokes in time, volume, and clarity — confirm on a phone recording before tempo rises.",
-      exerciseIds: ["open-course-penies", "down-up-clock", "loose-hand-ladder", "picked-dromos-line", "grouped-accents"]
+      exerciseIds: ["open-course-penies", "down-up-clock", "through-stroke-landings", "monopenies-passes", "loose-hand-ladder", "picked-dromos-line", "grouped-accents"]
     },
     {
       id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
       answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change — every course of the instrument, both crossing directions.",
       gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recorded take.",
-      exerciseIds: ["course-target", "outside-pairs", "mixed-crossings", "degree-window", "full-neck-ladder"]
+      exerciseIds: ["traversal-countdown", "course-target", "outside-pairs", "mixed-crossings", "crossing-flip-stops", "degree-window", "full-neck-ladder"]
     },
     {
       id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",
@@ -159,7 +243,7 @@
       id: "harmony-keys", step: 5, label: "Harmony & key moves", short: "chunks travel",
       answer: "Triad arpeggios run through the active progression, and key change becomes physical: dromoi assembled from named tetrachord chunks, moved around the band cycle on pivot notes.",
       gate: "Self-scored: the arpeggio circuit completes the band key cycle at one steady tempo, and each key change lands on its pivot note without a stumble.",
-      exerciseIds: ["arpeggio-arrival", "arp-chunks", "chunk-builder", "ghammaz-pivot", "band-key-arpeggio-circuit"]
+      exerciseIds: ["arpeggio-arrival", "arp-chunks", "triad-ladder", "chunk-builder", "ghammaz-pivot", "band-key-arpeggio-circuit"]
     },
     {
       id: "lead", step: 6, label: "Lead & taximi", short: "vocabulary under pressure",
