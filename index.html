@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=37" />
+  <link rel="stylesheet" href="css/styles.css?v=38" />
 </head>
 <body>
   <div class="app">
@@ -442,51 +442,59 @@
             <!-- Dedicated picking curriculum -->
             <div id="panelPicking" class="panel picking-panel hidden">
               <section id="pickingLesson" class="picking-lesson" aria-live="polite"></section>
-              <section class="picking-runner" aria-labelledby="pickingRunnerTitle">
-                <header><div><span class="panel-label">Practice engine</span><h3 id="pickingRunnerTitle">Repeat it exactly—or evolve one variable.</h3></div><p id="pickingRunSummary"></p></header>
-                <div class="picking-runner-grid">
-                  <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop</button><button data-picking-run="evolve">Evolve</button></div></div>
-                  <label class="picking-tempo" for="pickingBpm">Tempo <span><input id="pickingBpm" type="range" min="40" max="180" step="1" /><output id="pickingBpmVal" for="pickingBpm">84 BPM</output></span></label>
-                  <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
-                  <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="band">Band keys · G D Dm Am E Em</option><option value="both">Keys + positions</option></select></label>
-                  <label for="pickingVoiceSel">Practice sound<select id="pickingVoiceSel"><option value="bouzouki" selected>Bouzouki pick · clear paired courses</option><option value="studio">Studio piano · pitch check</option><option value="piano">Warm keys · offline fallback</option></select></label>
-                  <label class="check"><input type="checkbox" id="tglPickingMetronome" checked /> Metronome</label>
-                  <label class="check"><input type="checkbox" id="tglPickingCountIn" checked /> One-bar count-in</label>
+              <section class="picking-deck" aria-label="Play controls">
+                <div class="deck-play">
+                  <button id="btnPickingPlay" class="deck-start">▶ Start</button>
+                  <p class="deck-hint">Loops smoothly until you press stop. The count-in gives you one bar.</p>
+                </div>
+                <div class="deck-primary">
+                  <label class="picking-tempo" for="pickingBpm">Speed <span><input id="pickingBpm" type="range" min="40" max="180" step="1" /><output id="pickingBpmVal" for="pickingBpm">84 BPM</output></span></label>
+                  <label class="check"><input type="checkbox" id="tglPickingMetronome" checked /> Metronome click</label>
+                  <label class="check"><input type="checkbox" id="tglPickingCountIn" checked /> Count-in bar</label>
                   <div class="picking-sound-check"><button id="btnPickingSoundCheck" class="mini sound-check" type="button">♪ Test sound</button><small id="pickingAudioReadyStatus" class="audio-ready-status" role="status" aria-live="polite">Tap if audio is silent</small></div>
                 </div>
-                <div id="pickingRunMap" class="picking-run-map" aria-label="Picking practice run roadmap"></div>
-              </section>
-              <section class="picking-controls" aria-label="Picking playback and progress">
-                <div>
-                  <span class="panel-label">Subdivision</span>
-                  <div class="seg" aria-label="Notes per beat">
-                    <button data-picking-subdivision="2">8ths</button>
-                    <button data-picking-subdivision="3">Triplets</button>
-                    <button data-picking-subdivision="4">16ths</button>
+                <div class="deck-setup">
+                  <div id="pickingRouteChoice">
+                    <span class="panel-label">Where the notes go</span>
+                    <div class="seg">
+                      <button data-picking-route="tiered">Across the strings</button>
+                      <button data-picking-route="horizontal">Along the string</button>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="panel-label">Notes per click</span>
+                    <div class="seg" aria-label="Notes per beat">
+                      <button data-picking-subdivision="2">2 · 8ths</button>
+                      <button data-picking-subdivision="3">3 · triplets</button>
+                      <button data-picking-subdivision="4">4 · 16ths</button>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="panel-label">First stroke</span>
+                    <button id="btnPickingStroke" class="mini">Start · ↓ downstroke</button>
+                  </div>
+                  <div id="pickingVariantChoice" class="hidden">
+                    <span class="panel-label">Stroke grammar</span>
+                    <div class="seg" id="pickingVariantButtons"></div>
                   </div>
                 </div>
-                <div>
-                  <span class="panel-label">First stroke</span>
-                  <button id="btnPickingStroke" class="mini">Start · ↓ downstroke</button>
-                </div>
-                <div id="pickingRouteChoice" class="hidden">
-                  <span class="panel-label">Pennanen route comparison</span>
-                  <div class="seg">
-                    <button data-picking-route="horizontal">Horizontal</button>
-                    <button data-picking-route="tiered">Tiered</button>
-                  </div>
-                </div>
-                <div id="pickingVariantChoice" class="hidden">
-                  <span class="panel-label">Stroke grammar</span>
-                  <div class="seg" id="pickingVariantButtons"></div>
-                </div>
-                <div class="picking-actions">
-                  <button id="btnPickingPlay" class="mini primary-mini">▶ Play drill</button>
-                  <button id="btnPickingStop" class="mini">■ Stop</button>
+                <div class="deck-progress">
                   <button id="btnPickingClean" class="mini">Log clean pass</button>
                   <button id="btnPickingTempoUp" class="mini hidden">Ready · +4 BPM</button>
                   <button id="btnPickingMiss" class="mini">Missed it · −4 BPM</button>
+                  <button id="btnPickingStop" class="mini hidden">■ Stop</button>
                 </div>
+                <details class="deck-advanced">
+                  <summary>More options — evolve through keys &amp; positions, practice sound</summary>
+                  <div class="picking-runner-grid">
+                    <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop forever</button><button data-picking-run="evolve">Evolve</button></div></div>
+                    <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
+                    <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="band">Band keys · G D Dm Am E Em</option><option value="both">Keys + positions</option></select></label>
+                    <label for="pickingVoiceSel">Practice sound<select id="pickingVoiceSel"><option value="bouzouki" selected>Bouzouki pick · clear paired courses</option><option value="studio">Studio piano · pitch check</option><option value="piano">Warm keys · offline fallback</option></select></label>
+                    <p id="pickingRunSummary" class="deck-summary"></p>
+                  </div>
+                  <div id="pickingRunMap" class="picking-run-map" aria-label="Picking practice run roadmap"></div>
+                </details>
               </section>
               <div id="pickingPasses" class="picking-passes" aria-live="polite"></div>
             </div>
@@ -776,9 +784,9 @@
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=36"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=37"></script>
+  <script src="js/audio.js?v=38"></script>
   <script src="js/page-guides.js?v=31"></script>
-  <script src="js/app.js?v=37"></script>
+  <script src="js/app.js?v=38"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

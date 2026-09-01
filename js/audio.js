@@ -415,7 +415,9 @@
     const sp = spacing == null ? 0.3 : spacing;
     const beatSpacing = Math.max(sp, +o.beatSpacing || sp);
     const countInBeats = Math.max(0, Math.floor(+o.countInBeats || 0));
-    const start = ctx.currentTime + 0.06;
+    // startAt lets a caller chain segments on the audio clock (evolve
+    // stages hand off bar-to-bar with no restart gap).
+    const start = o.startAt && o.startAt > ctx.currentTime ? o.startAt : ctx.currentTime + 0.06;
     const t0 = start + countInBeats * beatSpacing;
     const pulse = Array.isArray(o.pulse) && o.pulse.length ? o.pulse : [{ first: true }];
     // Per-note duration multipliers (dotted formations, held skeleton notes,
@@ -424,29 +426,68 @@
     const offsets = [];
     let total = 0;
     notes.forEach((n) => { offsets.push(total); total += sp * (n && n.durMult > 0 ? n.durMult : 1); });
-    if (o.metronome) {
-      // Count-in always clicks in full; the gap-click filter (if any) applies
-      // only to the sounding bars — thinning time support is the exercise.
-      for (let beat = 0; beat < countInBeats; beat++) click(start + beat * beatSpacing, !!pulse[beat % pulse.length].first);
-      const soundingBeats = Math.max(1, Math.ceil(total / beatSpacing));
-      for (let beat = 0; beat < soundingBeats; beat++) {
-        const pulseBeat = pulse[beat % pulse.length];
-        if (o.clickFilter && !o.clickFilter(beat, pulseBeat, pulse.length)) continue;
-        click(t0 + beat * beatSpacing, !!pulseBeat.first);
+    const voice = o.referenceVoice || instrumentVoice();
+    const barSpan = beatSpacing * pulse.length;
+    // A looping drill is padded up to the next whole bar so every iteration
+    // starts ON a bar line: the click never restarts and never phase-shifts
+    // against the notes. Everything is scheduled on the audio clock — the
+    // JS timer below only queues the NEXT iteration ahead of time; it never
+    // decides when a sound happens.
+    const loopSpan = o.loop ? Math.max(barSpan, Math.ceil(total / barSpan - 1e-9) * barSpan) : total;
+    const barBeats = Math.max(1, Math.round(loopSpan / beatSpacing));
+
+    function scheduleClicks(fromTime, beatOffset, beatCount) {
+      if (!o.metronome) return;
+      for (let beat = 0; beat < beatCount; beat++) {
+        const pulseBeat = pulse[(beatOffset + beat) % pulse.length];
+        if (o.clickFilter && !o.clickFilter(beatOffset + beat, pulseBeat, pulse.length)) continue;
+        click(fromTime + beat * beatSpacing, !!pulseBeat.first);
       }
     }
-    notes.forEach((n, i) => {
-      const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
-      const when = t0 + offsets[i];
-      const dur = sp * (n && n.durMult > 0 ? n.durMult : 1);
-      const voice = o.referenceVoice || instrumentVoice();
-      if (!silent) playNoteAt(n.freq, when, trainingNoteDuration(dur, voice), voiceGain(1, "path"), voice);
-      if (o.onStep) {
-        pathTimers.push(setTimeout(() => o.onStep(i, silent), Math.max(0, (when - ctx.currentTime) * 1000)));
-      }
-    });
+
+    function scheduleNotes(fromTime, iteration) {
+      notes.forEach((n, i) => {
+        const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
+        const when = fromTime + offsets[i];
+        const dur = sp * (n && n.durMult > 0 ? n.durMult : 1);
+        if (!silent) playNoteAt(n.freq, when, trainingNoteDuration(dur, voice), voiceGain(1, "path"), voice);
+        if (o.onStep) {
+          pathTimers.push(setTimeout(() => o.onStep(i, silent, iteration), Math.max(0, (when - ctx.currentTime) * 1000)));
+        }
+      });
+    }
+
+    if (o.metronome) {
+      for (let beat = 0; beat < countInBeats; beat++) click(start + beat * beatSpacing, !!pulse[beat % pulse.length].first);
+    }
+
+    if (o.loop) {
+      const generation = playbackGeneration;
+      const scheduleIteration = (iteration) => {
+        if (generation !== playbackGeneration) return;
+        const iterStart = t0 + iteration * loopSpan;
+        scheduleClicks(iterStart, iteration * barBeats, barBeats);
+        scheduleNotes(iterStart, iteration);
+        if (o.onLoop) {
+          pathTimers.push(setTimeout(() => o.onLoop(iteration), Math.max(0, (iterStart - ctx.currentTime) * 1000)));
+        }
+        // Queue the next iteration 400ms before this one ends. The audio
+        // clock owns the seam; this timer only feeds the scheduler.
+        const queueAt = iterStart + loopSpan - 0.4;
+        pathTimers.push(setTimeout(() => scheduleIteration(iteration + 1), Math.max(0, (queueAt - ctx.currentTime) * 1000)));
+      };
+      scheduleIteration(0);
+      return Infinity;
+    }
+
+    scheduleClicks(t0, 0, Math.max(1, Math.ceil(total / beatSpacing)));
+    scheduleNotes(t0, 0);
     if (o.onDone) {
-      pathTimers.push(setTimeout(o.onDone, Math.max(0, (t0 + total - ctx.currentTime) * 1000)));
+      // onDoneLead fires the callback slightly BEFORE the audio ends, so a
+      // chaining caller can schedule its next segment at the returned end
+      // time while it is still in the future — the seam stays on the grid.
+      const lead = o.onDoneLead > 0 ? o.onDoneLead : 0;
+      pathTimers.push(setTimeout(o.onDone, Math.max(0, (t0 + total - lead - ctx.currentTime) * 1000)));
     }
     return t0 + total;
   }
