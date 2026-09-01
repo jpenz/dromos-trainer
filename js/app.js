@@ -66,7 +66,7 @@
     picking: {
       category: "all", exerciseId: "down-up-clock", route: "horizontal",
       variant: "alternate",
-      subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, playing: false,
+      subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, rungHistory: [], ceilingBpm: null, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
       runIndex: null, activeSegment: null, voice: "bouzouki"
     },
@@ -431,6 +431,8 @@
     if (state.view === "solo") renderSoloSection();
     if (state.view === "triads") renderTriads();
     if (state.view === "styles") renderStyles();
+    // The picking panel shows the active pulse and its documented tempo band.
+    if (state.view === "picking") renderPickingLab();
   }
 
   function rootPcOf(chord) {
@@ -3266,7 +3268,22 @@
     $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "↓ downstroke" : "↑ upstroke"}`;
     $("btnPickingPlay").textContent = state.picking.playing ? `Playing ${state.picking.runIndex + 1}/${state.picking.repeats}…` : "▶ Play run";
     $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3);
-    $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p>`;
+    const band = S.byId(state.groove.styleId).tempoBand;
+    const bandHtml = band
+      ? band.low
+        ? `<p class="picking-band"><b class="band-${band.strength}">${band.strength}</b> ${escapeHtml(S.byId(state.groove.styleId).title)} band ${band.low}–${band.high} BPM · <button data-picking-band-set="${band.low}">start at ${band.low}</button><small>${escapeHtml(band.note)}</small></p>`
+        : `<p class="picking-band"><b class="band-${band.strength}">${band.strength}</b> ${escapeHtml(band.note)}</p>`
+      : "";
+    const ceiling = state.picking.ceilingBpm
+      ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b>. Banked — this is a good place to end the block. It is your own judgement, logged, not a measurement.</p>`
+      : "";
+    $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p>${bandHtml}${ceiling}`;
+    const bandBtn = $("pickingPasses").querySelector("[data-picking-band-set]");
+    if (bandBtn) bandBtn.onclick = () => {
+      state.bpm = +bandBtn.getAttribute("data-picking-band-set");
+      state.picking.cleanPasses = 0;
+      AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab();
+    };
 
     const pulse = S.byId(state.groove.styleId);
     const chordContext = session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "dromos route";
@@ -3344,11 +3361,47 @@
     renderPickingLab();
   }
 
+  // The documented ladder protocol (Rawlinson practice-prescription pattern,
+  // shown in-app as "documented teaching practice", never "optimal"): climb
+  // +4 BPM after three self-scored clean passes, drop back one rung on a
+  // miss, and when the session oscillates across the same adjacent rung pair
+  // twice, that boundary IS the day's ceiling — bank it and move on.
+  function recordRung(bpm) {
+    const history = state.picking.rungHistory;
+    history.push(bpm);
+    if (history.length > 8) history.shift();
+    // a→b→a→b→a on adjacent rungs = oscillation: the ceiling is found.
+    if (history.length >= 5) {
+      const tail = history.slice(-5);
+      const a = tail[0], b = tail[1];
+      const adjacent = Math.abs(a - b) === 4;
+      const alternates = tail.every((value, index) => value === (index % 2 === 0 ? a : b));
+      if (adjacent && alternates) {
+        state.picking.ceilingBpm = Math.max(a, b);
+        try {
+          const store = JSON.parse(localStorage.getItem("dromos-picking-ceilings") || "{}");
+          store[`${state.picking.exerciseId}:${state.picking.variant}`] =
+            { bpm: state.picking.ceilingBpm, date: new Date().toISOString().slice(0, 10) };
+          localStorage.setItem("dromos-picking-ceilings", JSON.stringify(store));
+        } catch { /* private mode */ }
+      }
+    }
+  }
+
   function raisePickingTempo() {
     if (state.picking.cleanPasses < 3) return;
     state.bpm = Math.min(180, state.bpm + 4);
     state.picking.cleanPasses = 0;
+    recordRung(state.bpm);
     AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab(); renderPageGuide();
+  }
+
+  function missPickingPass() {
+    if (state.picking.playing) return;
+    state.picking.cleanPasses = 0;
+    state.bpm = Math.max(40, state.bpm - 4);
+    recordRung(state.bpm);
+    AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab();
   }
 
   // ============================= TRIADS ==================================
@@ -5379,6 +5432,7 @@
     $("btnPickingStop").onclick = () => { stopPlay(); renderPickingLab(); };
     $("btnPickingClean").onclick = logPickingPass;
     $("btnPickingTempoUp").onclick = raisePickingTempo;
+    $("btnPickingMiss").onclick = missPickingPass;
 
     $("earTonicSel").onchange = (event) => {
       state.ear.tonic = event.target.value;

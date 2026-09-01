@@ -43,6 +43,9 @@
   const STYLES = [
     {
       id: "zeibekiko",
+      tempoBand: { low: 55, high: 90, strength: "estimate",
+        note: "Synthesis of measured recordings (65–70 slow, 107–122 fast, per a UoA musicology thesis) into a practice band counted in 9/4; no canonical BPM table for Greek dances exists.",
+        sourceUrl: "https://pergamos.lib.uoa.gr/uoa/dl/object/3421083/file.pdf" },
       title: "Zeibekiko",
       greek: "Ζεϊμπέκικο",
       meter: "9/4",
@@ -56,6 +59,9 @@
     },
     {
       id: "kalamatianos",
+      tempoBand: { low: null, high: null, strength: "estimate",
+        note: "Only dancer-side figures located (≈110 counts/min ≈ 36–37 bars/min in 7/8); regional slow-to-fast variation is documented, so no BPM preset ships.",
+        sourceUrl: "https://olympias.lib.uoi.gr/jspui/bitstream/teiep/5871/1/369" },
       title: "Kalamatianos",
       greek: "Καλαματιανός",
       meter: "7/8",
@@ -69,6 +75,9 @@
     },
     {
       id: "hasapiko",
+      tempoBand: { low: null, high: null, strength: "qualitative",
+        note: "Only qualitative descriptions located (slow varys 4/4 versus fast 2/4). No number ships — set tempo from a reference recording you trust.",
+        sourceUrl: "https://www.hellenicaworld.com/Greece/Dance/en/Hasapiko.html" },
       title: "Hasapiko",
       greek: "Χασάπικο",
       meter: "4/4",
@@ -95,6 +104,9 @@
     },
     {
       id: "tsifteteli",
+      tempoBand: { low: 50, high: 75, strength: "documented",
+        note: "Measured per-recording tempi in 4/4 counting (TEI of Epirus thesis); the same music counted in 8/4 reads 135–145.",
+        sourceUrl: "https://olympias.lib.uoi.gr/jspui/bitstream/teiep/5871/1/369" },
       title: "Tsifteteli",
       greek: "Τσιφτετέλι",
       meter: "4/4",
