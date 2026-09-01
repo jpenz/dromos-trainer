@@ -135,7 +135,7 @@
       id: "attack", step: 1, label: "Ta–ka clock", short: "↓ ta · ↑ ka",
       answer: "Build an even down–up engine on open courses first, then carry it onto one-position dromos lines with beat-one weight as the first accent vocabulary.",
       gate: "Self-scored: upstrokes match downstrokes in time, volume, and clarity — confirm on a phone recording before tempo rises.",
-      exerciseIds: ["open-course-penies", "loose-hand-ladder", "down-up-clock", "picked-dromos-line", "grouped-accents"]
+      exerciseIds: ["open-course-penies", "down-up-clock", "loose-hand-ladder", "picked-dromos-line", "grouped-accents"]
     },
     {
       id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
