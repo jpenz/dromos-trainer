@@ -3218,6 +3218,128 @@
     return phrase.concat([cueNode]).concat(target);
   }
 
+  function pickingTraversalNodes() {
+    // Every course low to high and back: the countdown's crossing chain.
+    const open = pickingOpenCourseNodes();
+    const order = [];
+    for (let i = 0; i < open.length; i++) order.push(i);
+    for (let i = open.length - 2; i >= 0; i--) order.push(i);
+    return order.map((stringIndex) => Object.assign({}, open[stringIndex]));
+  }
+
+  function pickingMonopeniesNodes(context) {
+    if (state.picking.variant === "fretted") {
+      // Fretted tier: 1-2-3-4 chromatic cell on each course at the position.
+      const open = window.Tuning.open();
+      const base = Math.max(1, context.position || 1);
+      const nodes = [];
+      open.forEach((openMidi, stringIndex) => {
+        for (let step = 0; step < 4; step++) {
+          const fret = base + step;
+          const midi = openMidi + fret;
+          nodes.push({
+            stringIndex, fret, midi,
+            freq: 440 * Math.pow(2, (midi - 69) / 12),
+            note: { degree: String(step + 1), name: "·", roleLabel: String(step + 1), colorGroup: "scaledeg", pc: ((midi % 12) + 12) % 12 }
+          });
+        }
+      });
+      return nodes;
+    }
+    return pickingTraversalNodes();
+  }
+
+  function pickingCrossingCellNodes(context) {
+    // A two-course cell from the in-position box road: up to three notes on
+    // one course, up to two on the course above it - the flip material.
+    const road = pickingScalePathNodes(Object.assign({}, context), 12);
+    const byCourse = {};
+    road.forEach((node) => { (byCourse[node.stringIndex] = byCourse[node.stringIndex] || []).push(node); });
+    const courses = Object.keys(byCourse).map(Number).sort((a, b) => a - b);
+    let best = null;
+    for (let i = 0; i + 1 < courses.length; i++) {
+      const lower = byCourse[courses[i]], upper = byCourse[courses[i + 1]];
+      if (!best || Math.min(lower.length, 3) + Math.min(upper.length, 2) > best.score) {
+        best = { lower, upper, score: Math.min(lower.length, 3) + Math.min(upper.length, 2) };
+      }
+    }
+    if (!best) return [];
+    return best.lower.slice(0, 3).map((node) => Object.assign({}, node, { cell: "lower" }))
+      .concat(best.upper.slice(0, 2).map((node) => Object.assign({}, node, { cell: "upper" })));
+  }
+
+  function pickingTriadLadderNodes(context) {
+    // The same chord three times up the neck: root position, then each
+    // inversion in the next window up, then back down. Placements ascend by
+    // exact midi so every shape is the chord, never a re-voicing.
+    const modeId = pickingModeId(context);
+    const { chords } = M.buildProgression(context.tonic, modeId, state.progId);
+    const tonicChord = chords.find((chord) => chord.notes.some((note) => note.role === "R" && note.pc === M.parseName(context.tonic).pc)) || chords[0];
+    const triad = [
+      tonicChord.notes.find((note) => note.role === "R"),
+      tonicChord.notes.find((note) => String(note.role).includes("3")),
+      tonicChord.notes.find((note) => String(note.role).includes("5"))
+    ].filter(Boolean);
+    if (triad.length < 3) return [];
+    const open = window.Tuning.open();
+    const all = FB.allTonePositions(triad).filter((placement) => placement.fret <= 15);
+    const midiOf = (placement) => open[placement.stringIndex] + placement.fret;
+    const lowestRoot = all.filter((placement) => placement.note.pc === triad[0].pc)
+      .sort((left, right) => midiOf(left) - midiOf(right))[0];
+    if (!lowestRoot) return [];
+    const labels = ["root position · 1-3-5", "1st inversion · 3-5-1", "2nd inversion · 5-1-3"];
+    const rotations = [[0, 1, 2], [1, 2, 0], [2, 0, 1]];
+    const climb = [];
+    let floorMidi = midiOf(lowestRoot);
+    rotations.forEach((rotation, inversionIndex) => {
+      let prevMidi = floorMidi - 1;
+      let prevString = -1;
+      const shape = [];
+      rotation.forEach((toneIndex, noteIndex) => {
+        const tone = triad[toneIndex];
+        // A shape is a GRIP: each tone sits on a higher course than the last
+        // (falling back to any course only when the tuning runs out), so the
+        // ladder never degrades into a one-string crawl.
+        // Each shape STARTS on the root shape's course, so the three
+        // inversions are three climbing windows on one string set - the
+        // ladder form - instead of collapsing onto the open strings.
+        const pool = all.filter((placement) => placement.note.pc === tone.pc && midiOf(placement) > prevMidi
+          && (noteIndex > 0 || placement.stringIndex === lowestRoot.stringIndex));
+        const climbing = pool.filter((placement) => placement.stringIndex > prevString);
+        // After the shape's first note fixes the window, later tones stay in
+        // that window (closest fret wins) - a CLOSED, movable shape, not a
+        // voicing that borrows open strings and stops being transposable.
+        const baseFret = shape.length ? shape[0].placement.fret : null;
+        const usable = climbing.length ? climbing : pool;
+        // Pitch first, window second: the tone is the NEXT chord tone above
+        // the previous one (exact midi), and only among placements of that
+        // pitch does window proximity choose - otherwise fret-closeness can
+        // grab the right note name an octave too high.
+        const targetMidi = usable.length ? Math.min.apply(null, usable.map(midiOf)) : null;
+        const candidates = usable.filter((placement) => midiOf(placement) === targetMidi)
+          .sort((left, right) => baseFret == null
+            ? left.fret - right.fret
+            : Math.abs(left.fret - baseFret) - Math.abs(right.fret - baseFret));
+        if (candidates.length) {
+          shape.push({ placement: candidates[0], tone });
+          prevMidi = midiOf(candidates[0]);
+          prevString = candidates[0].stringIndex;
+        }
+      });
+      if (shape.length === 3) {
+        shape.forEach((entry, noteIndex) => climb.push(Object.assign(pickingNode(entry.placement, entry.tone), {
+          inversionStart: noteIndex === 0, positionShift: noteIndex === 0, inversionLabel: labels[inversionIndex]
+        })));
+        floorMidi = midiOf(shape[0].placement) + (inversionIndex === 0 ? 3 : 3);
+      }
+    });
+    const descent = climb.slice(0, Math.max(0, climb.length - 3)).reverse().map((node, index) => Object.assign({}, node, {
+      inversionStart: index % 3 === 0, positionShift: index % 3 === 0,
+      inversionLabel: (node.inversionLabel || "") + " · down"
+    }));
+    return climb.concat(descent);
+  }
+
   function pickingCourseTargetNodes() {
     // The targeting map: walk every course up and down, then every skip
     // pair (both directions). Built from the LIVE tuning so the 3-course
@@ -3336,6 +3458,11 @@
     if (exercise.sequence === "skeletonDescent") return { nodes: pickingDescentNodes(context), current: null, next: null };
     if (exercise.sequence === "instantTranspose") return { nodes: pickingTransposeNodes(context), current: null, next: null };
     if (exercise.sequence === "featherTouch") return { nodes: pickingOpenCourseNodes().slice(0, 1), current: null, next: null };
+    if (exercise.sequence === "throughStroke") return { nodes: pickingOpenCourseNodes(), current: null, next: null };
+    if (exercise.sequence === "monopenies") return { nodes: pickingMonopeniesNodes(context), current: null, next: null };
+    if (exercise.sequence === "traversalCountdown") return { nodes: pickingTraversalNodes(), current: null, next: null };
+    if (exercise.sequence === "crossingFlip") return { nodes: pickingCrossingCellNodes(context), current: null, next: null };
+    if (exercise.sequence === "triadLadder") return { nodes: pickingTriadLadderNodes(context), current: null, next: null };
     if (exercise.sequence === "courseTarget") return { nodes: pickingCourseTargetNodes(), current: null, next: null };
     if (exercise.sequence === "neckLadder") return { nodes: pickingNeckLadderNodes(context), current: null, next: null };
     if (exercise.sequence === "arpChunks") return { nodes: pickingArpChunkNodes(context), current: null, next: null };
@@ -3655,9 +3782,9 @@
         : `<p class="picking-band"><b class="band-${band.strength}">${band.strength}</b> ${escapeHtml(band.note)}</p>`
       : "";
     const ceiling = state.picking.ceilingBpm
-      ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b>. Banked — this is a good place to end the block. It is your own judgement, logged, not a measurement.</p>`
+      ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b>. Banked — this is a good place to end the block. It is your own judgement, logged, not a measurement. Skills consolidate between sessions: retest tomorrow before pushing higher (motor-consolidation research).</p>`
       : "";
-    $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p>${bandHtml}${ceiling}`;
+    $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p><p class="picking-science">Difficulty just past comfort is the documented learning zone (challenge-point research); the 4 BPM step is app design, not a validated size. Mixing in a slower block is supported at pilot scale.</p>${bandHtml}${ceiling}`;
     const bandBtn = $("pickingPasses").querySelector("[data-picking-band-set]");
     if (bandBtn) bandBtn.onclick = () => {
       state.bpm = +bandBtn.getAttribute("data-picking-band-set");
@@ -3705,8 +3832,11 @@
     const clickFilter = gapLevel === "groups" ? (beat, pulseBeat) => !!pulseBeat.first
       : gapLevel === "barone" ? (beat, pulseBeat, pulseLength) => beat % pulseLength === 0
       : null;
+    const silentIndices = [];
+    session.nodes.forEach((node, index) => { if (node.silent) silentIndices.push(index); });
     const stageEnd = AU.playPath(session.nodes, noteSpacing, {
       referenceVoice: pickingReferenceVoice(),
+      silentIndices,
       metronome: state.picking.metronome,
       beatSpacing,
       clickFilter,

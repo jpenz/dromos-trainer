@@ -2503,3 +2503,4 @@ body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
   .picking-transport .transport-help { display: none; }
 }
 .picking-transport .transport-help { color: var(--faint); font-size: 8px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.picking-science { margin: 4px 0 0; color: var(--faint); font-size: 9px; line-height: 1.4; }
