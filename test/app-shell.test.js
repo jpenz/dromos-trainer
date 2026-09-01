@@ -24,7 +24,7 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-nav="picking"/);
   assert.match(html, /id="pickingSetup"/);
   assert.match(html, /id="panelPicking"/);
-  assert.match(html, /id="pickingExerciseRail"/);
+  assert.match(html, /id="pickingExerciseSel"/);
   assert.match(html, /id="pickingRunMap"/);
   assert.match(html, /data-picking-run="loop"/);
   assert.match(html, /data-picking-run="evolve"/);
@@ -354,7 +354,7 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "no JS-timer restarts between picking repeats");
   assert.match(app, /neckMode: "full",\n\s*flavourPcs: M\.flavourPcs\(state\.tonic, state\.modeId\)\n\s*\}\);\n\s*svg\(\)\.setAttribute\("aria-label", `\$\{window\.Tuning\.current\(\)\.name\} \$\{exercise\.title\} picking path`\);/,
     "the picking board is one unbroken neck");
-  assert.match(app, /const ROUTE_LOCKED = \{ "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true \};/,
+  assert.match(app, /const ROUTE_LOCKED = \{ "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true, "full-neck-ladder": true \};/,
     "the route toggle applies everywhere except drills whose mechanics fix a layout");
   assert.match(app, /if \(state\.picking\.playing\) \{ stopPlay\(\); renderPickingLab\(\); return; \}/,
     "the big button is Start AND Stop — one control for a non-technical player");
@@ -365,6 +365,27 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "the deck says in plain words what Start does");
   assert.match(html, /<details class="deck-advanced">/,
     "evolve\/stage\/voice options fold away from the first-time player");
+  // Setup is four dropdowns, with the exercise select grouped by mastery stage.
+  assert.match(app, /\$\("pickingExerciseSel"\)\.innerHTML = BK\.MASTERY_PHASES\.map/,
+    "the exercise dropdown is built from the six-stage plan, not a card rail");
+  assert.doesNotMatch(html, /pickingExerciseRail|pickingCategories|data-picking-mode/,
+    "the card rail, category nav, and mode seg are gone — dropdowns replaced them");
+  // Placement ergonomics: cross-course jumps are cost-gated and chunks come
+  // from the position-true path builder, so no drill leaps two courses.
+  assert.match(app, /const courseCost = \[0, 1\.4, 7, 11\];/,
+    "multi-course jumps must be heavily penalised in placement scoring");
+  assert.match(app, /function pickingChunkNodes\(context\) \{[\s\S]{0,1200}pickingScalePathNodes\(context, 8\)/,
+    "chunk-builder routes through the position-true path builder");
+  // Board reads as intervals with stroke above, finger below, chunk ring.
+  assert.match(app, /labelMode: "degree", lefty: state\.lefty, showStrokes: true, largeNeck: true,/,
+    "the picking board shows intervals; note names live in the event tiles");
+  assert.match(read("js/fretboard.js"), /class: "finger-mark"/,
+    "suggested finger renders under each path dot");
+  assert.match(read("js/fretboard.js"), /\(n\.road \? " road-" \+ n\.road : ""\)/,
+    "tetrachord road colouring rides the dot classes");
+  // The arp-chunk octave is the real octave (exact midi), never a unison.
+  assert.match(app, /openMidi\[placement\.stringIndex\] \+ placement\.fret === targetMidi/,
+    "the four-note chunk's top must be the true octave above the chunk root");
 });
 
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {

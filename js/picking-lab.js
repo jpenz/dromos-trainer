@@ -430,6 +430,30 @@
       listen: "When the click disappears, nothing about your playing should notice.",
       pass: "Self-scored: at click-bar-one, three consecutive bars re-enter with the click with no audible correction.",
       boundary: "Gap-click is universal pedagogy applied to the app's sourced Greek pulses; the stream is a Dromos generation."
+    },
+    {
+      id: "full-neck-ladder", category: "route", order: 31, title: "Scale over the whole neck",
+      short: "The same octave road rebuilt in every practical position, low frets to high and back.", layout: "2nps", sequence: "neckLadder", count: 32,
+      articulation: "picked-line", sourceIds: ["karantinis-lessons", "trigas-method", "pennanen"],
+      theory: "One dromos is not one shape: every practical position holds the same interval road under a different finger map. Climb the ladder and the neck stops being fret geography and becomes one scale seen through different windows - the skill that lets a phrase continue wherever the hand already is.",
+      evidence: "Mode positions are a documented lesson topic (Karantinis catalogue); progressive multi-position study is the declared structure of the Trigas curriculum; the horizontal-versus-tiered route trade-off within each window is documented by Pennanen.",
+      sourceLabel: "Karantinis mode positions + Trigas progression", sourceHref: "https://karantinis.com/video-lessons/",
+      steps: ["Play the octave road in the lowest practical position and say its fret window out loud.", "Shift up to the next position and rebuild the same road - same intervals, new finger map.", "Climb to the highest position, then descend the ladder without letting any shift bend the pulse."],
+      listen: "The shifts: the pulse must not bend where the hand travels.",
+      pass: "Self-scored: every position sounds like the same scale, and no shift costs time on a recorded take.",
+      boundary: "Position study is the sourced pedagogy; no surveyed source prescribes this ladder order - the position sequence is a Dromos generation from the app's own position model."
+    },
+    {
+      id: "arp-chunks", category: "arpeggio", order: 32, title: "Four-note chord chunks",
+      short: "Root-3rd-5th-octave as one chunk per chord; the octave top launches the next change.", layout: "horizontal", sequence: "arpChunks", count: 16,
+      articulation: "picked-line", sourceIds: ["trigas-method", "pagiatis-dromoi"],
+      theory: "A chord spelled as one four-note chunk - root, 3rd, 5th, octave - is the smallest unit that both outlines the harmony and hands you a launch note: the octave top sits close to the next chord's nearest tone. Practising the progression as linked chunks is what turns arpeggios into fills you can place inside a song.",
+      evidence: "Arpeggio study is a named category of the Trigas methods; main and secondary chords and their common motion are the Pagiatis treatise's practical frame. The chunk-linking route itself is generated.",
+      sourceLabel: "Trigas arpeggios + Pagiatis chord motion", sourceHref: "https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-three-string-bouzouki/",
+      steps: ["Play one chord's chunk - root, 3rd, 5th, octave - and name the chord out loud.", "Hold the octave top and find the next chord's root beside it before the hand moves.", "Link every chord of the progression into one circuit, accenting each root on the click."],
+      listen: "The octave tops: each one should sound like a question the next root answers.",
+      pass: "Self-scored: the circuit runs through the whole progression with every root landing on the click.",
+      boundary: "The sources support arpeggio and chord-motion study; this four-note chunk circuit is a Dromos generation from the app's own progression model, not a copied exercise."
     }
   ];
 
@@ -750,6 +774,20 @@
       });
       baseNodes.forEach((node) => nodes.push(Object.assign(cloneNode(node), { phrase: "full descent" })));
       return alternate(nodes, (index) => nodes[index].phrase === "skeleton", firstStroke);
+    }
+    if (exercise.sequence === "neckLadder") {
+      // The ladder: same road, each practical position in turn; accents mark
+      // the shifts so the ear checks the hand's travel against the pulse.
+      nodes = baseNodes.map((node) => cloneNode(node));
+      return alternate(nodes, (index) => !!baseNodes[index].positionShift, firstStroke).map((node, index) =>
+        Object.assign(node, { phrase: baseNodes[index].positionLabel || "ladder" }));
+    }
+    if (exercise.sequence === "arpChunks") {
+      // Four-note chord chunks: root accented, chord label riding each group,
+      // the octave top flagged as the launch toward the next change.
+      nodes = baseNodes.map((node) => cloneNode(node));
+      return alternate(nodes, (index) => !!baseNodes[index].chordStart, firstStroke).map((node, index) =>
+        Object.assign(node, { phrase: baseNodes[index].octaveTop ? `${baseNodes[index].chordSymbol || "chunk"} · launch` : baseNodes[index].chordSymbol || "chunk" }));
     }
     if (exercise.sequence === "instantTranspose") {
       // Phrase in the home key, a cue chord, the same phrase in the cue key.
