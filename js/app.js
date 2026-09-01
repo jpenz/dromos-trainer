@@ -3161,7 +3161,19 @@
         if (placement) { nodes.push(Object.assign(pickingNode(placement, startNote), { cellStart: true, cellPhase: phase })); anchor = nodes[nodes.length - 1]; }
       }
       cell.slice(startNote ? 1 : 0).forEach((node, index) => {
-        nodes.push(Object.assign({}, node, { cellStart: !startNote && index === 0, cellPhase: phase }));
+        if (startNote) {
+          // The restatement lives in the ANCHOR's register: each cell note is
+          // re-placed by the chained window scorer, not copied at its home
+          // frets — mimisis restates near the chord tone, it does not leap
+          // back across the neck to the original shape.
+          const placement = node.note && nearestPickingPlacement(node.note, anchor, context.position);
+          if (placement) {
+            const replaced = Object.assign(pickingNode(placement, node.note), { cellPhase: phase });
+            nodes.push(replaced); anchor = replaced;
+          }
+          return;
+        }
+        nodes.push(Object.assign({}, node, { cellStart: index === 0, cellPhase: phase }));
       });
     };
     pushCell("state the cell", null);
@@ -3239,7 +3251,11 @@
     if (!ladder.length) ladder = [{ position: context.position, lowFret: context.position }];
     const segment = (rung) => {
       const path = P.buildPath(context.tonic, modeId, Object.assign({}, options, { position: rung.position }));
-      return path ? path.nodes.slice(0, 8) : [];
+      if (!path) return [];
+      // The box window often opens below the tonic; the road is 1 → 8.
+      const start = path.nodes.findIndex((node) => node.note && String(node.note.degree) === "1");
+      const from = start >= 0 ? start : 0;
+      return path.nodes.slice(from, from + 8);
     };
     const nodes = [];
     ladder.forEach((rung) => segment(rung).forEach((node, index) => nodes.push(Object.assign({}, node, {
@@ -3267,9 +3283,14 @@
         chord.notes.find((note) => String(note.role).includes("5"))
       ].filter(Boolean);
       if (!triad.length) return;
+      // A chunk is a GRIP, not a line: the triad sits as one in-position
+      // hand shape across the courses (same placement model as the
+      // arpeggio-arrival drill), never chained up a single string.
+      const grip = FB.findGrip(triad, context.position);
       let rootNode = null;
       triad.forEach((tone, index) => {
-        const placement = nearestPickingPlacement(tone, anchor, context.position);
+        const placement = (grip && grip.placements.find((item) => item.note.pc === tone.pc))
+          || nearestPickingPlacement(tone, anchor, context.position);
         if (!placement) return;
         const node = Object.assign(pickingNode(placement, tone), { chordStart: index === 0, chordSymbol: chord.symbol });
         nodes.push(node); anchor = node;
@@ -3277,11 +3298,13 @@
       });
       if (rootNode) {
         const targetMidi = rootNode.midi + 12;
+        const octaveCourseCost = [0, 1.4, 7, 11];
+        const octaveScore = (placement) =>
+          Math.abs(placement.fret - anchor.fret) +
+          octaveCourseCost[Math.min(3, Math.abs(placement.stringIndex - anchor.stringIndex))];
         const tops = FB.allTonePositions([triad[0]])
           .filter((placement) => placement.fret <= 15 && openMidi[placement.stringIndex] + placement.fret === targetMidi)
-          .sort((left, right) =>
-            (Math.abs(left.fret - anchor.fret) + Math.abs(left.stringIndex - anchor.stringIndex) * 2) -
-            (Math.abs(right.fret - anchor.fret) + Math.abs(right.stringIndex - anchor.stringIndex) * 2));
+          .sort((left, right) => octaveScore(left) - octaveScore(right));
         if (tops.length) {
           const node = Object.assign(
             pickingNode(tops[0], Object.assign({}, triad[0], { degree: "8", roleLabel: "8", colorGroup: "root" })),
@@ -3405,6 +3428,9 @@
     const exercise = PK.byId(id);
     state.picking.exerciseId = exercise.id;
     state.picking.variant = exercise.variants && exercise.variants.length ? exercise.variants[0].id : "alternate";
+    // A triplet drill opened at subdivision 2 would play its grammar as
+    // straight eighths — the drill's own grid wins, the seg still overrides.
+    if (exercise.subdivision) state.picking.subdivision = exercise.subdivision;
     state.picking.pathIndex = null;
     state.picking.cleanPasses = 0;
     renderPickingLab();
@@ -3522,7 +3548,9 @@
       return fingerBases[segIndex];
     };
     const displayPath = session.nodes.map((node, nodeIndex) => Object.assign({}, node, {
-      finger: node.fret === 0 ? 0 : Math.min(4, Math.max(1, node.fret - fingerBaseFor(nodeIndex) + 1)),
+      finger: node.fret === 0 ? 0
+        : node.fret - fingerBaseFor(nodeIndex) < 4 ? Math.max(1, node.fret - fingerBaseFor(nodeIndex) + 1)
+        : "⇧",
       road: node.note && node.note.pc === tonicRoadPc ? "tonic"
         : node.note && lowerRoadPcs.has(node.note.pc) ? "lower"
         : node.note ? "upper" : null
@@ -3562,7 +3590,7 @@
         <div class="picking-motion-visual" aria-hidden="true"><i class="pick-shape"></i><b></b><b></b><b></b><span>${motionEvent.accent ? "ACCENT" : "EVEN"}</span></div>
         <section class="picking-motion-next"><span>Prepare next</span><b><i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}</b><p>${escapeHtml(nextMotion.cue)}</p></section>
       </div>
-      <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><span><b>1–4</b> suggested finger (Dromos default: one per fret from the position · 0 = open)</span><span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span><em>Tap an event to hear it and see the motion.</em></div>
+      <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><span><b>1–4</b> one-finger-per-fret default, not a bouzouki rule · <b>0</b> open · <b>⇧</b> stretch or small shift, your call</span><span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span><em>Tap an event to hear it and see the motion.</em></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
       <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section class="picking-theory"><span>Theory inside the motion</span><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}</b><p>${escapeHtml(exercise.theory)}</p><small>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</small></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
       <details class="picking-evidence"><summary>${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
@@ -3618,10 +3646,9 @@
 
   function finishPickingRun(token, plan) {
     if (token !== pickingRunToken) return;
-    const finalStage = plan[plan.length - 1];
-    if (state.picking.runMode === "evolve" && finalStage) {
-      state.tonic = finalStage.tonic;
-      state.lab.position = finalStage.position;
+    if (state.picking.runMode === "evolve" && state.picking.runHome) {
+      state.tonic = state.picking.runHome.tonic;
+      state.lab.position = state.picking.runHome.position;
       persistPreferences();
     }
     state.picking.playing = false;
@@ -3693,6 +3720,7 @@
     state.picking.playing = true;
     state.picking.runIndex = 0;
     state.picking.loopCount = 0;
+    state.picking.runHome = { tonic: state.tonic, position: state.lab.position };
     setPlayingUI(true, "■ Stop picking");
     playPickingStage(plan, 0, token);
   }

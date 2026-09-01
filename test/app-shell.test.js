@@ -387,6 +387,18 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "suggested finger renders under each path dot");
   assert.match(read("js/fretboard.js"), /\(n\.road \? " road-" \+ n\.road : ""\)/,
     "tetrachord road colouring rides the dot classes");
+  // Timing grammar: a drill that declares its own subdivision must win on
+  // selection, and an evolve run must return the lab to where it started.
+  assert.match(app, /if \(exercise\.subdivision\) state\.picking\.subdivision = exercise\.subdivision;/,
+    "triplet drills must not open as straight eighths");
+  assert.match(app, /state\.picking\.runHome = \{ tonic: state\.tonic, position: state\.lab\.position \};/,
+    "an evolve run records home before it travels");
+  assert.match(app, /state\.lab\.position = state\.picking\.runHome\.position;/,
+    "an evolve run restores home when it finishes");
+  // Finger honesty: past the four-fret window the mark is a stretch flag,
+  // never a fabricated finger number.
+  assert.match(app, /: "⇧",/,
+    "out-of-window notes must show the stretch flag, not finger 4 again");
   // The arp-chunk octave is the real octave (exact midi), never a unison.
   assert.match(app, /openMidi\[placement\.stringIndex\] \+ placement\.fret === targetMidi/,
     "the four-note chunk's top must be the true octave above the chunk root");
