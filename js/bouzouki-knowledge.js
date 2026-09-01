@@ -141,7 +141,7 @@
       id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
       answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change — every course of the instrument, both crossing directions.",
       gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recorded take.",
-      exerciseIds: ["outside-pairs", "mixed-crossings", "degree-window"]
+      exerciseIds: ["outside-pairs", "mixed-crossings", "degree-window", "full-neck-ladder"]
     },
     {
       id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",
@@ -159,7 +159,7 @@
       id: "harmony-keys", step: 5, label: "Harmony & key moves", short: "chunks travel",
       answer: "Triad arpeggios run through the active progression, and key change becomes physical: dromoi assembled from named tetrachord chunks, moved around the band cycle on pivot notes.",
       gate: "Self-scored: the arpeggio circuit completes the band key cycle at one steady tempo, and each key change lands on its pivot note without a stumble.",
-      exerciseIds: ["arpeggio-arrival", "chunk-builder", "ghammaz-pivot", "band-key-arpeggio-circuit"]
+      exerciseIds: ["arpeggio-arrival", "arp-chunks", "chunk-builder", "ghammaz-pivot", "band-key-arpeggio-circuit"]
     },
     {
       id: "lead", step: 6, label: "Lead & taximi", short: "vocabulary under pressure",

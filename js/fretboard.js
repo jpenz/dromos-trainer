@@ -369,7 +369,8 @@
         const gg = el("g", {
           class: "fb-dot path" + (isCur ? " current" : "") + (i < upto ? " played" : "") +
                  (n.note.isFlavour ? " flavour" : "") + (isTarget ? " target" : "") +
-                 (isNow ? " target-now" : "") + (isNext ? " target-next" : ""),
+                 (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
+                 (n.road ? " road-" + n.road : ""),
           "data-group": n.note.colorGroup,
           "data-pc": n.note.pc
         });
@@ -386,6 +387,14 @@
             x: cx(n), y: cy(n) - 18, "text-anchor": "middle",
             class: "stroke-mark s-" + n.stroke
           }, n.stroke === "down" ? "↓" : "↑"));
+        }
+        // Stroke rides the top of the circle, finger the bottom: one glance
+        // gives interval (inside), attack (above), and hand (below).
+        if (n.finger != null) {
+          gg.appendChild(el("text", {
+            x: cx(n), y: cy(n) + (isCur ? 26 : 23), "text-anchor": "middle",
+            class: "finger-mark"
+          }, String(n.finger)));
         }
         g.appendChild(gg);
       });
