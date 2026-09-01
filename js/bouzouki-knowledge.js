@@ -135,13 +135,13 @@
       id: "attack", step: 1, label: "Ta–ka clock", short: "↓ ta · ↑ ka",
       answer: "Build an even down–up engine on open courses first, then carry it onto one-position dromos lines with beat-one weight as the first accent vocabulary.",
       gate: "Self-scored: upstrokes match downstrokes in time, volume, and clarity — confirm on a phone recording before tempo rises.",
-      exerciseIds: ["open-course-penies", "down-up-clock", "picked-dromos-line", "grouped-accents"]
+      exerciseIds: ["open-course-penies", "loose-hand-ladder", "down-up-clock", "picked-dromos-line", "grouped-accents"]
     },
     {
       id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
       answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change — every course of the instrument, both crossing directions.",
       gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recorded take.",
-      exerciseIds: ["outside-pairs", "mixed-crossings", "degree-window", "full-neck-ladder"]
+      exerciseIds: ["course-target", "outside-pairs", "mixed-crossings", "degree-window", "full-neck-ladder"]
     },
     {
       id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",

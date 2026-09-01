@@ -3202,6 +3202,23 @@
     return phrase.concat([cueNode]).concat(target);
   }
 
+  function pickingCourseTargetNodes() {
+    // The targeting map: walk every course up and down, then every skip
+    // pair (both directions). Built from the LIVE tuning so the 3-course
+    // trichordo gets a valid map too, not an out-of-range course index.
+    const open = pickingOpenCourseNodes();
+    const last = open.length - 1;
+    const order = [];
+    for (let i = 0; i <= last; i++) order.push(i);
+    for (let i = last - 1; i >= 0; i--) order.push(i);
+    for (let from = 0; from <= last; from++) {
+      for (let to = from + 2; to <= last; to++) { order.push(from, to, from); }
+    }
+    return order.map((stringIndex, index) => Object.assign({}, open[stringIndex], {
+      skip: index > 0 && Math.abs(stringIndex - order[index - 1]) > 1
+    }));
+  }
+
   function pickingNeckLadderNodes(context) {
     // The same octave road rebuilt in each practical position, lowest to
     // highest and back down. Positions come from the app's own position
@@ -3291,6 +3308,8 @@
     if (exercise.sequence === "sequenceLadder") return { nodes: pickingSequenceLadderNodes(context), current: null, next: null };
     if (exercise.sequence === "skeletonDescent") return { nodes: pickingDescentNodes(context), current: null, next: null };
     if (exercise.sequence === "instantTranspose") return { nodes: pickingTransposeNodes(context), current: null, next: null };
+    if (exercise.sequence === "featherTouch") return { nodes: pickingOpenCourseNodes().slice(0, 1), current: null, next: null };
+    if (exercise.sequence === "courseTarget") return { nodes: pickingCourseTargetNodes(), current: null, next: null };
     if (exercise.sequence === "neckLadder") return { nodes: pickingNeckLadderNodes(context), current: null, next: null };
     if (exercise.sequence === "arpChunks") return { nodes: pickingArpChunkNodes(context), current: null, next: null };
     const routedLayout = state.picking.route === "tiered" ? "2nps" : "horizontal";

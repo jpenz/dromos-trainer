@@ -36,7 +36,7 @@ test("authorised study starters and referenced methods remain clearly bounded", 
 test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority separate", () => {
   const { BouzoukiKnowledge, PickingLab } = loadCore();
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 6, "foundation to lead: six stages");
-  assert.equal(PickingLab.EXERCISES.length, 32, "13 original + 17 research-backed + neck ladder + arp chunks");
+  assert.equal(PickingLab.EXERCISES.length, 34, "30 through PR#18 + ladder, arp chunks, loose hand, course targeting");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -77,6 +77,7 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
     if (exercise.sequence === "sequenceLadder") return flagged((i) => ({ cellStart: i % 6 === 0, cellPhase: "cell" }));
     if (exercise.sequence === "instantTranspose") return flagged((i) => (i === 6 ? { cue: true } : { phraseStart: i === 0, keyLabel: "k" }));
     if (exercise.sequence === "neckLadder") return flagged((i) => ({ positionShift: i % 4 === 0, positionLabel: "near fret 3" }));
+    if (exercise.sequence === "courseTarget") return flagged((i) => ({ skip: i % 3 === 0 }));
     if (exercise.sequence === "arpChunks") return flagged((i) => ({ chordStart: i % 4 === 0, chordSymbol: "X", octaveTop: i % 4 === 3 }));
     return flagged();
   };
