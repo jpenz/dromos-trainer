@@ -198,8 +198,12 @@ test("the installable app shell links its offline assets", () => {
   });
   assert.match(read("sw.js"), /js\/chord-map\.js\?v=\d+/, "Harmony Matrix must work in the offline shell");
   assert.match(read("sw.js"), /js\/chord-path\.js\?v=\d+/, "Chord Path must work in the offline shell");
-  assert.match(read("api/release.js"), /appVersion: "34"/,
-    "the public deployment identity must match the current offline shell release");
+  // Derived, not pinned: a literal here rotted once (test said 34, release
+  // said 34, cache said 40 — stale together). The release identity must
+  // equal whatever version the service worker actually ships.
+  const cacheVersion = read("sw.js").match(/const CACHE = "dromos-trainer-v(\d+)";/)[1];
+  assert.match(read("api/release.js"), new RegExp(`appVersion: "${cacheVersion}"`),
+    "api/release appVersion must match the sw.js cache version");
   assert.match(html, /css\/styles\.css\?v=\d+/);
   assert.match(html, /js\/fretboard\.js\?v=\d+/);
   assert.match(html, /js\/audio\.js\?v=\d+/);

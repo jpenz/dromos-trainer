@@ -2298,7 +2298,7 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
   .guide-first { grid-template-columns: 30px minmax(0, 1fr); }
   .guide-first button { grid-column: 2; justify-self: start; }
   .guide-workflow > summary b { display: none; }
-  .picking-setup > header, .picking-context, .picking-detail-grid, .picking-controls, .picking-motion { grid-template-columns: 1fr; }
+  .picking-setup > header, .picking-context, .picking-detail-grid, .picking-motion { grid-template-columns: 1fr; }
   .picking-context > label:last-child, .picking-actions { grid-column: auto; }
   .picking-categories { display: flex; overflow-x: auto; padding-bottom: 3px; }
   .picking-mastery-spine { display: flex; overflow-x: auto; padding-bottom: 3px; }
@@ -2309,8 +2309,6 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
   .picking-evidence { grid-template-columns: 1fr; }
   .picking-evidence > span, .picking-evidence small { grid-column: auto; }
   .picking-stroke-key em { width: 100%; margin-left: 0; }
-  .picking-runner > header { align-items: flex-start; flex-direction: column; }
-  .picking-runner > header p { text-align: left; }
   .picking-runner-grid { grid-template-columns: 1fr 1fr; }
   .picking-runner-grid > div:first-child, .picking-runner-grid > label:nth-child(4) { grid-column: 1 / -1; }
   .picking-run-map { grid-template-columns: repeat(3, minmax(0, 1fr)); }
