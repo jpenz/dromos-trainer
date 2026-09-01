@@ -66,7 +66,7 @@
 
   const EXERCISES = [
     {
-      id: "down-up-clock", category: "time", order: 3, title: "Ta–ka one-note clock",
+      id: "down-up-clock", category: "time", order: 2, title: "Ta–ka one-note clock",
       short: "Make ↓ ta and ↑ ka feel and sound equal before the left hand moves.", layout: "horizontal", sequence: "single", count: 8,
       articulation: "picked-line", sourceIds: ["trigas-method", "pafranidis-sample"],
       theory: "Down and up are rhythmic locations as well as hand directions. Say ta on every downstroke and ka on every upstroke while one pitch stays fixed.",
@@ -456,7 +456,7 @@
       boundary: "The sources support arpeggio and chord-motion study; this four-note chunk circuit is a Dromos generation from the app's own progression model, not a copied exercise."
     },
     {
-      id: "loose-hand-ladder", category: "time", order: 2, title: "Loose hand, same clock",
+      id: "loose-hand-ladder", category: "time", order: 3, title: "Loose hand, same clock",
       short: "One pitch, four passes: whisper, half, full, whisper - the grip never tightens.", layout: "horizontal", sequence: "featherTouch", count: 32,
       articulation: "picked-line", sourceIds: ["pafranidis-sample", "trigas-method", "reddit-bouzouki"],
       theory: "Volume comes from the size of the wrist swing, not from squeezing the pick. Cycling whisper to full and back on one unchanging pitch isolates that single variable: if the closing whisper pass feels harder than the opening one, the grip tightened somewhere in the middle and never let go.",

@@ -396,9 +396,16 @@ test("picking loops live on the audio clock and the board stays whole", () => {
   assert.match(app, /state\.lab\.position = state\.picking\.runHome\.position;/,
     "an evolve run restores home when it finishes");
   // Finger honesty: past the four-fret window the mark is a stretch flag,
-  // never a fabricated finger number.
+  // never a fabricated finger number — and a traveling line (segment wider
+  // than a hand) shows no numbers at all.
   assert.match(app, /: "⇧",/,
     "out-of-window notes must show the stretch flag, not finger 4 again");
+  assert.match(app, /return span > 5 \? null : Math\.min\.apply\(null, fretted\);/,
+    "segments wider than a hand must suppress finger numbers entirely");
+  assert.match(app, /const startString = layout === "horizontal" \? window\.Tuning\.open\(\)\.length - 1 : state\.lab\.startString;/,
+    "along-the-string lines live on the top course, where melody lives");
+  assert.match(html, /id="pickingPositionSel"/,
+    "the neck position that steers every drill must be a visible control");
   // The arp-chunk octave is the real octave (exact midi), never a unison.
   assert.match(app, /openMidi\[placement\.stringIndex\] \+ placement\.fret === targetMidi/,
     "the four-note chunk's top must be the true octave above the chunk root");

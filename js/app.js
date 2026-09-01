@@ -3064,9 +3064,13 @@
   }
 
   function pickingScalePathNodes(context, count) {
+    const layout = state.picking.route === "tiered" ? "box" : "horizontal";
+    // An along-the-string line lives where bouzouki melody lives — the top
+    // course — while an across-the-strings run has to start low to climb.
+    const startString = layout === "horizontal" ? window.Tuning.open().length - 1 : state.lab.startString;
     const path = P.buildPath(context.tonic, pickingModeId(context), {
-      layout: state.picking.route === "tiered" ? "2nps" : "horizontal", position: context.position,
-      startDegree: 1, startString: state.lab.startString, firstStroke: state.picking.firstStroke
+      layout, position: context.position,
+      startDegree: 1, startString, firstStroke: state.picking.firstStroke
     });
     return path ? path.nodes.slice(0, count || path.nodes.length) : [];
   }
@@ -3335,15 +3339,18 @@
     if (exercise.sequence === "courseTarget") return { nodes: pickingCourseTargetNodes(), current: null, next: null };
     if (exercise.sequence === "neckLadder") return { nodes: pickingNeckLadderNodes(context), current: null, next: null };
     if (exercise.sequence === "arpChunks") return { nodes: pickingArpChunkNodes(context), current: null, next: null };
-    const routedLayout = state.picking.route === "tiered" ? "2nps" : "horizontal";
-    // The route toggle applies to every scale-path drill: "across the
-    // strings" (two notes per course) or "along the string". Drills whose
+    // Across the strings = the box window: in-position on every course and it
+    // FOLLOWS the position control ("2nps" is one fixed shape per key that
+    // ignores position — it parked beginners at fret 14). Along the string =
+    // horizontal on the top course, where bouzouki melody lives. Drills whose
     // mechanics REQUIRE a layout (crossing grammars) keep their own.
+    const routedLayout = state.picking.route === "tiered" ? "box" : "horizontal";
     const ROUTE_LOCKED = { "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true, "full-neck-ladder": true };
     const layout = ROUTE_LOCKED[exercise.id] ? exercise.layout : routedLayout;
     const path = P.buildPath(context.tonic, pickingModeId(context), {
       layout, position: context.position, startDegree: state.lab.startDegree,
-      startString: state.lab.startString, firstStroke: state.picking.firstStroke,
+      startString: layout === "horizontal" ? window.Tuning.open().length - 1 : state.lab.startString,
+      firstStroke: state.picking.firstStroke,
       updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings" || exercise.id === "triplet-grammar"
     });
     const { chords } = M.buildProgression(context.tonic, pickingModeId(context), state.progId);
@@ -3508,6 +3515,19 @@
     $("tglPickingMetronome").checked = state.picking.metronome;
     $("tglPickingCountIn").checked = state.picking.countIn;
     $("pickingVoiceSel").value = state.picking.voice;
+    const windows = P.positionsFor(state.tonic, state.modeId,
+      { layout: "horizontal", startDegree: 1, startString: state.lab.startString, firstStroke: state.picking.firstStroke },
+      state.lab.position).filter((rung) => rung.lowFret <= 12);
+    if (!windows.some((rung) => rung.position === state.lab.position)) {
+      windows.push({ position: state.lab.position, lowFret: state.lab.position });
+      windows.sort((left, right) => left.lowFret - right.lowFret);
+    }
+    $("pickingPositionSel").innerHTML = windows.map((rung) =>
+      `<option value="${rung.position}"${rung.position === state.lab.position ? " selected" : ""}>near fret ${rung.lowFret}</option>`).join("");
+    $("pickingPositionSel").onchange = (event) => {
+      stopPlay(); state.lab.position = +event.target.value; state.picking.cleanPasses = 0;
+      persistPreferences(); renderPickingLab();
+    };
     const movementLabel = state.picking.movement === "key" ? "circle-of-fourths keys"
       : state.picking.movement === "band" ? "the band keys G D Dm Am E Em"
       : state.picking.movement === "both" ? "keys and practical positions" : "practical positions";
@@ -3540,7 +3560,12 @@
     const fingerBases = segmentStarts.map((start, segIndex) => {
       const end = segIndex + 1 < segmentStarts.length ? segmentStarts[segIndex + 1] : session.nodes.length;
       const fretted = session.nodes.slice(start, end).filter((node) => node.fret > 0).map((node) => node.fret);
-      return fretted.length ? Math.min.apply(null, fretted) : 1;
+      if (!fretted.length) return 1;
+      // A segment wider than a hand is a traveling line: the traditional
+      // horizontal layout moves the whole hand with shifts and slides
+      // (Pennanen), so per-fret finger numbers would be a fabrication.
+      const span = Math.max.apply(null, fretted) - Math.min.apply(null, fretted);
+      return span > 5 ? null : Math.min.apply(null, fretted);
     });
     const fingerBaseFor = (index) => {
       let segIndex = 0;
@@ -3548,7 +3573,8 @@
       return fingerBases[segIndex];
     };
     const displayPath = session.nodes.map((node, nodeIndex) => Object.assign({}, node, {
-      finger: node.fret === 0 ? 0
+      finger: fingerBaseFor(nodeIndex) == null ? null
+        : node.fret === 0 ? 0
         : node.fret - fingerBaseFor(nodeIndex) < 4 ? Math.max(1, node.fret - fingerBaseFor(nodeIndex) + 1)
         : "⇧",
       road: node.note && node.note.pc === tonicRoadPc ? "tonic"
@@ -3590,7 +3616,7 @@
         <div class="picking-motion-visual" aria-hidden="true"><i class="pick-shape"></i><b></b><b></b><b></b><span>${motionEvent.accent ? "ACCENT" : "EVEN"}</span></div>
         <section class="picking-motion-next"><span>Prepare next</span><b><i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}</b><p>${escapeHtml(nextMotion.cue)}</p></section>
       </div>
-      <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><span><b>1–4</b> one-finger-per-fret default, not a bouzouki rule · <b>0</b> open · <b>⇧</b> stretch or small shift, your call</span><span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span><em>Tap an event to hear it and see the motion.</em></div>
+      <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><span><b>1–4</b> one-finger-per-fret window (the modern, method-book layout) · <b>0</b> open · <b>⇧</b> stretch or small shift, your call</span><span>Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen)</span><span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span><em>Tap an event to hear it and see the motion.</em></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
       <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section class="picking-theory"><span>Theory inside the motion</span><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}</b><p>${escapeHtml(exercise.theory)}</p><small>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</small></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
       <details class="picking-evidence"><summary>${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
