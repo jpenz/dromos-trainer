@@ -122,6 +122,20 @@
       boundary: "Supports that a dromos is an interval structure realisable from any tonic; it does not endorse any specific key choice, which carries its own label in Dromos."
     },
     {
+      id: "skamnelos-review", rank: 1, authority: "Academic thesis",
+      name: "Skamnelos 2007 (TEI Epirus) · comparative review of Greek bouzouki methods",
+      href: "https://olympias.lib.uoi.gr/jspui/bitstream/teiep/394/1/lpm_000031.pdf",
+      supports: ["Greek methods codify pick direction (thesi/arsi)", "shallow pick contact prescribed", "deep digging (skapsimo) described as a fault"],
+      boundary: "A survey of the printed methods; it does not itself prescribe exercises, and Dromos reproduces none of the reviewed material."
+    },
+    {
+      id: "mair-pick-technique", rank: 2, authority: "Professional teacher (import)",
+      name: "Marilynn Mair · Pick Technique for the Classical Mandolinist",
+      href: "https://www.marilynnmair.com/articles/mandolin/2003/pick-technique/",
+      supports: ["four-bar subdivision ladder at mm 50-60", "quarters and eighths downstroke then sixteenths and thirty-seconds alternate", "10-20 repetitions per cycle"],
+      boundary: "A classical-mandolin import, labelled as such; it is the one printed tempo prescription found in plectrum pedagogy and does not describe Greek style."
+    },
+    {
       id: "rosenberg-rest-stroke", rank: 2, authority: "Professional teacher (import)",
       name: "Rosenberg Academy · gypsy-jazz rest-stroke lessons",
       href: "https://rosenbergacademy.com/collections/lessons",
@@ -237,7 +251,7 @@
       id: "voice", step: 4, label: "Articulation voice", short: "tremolo is a choice",
       answer: "Tremolo, legato, ornament and register are deliberate expressive choices: counted tremolo graduates to free tremolo with clean mid-line entries and exits.",
       gate: "Self-scored: a recorded tremolo entry shows no hiccup, its exit lands with the click, and the sparse and dense registers are audibly different takes of the same phrase.",
-      exerciseIds: ["tremolo-ladder", "counted-tremolo-groupings", "tremolo-entry-exit", "pick-legato", "mode-phrase-cell", "irish-treble", "era-register-contrast"]
+      exerciseIds: ["mair-density-ladder", "tremolo-ladder", "counted-tremolo-groupings", "tremolo-entry-exit", "pick-legato", "mode-phrase-cell", "irish-treble", "era-register-contrast"]
     },
     {
       id: "harmony-keys", step: 5, label: "Harmony & key moves", short: "chunks travel",
