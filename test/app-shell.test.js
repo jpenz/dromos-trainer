@@ -363,8 +363,10 @@ test("picking loops live on the audio clock and the board stays whole", () => {
   assert.match(app, /if \(state\.picking\.playing\) \{ stopPlay\(\); renderPickingLab\(\); return; \}/,
     "the big button is Start AND Stop — one control for a non-technical player");
   const html = read("index.html");
-  assert.match(html, /class="deck-start">▶ Start</,
-    "the deck leads with one prominent Start button");
+  assert.match(html, /class="transport-bar picking-transport"[\s\S]{0,400}class="deck-start">▶ Start</,
+    "start, speed, key and scale live in one always-visible transport bar");
+  assert.match(html, /picking-transport[\s\S]{0,900}id="pickingTonicSel"[\s\S]{0,300}id="pickingModeSel"/,
+    "key and scale selection are consistent, in the transport");
   assert.match(html, /Loops smoothly until you press stop/,
     "the deck says in plain words what Start does");
   assert.match(html, /<details class="deck-advanced">/,
