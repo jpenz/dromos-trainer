@@ -3051,18 +3051,184 @@
     return { nodes, current, next };
   }
 
+  // ---- node prep for the research-backed exercise families (FR-70) ----
+  function pickingModeId(context) {
+    return (context && context.modeId) || state.modeId;
+  }
+
+  function pickingScalePathNodes(context, count) {
+    const path = P.buildPath(context.tonic, pickingModeId(context), {
+      layout: "horizontal", position: context.position,
+      startDegree: 1, startString: state.lab.startString, firstStroke: state.picking.firstStroke
+    });
+    return path ? path.nodes.slice(0, count || path.nodes.length) : [];
+  }
+
+  function pickingOpenCourseNodes() {
+    return window.Tuning.open().map((midiOpen, stringIndex) => pickingNode(
+      { stringIndex, fret: 0 },
+      { degree: "open", name: window.Tuning.names()[stringIndex], colorGroup: "root" }
+    ));
+  }
+
+  function pickingSkeletonNodes(context) {
+    // Skeleton = tonic, tetrachord joint, 3rd, octave — degrees fixed by the
+    // app's own chunk model, marked on a full one-position line.
+    const modeId = pickingModeId(context);
+    const road = M.tetrachordsOf(context.tonic, modeId);
+    const jointPc = road.upper[0] ? road.upper[0].pc : road.lower[road.lower.length - 1].pc;
+    const scale = M.scaleOf(context.tonic, modeId);
+    const thirdPc = scale[2] ? scale[2].pc : scale[0].pc;
+    const tonicPc = scale[0].pc;
+    const nodes = pickingScalePathNodes(context, 8);
+    return nodes.map((node, index) => Object.assign({}, node, {
+      skeleton: node.note && (node.note.pc === tonicPc || node.note.pc === jointPc || node.note.pc === thirdPc) || index === nodes.length - 1
+    }));
+  }
+
+  function pickingChunkNodes(context) {
+    const modeId = pickingModeId(context);
+    const road = M.tetrachordsOf(context.tonic, modeId);
+    const place = (note, chunk, anchor) => {
+      const placement = nearestPickingPlacement(note, anchor, context.position);
+      return placement ? Object.assign(pickingNode(placement, note), { chunk }) : null;
+    };
+    const nodes = [];
+    let anchor = null;
+    road.lower.forEach((note) => { const n = place(note, "lower", anchor); if (n) { nodes.push(n); anchor = n; } });
+    road.upper.forEach((note) => { const n = place(note, "upper", anchor); if (n) { nodes.push(n); anchor = n; } });
+    return nodes;
+  }
+
+  function pickingPivotNodes(context) {
+    // Home phrase ending ON the pivot (= next band key's tonic), then the
+    // destination's lower chunk launched from that pitch.
+    const cycle = PK.BAND_KEY_CYCLE;
+    const fromIndex = Math.max(0, cycle.findIndex((stage) =>
+      stage.tonic === context.tonic.charAt(0) || stage.tonic === context.tonic));
+    const to = cycle[(fromIndex + 1) % cycle.length];
+    const toModeId = bandStageModeId(to.quality);
+    const pivotPc = PK.bandPivotPc(fromIndex);
+    const home = pickingScalePathNodes(context, 6);
+    const nodes = home.map((node) => Object.assign({}, node));
+    const scale = M.scaleOf(context.tonic, pickingModeId(context));
+    const pivotNote = scale.find((note) => note.pc === pivotPc) || scale[0];
+    let anchor = nodes[nodes.length - 1] || null;
+    const pivotPlacement = nearestPickingPlacement(pivotNote, anchor, context.position);
+    if (pivotPlacement) { const n = Object.assign(pickingNode(pivotPlacement, pivotNote), { pivot: true }); nodes.push(n); anchor = n; }
+    const destRoad = M.tetrachordsOf(to.tonic, toModeId);
+    destRoad.lower.forEach((note, index) => {
+      const placement = nearestPickingPlacement(note, anchor, context.position);
+      if (placement) { const n = Object.assign(pickingNode(placement, note), { launch: index === 0 }); nodes.push(n); anchor = n; }
+    });
+    return nodes;
+  }
+
+  function pickingArpCircuitNodes(context) {
+    const { chords } = M.buildProgression(context.tonic, pickingModeId(context), state.progId);
+    const nodes = [];
+    let anchor = null;
+    chords.forEach((chord) => {
+      const triad = chord.notes.filter((note) => ["R", "3", "b3", "5", "b5", "#5"].includes(note.role));
+      triad.concat(triad.length ? [triad[0]] : []).forEach((note, index) => {
+        const placement = nearestPickingPlacement(note, anchor, context.position);
+        if (!placement) return;
+        const n = Object.assign(pickingNode(placement, note), {
+          chordStart: index === 0, chordSymbol: chord.symbol
+        });
+        nodes.push(n); anchor = n;
+      });
+    });
+    return nodes;
+  }
+
+  function pickingSequenceLadderNodes(context) {
+    const modeId = pickingModeId(context);
+    const { chords } = M.buildProgression(context.tonic, modeId, state.progId);
+    const cell = pickingScalePathNodes(context, 6);
+    const nodes = [];
+    const pushCell = (phase, startNote) => {
+      let anchor = nodes[nodes.length - 1] || null;
+      if (startNote) {
+        const placement = nearestPickingPlacement(startNote, anchor, context.position);
+        if (placement) { nodes.push(Object.assign(pickingNode(placement, startNote), { cellStart: true, cellPhase: phase })); anchor = nodes[nodes.length - 1]; }
+      }
+      cell.slice(startNote ? 1 : 0).forEach((node, index) => {
+        nodes.push(Object.assign({}, node, { cellStart: !startNote && index === 0, cellPhase: phase }));
+      });
+    };
+    pushCell("state the cell", null);
+    const anchorChord = chords[1] || chords[0];
+    const anchorTone = anchorChord.notes.find((note) => note.role === "R") || anchorChord.notes[0];
+    pushCell(`restate on ${anchorChord.symbol}`, anchorTone);
+    pushCell("vary, then resolve", null);
+    return nodes;
+  }
+
+  function pickingDescentNodes(context) {
+    const run = M.descendingRun(context.tonic, pickingModeId(context));
+    const nodes = [];
+    let anchor = null;
+    run.forEach((tone, index) => {
+      const pc = ((tone.midi % 12) + 12) % 12;
+      const scale = M.scaleOf(context.tonic, pickingModeId(context));
+      const note = scale.find((entry) => entry.pc === pc) || { pc, name: "·", degree: "·" };
+      const placement = nearestPickingPlacement(note, anchor, context.position);
+      if (placement) { const n = pickingNode(placement, note); nodes.push(n); anchor = n; }
+    });
+    return nodes;
+  }
+
+  function pickingTransposeNodes(context) {
+    // Phrase in the reference tonic D, a cue chord, the phrase in the cue key
+    // (the next band key). The testimony warrants the mechanic; the phrase is
+    // generated.
+    const phrase = pickingScalePathNodes(Object.assign({}, context, { tonic: "D" }), 8)
+      .map((node, index) => Object.assign({}, node, { phraseStart: index === 0, keyLabel: "phrase in D" }));
+    const cycle = PK.BAND_KEY_CYCLE;
+    const cueStage = cycle[(Math.max(0, cycle.findIndex((stage) => stage.tonic === "D")) + 1) % cycle.length];
+    const cueModeId = bandStageModeId(cueStage.quality);
+    const cueChord = M.buildProgression(cueStage.tonic, cueModeId, M.PROGRESSIONS[cueModeId][0].id).chords[0];
+    const cueNode = Object.assign({}, phrase[phrase.length - 1] || {}, { cue: true, note: { degree: "cue", name: cueChord.symbol } });
+    const target = pickingScalePathNodes(Object.assign({}, context, { tonic: cueStage.tonic, modeId: cueModeId }), 8)
+      .map((node, index) => Object.assign({}, node, { phraseStart: index === 0, keyLabel: `same phrase in ${cueChord.symbol}` }));
+    return phrase.concat([cueNode]).concat(target);
+  }
+
+  function pickingContourNodes(context) {
+    return pickingScalePathNodes(context, 8);
+  }
+
   function pickingBaseNodes(exercise, context) {
     if (exercise.sequence === "arpeggio") return pickingArpeggioNodes(context);
+    if (exercise.sequence === "openCourses") return { nodes: pickingOpenCourseNodes(), current: null, next: null };
+    if (exercise.sequence === "skeletonFill") return { nodes: pickingSkeletonNodes(context), current: null, next: null };
+    if (exercise.sequence === "registerContrast") return { nodes: pickingContourNodes(context), current: null, next: null };
+    if (exercise.sequence === "chunkBuilder") return { nodes: pickingChunkNodes(context), current: null, next: null };
+    if (exercise.sequence === "ghammazPivot") return { nodes: pickingPivotNodes(context), current: null, next: null };
+    if (exercise.sequence === "arpCircuit") return { nodes: pickingArpCircuitNodes(context), current: null, next: null };
+    if (exercise.sequence === "sequenceLadder") return { nodes: pickingSequenceLadderNodes(context), current: null, next: null };
+    if (exercise.sequence === "skeletonDescent") return { nodes: pickingDescentNodes(context), current: null, next: null };
+    if (exercise.sequence === "instantTranspose") return { nodes: pickingTransposeNodes(context), current: null, next: null };
     const compareLayout = state.picking.route === "tiered" ? "2nps" : "horizontal";
     const layout = exercise.compare ? compareLayout : exercise.layout;
-    const path = P.buildPath(context.tonic, state.modeId, {
+    const path = P.buildPath(context.tonic, pickingModeId(context), {
       layout, position: context.position, startDegree: state.lab.startDegree,
       startString: state.lab.startString, firstStroke: state.picking.firstStroke,
       updown: exercise.id === "outside-pairs" || exercise.id === "mixed-crossings" || exercise.id === "triplet-grammar"
     });
-    const { chords } = M.buildProgression(context.tonic, state.modeId, state.progId);
+    const { chords } = M.buildProgression(context.tonic, pickingModeId(context), state.progId);
     const index = Math.min(state.progStep, chords.length - 1);
     return { nodes: path ? path.nodes : [], current: chords[index], next: chords[(index + 1) % chords.length] };
+  }
+
+  // A band-cycle stage's quality mapped onto the ACTIVE dromos family: minor
+  // slots use the minor-family version, major slots the major-family. The
+  // chunks are the invariant; the quality follows the singer.
+  function bandStageModeId(quality) {
+    const minorFamily = ["minor", "harmonicMinor", "ousak"];
+    if (quality === "minor") return minorFamily.includes(state.modeId) ? state.modeId : "minor";
+    return minorFamily.includes(state.modeId) ? "major" : state.modeId;
   }
 
   function buildPickingSession(context) {
@@ -3107,6 +3273,16 @@
   }
 
   function pickingRunPlan() {
+    if (state.picking.runMode === "evolve" && state.picking.movement === "band") {
+      // The band route: G D Dm Am E Em, ordered so each hop's pivot note IS
+      // the destination tonic. Minor slots use the minor-family dromos.
+      return PK.BAND_KEY_CYCLE.map((stage) => ({
+        tonic: stage.tonic,
+        modeId: bandStageModeId(stage.quality),
+        position: state.lab.position,
+        label: `${stage.tonic}${stage.quality === "minor" ? "m" : ""}`
+      }));
+    }
     return PK.buildPracticePlan({
       tonic: state.tonic, position: state.lab.position, repeats: state.picking.repeats,
       runMode: state.picking.runMode, movement: state.picking.movement,
@@ -3318,10 +3494,16 @@
     renderPickingLab();
     const beatSpacing = 60 / state.bpm;
     const noteSpacing = beatSpacing / state.picking.subdivision;
+    // Gap-click levels: the click thins to group starts, then to bar one.
+    const gapLevel = pickingExercise().id === "gap-click-pulse" ? state.picking.variant : null;
+    const clickFilter = gapLevel === "groups" ? (beat, pulseBeat) => !!pulseBeat.first
+      : gapLevel === "barone" ? (beat, pulseBeat, pulseLength) => beat % pulseLength === 0
+      : null;
     AU.playPath(session.nodes, noteSpacing, {
       referenceVoice: pickingReferenceVoice(),
       metronome: state.picking.metronome,
       beatSpacing,
+      clickFilter,
       pulse: session.pulse,
       countInBeats: stageIndex === 0 && state.picking.countIn ? session.pulse.length : 0,
       onStep: (index) => {

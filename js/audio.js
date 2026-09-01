@@ -418,24 +418,37 @@
     const start = ctx.currentTime + 0.06;
     const t0 = start + countInBeats * beatSpacing;
     const pulse = Array.isArray(o.pulse) && o.pulse.length ? o.pulse : [{ first: true }];
+    // Per-note duration multipliers (dotted formations, held skeleton notes,
+    // free-tremolo holds) accumulate into real offsets; uniform lines are the
+    // durMult-less special case.
+    const offsets = [];
+    let total = 0;
+    notes.forEach((n) => { offsets.push(total); total += sp * (n && n.durMult > 0 ? n.durMult : 1); });
     if (o.metronome) {
+      // Count-in always clicks in full; the gap-click filter (if any) applies
+      // only to the sounding bars — thinning time support is the exercise.
       for (let beat = 0; beat < countInBeats; beat++) click(start + beat * beatSpacing, !!pulse[beat % pulse.length].first);
-      const soundingBeats = Math.max(1, Math.ceil(notes.length * sp / beatSpacing));
-      for (let beat = 0; beat < soundingBeats; beat++) click(t0 + beat * beatSpacing, !!pulse[beat % pulse.length].first);
+      const soundingBeats = Math.max(1, Math.ceil(total / beatSpacing));
+      for (let beat = 0; beat < soundingBeats; beat++) {
+        const pulseBeat = pulse[beat % pulse.length];
+        if (o.clickFilter && !o.clickFilter(beat, pulseBeat, pulse.length)) continue;
+        click(t0 + beat * beatSpacing, !!pulseBeat.first);
+      }
     }
     notes.forEach((n, i) => {
       const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
-      const when = t0 + i * sp;
+      const when = t0 + offsets[i];
+      const dur = sp * (n && n.durMult > 0 ? n.durMult : 1);
       const voice = o.referenceVoice || instrumentVoice();
-      if (!silent) playNoteAt(n.freq, when, trainingNoteDuration(sp, voice), voiceGain(1, "path"), voice);
+      if (!silent) playNoteAt(n.freq, when, trainingNoteDuration(dur, voice), voiceGain(1, "path"), voice);
       if (o.onStep) {
         pathTimers.push(setTimeout(() => o.onStep(i, silent), Math.max(0, (when - ctx.currentTime) * 1000)));
       }
     });
     if (o.onDone) {
-      pathTimers.push(setTimeout(o.onDone, Math.max(0, (t0 + notes.length * sp - ctx.currentTime) * 1000)));
+      pathTimers.push(setTimeout(o.onDone, Math.max(0, (t0 + total - ctx.currentTime) * 1000)));
     }
-    return t0 + notes.length * sp;
+    return t0 + total;
   }
 
   function stopPath() { pathTimers.forEach(clearTimeout); pathTimers = []; }
