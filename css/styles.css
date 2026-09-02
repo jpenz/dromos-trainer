@@ -2071,47 +2071,42 @@ body[data-view="melody"] main { max-width: 1180px; }
 }
 
 /* ============ Picking Lab (FR-67) ============ */
-.picking-setup { display: grid; gap: 8px; padding: 11px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); }
-.picking-setup > header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr); gap: 18px; align-items: end; }
-.picking-setup > header h2 { margin: 2px 0 0; font-family: var(--font-display); font-size: clamp(18px, 2vw, 25px); font-weight: 400; }
-.picking-setup > header p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.4; }
-.picking-context { display: grid; grid-template-columns: minmax(280px, 1.6fr) minmax(210px, 0.8fr); gap: 8px; align-items: start; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
-.picking-context > label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.picking-context > label small { color: var(--faint); font-size: 8px; font-weight: 500; letter-spacing: 0; line-height: 1.2; text-transform: none; }
-.picking-context select { width: 100%; min-height: 40px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
-.picking-mastery-spine { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
-.picking-mastery-spine > span { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: auto auto; gap: 1px 7px; align-items: center; min-height: 43px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--muted); }
-.picking-mastery-spine i { grid-row: 1 / 3; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel2); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
-.picking-mastery-spine b { overflow: hidden; color: var(--text); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
-.picking-mastery-spine small { overflow: hidden; font-size: 8.5px; text-overflow: ellipsis; white-space: nowrap; }
-.picking-mastery-spine > span.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
-.picking-mastery-spine > span.active i { background: var(--terracotta); color: #17120f; }
+.picking-setup { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); }
+.picking-context { display: grid; grid-template-columns: minmax(280px, 1.6fr) minmax(210px, 0.8fr); gap: var(--sp-2); align-items: start; padding: var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
+.picking-context > label { display: grid; gap: var(--sp-1); color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-context select { width: 100%; min-height: var(--h-control); padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
+/* Six-stage spine as six number-dots; the labels live in the exercise select. */
+.picking-mastery-spine { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.picking-mastery-spine > span { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel2); color: var(--muted); }
+.picking-mastery-spine i { font-family: var(--font-mono); font-size: var(--fs-label); font-style: normal; }
+.picking-mastery-spine > span.active { border-color: var(--terracotta); background: var(--terracotta); color: #17120f; }
 .picking-deck select { padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
 .picking-panel { gap: 10px; }
 .picking-lesson { display: grid; gap: 10px; }
 .picking-lesson-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-.picking-lesson-head span { color: var(--terracotta-bright); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.picking-lesson-head h2 { margin: 2px 0; font-family: var(--font-display); font-size: clamp(22px, 2.5vw, 30px); font-weight: 400; }
-.picking-lesson-head p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.picking-lesson-head span { color: var(--terracotta-bright); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-lesson-head h2 { margin: 2px 0; font-family: var(--font-display); font-size: var(--fs-display); font-weight: 400; }
+.picking-lesson-head p { margin: 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-micro); line-height: 1.4; }
 .picking-head-badges { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
-.picking-head-badges > i, .picking-head-badges > b { padding: 4px 8px; border: 1px solid var(--turquoise); border-radius: 999px; color: var(--turquoise); font-size: 9px; font-style: normal; font-weight: 700; white-space: nowrap; }
-.picking-head-badges > b { border-color: var(--terracotta); color: var(--terracotta-bright); }
-.picking-articulation { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid rgba(212,118,59,0.45); border-radius: var(--r-sm); background: var(--terracotta-soft); }
-.picking-articulation > span { padding: 3px 6px; border-radius: 999px; background: var(--terracotta); color: #17120f; font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
-.picking-articulation > b { font-size: 10.5px; }
-.picking-articulation > p { margin: 0; color: var(--muted); font-size: 9.5px; line-height: 1.35; }
+.picking-head-badges > i { padding: 4px 8px; border: 1px solid var(--turquoise); border-radius: 999px; color: var(--turquoise); font-size: var(--fs-micro); font-style: normal; font-weight: 700; white-space: nowrap; }
+.picking-articulation { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: var(--sp-2); padding: 7px 9px; border: 1px solid rgba(212,118,59,0.45); border-radius: var(--r-sm); background: var(--terracotta-soft); }
+.picking-articulation > span { padding: 3px 6px; border-radius: 999px; background: var(--terracotta); color: #17120f; font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 700; }
+.picking-articulation > b { font-size: var(--fs-label); }
+.picking-articulation > p { margin: 0; color: var(--muted); font-size: var(--fs-micro); line-height: 1.35; }
 .picking-motion { display: grid; grid-template-columns: minmax(0, 1fr) 130px minmax(0, 0.78fr); align-items: stretch; min-height: 126px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: linear-gradient(125deg, var(--terracotta-soft), rgba(255,255,255,0.018) 50%, var(--turquoise-soft)); }
 .picking-motion section { display: grid; align-content: center; gap: 4px; padding: 14px 16px; }
-.picking-motion section > span { color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.picking-motion section > span { color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .picking-motion section > b { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-size: clamp(19px, 2.2vw, 27px); font-weight: 500; }
 .picking-motion section > b i { display: grid; min-width: 42px; height: 42px; place-items: center; border-radius: 50%; background: var(--terracotta); color: #17120f; font-family: var(--font-mono); font-size: 20px; font-style: normal; }
-.picking-motion section p { max-width: 430px; margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.picking-motion section p { max-width: 430px; margin: 0; color: var(--muted); font-size: var(--fs-micro); line-height: 1.4; }
+/* Start is the motion panel's visual peer, not only a far-footer control. */
+.picking-motion-start { grid-column: 1 / -1; justify-self: start; margin: 0 var(--sp-4) var(--sp-3); min-height: var(--h-primary); min-width: 150px; padding: 0 var(--sp-6); font-size: var(--fs-body); }
 .picking-motion-next { border-left: 1px solid var(--line); opacity: 0.74; }
 .picking-motion-next > b { font-size: 17px !important; }
 .picking-motion-next > b i { width: 32px !important; min-width: 32px !important; height: 32px !important; background: var(--turquoise) !important; font-size: 15px !important; }
 .picking-motion-visual { position: relative; display: grid; align-content: center; gap: 10px; padding: 22px 13px; border-inline: 1px solid var(--line); }
 .picking-motion-visual > b { display: block; height: 3px; border-radius: 999px; background: linear-gradient(90deg, transparent, var(--muted), transparent); }
-.picking-motion-visual > span { position: absolute; right: 8px; bottom: 6px; color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 8px; font-weight: 700; letter-spacing: 0.08em; }
+.picking-motion-visual > span { position: absolute; right: 8px; bottom: 6px; color: var(--terracotta-bright); font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; }
 .pick-shape { position: absolute; z-index: 2; top: 20px; left: 50%; width: 24px; height: 35px; border: 2px solid var(--text); border-radius: 70% 40% 70% 40%; background: var(--raised); transform: translateX(-50%) rotate(18deg); }
 @media (prefers-reduced-motion: no-preference) {
   .picking-motion.is-playing[data-motion^="down"] .pick-shape { animation: pick-down 520ms var(--ease) both; }
@@ -2121,71 +2116,71 @@ body[data-view="melody"] main { max-width: 1180px; }
   @keyframes pick-up { 0% { top: 74px; } 72% { top: 12px; transform: translateX(-50%) rotate(10deg); } 100% { top: 20px; } }
   @keyframes pick-hold { 0%,100% { transform: translateX(-50%) rotate(18deg); } 50% { transform: translateX(-50%) rotate(18deg) scale(1.08); } }
 }
-.picking-stroke-key { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: 9.5px; }
-.picking-stroke-key span { display: flex; gap: 4px; align-items: center; padding: 3px 6px; border: 1px solid var(--line); border-radius: 999px; }
+.picking-stroke-key { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: var(--fs-micro); }
+.picking-stroke-key span { display: flex; gap: 4px; align-items: center; padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px; }
 .picking-stroke-key b { color: var(--text); font-family: var(--font-mono); }
 .picking-stroke-key em { margin-left: auto; font-style: normal; }
 .picking-event-rail { display: grid; grid-template-columns: repeat(var(--picking-events), minmax(48px, 1fr)); gap: 4px; }
 .picking-event { display: grid; grid-template-rows: auto auto auto auto 1fr; gap: 1px; min-height: 84px; padding: 6px 4px; border: 1px solid var(--line); border-top: 3px solid transparent; border-radius: var(--r-sm); background: var(--panel); color: var(--text); text-align: center; }
-.picking-event > i { color: var(--faint); font-family: var(--font-mono); font-size: 8px; font-style: normal; }
+.picking-event > i { color: var(--faint); font-family: var(--font-mono); font-size: var(--fs-micro); font-style: normal; }
 .picking-event > strong { display: grid; justify-items: center; color: var(--terracotta-bright); font-family: var(--font-mono); }
 .picking-event > strong u { font-size: 17px; line-height: 1; text-decoration: none; }
-.picking-event > strong small { color: var(--muted); font-size: 7px; letter-spacing: 0.06em; }
-.picking-event > b { font-family: var(--font-mono); font-size: 11px; }
-.picking-event > em.ev-tab { color: var(--faint); font-family: var(--font-mono); font-size: 8px; font-style: normal; }
-.picking-event > small { align-self: end; color: var(--muted); font-size: 8px; line-height: 1.2; }
+.picking-event > b { font-family: var(--font-mono); font-size: var(--fs-micro); }
+.picking-event > em.ev-tab { color: var(--faint); font-family: var(--font-mono); font-size: var(--fs-micro); font-style: normal; }
+.picking-event > small { align-self: end; color: var(--muted); font-size: var(--fs-micro); line-height: 1.2; }
 .picking-event.accent { border-top-color: var(--terracotta); background: var(--terracotta-soft); }
 .picking-event.current { outline: 3px solid var(--turquoise); outline-offset: 1px; transform: translateY(-2px); }
-.picking-detail-grid { display: grid; grid-template-columns: 1.25fr 0.72fr 1fr 0.72fr; gap: 7px; }
-.picking-detail-grid section { padding: 10px 11px; border: 1px solid var(--line); border-radius: var(--r-sm); }
-.picking-detail-grid section > span, .picking-evidence > span, .picking-passes span { color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-.picking-detail-grid ol { margin: 7px 0 0; padding-left: 18px; }
-.picking-detail-grid li, .picking-detail-grid p { margin: 0; font-size: 11px; line-height: 1.45; }
-.picking-detail-grid li + li { margin-top: 4px; }
-.picking-detail-grid section:nth-child(2) { border-color: rgba(82,168,157,0.45); background: rgba(82,168,157,0.06); }
-.picking-detail-grid section:nth-child(4) { border-color: rgba(212,118,59,0.45); background: var(--terracotta-soft); }
-.picking-theory { border-color: rgba(144,115,186,0.55) !important; background: rgba(144,115,186,0.08); }
-.picking-theory > b { margin-top: 6px; color: var(--text); font-family: var(--font-mono); font-size: 10px; }
-.picking-theory > small { display: block; margin-top: 6px; color: var(--aegean-bright); font-family: var(--font-mono); font-size: 9px; }
+/* The four-section detail grid collapsed into one "This pass" card. */
+.picking-this-pass { display: grid; gap: var(--sp-1); padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.picking-this-pass > span, .picking-evidence > span, .picking-passes span { color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.picking-this-pass ol { margin: var(--sp-1) 0 0; padding-left: 18px; }
+.picking-this-pass li, .picking-this-pass p { margin: 0; max-width: 65ch; font-size: var(--fs-label); line-height: 1.45; }
+.picking-this-pass li + li { margin-top: 4px; }
+.picking-this-pass p b { color: var(--terracotta-bright); }
 .picking-evidence { border-left: 3px solid var(--turquoise); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: rgba(82,168,157,0.06); }
-.picking-evidence > summary { position: relative; padding: 9px 32px 9px 11px; cursor: pointer; list-style: none; color: var(--turquoise); font-size: 10px; font-weight: 700; }
+.picking-evidence > summary { position: relative; padding: 9px 32px 9px 11px; cursor: pointer; list-style: none; color: var(--turquoise); font-size: var(--fs-micro); font-weight: 700; }
 .picking-evidence > summary::-webkit-details-marker { display: none; }
 .picking-evidence > summary::after { content: "+"; position: absolute; right: 12px; font-size: 16px; }
 .picking-evidence[open] > summary::after { content: "–"; }
 .picking-evidence > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 2px 11px 10px; }
-.picking-evidence span { grid-column: 1 / -1; color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-.picking-evidence p { margin: 0; font-size: 11px; line-height: 1.45; }
-.picking-evidence a { align-self: start; color: var(--turquoise); font-size: 10px; }
+.picking-evidence span { grid-column: 1 / -1; color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.picking-evidence p { margin: 0; max-width: 65ch; font-size: var(--fs-micro); line-height: 1.45; }
+.picking-evidence p.picking-evidence-wide { grid-column: 1 / -1; }
+.picking-evidence p i { color: var(--aegean-bright); font-family: var(--font-mono); font-style: normal; }
+.picking-evidence a { align-self: start; color: var(--turquoise); font-size: var(--fs-micro); }
 .picking-evidence nav { display: grid; gap: 4px; min-width: 260px; }
 .picking-evidence nav a { display: grid; gap: 1px; padding: 5px 7px; border: 1px solid var(--line); border-radius: var(--r-sm); text-decoration: none; }
-.picking-evidence nav a i { color: var(--faint); font-size: 7.5px; font-style: normal; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.picking-evidence small { grid-column: 1 / -1; padding-top: 5px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9.5px; line-height: 1.4; }
+.picking-evidence nav a i { color: var(--faint); font-size: var(--fs-micro); font-style: normal; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-evidence small { grid-column: 1 / -1; padding-top: 5px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-micro); line-height: 1.4; }
 .picking-evidence small b { color: var(--text); }
 .picking-runner-grid { display: grid; grid-template-columns: minmax(180px, 0.75fr) minmax(180px, 0.7fr) minmax(80px, 0.3fr) minmax(180px, 0.72fr) auto auto; align-items: end; gap: 8px; }
-.picking-runner-grid > div, .picking-runner-grid > label:not(.check) { display: grid; gap: 4px; color: var(--muted); font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.picking-runner-grid > div, .picking-runner-grid > label:not(.check) { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 .picking-runner-grid select { width: 100%; min-height: 38px; }
 .picking-tempo > span { display: grid; grid-template-columns: minmax(90px, 1fr) auto; align-items: center; gap: 7px; min-height: 38px; }
 .picking-tempo input { width: 100%; accent-color: var(--terracotta); }
-.picking-tempo output { color: var(--text); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0; white-space: nowrap; }
-.picking-runner-grid .check { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); font-size: 10px; white-space: nowrap; }
+.picking-tempo output { color: var(--text); font-family: var(--font-mono); font-size: var(--fs-micro); letter-spacing: 0; white-space: nowrap; }
+.picking-runner-grid .check { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); font-size: var(--fs-micro); white-space: nowrap; }
 .picking-runner-grid .check input { accent-color: var(--turquoise); }
 .picking-run-map { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.picking-run-map:empty { display: none; }
 .picking-run-stage { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 6px; min-height: 48px; padding: 6px 7px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); }
-.picking-run-stage > i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel2); color: var(--muted); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
+.picking-run-stage > i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel2); color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-micro); font-style: normal; }
 .picking-run-stage > span { display: grid; gap: 2px; min-width: 0; }
-.picking-run-stage b { overflow: hidden; font-family: var(--font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.picking-run-stage small { color: var(--muted); font-size: 8.5px; }
+.picking-run-stage b { overflow: hidden; font-family: var(--font-mono); font-size: var(--fs-micro); text-overflow: ellipsis; white-space: nowrap; }
+.picking-run-stage small { color: var(--muted); font-size: var(--fs-micro); }
 .picking-run-stage.current { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .picking-run-stage.current > i { background: var(--terracotta); color: #14110f; }
 .picking-run-stage.complete { border-color: rgba(82,168,157,0.5); }
 .picking-run-stage.complete > i { background: var(--turquoise); color: #14110f; }
-.picking-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Tally + clean/+4/−4 buttons are ONE pass-loop block. */
+.picking-pass-block { display: grid; gap: var(--sp-2); padding: var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+.picking-pass-block .picking-passes { border: 0; padding: 0; }
 .picking-passes { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); }
 .picking-passes > div { display: grid; gap: 4px; }
 .picking-passes b { display: flex; gap: 5px; }
-.picking-passes i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel2); color: var(--muted); font-family: var(--font-mono); font-size: 9px; font-style: normal; }
+.picking-passes i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--panel2); color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-micro); font-style: normal; }
 .picking-passes i.done { background: var(--turquoise); color: #14110f; }
-.picking-passes p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.picking-passes p { margin: 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-micro); line-height: 1.4; }
 .picking-event:focus-visible { outline: 3px solid var(--turquoise); outline-offset: 2px; }
 body[data-view="picking"] main { width: min(1360px, 100%); }
 body[data-view="picking"] .legend { display: none; }
@@ -2196,7 +2191,6 @@ body[data-view="picking"] .guide-answer p { display: none; }
 body[data-view="picking"] .guide-answer h1 { font-size: clamp(19px, 2vw, 25px); }
 body[data-view="picking"] .guide-first { padding-block: 7px; }
 body[data-view="picking"] .guide-workflow > summary { padding-block: 7px; }
-body[data-view="picking"] .picking-setup > header { display: none; }
 
 /* Follow Changes is an instrument-on-stand workspace. Preserve the answer-first
    promise, but remove the repeated prose already restated by the Now/Next HUD so
@@ -2222,7 +2216,6 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
   .picking-context { grid-template-columns: 160px minmax(0, 1fr); }
   .picking-context > label:last-child { grid-column: 1 / -1; }
   .picking-event-rail { grid-template-columns: repeat(6, minmax(48px, 1fr)); }
-  .picking-actions { grid-column: 1 / -1; }
   .picking-runner-grid { grid-template-columns: 1fr 1fr 0.45fr; }
   .picking-runner-grid .check { justify-content: center; }
 }
@@ -2230,13 +2223,8 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
   .guide-first { grid-template-columns: 30px minmax(0, 1fr); }
   .guide-first button { grid-column: 2; justify-self: start; }
   .guide-workflow > summary b { display: none; }
-  .picking-setup > header, .picking-context, .picking-detail-grid, .picking-motion { grid-template-columns: 1fr; }
-  .picking-context > label:last-child, .picking-actions { grid-column: auto; }
-  .picking-categories { display: flex; overflow-x: auto; padding-bottom: 3px; }
-  .picking-mastery-spine { display: flex; overflow-x: auto; padding-bottom: 3px; }
-  .picking-mastery-spine > span { flex: 0 0 145px; }
-  .picking-categories button { flex: 0 0 148px; }
-  .picking-exercise-rail button { flex-basis: min(78vw, 240px); }
+  .picking-context, .picking-motion { grid-template-columns: 1fr; }
+  .picking-context > label:last-child { grid-column: auto; }
   .picking-event-rail { grid-template-columns: repeat(4, minmax(50px, 1fr)); }
   .picking-evidence { grid-template-columns: 1fr; }
   .picking-evidence > span, .picking-evidence small { grid-column: auto; }
@@ -2248,7 +2236,6 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
   .picking-motion-next { border-left: 0; }
 }
 @media (max-width: 430px) {
-  .picking-actions { grid-template-columns: 1fr 1fr; }
   .picking-passes { grid-template-columns: 1fr; }
   .picking-lesson-head { flex-direction: column; }
   .picking-head-badges { justify-content: flex-start; }
@@ -2364,32 +2351,32 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
 .shape-card.empty p { margin: 0; color: var(--faint); font-size: 11px; }
 
 /* Tempo ladder honesty labels: documented / estimate / qualitative bands. */
-.picking-band { display: block; margin: 6px 0 0; color: var(--muted); font-size: 11.5px; }
-.picking-band small { display: block; color: var(--faint); font-size: 10px; }
-.picking-band button { padding: 1px 7px; border: 1px solid var(--turquoise); border-radius: 999px; background: transparent; color: var(--turquoise); font-size: 10.5px; }
-.picking-band b { padding: 1px 6px; border-radius: 999px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.picking-band { display: block; margin: 6px 0 0; color: var(--muted); font-size: var(--fs-label); }
+.picking-band small { display: block; color: var(--faint); font-size: var(--fs-micro); }
+.picking-band button { min-height: 28px; padding: 2px 10px; border: 1px solid var(--turquoise); border-radius: 999px; background: transparent; color: var(--turquoise); font-size: var(--fs-micro); }
+.picking-band b { padding: 1px 6px; border-radius: 999px; font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 .band-documented { background: rgba(74,222,128,0.16); color: var(--signal-now); }
 .band-estimate { background: rgba(250,204,21,0.16); color: var(--signal-next); }
 .band-qualitative { background: rgba(242,237,227,0.1); color: var(--muted); }
-.picking-ceiling { margin: 6px 0 0; padding: 6px 9px; border-left: 2px solid var(--terracotta); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--terracotta-soft); font-size: 11.5px; }
+.picking-ceiling { margin: 6px 0 0; padding: 6px 9px; border-left: 2px solid var(--terracotta); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--terracotta-soft); font-size: var(--fs-label); }
 
 /* ---- Picking deck: one clear control surface (FR-71) ---- */
 .picking-deck { display: grid; gap: 11px; padding: 12px; border: 1px solid rgba(82,168,157,0.42); border-radius: var(--r-md); background: rgba(82,168,157,0.055); }
 .deck-play { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .deck-start { min-height: 52px; min-width: 170px; padding: 0 26px; border: 0; border-radius: var(--r-md); background: var(--terracotta); color: #14110F; font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: 0.02em; cursor: pointer; }
 .deck-start:hover { background: var(--terracotta-bright); }
-.deck-hint { margin: 0; max-width: 420px; color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+.deck-hint { margin: 0; max-width: 420px; color: var(--muted); font-size: var(--fs-micro); line-height: 1.45; }
 .deck-primary { display: grid; grid-template-columns: minmax(200px, 1fr) auto auto auto; align-items: end; gap: 10px; }
-.deck-primary .check { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); font-size: 10.5px; white-space: nowrap; }
+.deck-primary .check { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); font-size: var(--fs-micro); white-space: nowrap; }
 .deck-primary .check input { accent-color: var(--turquoise); }
 .deck-setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); align-items: end; gap: 10px; }
 .deck-setup > div { display: grid; gap: 5px; }
 .deck-progress { display: flex; flex-wrap: wrap; gap: 7px; }
 .deck-advanced { border-top: 1px solid var(--line); padding-top: 8px; }
-.deck-advanced > summary { color: var(--muted); font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
+.deck-advanced > summary { color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
 .deck-advanced[open] > summary { margin-bottom: 9px; }
 .deck-advanced .picking-runner-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 9px; }
-.deck-summary { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.4; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.deck-summary { grid-column: 1 / -1; margin: 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-micro); line-height: 1.4; text-transform: none; letter-spacing: 0; font-weight: 500; }
 /* One unbroken neck for picking: the board scrolls inside its own frame on
    narrow screens; the page itself never scrolls sideways. */
 body[data-view="picking"] .fretboard-wrap { overflow-x: auto; }
@@ -2413,10 +2400,10 @@ body[data-view="picking"] .fretboard-wrap #fretboard { min-width: 860px; }
 .picking-transport { display: none; }
 body[data-view="picking"] .picking-transport { display: flex; align-items: end; justify-content: center; gap: 18px; }
 .picking-transport .deck-start { min-height: 46px; min-width: 132px; padding: 0 20px; font-size: 15px; }
-.picking-transport .picking-tempo { display: grid; gap: 4px; min-width: 210px; max-width: 300px; flex: 1; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-transport .picking-tempo { display: grid; gap: 4px; min-width: 210px; max-width: 300px; flex: 1; color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .picking-transport .transport-sub { display: grid; gap: 4px; }
 .picking-transport .transport-sub .seg button { min-height: 40px; }
-.picking-transport .transport-pick { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-transport .transport-pick { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .picking-transport select { min-height: 40px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; }
 body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
 @media (max-width: 900px) {
@@ -2434,28 +2421,30 @@ body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
   .picking-transport .transport-pick { flex: 1 1 40%; }
   .picking-transport .transport-help { display: none; }
 }
-.picking-transport .transport-help { color: var(--faint); font-size: 8px; font-weight: 500; letter-spacing: 0; text-transform: none; }
-.picking-science { margin: 4px 0 0; color: var(--faint); font-size: 9px; line-height: 1.4; }
-#pickingBpmNum { width: 58px; min-height: 34px; padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-family: var(--font-mono); font-size: 12px; text-align: center; color-scheme: dark; }
+.picking-transport .transport-help { color: var(--faint); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0; text-transform: none; }
+.picking-science { margin: 4px 0 0; max-width: 65ch; color: var(--faint); font-size: var(--fs-micro); line-height: 1.4; }
+#pickingBpmNum { width: 58px; min-height: 34px; padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-family: var(--font-mono); font-size: var(--fs-label); text-align: center; color-scheme: dark; }
 
 /* ---- rhythm channel: the notes follow the selected rhythm (FR-74) ---- */
-.picking-rhythm-ruler { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(255,255,255,0.02); }
-.picking-rhythm-ruler b { font-size: 11px; }
-.picking-rhythm-ruler span { color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
-.picking-rhythm-ruler i { color: var(--faint); font-size: 9px; font-style: normal; }
 .picking-event { position: relative; }
-.picking-event .beat-chip { position: absolute; top: 2px; right: 3px; min-width: 12px; color: var(--faint); font-family: var(--font-mono); font-size: 7.5px; font-style: normal; line-height: 1; }
+.picking-event .beat-chip { position: absolute; top: 2px; right: 3px; min-width: 12px; color: var(--faint); font-family: var(--font-mono); font-size: var(--fs-micro); font-style: normal; line-height: 1; }
 .picking-event.on-beat { border-bottom: 2px solid rgba(67, 199, 194, 0.45); }
 .picking-event.on-one { border-bottom: 2px solid var(--turquoise); }
 .picking-event.on-one .beat-chip { color: var(--turquoise); font-weight: 700; }
 
 /* ---- BPM levels (FR-75): printed anchors + labelled app defaults ---- */
 .picking-levels { display: grid; gap: 4px; padding: 7px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(255,255,255,0.02); }
-.picking-levels > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-levels > span { color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .picking-levels > b { display: flex; flex-wrap: wrap; gap: 5px; }
-.picking-levels button { min-height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--text); font-family: var(--font-mono); font-size: 10px; cursor: pointer; }
+.picking-levels button { min-height: var(--h-chip); padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--text); font-family: var(--font-mono); font-size: var(--fs-micro); cursor: pointer; }
 .picking-levels button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
-.picking-levels small { color: var(--faint); font-size: 8.5px; line-height: 1.35; }
+.picking-levels small { max-width: 65ch; color: var(--faint); font-size: var(--fs-micro); line-height: 1.35; }
+
+/* Coarse pointers: every interactive picking target floors at 44px (WCAG 2.5.5). */
+@media (pointer: coarse) {
+  #panelPicking button, #pickingSetup select, .picking-transport button, .picking-transport select, .picking-transport input[type="number"] { min-height: 44px; }
+  .picking-mastery-spine > span { width: 32px; height: 32px; }
+}
 
 /* ---- shell chrome: one capability table in app.js drives these ---- */
 body.chrome-no-transport .transport-bar:not(.picking-transport) { display: none; }
