@@ -33,6 +33,15 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="pickingBpm"[^>]*min="30"[^>]*max="220"/);
   assert.match(html, /id="pickingBpmNum"[^>]*min="30"[^>]*max="220"/,
     "exact BPM entry accompanies the slider");
+  assert.match(html, /data-picking-subdivision="1"/,
+    "quarters are the floor of the subdivision control (measured-tremolo ladder needs them)");
+  assert.match(html, /data-picking-subdivision="8" class="hidden"/,
+    "32nds ship gated - they unlock only inside the tremolo family");
+  const appSrc = read("js/app.js");
+  assert.match(appSrc, /if \(state\.picking\.subdivision === 8 && !PICKING_TREMOLO_FAMILY\[exercise\.id\]\)/,
+    "leaving the tremolo family clamps 32nds back down");
+  assert.match(appSrc, /Printed anchors: Trinity 60\/72\/88/,
+    "tempo levels declare which numbers are printed anchors vs app defaults");
   assert.match(html, /js\/bouzouki-knowledge\.js\?v=\d+/);
   assert.match(html, /js\/picking-lab\.js\?v=\d+/);
   assert.match(html, /id="pickingMasterySpine"/);
@@ -367,7 +376,7 @@ test("picking loops live on the audio clock and the board stays whole", () => {
   const html = read("index.html");
   assert.match(html, /class="transport-bar picking-transport"[\s\S]{0,400}class="deck-start">▶ Start</,
     "start, speed, key and scale live in one always-visible transport bar");
-  assert.match(html, /picking-transport[\s\S]{0,900}id="pickingTonicSel"[\s\S]{0,300}id="pickingModeSel"/,
+  assert.match(html, /picking-transport[\s\S]{0,1600}id="pickingTonicSel"[\s\S]{0,400}id="pickingModeSel"/,
     "key and scale selection are consistent, in the transport");
   assert.match(html, /Loops smoothly until you press stop/,
     "the deck says in plain words what Start does");

@@ -3000,6 +3000,29 @@
   let pickingRunToken = 0;
   let pickingRunTimer = null;
 
+  const PICKING_TREMOLO_FAMILY = {
+    "mair-density-ladder": true, "tremolo-ladder": true,
+    "counted-tremolo-groupings": true, "tremolo-entry-exit": true
+  };
+
+  // BPM level ladders. Anchors are printed sources (Trinity grade minima,
+  // the Manolopoulos bouzouki thesis, Mair's 50-60 band, Julin's relayed
+  // 100-130 tremolo band); every unanchored step is an app-design default
+  // and the UI says so. Triplet values are ENTIRELY app defaults.
+  const PICKING_TEMPO_LEVELS = {
+    slowTech: [60, 72, 88, 100, 120],
+    triplet: [55, 65, 75, 85, 95],
+    sixteenth: [60, 80, 100, 120, 140],
+    tremolo: [60, 100, 115, 130, 65]
+  };
+
+  function pickingTempoFamily(exercise) {
+    if (PICKING_TREMOLO_FAMILY[exercise.id]) return "tremolo";
+    if (exercise.subdivision === 3) return "triplet";
+    if (exercise.subdivision === 4) return "sixteenth";
+    return "slowTech";
+  }
+
   function pickingExercise() {
     return PK.byId(state.picking.exerciseId);
   }
@@ -3216,6 +3239,18 @@
     const target = pickingScalePathNodes(Object.assign({}, context, { tonic: cueStage.tonic, modeId: cueModeId }), 8)
       .map((node, index) => Object.assign({}, node, { phraseStart: index === 0, keyLabel: `same phrase in ${cueChord.symbol}` }));
     return phrase.concat([cueNode]).concat(target);
+  }
+
+  function pickingSkipThirdsNodes(context) {
+    // Broken thirds on the routed road: 1-3, 2-4, 3-5... - every pair skips
+    // the note between, and pairs near course boundaries skip a course.
+    const road = pickingScalePathNodes(context, 8);
+    const nodes = [];
+    for (let index = 0; index + 2 < road.length; index++) {
+      nodes.push(Object.assign({}, road[index], { pairStart: true }));
+      nodes.push(Object.assign({}, road[index + 2]));
+    }
+    return nodes;
   }
 
   function pickingTraversalNodes() {
@@ -3460,6 +3495,7 @@
     if (exercise.sequence === "featherTouch") return { nodes: pickingOpenCourseNodes().slice(0, 1), current: null, next: null };
     if (exercise.sequence === "throughStroke") return { nodes: pickingOpenCourseNodes(), current: null, next: null };
     if (exercise.sequence === "mairLadder") return { nodes: pickingOpenCourseNodes().slice(0, 1), current: null, next: null };
+    if (exercise.sequence === "skipThirds") return { nodes: pickingSkipThirdsNodes(context), current: null, next: null };
     if (exercise.sequence === "monopenies") return { nodes: pickingMonopeniesNodes(context), current: null, next: null };
     if (exercise.sequence === "traversalCountdown") return { nodes: pickingTraversalNodes(), current: null, next: null };
     if (exercise.sequence === "crossingFlip") return { nodes: pickingCrossingCellNodes(context), current: null, next: null };
@@ -3583,6 +3619,11 @@
     // A triplet drill opened at subdivision 2 would play its grammar as
     // straight eighths — the drill's own grid wins, the seg still overrides.
     if (exercise.subdivision) state.picking.subdivision = exercise.subdivision;
+    // 32nds (8/click) are measured-tremolo pedagogy (Mair/Calace import) and
+    // unlock only inside the tremolo family; leaving it clamps back down.
+    if (state.picking.subdivision === 8 && !PICKING_TREMOLO_FAMILY[exercise.id]) {
+      state.picking.subdivision = exercise.subdivision || 2;
+    }
     state.picking.pathIndex = null;
     state.picking.cleanPasses = 0;
     renderPickingLab();
@@ -3781,8 +3822,11 @@
     $("pickingRouteChoice").classList.toggle("hidden", false);
     document.querySelectorAll("[data-picking-route]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-picking-route") === state.picking.route));
-    document.querySelectorAll("[data-picking-subdivision]").forEach((button) =>
-      button.classList.toggle("active", +button.getAttribute("data-picking-subdivision") === state.picking.subdivision));
+    document.querySelectorAll("[data-picking-subdivision]").forEach((button) => {
+      const value = +button.getAttribute("data-picking-subdivision");
+      button.classList.toggle("active", value === state.picking.subdivision);
+      if (value === 8) button.classList.toggle("hidden", !PICKING_TREMOLO_FAMILY[exercise.id]);
+    });
     const variants = exercise.variants || [];
     $("pickingVariantChoice").classList.toggle("hidden", !variants.length);
     $("pickingVariantButtons").innerHTML = variants.map((variant) => `<button data-picking-variant="${escapeHtml(variant.id)}" class="${variant.id === state.picking.variant ? "active" : ""}">${escapeHtml(variant.label)}</button>`).join("");
@@ -3803,7 +3847,22 @@
     const ceiling = state.picking.ceilingBpm
       ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b>. Banked — this is a good place to end the block. It is your own judgement, logged, not a measurement. Skills consolidate between sessions: retest tomorrow before pushing higher (motor-consolidation research).</p>`
       : "";
-    $("pickingPasses").innerHTML = `<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p><p class="picking-science">Difficulty just past comfort is the documented learning zone (challenge-point research); the 4 BPM step is app design, not a validated size. Mixing in a slower block is supported at pilot scale.</p>${bandHtml}${ceiling}`;
+    const tempoFamily = pickingTempoFamily(exercise);
+    const levels = PICKING_TEMPO_LEVELS[tempoFamily];
+    const levelsHtml = `<div class="picking-levels"><span>Levels · ${tempoFamily === "tremolo" ? "tremolo path" : tempoFamily === "triplet" ? "triplets" : tempoFamily === "sixteenth" ? "16ths" : "technique"}</span><b>${levels.map((bpm, index) => {
+      const label = tempoFamily === "tremolo" && index === 4 ? `L5 · 32nds ${bpm}` : `L${index + 1} · ${bpm}`;
+      const active = tempoFamily === "tremolo" && index === 4 ? state.picking.subdivision === 8 : state.bpm === bpm && state.picking.subdivision !== 8;
+      return `<button data-picking-level="${index}" class="${active ? "active" : ""}">${label}</button>`;
+    }).join("")}</b><small>Printed anchors: Trinity 60/72/88 · Manolopoulos 60→80→120→140 · Mair 50–60 · Julin 100–130 (relayed). Triplet values and unmarked steps are app defaults.</small></div>`;
+    $("pickingPasses").innerHTML = `${levelsHtml}<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p><p class="picking-science">Difficulty just past comfort is the documented learning zone (challenge-point research); the 4 BPM step is app design, not a validated size. Mixing in a slower block is supported at pilot scale.</p>${bandHtml}${ceiling}`;
+    $("pickingPasses").querySelectorAll("[data-picking-level]").forEach((button) => button.onclick = () => {
+      const index = +button.getAttribute("data-picking-level");
+      stopPlay();
+      if (tempoFamily === "tremolo" && index === 4) { state.picking.subdivision = 8; state.bpm = levels[4]; }
+      else { if (state.picking.subdivision === 8) state.picking.subdivision = 4; state.bpm = levels[index]; }
+      state.picking.cleanPasses = 0;
+      AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab();
+    });
     const bandBtn = $("pickingPasses").querySelector("[data-picking-band-set]");
     if (bandBtn) bandBtn.onclick = () => {
       state.bpm = +bandBtn.getAttribute("data-picking-band-set");

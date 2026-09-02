@@ -2516,3 +2516,11 @@ body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
 .picking-event.on-beat { border-bottom: 2px solid rgba(67, 199, 194, 0.45); }
 .picking-event.on-one { border-bottom: 2px solid var(--turquoise); }
 .picking-event.on-one .beat-chip { color: var(--turquoise); font-weight: 700; }
+
+/* ---- BPM levels (FR-75): printed anchors + labelled app defaults ---- */
+.picking-levels { display: grid; gap: 4px; padding: 7px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(255,255,255,0.02); }
+.picking-levels > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-levels > b { display: flex; flex-wrap: wrap; gap: 5px; }
+.picking-levels button { min-height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--text); font-family: var(--font-mono); font-size: 10px; cursor: pointer; }
+.picking-levels button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.picking-levels small { color: var(--faint); font-size: 8.5px; line-height: 1.35; }

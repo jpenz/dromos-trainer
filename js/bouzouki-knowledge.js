@@ -122,6 +122,34 @@
       boundary: "Supports that a dromos is an interval structure realisable from any tonic; it does not endorse any specific key choice, which carries its own label in Dromos."
     },
     {
+      id: "manolopoulos-thesis", rank: 1, authority: "Academic thesis",
+      name: "Manolopoulos 2023 (Univ. of Macedonia) · bouzouki practice progression",
+      href: "https://dspace.lib.uom.gr/bitstream/2159/29581/5/ManolopoulosIoannisMsc2023.pdf",
+      supports: ["penia starts on quarters at 80", "eighths from 60, 80 at two weeks, 120 at one month, 140+ long-term", "16ths/32nds/tremolo introduced by counting aloud at slow tempo", "song-flow benchmarks 60/80/90-100/110/120"],
+      boundary: "One Greek thesis's printed progression - the only bouzouki-specific tempo prescription found; it does not make its numbers a universal rule."
+    },
+    {
+      id: "trinity-plectrum", rank: 1, authority: "Institutional syllabus (import)",
+      name: "Trinity College London · Plectrum Guitar grade scale minima",
+      href: "https://www.trinitycollege.com/resource?id=4694",
+      supports: ["printed scale minima: Initial q=60, Grade 1 q=72, Grade 2 q=88"],
+      boundary: "A guitar-syllabus import for anchor tempos only; it does not grade bouzouki playing."
+    },
+    {
+      id: "leavitt-method", rank: 1, authority: "Method book (import)",
+      name: "Leavitt · A Modern Method for Guitar (Berklee)",
+      href: "https://archive.org/details/modernmethodforg01leav",
+      supports: ["attack each new string with a downstroke", "string-skip etudes with notated picking"],
+      boundary: "The Berklee guitar method, an import wearing its badge; its etudes are not copied and it prescribes nothing about Greek style."
+    },
+    {
+      id: "berklee-online", rank: 1, authority: "Institutional curriculum (import)",
+      name: "Berklee Online · ear training, time and rhythm, scale-practice articles",
+      href: "https://online.berklee.edu/courses/time-and-rhythm-1",
+      supports: ["metronome placements: on the beat, off the beat, every other beat", "8ths then triplets then 16ths as the rhythm progression", "rest strokes prescribed for pick control in scale practice", "vocalise rhythms before playing"],
+      boundary: "Institutional import for practice mechanics only; it does not teach Greek repertoire and no course content is reproduced."
+    },
+    {
       id: "skamnelos-review", rank: 1, authority: "Academic thesis",
       name: "Skamnelos 2007 (TEI Epirus) · comparative review of Greek bouzouki methods",
       href: "https://olympias.lib.uoi.gr/jspui/bitstream/teiep/394/1/lpm_000031.pdf",
@@ -239,7 +267,7 @@
       id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
       answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change — every course of the instrument, both crossing directions.",
       gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recorded take.",
-      exerciseIds: ["traversal-countdown", "course-target", "outside-pairs", "mixed-crossings", "crossing-flip-stops", "degree-window", "full-neck-ladder"]
+      exerciseIds: ["traversal-countdown", "course-target", "outside-pairs", "mixed-crossings", "crossing-flip-stops", "skip-thirds", "degree-window", "full-neck-ladder"]
     },
     {
       id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",

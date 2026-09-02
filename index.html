@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=46" />
+  <link rel="stylesheet" href="css/styles.css?v=47" />
 </head>
 <body>
   <div class="app">
@@ -741,7 +741,7 @@
       <footer class="transport-bar picking-transport" aria-label="Picking playback transport">
         <button id="btnPickingPlay" class="deck-start">▶ Start</button>
         <label class="picking-tempo" for="pickingBpm">Speed <span><input id="pickingBpm" type="range" min="30" max="220" step="1" /><input id="pickingBpmNum" type="number" min="30" max="220" step="1" inputmode="numeric" aria-label="Exact BPM" /><output id="pickingBpmVal" for="pickingBpm">BPM</output></span></label>
-        <div class="transport-sub"><span class="panel-label">Notes per click</span><div class="seg" aria-label="Notes per beat"><button data-picking-subdivision="2">2 · 8ths</button><button data-picking-subdivision="3">3 · triplets</button><button data-picking-subdivision="4">4 · 16ths</button></div></div>
+        <div class="transport-sub"><span class="panel-label">Notes per click</span><div class="seg" aria-label="Notes per beat"><button data-picking-subdivision="1">1 · quarters</button><button data-picking-subdivision="2">2 · 8ths</button><button data-picking-subdivision="3">3 · triplets</button><button data-picking-subdivision="4">4 · 16ths</button><button data-picking-subdivision="8" class="hidden">8 · 32nds</button></div></div>
         <label class="transport-pick" for="pickingTonicSel">Key<select id="pickingTonicSel" aria-describedby="pickingKeyHelp"></select><small id="pickingKeyHelp" class="transport-help">The note that feels settled.</small></label>
         <label class="transport-pick" for="pickingModeSel">Scale / dromos<select id="pickingModeSel"></select></label>
       </footer>
@@ -766,8 +766,8 @@
   <script src="js/video.js?v=14"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/bouzouki-knowledge.js?v=45"></script>
-  <script src="js/picking-lab.js?v=45"></script>
+  <script src="js/bouzouki-knowledge.js?v=47"></script>
+  <script src="js/picking-lab.js?v=47"></script>
   <script src="js/toolkit.js?v=27"></script>
   <script src="js/songs.js?v=36"></script>
   <script src="js/tactical-examples.js?v=27"></script>
@@ -776,7 +776,7 @@
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=38"></script>
   <script src="js/page-guides.js?v=46"></script>
-  <script src="js/app.js?v=46"></script>
+  <script src="js/app.js?v=47"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
