@@ -114,7 +114,9 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /id="journeyAnnouncement"/);
   assert.match(html, /id="earMap"/);
   assert.match(html, /id="earFamilyChoices"/);
-  assert.match(html, /id="earMapHomeSel"/);
+  // The two per-drill home rows became ONE control with two states (blueprint
+  // 2.5), so the gate now asserts the single training-home selector.
+  assert.match(html, /id="earHomeSel"/);
   assert.match(html, /id="btnEarMapCheck"/);
   assert.match(html, /id="btnEarCheck"/);
   assert.match(html, /id="videoStudy"/);

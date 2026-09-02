@@ -93,3 +93,51 @@ test("the design system defines the redesigned tokens", () => {
   assert.match(css, /env\(safe-area-inset-bottom\)/, "safe areas must be respected");
   assert.match(css, /prefers-reduced-motion: reduce/);
 });
+
+test("the ear page leads with Start and never sounds before the player asks", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  const panel = html.slice(html.indexOf('<div id="panelEar"'), html.indexOf("<!-- Video study -->"));
+  assert.ok(panel.length > 200, "the ear panel must still exist");
+
+  // LEAD: Start and the guess grid come first; setup, audio status and score
+  // all sit below the answer.
+  assert.ok(panel.indexOf('id="btnEarNew"') < panel.indexOf('class="guess-grid"'),
+    "Start must precede the guess grid");
+  assert.ok(panel.indexOf('class="guess-grid"') < panel.indexOf('id="earSetup"'),
+    "the guess grid must precede the folded Setup");
+  assert.ok(panel.indexOf('id="earSetup"') < panel.indexOf('id="earScore"'),
+    "the score is the last thing on the page");
+  assert.doesNotMatch(panel, /ear-start-steps/, "the quick-start strip duplicated the guide steps");
+  assert.doesNotMatch(panel, /ear-voice-note/, "the voice note restated the audio status line");
+  assert.doesNotMatch(panel, /class="ear-hint"/, "standing ear-hint paragraphs merge into the feedback idle text");
+
+  // ONE home control with two states instead of a per-drill row each.
+  assert.match(panel, /id="earHomeSel"/);
+  assert.doesNotMatch(panel, /earTonicSel|earMapHomeSel/, "the two home rows must be one control");
+  assert.match(app, /function renderEarHome/);
+
+  // The score summary answers the active drill; both totals stay one tap away.
+  assert.match(panel, /<details id="earScore"/);
+  assert.match(panel, /id="earScoreLine"/);
+  assert.match(app, /Colour streak/);
+  assert.match(app, /Map streak <b>/);
+
+  // Opening the map tab must arm the drill silently.
+  const setDrill = (app.match(/function setEarDrill\(drill\)[\s\S]*?\n {2}\}/) || [""])[0];
+  assert.match(setDrill, /prepareEarMap\(false\)/, "switching tabs must prepare the map without playing it");
+  assert.doesNotMatch(setDrill, /newEarMap\(\)|playEarMapPrompt\(\)/,
+    "switching tabs must never start audio the player did not request");
+
+  // Start buttons keep their ▶ glyph when they relabel.
+  assert.match(app, /"▶ Next question"/);
+  assert.match(app, /play \? "▶ Next map" : "▶ Start map"/);
+
+  // Blind training reads the value the home select actually writes.
+  assert.doesNotMatch(app, /home === "blind"/, 'the map home preset is "random", never "blind"');
+  assert.match(app, /home === "random" \? "Home hidden/);
+
+  // One vocabulary: the button says Check + reveal, so the copy must too.
+  assert.doesNotMatch(app, /Check answer/);
+  assert.doesNotMatch(app, /Choose the map you hear first/);
+});
