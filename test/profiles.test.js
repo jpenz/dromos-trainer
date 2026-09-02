@@ -65,7 +65,7 @@ test("corrupt and unknown stored values are bounded without storing transient mu
   }) });
   const profile = moduleWith(storage).bootstrap();
   assert.equal(profile.preferences.tuningId, "bouzouki4");
-  assert.equal(profile.preferences.bpm, 200);
+  assert.equal(profile.preferences.bpm, 220);
   assert.equal(profile.progress.earColour.correct, 2);
   assert.doesNotMatch(storage.values.get(key), /private score|analysisLine/);
 });

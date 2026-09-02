@@ -424,6 +424,41 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "the four-note chunk's top must be the true octave above the chunk root");
 });
 
+test("the shell has one purpose system, honest chrome, and working escape hatches", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  const css = read("css/styles.css");
+  // One purpose system: the page guide. The two parallel ones are gone.
+  assert.doesNotMatch(html, /id="coachCue"|id="modePurpose"|id="pageTitle"/,
+    "coachCue, modePurpose, and pageTitle were three competing purpose systems");
+  // Chrome comes from one capability table, not hand-kept CSS view lists.
+  assert.match(app, /const VIEW_CHROME = \{/,
+    "per-view chrome must be one table");
+  assert.doesNotMatch(css, /body\[data-view="ear"\] \.transport-bar,/,
+    "the rotted hand-kept transport list must not return");
+  assert.match(css, /body\.chrome-no-transport \.transport-bar:not\(\.picking-transport\) \{ display: none; \}/,
+    "chrome classes drive visibility; the picking transport is exempt");
+  // The settings drawer can actually be closed.
+  assert.match(html, /id="drawerClose"/,
+    "the drawer needs a close button");
+  assert.match(app, /if \(e\.key === "Escape" && drawer\.open\) drawer\.open = false;/,
+    "Escape closes the drawer");
+  // Typing in a textarea is never hijacked by shortcuts.
+  assert.match(app, /e\.target\.tagName === "TEXTAREA"/,
+    "the global keydown guard must exempt textareas");
+  // Band-keys evolve is reachable (the whitelist omission killed it).
+  assert.match(app, /\["position", "key", "band", "both"\]/,
+    "the movement whitelist must include band");
+  // Compact nav: 6 primary destinations + a More sheet.
+  assert.match(html, /id="navMore"[\s\S]{0,200}id="navSecondary"/,
+    "the reference group folds behind More on compact screens");
+  // Motion + layout tokens exist and reduced motion zeroes them.
+  assert.match(css, /--h-primary: 48px; --h-control: 40px; --h-chip: 32px;/,
+    "control-height tokens are the sizing law");
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\n  :root \{ --dur-1: 0ms; --dur-2: 0ms; --dur-3: 0ms; \}/,
+    "reduced motion zeroes the kit in one place");
+});
+
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
   const app = read("js/app.js");
   const toolkit = read("js/toolkit.js");

@@ -174,7 +174,9 @@
       modeId: state.modeId, progressionId: state.progId, bpm: state.bpm,
       cycleMode: state.cycleMode, cycleZone: state.cycleComping.zone,
       triadZone: state.triads.zone, labelMode: state.labelMode,
-      lefty: state.lefty, loop: state.loop
+      lefty: state.lefty, loop: state.loop,
+      ghosts: state.ghosts, scaleOverlay: state.scaleOverlay,
+      metronome: state.metronome, holdI: state.holdI
     };
   }
 
@@ -264,7 +266,6 @@
     if ($("tglHoldI")) $("tglHoldI").checked = state.holdI;
     if ($("voiceSel")) $("voiceSel").value = state.chordVoice;
     if ($("tglPickup")) $("tglPickup").checked = state.pickupV2;
-    document.querySelectorAll("[data-mode]").forEach((button) => button.classList.toggle("active", button.getAttribute("data-mode") === state.cycleMode));
     syncHarmonyTabs();
   }
 
@@ -288,28 +289,9 @@
 
   // One sentence per workspace answering "what is this FOR" — the purposes the
   // pedagogy research settled on, in the player's language.
-  const MODE_PURPOSE = {
-    cycle: "Land the 3rd of every chord as the keys fall. This is the muscle that keeps your solo inside the song on stage.",
-    prog: "Real Greek progressions for each dromos — Piraeus modal loops first, the Westernized laiko layer second. Drills end here.",
-    chordmap: "One key across five verified roads: compare every numbered chord, see the working routes, then open a defensible sister scale.",
-    melody: "Hear one scale degree against a known home, then compare the lawful chords that can give that same note a different job.",
-    triads: "The accompanist's seat: make the selected Greek pulse audible first, then place the nearest shape on its chord slots.",
-    solo: "One neck, three layers: the road, the frame inside it, and the little cells that hit every chord's 3rd.",
-    picking: "Right-hand control becomes music only when the attack, Greek grouping, route timbre, and chord arrival remain audible."
-  };
-
-  function renderModePurpose() {
-    const el = $("modePurpose");
-    if (!el) return;
-    const copy = MODE_PURPOSE[state.view];
-    el.textContent = copy || "";
-    el.classList.toggle("hidden", !copy || !["harmony", "matrix", "solo", "picking"].includes(VIEW_NAV[state.view]));
-  }
-
   function syncHarmonyTabs() {
     document.querySelectorAll("[data-harmony-mode]").forEach((button) =>
       button.classList.toggle("active", state.view === "cycle" && button.getAttribute("data-harmony-mode") === state.cycleMode));
-    renderModePurpose();
   }
 
   const PRACTICE_STEPS = [
@@ -381,29 +363,6 @@
     $("pageGuide").querySelector("[data-guide-target]").onclick = (event) => focusPageGuideTarget(event.currentTarget.getAttribute("data-guide-target"));
   }
 
-  function renderCoachCue() {
-    if (state.view === "today" || state.view === "progress") { $("coachCue").innerHTML = ""; return; }
-    const step = PRACTICE_STEPS.find((item) => item.view === state.view);
-    const specialStep = state.view === "styles" || state.view === "video" || state.view === "examples" || state.view === "picking";
-    if (!step && !specialStep) { $("coachCue").innerHTML = ""; return; }
-    let detail = step ? step.detail
-      : state.view === "video" ? "Loop only enough material to identify the destination; then put the video down and make the idea yours."
-        : state.view === "examples" ? "Turn one documented concept into exact notes, timing, a listening goal, and an honest pass test."
-          : state.view === "picking" ? "Start with even attack, isolate the string change, then reconnect the right hand to a Greek pulse and chord target."
-          : "Build the general language first, then place it inside a real Greek pulse without confusing style and dromos.";
-    if (state.view === "solo" && state.solo.section === "targets") {
-      detail = "Keep the whole scale visible, state the current triad, and pre-hear the next chord's 3rd before its ring changes colour.";
-    } else if (state.view === "solo" && state.solo.section === "road") {
-      detail = "See the whole road first: lower tetrachord, upper tetrachord, then the tonic that joins them.";
-    } else if (state.view === "solo" && state.solo.section === "path") {
-      detail = "Build clean alternate picking first; change the string break before you raise the tempo.";
-    } else if (state.view === "solo" && state.solo.section === "phrase") {
-      detail = "Say the numbers, sing the contour, then repeat it with one rhythm before you add decoration.";
-    } else if (state.view === "solo" && state.solo.section === "cell") {
-      detail = "Pre-hear the final note, leave space for it, then reveal and check your ear.";
-    }
-    $("coachCue").innerHTML = `<span>${step ? step.label : state.view === "video" ? "Video study" : state.view === "examples" ? "Tactical examples" : state.view === "picking" ? "Picking Lab" : "Style lab"}</span><b>${detail}</b>`;
-  }
 
   function currentPulse() {
     const style = S.byId(state.groove.styleId);
@@ -3694,6 +3653,7 @@
       button.classList.toggle("active", button.getAttribute("data-picking-run") === state.picking.runMode));
     $("pickingRepeatsSel").value = String(state.picking.repeats);
     $("pickingBpm").value = String(state.bpm);
+    if ($("pickingBpmNum")) $("pickingBpmNum").value = String(state.bpm);
     $("pickingBpmVal").textContent = `${state.bpm} BPM`;
     $("pickingMoveSel").value = state.picking.movement;
     $("pickingMoveSel").disabled = state.picking.runMode !== "evolve";
@@ -5233,7 +5193,6 @@
       renderSoloSection();
     }
     renderPageGuide();
-    renderCoachCue();
   }
 
   // ======================= shared chord readout ==========================
@@ -5585,6 +5544,17 @@
   }
 
   // ============================== views ==================================
+  const VIEW_CHROME = {
+    cycle: { transport: true, journey: true, readout: true, split: true },
+    prog: { transport: true, journey: true, readout: true, split: true },
+    triads: { transport: true, journey: true, readout: true, split: true },
+    solo: { transport: true, journey: true, readout: true, split: true },
+    chordmap: { transport: false, journey: true, readout: true, split: true },
+    songs: { transport: false, journey: true, readout: true, split: true },
+    examples: { transport: false, journey: true, readout: true, split: true },
+    picking: { transport: false, journey: true, readout: true, split: true }
+  };
+
   function setView(v) {
     if (v === "lab") v = "solo";   // compatibility with bookmarks from the first version
     if (state.view === "video" && v !== "video" && V) V.destroy();
@@ -5595,6 +5565,14 @@
     state.view = v;
     persistPreferences();
     document.body.setAttribute("data-view", v);
+    // One table, four chrome channels. Hand-kept per-view CSS lists rotted
+    // (Songs and Examples showed live-looking dead transports; Triads told
+    // players to press a Play the CSS had hidden).
+    const chrome = VIEW_CHROME[v] || { transport: false, journey: false, readout: false, split: false };
+    document.body.classList.toggle("chrome-no-transport", !chrome.transport);
+    document.body.classList.toggle("chrome-no-journey", !chrome.journey);
+    document.body.classList.toggle("chrome-no-readout", !chrome.readout);
+    document.body.classList.toggle("chrome-single", !chrome.split);
     document.body.setAttribute("data-solo-section", state.solo.section);
     $("btnPrev").disabled = v === "examples"; $("btnNext").disabled = v === "examples";
     $("btnPlay").disabled = v === "examples";
@@ -5605,7 +5583,6 @@
     document.body.setAttribute("data-nav", nav);
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-nav") === nav));
-    if ($("pageTitle")) $("pageTitle").textContent = NAV_TITLES[nav] || "";
     if ($("harmonyTabs")) $("harmonyTabs").classList.toggle("hidden", nav !== "harmony");
     if ($("repertoireTabs")) $("repertoireTabs").classList.toggle("hidden", nav !== "repertoire");
     if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
@@ -5642,7 +5619,6 @@
     renderSoloLayerChips();
     renderPracticePath();
     renderPageGuide();
-    renderCoachCue();
     $("keyboardHint").textContent = v === "melody"
       ? "Space replays the note · choose one degree · Check builds the harmony map"
       : v === "ear"
@@ -5812,22 +5788,13 @@
       rerender();
     };
 
-    document.querySelectorAll("[data-mode]").forEach((el) => el.onclick = () => {
-      document.querySelectorAll("[data-mode]").forEach((x) => x.classList.remove("active"));
-      el.classList.add("active");
-      state.cycleMode = el.getAttribute("data-mode");
-      if (state.cycleMode === "pivot") state.index = sequenceFor("pivot", state.index)[0];
-      persistPreferences();
-      if (AU.isPlaying()) { stopPlay(); startPlay(); }
-      renderCycle();
-    });
 
     document.querySelectorAll("[data-cycle-focus]").forEach((button) => button.onclick = () => {
       stopPlay();
       state.cycleComping.focus = button.getAttribute("data-cycle-focus");
       document.querySelectorAll("[data-cycle-focus]").forEach((item) =>
         item.classList.toggle("active", item.getAttribute("data-cycle-focus") === state.cycleComping.focus));
-      renderCycle(); renderPageGuide(); renderCoachCue();
+      renderCycle(); renderPageGuide();
     });
 
     document.querySelectorAll("[data-modeid]").forEach((el) =>
@@ -6018,7 +5985,7 @@
       state.picking.cleanPasses = 0; renderPickingLab();
     };
     $("pickingMoveSel").onchange = (event) => {
-      stopPlay(); state.picking.movement = ["position", "key", "both"].includes(event.target.value) ? event.target.value : "position";
+      stopPlay(); state.picking.movement = ["position", "key", "band", "both"].includes(event.target.value) ? event.target.value : "position";
       state.picking.cleanPasses = 0; renderPickingLab(); renderPageGuide();
     };
     $("tglPickingMetronome").onchange = (event) => {
@@ -6074,8 +6041,25 @@
     document.querySelectorAll("[data-guess]").forEach((b) =>
       b.onclick = () => selectColourGuess(b.getAttribute("data-guess")));
 
+    const drawer = $("settingsDrawer");
+    if (drawer && $("drawerClose")) {
+      $("drawerClose").onclick = () => { drawer.open = false; };
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && drawer.open) drawer.open = false; });
+      document.addEventListener("click", (e) => { if (drawer.open && !drawer.contains(e.target)) drawer.open = false; });
+    }
+    if ($("navMore")) {
+      $("navMore").onclick = () => {
+        const open = document.querySelector(".app-nav").classList.toggle("nav-open");
+        $("navMore").setAttribute("aria-expanded", String(open));
+      };
+      document.querySelectorAll("#navSecondary [data-nav]").forEach((button) =>
+        button.addEventListener("click", () => {
+          document.querySelector(".app-nav").classList.remove("nav-open");
+          $("navMore").setAttribute("aria-expanded", "false");
+        }));
+    }
     document.addEventListener("keydown", async (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
       if (e.code === "Space") {
         e.preventDefault();
         const voice = state.view === "picking" ? pickingReferenceVoice() : chordReferenceVoice();
