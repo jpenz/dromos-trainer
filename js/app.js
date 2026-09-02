@@ -5640,6 +5640,15 @@
     b.classList.toggle("playing", p);
     // Starting and stopping FEEL like actions: a spring tick on the morph.
     b.classList.remove("tick"); void b.offsetWidth; b.classList.add("tick");
+    // Comp keeps its own Play next to the skeleton it starts; it mirrors the
+    // transport rather than owning a second playback state.
+    const comp = $("btnCompPlay");
+    if (comp) {
+      comp.textContent = text;
+      comp.classList.toggle("playing", p);
+      comp.classList.remove("tick"); void comp.offsetWidth; comp.classList.add("tick");
+    }
+    if (!p && state.view === "triads") resetCompPulse();
   }
 
   // Interaction canon §2: while anything plays, the interface pulses on the
@@ -5653,14 +5662,6 @@
       void el.offsetWidth;
       el.classList.add(strong ? "on-pulse-strong" : "on-pulse");
     });
-    // Comp keeps its own Play next to the skeleton it starts; it mirrors the
-    // transport rather than owning a second playback state.
-    const comp = $("btnCompPlay");
-    if (comp) {
-      comp.textContent = text;
-      comp.classList.toggle("playing", p);
-    }
-    if (!p && state.view === "triads") resetCompPulse();
   }
   function togglePlay() {
     if (state.view === "picking") { state.picking.playing ? (stopPlay(), renderPickingLab()) : playPickingExercise(); return; }
