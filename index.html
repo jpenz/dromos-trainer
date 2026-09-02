@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=55" />
+  <link rel="stylesheet" href="css/styles.css?v=56" />
 </head>
 <body>
   <div class="app">
@@ -285,28 +285,31 @@
             <!-- Triads / comp -->
             <div id="panelTriads" class="panel hidden">
               <span class="panel-label">Comping · pulse before fills</span>
-              <p class="ear-hint"><b>First make the dance audible with muted accents.</b>
-                Then add the bass/chord skeleton; only free the right hand when those anchors
-                survive. The shapes below are the harmony layer, not the starting point.</p>
               <section id="compSkeleton" class="comp-skeleton" aria-label="Greek pulse comping skeleton"></section>
-              <span class="panel-label">Close-position chord route</span>
-              <p class="ear-hint">The highlighted triad is the <b>least-movement</b> choice from
-                the previous chord. Put it on the chord slots in the skeleton above; keep bass
-                slots sparse enough that the root direction remains audible.</p>
-              <div class="row tonic-row">
-                <label for="setSel">Strings</label>
-                <select id="setSel"></select>
+              <div class="comp-actions">
+                <button id="btnCompPlay" class="deck-start" type="button" title="Play / Pause (Space)">▶ Play</button>
+                <div class="comp-step" role="group" aria-label="Close-position chord route">
+                  <button id="btnTriadPrev" class="mini">◀ prev chord</button>
+                  <button id="btnTriadNext" class="mini primary-mini">next chord ▶</button>
+                </div>
               </div>
-              <div class="row tonic-row">
-                <label for="triadZoneSel">Neck area</label>
-                <select id="triadZoneSel"></select>
-              </div>
-              <label class="inline-tgl"><input type="checkbox" id="tglAllShapes" checked />
-                show every other shape faintly</label>
-              <div class="row">
-                <button id="btnTriadPrev" class="mini grow">◀ prev chord</button>
-                <button id="btnTriadNext" class="mini grow primary-mini">next chord ▶</button>
-              </div>
+              <details id="triadSetup" class="comp-setup deck-advanced">
+                <summary>Setup — strings, neck area, shapes</summary>
+                <div class="row tonic-row">
+                  <label for="setSel">Strings</label>
+                  <select id="setSel"></select>
+                </div>
+                <div class="row tonic-row">
+                  <label for="triadZoneSel">Neck area</label>
+                  <select id="triadZoneSel"></select>
+                </div>
+                <label class="inline-tgl"><input type="checkbox" id="tglAllShapes" checked />
+                  show every other shape faintly</label>
+                <p class="comp-setup-note">The highlighted triad is the <b>least-movement</b> choice
+                  from the previous chord. Put it on the chord slots above and keep bass slots sparse
+                  enough that the root direction stays audible; the shapes are the harmony layer, not
+                  the starting point.</p>
+              </details>
             </div>
 
             <!-- Solo lab -->
@@ -769,7 +772,7 @@
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=38"></script>
   <script src="js/page-guides.js?v=54"></script>
-  <script src="js/app.js?v=55"></script>
+  <script src="js/app.js?v=56"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
