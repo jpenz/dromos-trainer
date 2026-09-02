@@ -5651,6 +5651,8 @@
           ? "Choose an example · Hear previews pitch only · Stop clears every sound"
           : v === "picking"
             ? "Space plays or stops · ← → changes exercise · tap any event to inspect it"
+            : v === "video"
+              ? "Choose a lesson · Set A and Set B mark the loop · number keys switch practice areas"
         : "Space plays · ← → steps · number keys follow the navigation";
     // Each primary destination is a new lesson, not another state of the old
     // page. Opening at the previous page's scroll depth hides the premise and

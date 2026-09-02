@@ -113,6 +113,27 @@ test("video study catalog keeps videos hosted at their original public source", 
   assert.ok(VideoStudy.LESSONS.every((lesson) => /^[\w-]{11}$/.test(lesson.videoId)));
 });
 
+test("the video A–B window opens unlooped and never leaves the clip", () => {
+  const { VideoStudy } = loadCore();
+  // A lesson you just opened must play through: an opening 0-8s window with the
+  // loop already on trapped every video in its first eight seconds.
+  const opening = VideoStudy.openingState();
+  assert.equal(opening.loopOn, false, "a freshly opened lesson must not loop until A or B is set");
+  assert.equal(opening.startAt, 0);
+  assert.ok(opening.endAt > 0);
+  // The markers are clamped to the real duration, not to a hardcoded ceiling.
+  const pair = (start, end, total) => {
+    const window = VideoStudy.clampWindow(start, end, total);
+    return [window.start, window.end];
+  };
+  assert.deepEqual(pair(0, 8, 5), [0, 5], "B must stop at the end of a short clip");
+  assert.deepEqual(pair(120, 240, 0), [120, 240], "an unknown duration must not cap the window at 5:00");
+  assert.deepEqual(pair(10, 2, 0), [10, 10.5], "B must stay after A");
+  assert.deepEqual(pair(-3, -1, 0), [0, 0.5], "the window must start inside the clip");
+  const late = VideoStudy.clampWindow(9.9, 9.95, 10);
+  assert.ok(late.end <= 10 && late.end - late.start >= 0.5, "a marker at the very end still keeps a playable window");
+});
+
 test("imported score harmony has a playable chart on every supported tuning", () => {
   const { Tuning, AnalysisEngine, Fretboard, MusicXmlImport } = loadCore();
   const xml = `<?xml version="1.0"?><score-partwise><part><measure number="1"><harmony><root><root-step>D</root-step></root><kind>minor</kind></harmony><note><pitch><step>A</step></pitch></note><harmony><root><root-step>A</root-step></root><kind>dominant</kind></harmony><note><pitch><step>C</step><alter>1</alter></pitch></note></measure></part></score-partwise>`;
