@@ -307,14 +307,6 @@
     { view: "video", label: "9 · Study", detail: "Watch one legal public lesson in a short A–B loop, then explain its map." }
   ];
 
-  function renderPracticePath() {
-    $("practicePath").innerHTML = PRACTICE_STEPS.map((step) =>
-      `<button class="practice-step${step.view === state.view ? " active" : ""}" data-practice-view="${step.view}">${step.label}</button>`
-    ).join("");
-    $("practicePath").querySelectorAll("[data-practice-view]").forEach((button) => {
-      button.onclick = () => setView(button.getAttribute("data-practice-view"));
-    });
-  }
 
   function pageGuideContext() {
     const instrument = window.Tuning.current().name;
@@ -353,14 +345,13 @@
     });
     $("pageGuide").innerHTML = `<article class="learning-pyramid" data-guide-key="${escapeHtml(guide.key)}">
       <header class="guide-answer"><span>Answer first · ${escapeHtml(guide.purpose)}</span><h1>${escapeHtml(guide.answer)}</h1><p>${escapeHtml(guide.result)}</p><small>Current setup · ${escapeHtml(pageGuideContext())}</small></header>
-      <div class="guide-first"><i>1</i><div><span>Start here</span><b>${escapeHtml(guide.steps[0])}</b></div><button type="button" data-guide-target="${escapeHtml(guide.targetId)}">Show me where</button></div>
+      <div class="guide-first"><i>1</i><div><span>Start here</span><b>${escapeHtml(guide.steps[0])}</b></div></div>
       <details class="guide-workflow"><summary><span>Open the complete practice guide</span><b>3 steps · listening goal · success test</b></summary><div class="guide-workflow-body">
         <ol class="guide-steps" aria-label="How to use this page">${guide.steps.map((step, index) => `<li class="${index === 0 ? "is-first" : ""}"><i>${index + 1}</i><div><span>${index === 0 ? "Start here" : index === 1 ? "Then" : "Finish"}</span><b>${escapeHtml(step)}</b></div></li>`).join("")}</ol>
         <div class="guide-reason"><div><span>What to listen or look for</span><p>${escapeHtml(guide.why)}</p></div><div class="guide-success"><span>You are ready to move on when…</span><b>${escapeHtml(guide.done)}</b></div></div>
         <details class="guide-explain"><summary>New here? Explain the words and screen controls</summary><div><dl>${guide.terms.map(([term, meaning]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(meaning)}</dd></div>`).join("")}</dl><p><b>Using the screen:</b> Tap a button once. The selected choice is highlighted. You may change choices until an exercise says <i>Check</i>. Use <i>Stop</i> whenever you need silence; changing pages also stops the sound.</p></div></details>
       </div></details>
     </article>`;
-    $("pageGuide").querySelector("[data-guide-target]").onclick = (event) => focusPageGuideTarget(event.currentTarget.getAttribute("data-guide-target"));
   }
 
 
@@ -5178,6 +5169,22 @@
 
   // ======================= shared chord readout ==========================
   // ============================ TODAY VIEW ===============================
+  const TODAY_LOG_KEY = "dromos-today-visits";
+  function todayStamp() { return new Date().toISOString().slice(0, 10); }
+  function todayVisits() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(TODAY_LOG_KEY) || "{}");
+      return raw.date === todayStamp() && Array.isArray(raw.views) ? raw.views : [];
+    } catch (error) { return []; }
+  }
+  function recordTodayVisit(view) {
+    try {
+      const views = todayVisits();
+      if (!views.includes(view)) views.push(view);
+      localStorage.setItem(TODAY_LOG_KEY, JSON.stringify({ date: todayStamp(), views }));
+    } catch (error) { /* storage unavailable: cards simply stay unchecked */ }
+  }
+
   function renderToday() {
     const root = $("todayApp");
     if (!root) return;
@@ -5185,19 +5192,24 @@
     const name = active ? active.displayName : "Player";
     const e = state.ear;
     const pct = e.total ? Math.round((e.score / e.total) * 100) : null;
+    const visited = todayVisits();
+    let nextMarked = false;
     root.innerHTML = `
       <div class="today-hero"><span>Today's session</span>
         <h2>Καλή πρόβα, ${escapeHtml(name)}.</h2>
-        <p>Work the loop in order: hear the change, name it, then find it on the ${escapeHtml(window.Tuning.current().name)}. Every phrase runs ii · V · I · I, then resets.</p></div>
+        <p>Work the cards in order on the ${escapeHtml(window.Tuning.current().name)}: hear it, name it, find it on the neck. Done cards get a check; start with the first one that has none.</p></div>
       <div class="today-grid">${PRACTICE_STEPS.map((step) => {
         const guide = PG.resolve({ view: step.view });
-        return `<button class="today-card" data-today-view="${step.view}"><i>${escapeHtml(step.label)}</i><b>${escapeHtml(guide ? guide.purpose : step.label)}</b><p>${escapeHtml(step.detail)}</p></button>`;
+        const done = visited.includes(step.view);
+        const upNext = !done && !nextMarked;
+        if (upNext) nextMarked = true;
+        return `<button class="today-card${done ? " done" : ""}${upNext ? " up-next" : ""}" data-today-view="${step.view}"><i>${done ? "✓ " : ""}${escapeHtml(step.label)}</i>${upNext ? `<em class="up-next-tag">Start here</em>` : ""}<b>${escapeHtml(guide ? guide.purpose : step.label)}</b><p>${escapeHtml(step.detail)}</p></button>`;
       }).join("")}</div>
       <div class="today-stats">
         <span>Ear colour <b>${e.score}/${e.total}</b>${pct == null ? "" : ` (${pct}%)`}</span>
         <span>Home + changes <b>${e.map.score}/${e.map.total}</b></span>
         <span>Sing-back locks <b>${active ? active.progress.singPitch.correct : 0}/${active ? active.progress.singPitch.attempts : 0}</b></span>
-        <span>Streak <b>${state.ear.drill === "map" ? e.map.streak : e.streak}</b></span>
+        <span>${state.ear.drill === "map" ? "Map streak" : "Colour streak"} <b>${state.ear.drill === "map" ? e.map.streak : e.streak}</b></span>
         <span>Instrument <b>${escapeHtml(window.Tuning.current().name)}</b></span>
       </div>`;
     root.querySelectorAll("[data-today-view]").forEach((button) => {
@@ -5560,6 +5572,7 @@
     cancelSoloDrone();
     state.view = v;
     persistPreferences();
+    recordTodayVisit(v);
     document.body.setAttribute("data-view", v);
     // One table, four chrome channels. Hand-kept per-view CSS lists rotted
     // (Songs and Examples showed live-looking dead transports; Triads told
@@ -5612,7 +5625,6 @@
     // no other practice area should inherit that explanation from a prior view.
     if (v !== "cycle") $("pivotBanner").classList.remove("show");
     renderSoloLayerChips();
-    renderPracticePath();
     renderPageGuide();
     $("keyboardHint").textContent = v === "melody"
       ? "Space replays the note · choose one degree · Check builds the harmony map"
