@@ -84,6 +84,48 @@ test("the held tonic stays audible and visible, not implied", () => {
   assert.match(css, /held-sounding/, "the sounding held bar needs an active state");
 });
 
+test("Melody leads with Start plus the seven degrees and stages everything else", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  const panel = html.slice(html.indexOf('<div id="panelMelody"'), html.indexOf('<section id="melodyReveal"'));
+
+  // Acceptance gate (blueprint 2.6): the question asked for 21 controls before
+  // the reveal. Count what is actually on screen - static controls outside the
+  // Setup fold plus one rendered button per scale degree.
+  const outsideSetup = panel.replace(/<details[\s\S]*?<\/details>/g, "");
+  const staticControls = (outsideSetup.match(/<(?:button|select|input)\b/g) || []).length;
+  assert.match(app, /scale\.map\(\(note, index\) => \{[\s\S]*?data-melody-degree="\$\{index\}"/,
+    "the degree buttons are rendered one per scale degree");
+  const degreeButtons = 7;
+  assert.ok(staticControls + degreeButtons < 12,
+    `the melody question must ask fewer than 12 controls before the reveal, found ${staticControls + degreeButtons}`);
+  assert.match(outsideSetup, /id="btnMelodyNew" class="melody-start"/, "Start is the one primary action");
+  assert.match(read("css/styles.css"), /\.melody-start \{[^}]*min-height: var\(--h-primary\)/,
+    "the primary action ships at the 48px primary height");
+
+  // Setup fold holds the configuration and the reference audio.
+  const setup = panel.match(/<details class="melody-setup[\s\S]*?<\/details>/)[0];
+  ["melodyTonicSel", 'data-melody-mode="hijaz"', 'data-melody-depth="seventh"', "btnMelodyHome", "btnMelodyStop"]
+    .forEach((hook) => assert.ok(setup.includes(hook), `${hook} belongs in the one Setup fold`));
+
+  // Staged reveal: identity and what-can-follow first, the rest behind More.
+  const reveal = html.slice(html.indexOf('<section id="melodyReveal"'), html.indexOf('<!-- Ear trainer -->'));
+  const more = reveal.match(/<details id="melodyMore"[\s\S]*?<\/details>/)[0];
+  ["melodyCandidates", "melodyMoves", "melodySing"].forEach((id) =>
+    assert.ok(more.includes(`id="${id}"`), `${id} is second-layer detail behind More`));
+  ["melodyIdentity", "melodyNext"].forEach((id) =>
+    assert.ok(!more.includes(`id="${id}"`) && reveal.includes(`id="${id}"`), `${id} must stay visible on check`));
+  assert.match(app, /melodyNextTitle"\)\.textContent = selected/,
+    "with the chord colours folded away, the anticipation heading must name its chord");
+  assert.match(app, /melodyMore"\)\.ontoggle[\s\S]*?stopPitchListening/,
+    "closing the fold must stop a live microphone");
+
+  // The two standing fine-print paragraphs became one honesty line in the guide.
+  assert.doesNotMatch(html, /class="melody-boundary"/, "standing disclaimer paragraphs are banned");
+  assert.match(read("js/page-guides.js"), /boundary: "Chord membership is derived from the selected scale/);
+  assert.match(app, /guide\.boundary \? `<p class="guide-boundary"/, "the honesty line renders inside the collapsed guide");
+});
+
 test("the design system defines the redesigned tokens", () => {
   const css = read("css/styles.css");
   assert.match(css, /--terracotta: #F19A55/);
