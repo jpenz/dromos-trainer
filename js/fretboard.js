@@ -375,6 +375,8 @@
           "data-pc": n.note.pc
         });
         if (opts.lefty) gg.setAttribute("transform", `translate(${2 * cx(n)},0) scale(-1,1)`);
+        // Canon §4: dots cascade in instead of popping (reduced motion zeroes it).
+        gg.style.animationDelay = `${Math.min(i * 12, 360)}ms`;
         if (n.note.isFlavour) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: 16, class: "dot-flavour-ring" }));
         if (isTarget) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-target-ring" }));
         if (isNow) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-now-ring" }));

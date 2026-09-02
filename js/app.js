@@ -3858,6 +3858,7 @@
       onStep: (index) => {
         if (token === pickingRunToken && state.view === "picking") {
           state.picking.pathIndex = index;
+          if (index % state.picking.subdivision === 0) beatPulse(false, [$("btnPickingPlay")]);
           renderPickingLab();
         }
       },
@@ -5485,6 +5486,7 @@
       },
       onBeat: (bar, beatInBar, pulseBeat, event, when, now) => {
         const delay = Math.max(0, (when - now) * 1000);
+        setTimeout(() => beatPulse(!!(pulseBeat && pulseBeat.first)), delay);
         if (state.view === "triads") {
           setTimeout(() => updateCompPulse(beatInBar), delay);
           return;
@@ -5509,6 +5511,21 @@
     const b = $("btnPlay");
     b.textContent = label || (p ? "⏸ Pause" : "▶ Play");
     b.classList.toggle("playing", p);
+    // Starting and stopping FEEL like actions: a spring tick on the morph.
+    b.classList.remove("tick"); void b.offsetWidth; b.classList.add("tick");
+  }
+
+  // Interaction canon §2: while anything plays, the interface pulses on the
+  // beat. Class-retriggered CSS animation, scheduled to the audio clock,
+  // gated by motionOK() so reduced motion stays still.
+  function beatPulse(strong, targets) {
+    if (!motionOK()) return;
+    (targets || [$("btnPlay"), document.querySelector(".roadmap-chord.now")]).forEach((el) => {
+      if (!el) return;
+      el.classList.remove("on-pulse", "on-pulse-strong");
+      void el.offsetWidth;
+      el.classList.add(strong ? "on-pulse-strong" : "on-pulse");
+    });
   }
   function togglePlay() {
     if (state.view === "picking") { state.picking.playing ? (stopPlay(), renderPickingLab()) : playPickingExercise(); return; }
