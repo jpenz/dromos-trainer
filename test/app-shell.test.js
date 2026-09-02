@@ -166,7 +166,6 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/ear-drills.js"), /harmonicMinor/);
   assert.match(read("js/app.js"), /function renderPageGuide/);
   assert.match(read("js/app.js"), /Answer first/);
-  assert.match(read("js/app.js"), /Show me where/);
   assert.match(read("js/page-guides.js"), /every guide has the full answer-first pyramid/);
   assert.match(read("js/app.js"), /function renderChordMap/);
   assert.match(read("js/app.js"), /function renderChordPathInline/,
@@ -464,6 +463,13 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
     "the stage morphs between views instead of teleporting");
   assert.match(css, /@supports \(animation-timing-function: linear\(0, 1\)\)/,
     "the spring easing upgrades progressively behind @supports");
+  // Today is the landing, its duplicate rail is gone, and progress is real.
+  assert.match(read("js/profiles.js"), /view: "today",/,
+    "the nav lists Today first, so Today is the default view");
+  assert.doesNotMatch(html, /id="practicePath"/,
+    "the verbatim duplicate of the Today grid must not return");
+  assert.match(app, /const visited = todayVisits\(\);/,
+    "Today cards reflect what was actually visited today");
 });
 
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {

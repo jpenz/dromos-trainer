@@ -1516,10 +1516,6 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .today-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
 .today-stats { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
 .today-stats b { color: var(--text); font-family: var(--font-mono); }
-.practice-path { display: flex; gap: 8px; overflow-x: auto; padding-top: 12px; }
-.practice-step { flex: 0 0 auto; min-height: 40px; border: 1px solid var(--line); background: transparent; border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 600; padding: 7px 13px; transition: all var(--t-fast) var(--ease); }
-.practice-step:hover { color: var(--text); border-color: var(--line-strong); }
-.practice-step.active { background: var(--terracotta-soft); border-color: var(--terracotta); color: var(--terracotta-bright); }
 .progress-head { display: grid; gap: 5px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .progress-head h2 { margin: 0; font-family: var(--font-display); font-size: 24px; font-weight: 500; }
 .progress-head p { margin: 0; color: var(--muted); font-size: 12.5px; }
@@ -2517,3 +2513,10 @@ body.chrome-single .workbench { grid-template-columns: minmax(0, 1fr); }
 .cycle-setup > summary { color: var(--muted); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
 .cycle-setup[open] > summary { margin-bottom: var(--sp-2); }
 .cycle-setup .gym-note { margin: var(--sp-2) 0 0; color: var(--faint); font-size: var(--fs-micro); line-height: 1.4; }
+
+/* ---- Today: done checks + the visible starting point (redesign PR 4) ---- */
+.today-card { position: relative; }
+.today-card.done { opacity: 0.62; }
+.today-card.done > i { color: var(--turquoise); }
+.today-card.up-next { border-color: var(--terracotta); background: var(--terracotta-soft); }
+.today-card .up-next-tag { position: absolute; top: 8px; right: 10px; color: var(--terracotta-bright); font-size: var(--fs-micro); font-style: normal; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
