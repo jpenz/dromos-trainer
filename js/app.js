@@ -1548,6 +1548,9 @@
       state.solo.toolkit.phase = 0;
       applyToolChoreo();
       setView("solo");
+      // The player arrived FOR this tool: surface the folded toolkit.
+      const fold = $("soloToolkitFold");
+      if (fold) fold.open = true;
       return;
     }
     // Pennanen's tactile comparison belongs in the dedicated Picking Lab,
@@ -2618,11 +2621,13 @@
     const advice = chord && ROLE_ADVICE[chord.phraseRole];
     if (!advice) return "";
     const suits = advice.lens === state.solo.focus;
+    // A suggestion the player can follow with the ONE lens control — never a
+    // second writer of state.solo.focus.
     return `<p class="role-advice${suits ? " suits" : ""}">
       <span>${escapeHtml(chord.phraseRole)}</span>
       ${suits
         ? `Your target fits this bar — ${escapeHtml(advice.why)}.`
-        : `On this bar, try <button data-role-lens="${advice.lens}">${escapeHtml(landingLensName(advice.lens))}</button> — ${escapeHtml(advice.why)}.`}
+        : `On this bar, try the <b>${escapeHtml(landingLensName(advice.lens))}</b> lens — ${escapeHtml(advice.why)}.`}
     </p>`;
   }
 
@@ -4092,29 +4097,35 @@
   }
 
   // ============================= SOLO LAB ================================
+  // Solo's folds re-render on every state change (each bar during playback),
+  // so their open/closed state lives outside the markup.
+  let soloSetupOpen = false;
+  let soloEvidenceOpen = false;
+  let soloHtpOpen = false;
+
   function renderSoloMapControls() {
     const root = $("soloMapControls");
     if (!root) return;
     const mode = M.MODES[state.modeId];
     const progressions = M.PROGRESSIONS[state.modeId];
-    const { chords } = currentProgression();
+    const progression = progressions.find((p) => p.id === state.progId);
     root.innerHTML = `
-      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}</span></div>
-        <label>Home <select id="soloTonic">${M.TONICS.map((tonic) =>
-          `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label></div>
-      <div class="solo-mode-grid">${M.MODE_ORDER.map((modeId) => {
-        const item = M.MODES[modeId];
-        return `<button data-solo-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}"><b>${item.name}</b><span>${item.greek}</span></button>`;
-      }).join("")}</div>
-      <div class="solo-progression-list">${progressions.map((progression) =>
-        `<button data-solo-prog="${progression.id}" class="${progression.id === state.progId ? "active" : ""}"><b>${progression.label}</b><span>${progression.tag}</span></button>`
-      ).join("")}</div>
-      <div class="solo-current-change"><span>Now playing</span>${chords.map((chord, index) => {
-        const main = `<button data-solo-step="${index}" class="${index === state.progStep ? "active" : ""}"><i>${chord.degreeLabel}</i><b>${chord.symbol}</b></button>`;
-        const held = barsFor(chord) > 1 ? `<button data-solo-step="${index}" data-held-for="${index}" class="held${index === state.progStep ? " active" : ""}" aria-label="${chord.symbol} holds for a second bar"><i>${chord.degreeLabel}</i><b>${chord.symbol}</b><u>hold</u></button>` : "";
-        return main + held;
-      }).join('<em>→</em>')}</div>`;
+      <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}${progression ? ` · ${progression.label}` : ""}</span></div></div>
+      <details class="deck-advanced solo-fold solo-setup" id="soloSetup"${soloSetupOpen ? " open" : ""}>
+        <summary>Setup — home · dromos · progression</summary>
+        <label class="solo-setup-home">Home <select id="soloTonic">${M.TONICS.map((tonic) =>
+          `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label>
+        <div class="solo-mode-grid">${M.MODE_ORDER.map((modeId) => {
+          const item = M.MODES[modeId];
+          return `<button data-solo-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}"><b>${item.name}</b><span>${item.greek}</span></button>`;
+        }).join("")}</div>
+        <div class="solo-progression-list">${progressions.map((prog) =>
+          `<button data-solo-prog="${prog.id}" class="${prog.id === state.progId ? "active" : ""}"><b>${prog.label}</b><span>${prog.tag}</span></button>`
+        ).join("")}</div>
+      </details>`;
 
+    const setup = $("soloSetup");
+    if (setup) setup.ontoggle = () => { soloSetupOpen = setup.open; };
     $("soloTonic").onchange = (event) => {
       stopPlay();
       state.tonic = event.target.value;
@@ -4133,12 +4144,6 @@
       button.onclick = () => {
         stopPlay();
         state.progId = button.getAttribute("data-solo-prog"); state.progStep = 0;
-        renderSoloMapControls(); renderSoloSection(); auditionProg();
-      };
-    });
-    root.querySelectorAll("[data-solo-step]").forEach((button) => {
-      button.onclick = () => {
-        stopPlay(); state.progStep = +button.getAttribute("data-solo-step");
         renderSoloMapControls(); renderSoloSection(); auditionProg();
       };
     });
@@ -4423,10 +4428,10 @@
     const leanStep = !lastStep && (step.role === "approach" || index >= plan.length - 2);
     svg().classList.toggle("lean-phase", leanStep);
     svg().classList.toggle("arrive-phase", lastStep);
-    const hud = document.querySelector(".solo-neck-hud");
-    if (hud) {
-      hud.classList.toggle("lean-phase", leanStep);
-      hud.classList.toggle("arrive-phase", lastStep);
+    const strip = document.querySelector(".solo-progression-roadmap");
+    if (strip) {
+      strip.classList.toggle("lean-phase", leanStep);
+      strip.classList.toggle("arrive-phase", lastStep);
     }
   }
 
@@ -4445,12 +4450,22 @@
     state.solo.matrixBeat = Math.max(0, Math.min(plan.length - 1, state.solo.matrixBeat));
     root.innerHTML = `
       <header><div><span>Timing matrix · ${pulse.style.title}</span><b>${pulse.style.meter} · ${pulse.style.pulse}</b></div><i>${route.label} · one job per pulse</i></header>
+      <details class="matrix-htp"${soloHtpOpen ? " open" : ""} id="soloMatrixHtp">
+        <summary>Hear · think · play</summary>
+        <ol>
+          <li><b>Hear:</b> sing ${soloTargetLabel(nextTargets)} before the chord moves. If you cannot sing it, stay on the current triad.</li>
+          <li><b>Think:</b> ${route.path}</li>
+          <li><b>Play:</b> ${route.budget}. ${route.think}</li>
+        </ol>
+      </details>
       <div class="solo-journey" aria-label="${pulse.style.title} melodic timing journey">${plan.map((step, index) =>
         `<button data-matrix-beat="${index}" class="journey-step ${step.role}${step.beat.first ? " group-start" : ""}">
           <i>${step.beat.beat}</i><span>${step.label}</span><b>${step.note.name}</b><em>${step.note.roleLabel || step.note.degree || "frame"}</em></button>`
       ).join("")}</div>
       <p id="soloMatrixNow" class="solo-matrix-now"></p>
       <p class="solo-matrix-note">The cursor follows the selected pulse while transport plays. This is a route map—not a mandatory lick: keep the rhythmic group, change the connector notes, and make the arrival clear.</p>`;
+    const htp = $("soloMatrixHtp");
+    if (htp) htp.ontoggle = () => { soloHtpOpen = htp.open; };
     root.querySelectorAll("[data-matrix-beat]").forEach((button) => {
       button.onclick = () => updateSoloMatrixJourney(+button.getAttribute("data-matrix-beat"));
     });
@@ -4464,14 +4479,16 @@
   // dromos — so every tool works in any key without a second diagram.
   function activeTool() {
     if (!TK) return null;
+    // toolId === null means the player set the landing lens by hand and no
+    // tool drives the map. A pure read: rendering must never mutate state,
+    // so an unavailable selection RESOLVES to a fallback without saving it.
+    if (state.solo.toolkit.toolId == null) return null;
     const tool = TK.byId(state.solo.toolkit.toolId);
     if (tool && (!tool.modeGate || tool.modeGate.includes(state.modeId))) return tool;
     // The selected tool is not offered in this dromos: fall back to the first
     // available tool of the same pillar rather than showing a dead selection.
-    const fallback = TK.availableTools(state.solo.toolkit.pillar, state.modeId)[0]
-      || TK.availableTools("land", state.modeId)[0];
-    if (fallback) { state.solo.toolkit.toolId = fallback.id; state.solo.toolkit.pillar = fallback.pillar; }
-    return fallback || null;
+    return TK.availableTools(state.solo.toolkit.pillar, state.modeId)[0]
+      || TK.availableTools("land", state.modeId)[0] || null;
   }
 
   function toolPhases(tool) {
@@ -4628,7 +4645,6 @@
     if (!root || !TK) return;
     if (state.view !== "solo" || state.solo.section !== "targets") { root.innerHTML = ""; return; }
     const tool = activeTool();
-    if (!tool) { root.innerHTML = ""; return; }
     const tk = state.solo.toolkit;
     const phases = toolPhases(tool);
     const labels = { "greek-core": "Greek core", "labeled-import": "Import", universal: "Universal" };
@@ -4638,9 +4654,9 @@
       </div>
       <div class="tk-tools" role="toolbar" aria-label="${escapeHtml(TK.PILLARS.find((pillar) => pillar.id === tk.pillar)?.name || "Soloist")} tools">
         ${TK.availableTools(tk.pillar, state.modeId).map((t) =>
-          `<button aria-pressed="${t.id === tool.id}" data-tk-tool="${t.id}" class="${t.id === tool.id ? "active" : ""}">${escapeHtml(t.name)}</button>`).join("")}
+          `<button aria-pressed="${!!tool && t.id === tool.id}" data-tk-tool="${t.id}" class="${tool && t.id === tool.id ? "active" : ""}">${escapeHtml(t.name)}</button>`).join("")}
       </div>
-      <article id="soloToolkitPanel" class="tk-card" role="tabpanel" aria-labelledby="tk-pillar-${tk.pillar}" tabindex="0">
+      ${tool ? `<article id="soloToolkitPanel" class="tk-card" role="tabpanel" aria-labelledby="tk-pillar-${tk.pillar}" tabindex="0">
         <header><b>${escapeHtml(tool.name)}</b><span class="tk-badge tk-${tool.importLabel}">${labels[tool.importLabel]}</span></header>
         <p class="tk-logic">${escapeHtml(tool.logic)}</p>
         <div class="tk-do"><span>Do this</span><p>${escapeHtml(tool.exercise)}</p></div>
@@ -4649,7 +4665,7 @@
           `<button data-tk-phase="${i}" class="${i === tk.phase ? "active" : ""}"><i>${i + 1}</i>${escapeHtml(label)}</button>`).join("")}</div>` : ""}
         ${toolRailHtml(tool)}
         <footer class="tk-origin"><span>${escapeHtml(tool.origin)}</span><button class="mini" data-open-tactical-example="${escapeHtml(tool.exampleId)}">See exact tactical example →</button></footer>
-      </article>`;
+      </article>` : `<p id="soloToolkitPanel" class="tk-none" role="tabpanel" aria-labelledby="tk-pillar-${tk.pillar}">No tool selected — the landing lens is set by hand. Pick a tool above and it takes over the lens.</p>`}`;
     root.querySelectorAll("[data-tk-pillar]").forEach((b) => b.onclick = () => {
       const id = b.getAttribute("data-tk-pillar");
       toolkitFocusRequest = { attribute: "data-tk-pillar", value: id };
@@ -4724,18 +4740,10 @@
     syncSoloFocusButtons();
   }
   function syncSoloFocusButtons() {
-    document.querySelectorAll("[data-solo-focus]").forEach((b) =>
-      b.classList.toggle("active", b.getAttribute("data-solo-focus") === state.solo.focus));
-  }
-
-  function soloTargetAddresses(note, fromFret, toFret, limit) {
-    if (!note) return [];
-    const courseNames = window.Tuning.names();
-    return FB.allTonePositions([note])
-      .filter((placement) => placement.fret >= fromFret && placement.fret <= toFret)
-      .sort((a, b) => a.fret - b.fret || b.stringIndex - a.stringIndex)
-      .slice(0, limit || 3)
-      .map((placement) => `${courseNames[placement.stringIndex]} course · ${placement.fret ? `fret ${placement.fret}` : "open"}`);
+    // ONE visible lens control: the select mirrors state.solo.focus whether
+    // the player set it or a toolkit tool did.
+    const sel = $("soloLensSel");
+    if (sel) sel.value = state.solo.focus;
   }
 
   function applySoloNeckFocus() {
@@ -4774,47 +4782,47 @@
     const mode = M.MODES[state.modeId];
     const holds = nowTarget.pc === nextTarget.pc;
     const progression = currentProgression();
-    const tool = activeTool();
+    const nowIdx = state.progStep;
+    const nextIdx = (state.progStep + 1) % progression.chords.length;
+    // ONE strip carries the whole progression, the Now/Next handoff, and each
+    // chord's landing target (it replaces the old current-change strip,
+    // roadmap cards, and neck HUD, which restated the same two chords).
     const roadmap = progression.chords.map((chord, index) => {
       const target = preferredSoloTarget(soloTargets(chord, state.solo.focus));
-      const status = index === state.progStep ? "Now" : index === (state.progStep + 1) % progression.chords.length ? "Next" : chord.phraseRole;
       const endBar = chord.startsAtBar + barsFor(chord) - 1;
-      return `<button data-solo-roadmap-step="${index}" class="solo-roadmap-card${index === state.progStep ? " now" : ""}${index === (state.progStep + 1) % progression.chords.length ? " next" : ""}">
-        <span>${status} · bar${endBar === chord.startsAtBar ? "" : "s"} ${chord.startsAtBar}${endBar === chord.startsAtBar ? "" : `–${endBar}`}</span>
-        <strong>${escapeHtml(chord.degreeLabel)}</strong><b>${escapeHtml(chord.symbol)}</b>
-        <small>${escapeHtml(chord.phraseRole)} · target ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</small></button>`;
+      const status = index === nowIdx ? `Play now · ${escapeHtml(cur.degreeLabel)}`
+        : index === nextIdx ? `Prepare next · ${escapeHtml(next.degreeLabel)}`
+          : `${escapeHtml(chord.phraseRole)} · ${escapeHtml(chord.degreeLabel)}`;
+      const hold = barsFor(chord) > 1
+        ? `<u class="hold-tail" data-held-for="${index}">hold · bars ${chord.startsAtBar}–${endBar}</u>`
+        : `<u class="hold-tail bar-tag">bar ${chord.startsAtBar}</u>`;
+      return `<button data-solo-step="${index}" class="solo-roadmap-card${index === nowIdx ? " now" : ""}${index === nextIdx ? " next" : ""}">
+        <span>${status}</span><b>${escapeHtml(chord.symbol)}</b>
+        <small>target ${escapeHtml(target.roleLabel)} ${escapeHtml(target.name)}</small>${hold}</button>`;
     }).join("");
     // The loop wrap is the moment players lose: the phrase ends on a held
     // tonic and the next chord is the top of the progression again. Nothing
     // on the neck changes across the hold, so say it in words.
-    const wrapsToTop = (state.progStep + 1) % progression.chords.length === 0 && progression.chords.length > 1;
+    const wrapsToTop = nextIdx === 0 && progression.chords.length > 1;
     const motion = holds
       ? `${nowTarget.name} holds · the chord changes its meaning`
       : thread
       ? `${thread.from.name} ${thread.direction > 0 ? "↗" : "↘"} ${thread.to.name} · ${thread.distance === 1 ? "½ step" : thread.distance === 2 ? "whole step" : "minor 3rd"}`
       : `${nowTarget.name} → ${nextTarget.name} · pre-hear the leap`;
+    const zone = state.solo.neckZone || "both";
+    const zoneNext = zone === "both" ? "first" : zone === "first" ? "second" : "both";
+    const zoneLabel = zone === "both" ? "Zones · whole neck" : zone === "first" ? "Zone 1 · frets 0–12" : `Zone 2 · frets 13–${FB.N_FRETS}`;
+    const isoState = {
+      scales: layers.scale && !layers.pentatonic && !layers.shapes && !layers.next && !layers.triads,
+      triads: !layers.scale && !layers.pentatonic && layers.shapes && layers.next && layers.triads,
+      all: layers.scale && !layers.pentatonic && layers.shapes && layers.next && !layers.triads
+    };
+    const isoLabels = { scales: "Scales only", triads: "Triads only", all: "Show all" };
     root.innerHTML = `
-      <section class="solo-progression-roadmap" aria-label="Complete Solo progression and landing targets">
-        <header><div><span>Full progression · ${escapeHtml(progression.prog.label)} · ${progression.chords[0].phraseBars}-bar resolved phrase</span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)} · ${escapeHtml(landingLensName(state.solo.focus))}</b></div><p>${tool ? `<strong>${escapeHtml(tool.name)}</strong> · ${escapeHtml(tool.exercise.split(".")[0])}.` : "Say each target before its chord arrives."}</p></header>
+      <section class="solo-progression-roadmap" aria-label="Complete Solo progression with now and next landing" aria-live="polite">
+        <header><div><span>${escapeHtml(progression.prog.label)} · ${progression.chords[0].phraseBars}-bar resolved phrase</span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)} · ${escapeHtml(landingLensName(state.solo.focus))}</b></div></header>
         <div class="solo-roadmap-grid">${roadmap}</div>
-      </section>
-      <section class="solo-neck-hud" aria-label="Current and next solo landing" aria-live="polite">
-        <article class="solo-hud-card now"><span>Play now · ${escapeHtml(cur.degreeLabel)}</span><strong>${escapeHtml(cur.symbol)}</strong><b><i>target</i> ${escapeHtml(nowTarget.roleLabel)} · ${escapeHtml(nowTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(cur))}</div><small>solid triad · the green <b>circle</b> is the note to play now</small></article>
-        <div class="solo-hud-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b><small>hear the destination before the chord changes</small></div>
-        <article class="solo-hud-card next${wrapsToTop ? " wraps" : ""}"><span>Prepare next · ${escapeHtml(next.degreeLabel)}</span><strong>${escapeHtml(next.symbol)}</strong><b><i>target</i> ${escapeHtml(nextTarget.roleLabel)} · ${escapeHtml(nextTarget.name)}</b><div class="solo-hud-triad">${escapeHtml(triadSpelling(next))}</div><small>dashed triad · the amber <b>diamond</b> is where you are aiming; it turns into a green circle when it arrives</small></article>
-      </section>
-      <section class="solo-neck-zones" aria-label="Target locations in both halves of the neck">
-        <header><div><span>Same target · two neck zones</span><b>Find ${escapeHtml(nowTarget.roleLabel)} ${escapeHtml(nowTarget.name)} now, then ${escapeHtml(nextTarget.roleLabel)} ${escapeHtml(nextTarget.name)} next</b></div><button data-solo-target-scope aria-pressed="${state.solo.allTargets}">${state.solo.allTargets ? "All target positions" : "Shape landing only"}</button></header>
-        ${[["first", "Zone 1", 0, 12], ["second", "Zone 2", 13, 24]].map(([id, label, from, to]) => {
-          const nowPlaces = soloTargetAddresses(nowTarget, from, Math.min(to, FB.N_FRETS), 3);
-          const nextPlaces = soloTargetAddresses(nextTarget, from, Math.min(to, FB.N_FRETS), 3);
-          return `<button data-solo-neck-zone="${id}" class="solo-neck-zone-card${state.solo.neckZone === id ? " active" : ""}">
-            <span>${label} · frets ${from}–${Math.min(to, FB.N_FRETS)}</span>
-            <b><i>Now</i> ${escapeHtml(nowPlaces.join(" · ") || "not available")}</b>
-            <b><i>Next</i> ${escapeHtml(nextPlaces.join(" · ") || "not available")}</b>
-          </button>`;
-        }).join("")}
-        <button data-solo-neck-zone="both" class="solo-neck-zone-card both${state.solo.neckZone === "both" ? " active" : ""}"><span>Whole neck</span><b><i>Now + Next</i> keep both rows visible</b><small>Recommended for learning the repeated map</small></button>
+        <div class="solo-strip-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b>${wrapsToTop ? "<small>the loop wraps: the next chord is the top of the progression again</small>" : ""}</div>
       </section>
       <div class="solo-layer-row">
         <span class="solo-layer-label">Scales</span>
@@ -4828,17 +4836,19 @@
         <span class="solo-layer-divider" aria-hidden="true"></span>
         <span class="solo-layer-label">Neck</span>
         ${["auto", "full", "split"].map((m) => `<button data-solo-neck="${m}" class="layer-chip${state.solo.neckMode === m ? " on" : ""}" aria-pressed="${state.solo.neckMode === m}">${m === "auto" ? "Auto" : m === "full" ? "Full 24" : "Split 12+12"}</button>`).join("")}
+        <button data-solo-neck-zone="${zoneNext}" class="layer-chip${zone !== "both" ? " on" : ""}" aria-pressed="${zone !== "both"}" title="Cycle the zone filter: whole neck → zone 1 → zone 2">${zoneLabel}</button>
+        <button data-solo-target-scope class="layer-chip${state.solo.allTargets ? " on" : ""}" aria-pressed="${state.solo.allTargets}" title="Ring every playable address of the target, or only the compact shape landing">All target positions</button>
         <span class="solo-layer-divider" aria-hidden="true"></span>
         <span class="solo-layer-label">Isolate</span>
-        <button data-solo-isolate="scales" class="layer-chip">Scales only</button>
-        <button data-solo-isolate="triads" class="layer-chip">Triads only</button>
-        <button data-solo-isolate="all" class="layer-chip">Show all</button>
-        <span class="layer-note"><b class="sig-now">green circle</b> = play now · <b class="sig-next">amber diamond</b> = aim next · every layer is independent, so you can strip the neck to one thing</span>
+        <button data-solo-isolate="scales" class="layer-chip${isoState.scales ? " on" : ""}" aria-pressed="${isoState.scales}">${isoLabels.scales}</button>
+        <button data-solo-isolate="triads" class="layer-chip${isoState.triads ? " on" : ""}" aria-pressed="${isoState.triads}">${isoLabels.triads}</button>
+        <button data-solo-isolate="all" class="layer-chip${isoState.all ? " on" : ""}" aria-pressed="${isoState.all}">${isoLabels.all}</button>
+        <span class="layer-note"><b class="sig-now">green circle</b> = land now · <b class="sig-next">amber diamond</b> = aim next · solid shape = ${escapeHtml(cur.symbol)} sounding · dashed = ${escapeHtml(next.symbol)} coming · ring = ${escapeHtml(landingLensName(state.solo.focus))}</span>
       </div>`;
-    root.querySelectorAll("[data-solo-roadmap-step]").forEach((button) => {
+    root.querySelectorAll("[data-solo-step]").forEach((button) => {
       button.onclick = () => {
-        stopPlay(); state.progStep = +button.getAttribute("data-solo-roadmap-step");
-        renderSoloMapControls(); renderSolo(); auditionProg();
+        stopPlay(); state.progStep = +button.getAttribute("data-solo-step");
+        renderSolo(); auditionProg();
       };
     });
     root.querySelectorAll("[data-solo-neck]").forEach((button) => button.onclick = () => {
@@ -4936,7 +4946,7 @@
       <header class="shape-cards-head">
         <div><span>Shape patterns · ${escapeHtml(prog.label)}</span>
         <b>The whole progression as ${chords.length} small patterns</b></div>
-        <p>Each card is the voice-led triad at its real frets. Numbers under the grid are fret numbers; letters inside are the note's role. Ringed cells are the current landing target, so you can read where the ${escapeHtml(landingLensName(state.solo.focus))} sit across the whole ${escapeHtml(prog.label)} without scanning the neck.</p>
+        <p>Each card is one chord's voice-led triad at its real frets; ringed cells are the ${escapeHtml(landingLensName(state.solo.focus))}.</p>
       </header>
       <div class="shape-cards">${chords.map((chord, i) => shapeCardHtml(chord, path[i], i)).join("")}</div>`;
   }
@@ -5023,13 +5033,14 @@
     renderShapeCards();
     renderSoloToolkit();
 
-    const frame = M.PENTATONIC[state.modeId];
+    // Guarded like every other PENTATONIC lookup: a dromos without a defined
+    // frame still renders (renderSoloLayerChips uses the same fallback).
+    const frame = M.PENTATONIC[state.modeId] || { name: "Pentatonic" };
     const targetLabel = soloTargetLabel;
     const hasSeventhGuide = curTargets.concat(nextTargets).some((note) => note.role === "7" || note.role === "b7");
     const guideInstruction = hasSeventhGuide
       ? "Connect the 3rd and 7th with the smallest move you can hear; the line should explain the harmony even without a chord."
       : "This change uses triads: hear the 3rd as the colour, then land on the root when you want the resolution to feel final.";
-    const route = P.melodicRoute(state.solo.routeId);
     const targetScopeSentence = state.solo.allTargets
       ? "The target ring repeats at every playable address in both neck zones; the solid and dashed shapes show the compact voice-led choice under one hand."
       : "The target ring is limited to the compact voice-led shape; switch to All target positions to learn the same note across both neck zones.";
@@ -5054,40 +5065,35 @@
       return `<div class="pedal-row${last ? " resolve" : ""}"><b>${escapeHtml(chordItem.symbol)}</b><i>${escapeHtml(pedalInfo.name)} = ${escapeHtml(role.label)}</i><span>${meaning}</span></div>`;
     }).join("")}</div>` : "";
     $("soloRecipe").innerHTML = `
-      <div class="solo-frame"><b>${frame.name}</b><span>${pentatonic.map((note) => note.name).join(" · ")}</span></div>
-      ${triadSeatHtml(cur, curTargets)}
-      <div class="triad-landscape-key"><span class="landscape-solid">solid</span> play ${cur.symbol} now · <span class="landscape-faint">dashed</span> prepare ${next.symbol} · <span class="landscape-ring">ring</span> ${landingLensName(focus)}</div>
       <div class="solo-targets"><span>Now · <b>${cur.symbol}</b></span><strong>${targetLabel(curTargets)}</strong>
       <span>Next · <b>${next.symbol}</b></span><strong>${targetLabel(nextTargets)}</strong></div>
-      ${roleAdviceHtml(cur)}
-      ${thread
-        ? `<p class="solo-thread"><b>The thread:</b> ${escapeHtml(thread.from.name)} → ${escapeHtml(thread.to.name)}, ${thread.distance === 1 ? "a half step" : thread.distance === 2 ? "a whole step" : "three frets"} on one string. The neck draws it; play only that move and the change is already audible.</p>`
-        : `<p class="solo-thread quiet"><b>No stepwise thread here:</b> the closest landing is a leap, so aim with your ear and let the pentatonic carry you there.</p>`}
-      ${pedalTable}
-      <p>${focus === "third"
-        ? "Treat the pentatonic as the sentence and the 3rd as the punctuation: arrive on it when the chord changes."
-        : focus === "triad"
-          ? "Treat the triad as the map of meaning: root feels settled, 3rd names the colour, and 5th keeps the line open. Connect only as much scale material as you need to reach the next triad."
-          : focus === "sweet"
-            ? "Sing the 2nd over the chord, then resolve it into the 3rd on the change. In Ousak and Hijaz the ♭2 leans even harder — one lean per phrase, placed exactly on the arrival, is the whole trick."
-            : focus === "pedal"
-              ? `One note over everything: hold ${pedalInfo ? pedalInfo.name : "the common tone"} through the full progression. Each chord re-names it (see the table), and the final chord resolves it — that is how a single note explains a whole song.`
-              : guideInstruction}</p>
-      <section class="solo-thinking"><span>Hear · think · play</span><ol>
-        <li><b>Hear:</b> sing ${targetLabel(nextTargets)} before the chord moves. If you cannot sing it, stay on the current triad.</li>
-        <li><b>Think:</b> ${route.path}</li>
-        <li><b>Play:</b> ${route.budget}. ${route.think}</li>
-      </ol><p>${focusSentence}</p><div class="solo-actions">
+      <div class="solo-actions">
         <button class="solo-hear-lean" data-hear-lean>${leanDemoLabel(focus)}</button>
         <button class="solo-open-route" data-open-solo-path>Practise this route in Shape →</button>
-      </div></section>
+      </div>
+      <details class="deck-advanced solo-fold" id="soloEvidence"${soloEvidenceOpen ? " open" : ""}>
+        <summary>Why these notes — frame, triad, thread</summary>
+        <div class="solo-frame"><b>${frame.name}</b><span>${pentatonic.map((note) => note.name).join(" · ")}</span></div>
+        ${triadSeatHtml(cur, curTargets)}
+        ${roleAdviceHtml(cur)}
+        ${thread
+          ? `<p class="solo-thread"><b>The thread:</b> ${escapeHtml(thread.from.name)} → ${escapeHtml(thread.to.name)}, ${thread.distance === 1 ? "a half step" : thread.distance === 2 ? "a whole step" : "three frets"} on one string. The neck draws it; play only that move and the change is already audible.</p>`
+          : `<p class="solo-thread quiet"><b>No stepwise thread here:</b> the closest landing is a leap, so aim with your ear and let the pentatonic carry you there.</p>`}
+        ${pedalTable}
+        <p>${focus === "third"
+          ? "Treat the pentatonic as the sentence and the 3rd as the punctuation: arrive on it when the chord changes."
+          : focus === "triad"
+            ? "Treat the triad as the map of meaning: root feels settled, 3rd names the colour, and 5th keeps the line open. Connect only as much scale material as you need to reach the next triad."
+            : focus === "sweet"
+              ? "Sing the 2nd over the chord, then resolve it into the 3rd on the change. In Ousak and Hijaz the ♭2 leans even harder — one lean per phrase, placed exactly on the arrival, is the whole trick."
+              : focus === "pedal"
+                ? `One note over everything: hold ${pedalInfo ? pedalInfo.name : "the common tone"} through the full progression. Each chord re-names it (see the table), and the final chord resolves it — that is how a single note explains a whole song.`
+                : guideInstruction}</p>
+        <p>${focusSentence}</p>
+      </details>
       <section id="soloTimingMatrix" class="solo-timing-matrix"></section>`;
-    // The phrase-role suggestion renders inside the recipe, so it binds here.
-    $("soloRecipe").querySelectorAll("[data-role-lens]").forEach((b) => b.onclick = () => {
-      state.solo.focus = b.getAttribute("data-role-lens");
-      syncSoloFocusButtons();
-      renderSolo();
-    });
+    const evidence = $("soloEvidence");
+    if (evidence) evidence.ontoggle = () => { soloEvidenceOpen = evidence.open; };
     $("soloRecipe").querySelector("[data-open-solo-path]").onclick = () => setSoloSection("path");
     const leanBtn = $("soloRecipe").querySelector("[data-hear-lean]");
     leanBtn.onclick = () => {
@@ -5109,7 +5115,7 @@
       <span class="tri-set">${frame.name}</span></div>
       <div class="tri-move"><b>Land now:</b> ${targetLabel(curTargets)}<br />
       <b>Hear next:</b> ${targetLabel(nextTargets)}</div>
-      <div class="ro-foot">The full-neck landscape separates roles: solid = nearest triad, faint = other inversions, quiet = pentatonic connector, ring = current or next landing. Aim before you move; then use only enough notes to make the arrival feel inevitable.</div>`;
+      <div class="ro-foot">Aim before you move; then use only enough notes to make the arrival feel inevitable.</div>`;
   }
 
   function renderLabPhrase() {
@@ -5142,10 +5148,13 @@
   }
 
   function renderSoloSection() {
-    if (state.solo.section === "road") renderSoloRoad();
+    // renderSolo() renders the stage strip itself (with the targets it just
+    // computed); the other sections only need the strip cleared. One render
+    // per pass — renderSoloLayerChips used to run twice here and a third
+    // time in applyView.
+    if (state.solo.section === "road") { renderSoloRoad(); renderSoloLayerChips(); }
     else if (state.solo.section === "targets") renderSolo();
-    else renderLab();
-    renderSoloLayerChips();
+    else { renderLab(); renderSoloLayerChips(); }
   }
 
   function setSoloSection(section) {
@@ -5158,12 +5167,8 @@
     document.querySelectorAll("[data-solo-section]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-solo-section") === section));
     renderSoloMapControls();
-    if (["path", "phrase", "cell"].includes(section)) {
-      state.lab.drill = section;
-      renderLab();
-    } else {
-      renderSoloSection();
-    }
+    if (["path", "phrase", "cell"].includes(section)) state.lab.drill = section;
+    renderSoloSection();
     renderPageGuide();
   }
 
@@ -5362,7 +5367,7 @@
     document.querySelectorAll("#progStrip [data-step]").forEach((el) => {
       el.classList.toggle("active", +el.getAttribute("data-step") === state.progStep);
     });
-    document.querySelectorAll(".solo-current-change [data-solo-step]").forEach((el) => {
+    document.querySelectorAll(".solo-progression-roadmap [data-solo-step]").forEach((el) => {
       el.classList.toggle("active", +el.getAttribute("data-solo-step") === state.progStep);
     });
   }
@@ -5624,7 +5629,9 @@
     // renderCycle rightfully decides whether the pivot explanation is visible;
     // no other practice area should inherit that explanation from a prior view.
     if (v !== "cycle") $("pivotBanner").classList.remove("show");
-    renderSoloLayerChips();
+    // Solo renders its own stage strip via setSoloSection above; every other
+    // view only needs the strip cleared (chordmap manages stageLayers itself).
+    if (v !== "solo") renderSoloLayerChips();
     renderPageGuide();
     $("keyboardHint").textContent = v === "melody"
       ? "Space replays the note · choose one degree · Check builds the harmony map"
@@ -5814,14 +5821,17 @@
 
     document.querySelectorAll("[data-solo-section]").forEach((button) =>
       button.onclick = () => setSoloSection(button.getAttribute("data-solo-section")));
-    document.querySelectorAll("[data-solo-focus]").forEach((button) =>
-      button.onclick = () => {
-        stopPlay();
-        state.solo.focus = button.getAttribute("data-solo-focus");
-        document.querySelectorAll("[data-solo-focus]").forEach((item) =>
-          item.classList.toggle("active", item.getAttribute("data-solo-focus") === state.solo.focus));
-        renderSolo();
-      });
+    $("soloLensSel").onchange = () => {
+      state.solo.focus = $("soloLensSel").value;
+      // Two-way lens/tool sync: a hand-set lens that contradicts the active
+      // tool's choreography deselects the tool, so the toolkit card never
+      // claims a lens it no longer drives.
+      const tool = activeTool();
+      if (tool && tool.choreo && tool.choreo.focus && tool.choreo.focus !== state.solo.focus) {
+        state.solo.toolkit.toolId = null;
+      }
+      if (state.view === "solo" && state.solo.section === "targets") renderSolo();
+    };
 
     document.querySelectorAll("[data-style-section]").forEach((button) =>
       button.onclick = () => setStyleSection(button.getAttribute("data-style-section")));

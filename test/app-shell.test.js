@@ -240,7 +240,13 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
     "the first Solo experience must target each chord's actual 3rd");
   assert.match(app, /neckZone: "both", allTargets: true/,
     "the default Solo lesson must expose the target in both halves of the neck");
-  assert.match(app, /class="solo-neck-hud"/);
+  // The Now/Next handoff, the full progression, and the smallest-useful-move
+  // motion line live in ONE strip above the neck (the old current-change
+  // strip, roadmap cards, and neck HUD restated the same two chords).
+  assert.match(app, /class="solo-progression-roadmap"[^>]*aria-live="polite"/,
+    "the merged strip must announce the Now/Next handoff");
+  assert.match(app, /class="solo-strip-motion"/,
+    "the smallest-useful-move motion line must render inside the merged strip");
   assert.match(app, /Play now · \$\{escapeHtml\(cur\.degreeLabel\)\}/);
   assert.match(app, /Prepare next · \$\{escapeHtml\(next\.degreeLabel\)\}/);
   assert.match(app, /triadSpelling\(cur\)/);
@@ -264,7 +270,11 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
   assert.match(fretboard, /nowPositionSet\.has\(key\)/);
   assert.match(fretboard, /nextPositionSet\.has\(key\)/,
     "shape-only mode must still limit rings to the selected playable addresses");
-  assert.match(app, /data-solo-neck-zone="\$\{id\}"/);
+  // The zone filter is ONE chip in the neck row that cycles whole → zone 1 →
+  // zone 2 (the old three-card zones section duplicated the neck scoping).
+  assert.match(app, /data-solo-neck-zone="\$\{zoneNext\}"/);
+  assert.match(app, /zone === "both" \? "first" : zone === "first" \? "second" : "both"/,
+    "the zone chip must cycle through both halves and back to the whole neck");
   assert.match(app, /function applySoloNeckFocus/);
   assert.match(fretboard, /for \(let row = 0; row < ROWS; row\+\+\)/,
     "the nearest-target tracer must repeat in both rendered neck rows");
@@ -281,9 +291,8 @@ test("Solo Follow Changes is a full-neck current-to-next harmony journey", () =>
   });
   assert.match(app, /data-solo-isolate/, "isolation presets must be wired");
   assert.match(css, /body\[data-view="solo"\]\[data-solo-section="targets"\] main \{ width: min\(1360px, 100%\)/);
-  assert.match(css, /\.solo-neck-hud\.lean-phase/,
+  assert.match(css, /\.solo-progression-roadmap\.lean-phase/,
     "the next target must receive a visible pre-arrival state");
-  assert.match(css, /\.solo-neck-zones/);
   assert.match(css, /\.fb-dot\.neck-muted/);
   assert.match(css, /svg\.lean-phase \.fb-dot\.next-shape/,
     "the complete coming triad must brighten before the chord boundary");

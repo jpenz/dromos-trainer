@@ -316,36 +316,30 @@
                 <button data-solo-section="phrase" title="One four-note cell, every chord, every key.">4 Cells</button>
                 <button data-solo-section="cell" title="Low phrases, then high, then home. The intro that sets up the song.">5 Taximi</button>
               </div>
-              <div id="soloRoad" class="sub"></div>
-              <div id="soloTargets" class="sub hidden">
-                <p class="ear-hint"><b>Read the neck while the harmony moves:</b> the full scale stays visible, the solid shape is the chord under your hand, and the rings tell you which note to land on now and next.</p>
-                <div id="soloToolkit" class="solo-toolkit" aria-label="Soloist toolkit"></div>
-                <span class="panel-label">Landing target</span>
-                <div class="landing-groups">
-                  <div class="landing-group">
-                    <span>Aim at the chord</span>
-                    <div class="seg seg-4">
-                      <button data-solo-focus="third" class="active">3rds · start here</button>
-                      <button data-solo-focus="root">Roots</button>
-                      <button data-solo-focus="guide">Guide tones</button>
-                      <button data-solo-focus="triad">Triad tones</button>
-                    </div>
-                  </div>
-                  <div class="landing-group">
-                    <span>Aim at the dromos</span>
-                    <div class="seg seg-2">
-                      <button data-solo-focus="sweet">Lean ♭2→3</button>
-                      <button data-solo-focus="seam">Resting tones</button>
-                    </div>
-                  </div>
-                  <div class="landing-group">
-                    <span>Aim by motion</span>
-                    <div class="seg seg-2">
-                      <button data-solo-focus="pedal">Common tone</button>
-                      <button data-solo-focus="enclose">Enclose <i class="lens-import">import</i></button>
-                    </div>
-                  </div>
-                </div>
+              <div id="soloRoad" class="sub hidden"></div>
+              <div id="soloTargets" class="sub">
+                <label class="solo-lens-control" for="soloLensSel">Landing lens — the note the rings aim at
+                  <select id="soloLensSel">
+                    <optgroup label="Aim at the chord">
+                      <option value="third" data-solo-focus="third" selected>3rds · start here</option>
+                      <option value="root" data-solo-focus="root">Roots</option>
+                      <option value="guide" data-solo-focus="guide">Guide tones</option>
+                      <option value="triad" data-solo-focus="triad">Triad tones</option>
+                    </optgroup>
+                    <optgroup label="Aim at the dromos">
+                      <option value="sweet" data-solo-focus="sweet">Lean ♭2→3</option>
+                      <option value="seam" data-solo-focus="seam">Resting tones</option>
+                    </optgroup>
+                    <optgroup label="Aim by motion">
+                      <option value="pedal" data-solo-focus="pedal">Common tone</option>
+                      <option value="enclose" data-solo-focus="enclose">Enclose · import</option>
+                    </optgroup>
+                  </select>
+                </label>
+                <details class="deck-advanced solo-fold" id="soloToolkitFold">
+                  <summary>Soloist toolkit — pick a tool and it drives the lens</summary>
+                  <div id="soloToolkit" class="solo-toolkit" aria-label="Soloist toolkit"></div>
+                </details>
                 <div id="soloShapeCards" class="solo-shape-cards"></div>
                 <div id="soloRecipe" class="solo-recipe"></div>
               </div>
