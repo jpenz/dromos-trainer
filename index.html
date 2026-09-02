@@ -136,13 +136,9 @@
           <section id="cycleRoadmap" class="cycle-roadmap hidden" aria-label="Six-chord look-ahead"></section>
           <div id="pivotBanner" class="pivot-banner"></div>
           <div id="triadStrip" class="prog-strip hidden"></div>
-          <section id="pickingSetup" class="picking-setup hidden" aria-labelledby="pickingSetupTitle">
-            <header>
-              <div><span class="panel-label">Picking Lab</span><h2 id="pickingSetupTitle">Make the right hand serve the phrase.</h2></div>
-              <p>Pick an exercise from the six-stage plan, set your key, and press Start. Every route follows the selected instrument.</p>
-            </header>
+          <section id="pickingSetup" class="picking-setup hidden" aria-label="Picking Lab setup">
             <div class="picking-context music-context">
-              <label for="pickingExerciseSel">Exercise<select id="pickingExerciseSel"></select><small id="pickingExerciseHelp"></small></label>
+              <label for="pickingExerciseSel">Exercise<select id="pickingExerciseSel"></select></label>
               <label for="pickingPulseSel">Rhythm<select id="pickingPulseSel"></select></label>
             </div>
             <div id="pickingMasterySpine" class="picking-mastery-spine" aria-label="Six-stage bouzouki mastery path"></div>
@@ -434,7 +430,7 @@
               <section id="pickingLesson" class="picking-lesson" aria-live="polite"></section>
               <section class="picking-deck" aria-label="Play controls">
                 <div class="deck-primary">
-                  <p class="deck-hint">Loops smoothly until you press stop. The count-in gives you one bar. Play, speed, key and scale live in the bar below.</p>
+                  <p class="deck-hint">Loops smoothly until you press stop. The count-in gives you one bar.</p>
                   <label class="check"><input type="checkbox" id="tglPickingMetronome" checked /> Metronome click</label>
                   <label class="check"><input type="checkbox" id="tglPickingCountIn" checked /> Count-in bar</label>
                   <div class="picking-sound-check"><button id="btnPickingSoundCheck" class="mini sound-check" type="button">♪ Test sound</button><small id="pickingAudioReadyStatus" class="audio-ready-status" role="status" aria-live="polite">Tap if audio is silent</small></div>
@@ -456,13 +452,8 @@
                     <div class="seg" id="pickingVariantButtons"></div>
                   </div>
                 </div>
-                <div class="deck-progress">
-                  <button id="btnPickingClean" class="mini">Log clean pass</button>
-                  <button id="btnPickingTempoUp" class="mini hidden">Ready · +4 BPM</button>
-                  <button id="btnPickingMiss" class="mini">Missed it · −4 BPM</button>
-                                  </div>
                 <details class="deck-advanced">
-                  <summary>More options — evolve through keys &amp; positions, practice sound</summary>
+                  <summary>Setup — evolve through keys &amp; positions, practice sound</summary>
                   <div class="picking-runner-grid">
                     <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop forever</button><button data-picking-run="evolve">Evolve</button></div></div>
                     <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
@@ -474,7 +465,14 @@
                   <div id="pickingRunMap" class="picking-run-map" aria-label="Picking practice run roadmap"></div>
                 </details>
               </section>
-              <div id="pickingPasses" class="picking-passes" aria-live="polite"></div>
+              <section class="picking-pass-block" aria-label="Pass loop">
+                <div id="pickingPasses" class="picking-passes" aria-live="polite"></div>
+                <div class="deck-progress">
+                  <button id="btnPickingClean" class="mini">Log clean pass</button>
+                  <button id="btnPickingTempoUp" class="mini hidden">Ready · +4 BPM</button>
+                  <button id="btnPickingMiss" class="mini">Missed it · −4 BPM</button>
+                </div>
+              </section>
             </div>
 
             <!-- Melody to harmony -->
