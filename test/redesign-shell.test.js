@@ -217,6 +217,8 @@ test("Song Map leads with the strip, switches modes from one control, and claims
   assert.match(app, /function markProgMoved/, "movement is recorded where the step actually changes");
   // Small tiers stop chroming a handful of cards with headings.
   assert.match(app, /const flat = count <= 2;/, "tier and job headings collapse for one- or two-map tiers");
+});
+
 test("Greek Pulse opens on the pulse it is named after (blueprint 2.11)", () => {
   const html = read("index.html");
   const app = read("js/app.js");
