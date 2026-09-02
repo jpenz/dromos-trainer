@@ -128,11 +128,13 @@
 
         <!-- ================= Harmonic journey ================= -->
         <section id="journeyBand" class="journey-band" aria-label="Harmonic journey">
+          <!-- Song Map's answer object: the strip IS the map, so it leads the
+               page and the Now/Next guide reads as its status line. -->
+          <div id="progStrip" class="prog-strip hidden" aria-label="Song map, one chip per bar"></div>
           <section id="changeGuide" class="change-guide" aria-label="Current and next chord" aria-live="off"></section>
           <div id="journeyAnnouncement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
           <section id="cycleRoadmap" class="cycle-roadmap hidden" aria-label="Six-chord look-ahead"></section>
           <div id="pivotBanner" class="pivot-banner"></div>
-          <div id="progStrip" class="prog-strip hidden"></div>
           <div id="triadStrip" class="prog-strip hidden"></div>
           <section id="pickingSetup" class="picking-setup hidden" aria-labelledby="pickingSetupTitle">
             <header>
@@ -213,13 +215,16 @@
                 <div class="row">
                   <div class="grow">
                     <span class="panel-label">Scale / dromos</span>
-                    <div class="seg seg-5">
+                    <!-- The one mode switcher. Its buttons carry the signature
+                         tones the deleted scale-strip comparator used to show. -->
+                    <div class="seg seg-5 seg-modes">
                       <button data-modeid="major" class="active">Major</button>
                       <button data-modeid="minor">Natural minor</button>
                       <button data-modeid="harmonicMinor">Harmonic minor</button>
                       <button data-modeid="ousak">Ousak</button>
                       <button data-modeid="hijaz">Hijaz</button>
                     </div>
+                    <p id="progModeNote" class="mode-note"></p>
                   </div>
                 </div>
                 <div class="row tonic-row">
@@ -228,7 +233,6 @@
                 </div>
               </section>
               <span class="panel-label">Common song maps</span>
-              <p class="workbench-note">Choose by musical job first—home loop, cadence, turnaround, or modal motion. Roman numerals stay constant while the chord names follow your selected home.</p>
               <div id="progList" class="prog-list"></div>
             </div>
 
