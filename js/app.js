@@ -2936,6 +2936,16 @@
     "counted-tremolo-groupings": true, "tremolo-entry-exit": true
   };
 
+  // Drills whose mechanics REQUIRE a layout (crossing grammars) keep their own.
+  const ROUTE_LOCKED = { "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true, "full-neck-ladder": true };
+  // Sequences with fixed node builders that never read state.picking.route
+  // (open courses, arpeggio circuits, ladders, traversals): the route seg is
+  // meaningless for them, so it hides instead of silently doing nothing.
+  const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks"]);
+  function pickingExerciseRoutes(exercise) {
+    return !ROUTE_LOCKED[exercise.id] && !PICKING_FIXED_SEQUENCES.has(exercise.sequence);
+  }
+
   // BPM level ladders. Anchors are printed sources (Trinity grade minima,
   // the Manolopoulos bouzouki thesis, Mair's 50-60 band, Julin's relayed
   // 100-130 tremolo band); every unanchored step is an app-design default
@@ -3440,7 +3450,6 @@
     // horizontal on the top course, where bouzouki melody lives. Drills whose
     // mechanics REQUIRE a layout (crossing grammars) keep their own.
     const routedLayout = state.picking.route === "tiered" ? "box" : "horizontal";
-    const ROUTE_LOCKED = { "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true, "full-neck-ladder": true };
     const layout = ROUTE_LOCKED[exercise.id] ? exercise.layout : routedLayout;
     const path = P.buildPath(context.tonic, pickingModeId(context), {
       layout, position: context.position, startDegree: state.lab.startDegree,
@@ -3585,7 +3594,6 @@
       }).join("")}</optgroup>`
     ).join("");
     $("pickingExerciseSel").onchange = (event) => selectPickingExercise(event.target.value);
-    $("pickingExerciseHelp").textContent = exercise.short;
     $("pickingTonicSel").innerHTML = M.TONICS.map((name) => `<option value="${name}"${name === state.tonic ? " selected" : ""}>${name}</option>`).join("");
     $("pickingTonicSel").onchange = (event) => {
       stopPlay(); state.tonic = event.target.value; state.progStep = 0; state.picking.cleanPasses = 0;
@@ -3597,10 +3605,11 @@
     $("pickingModeSel").onchange = (event) => selectPickingMode(event.target.value);
     $("pickingPulseSel").innerHTML = S.STYLES.map((style) => `<option value="${style.id}"${style.id === state.groove.styleId ? " selected" : ""}>${escapeHtml(style.title)} · ${escapeHtml(style.meter)} · ${escapeHtml(style.pulse)}</option>`).join("");
     $("pickingPulseSel").onchange = (event) => { selectGrooveStyle(event.target.value); renderPickingLab(); renderPageGuide(); };
+    // Six number-dots: the stage labels live in the exercise select's
+    // optgroups; the spine only shows where you are on the six-stage path.
     $("pickingMasterySpine").innerHTML = BK.MASTERY_PHASES.map((phase) =>
-      `<span class="${phase.id === currentPhase.id ? "active" : ""}"><i>${phase.step}</i><b>${escapeHtml(phase.label)}</b><small>${escapeHtml(phase.short)}</small></span>`
+      `<span class="${phase.id === currentPhase.id ? "active" : ""}" title="Stage ${phase.step} · ${escapeHtml(phase.label)}"><i>${phase.step}</i><b class="visually-hidden">${escapeHtml(phase.label)}</b></span>`
     ).join("");
-
   }
 
   function pickingTechniqueName(mark) {
@@ -3652,10 +3661,13 @@
     $("pickingRunSummary").textContent = state.picking.runMode === "loop"
       ? "Loop forever repeats one exact movement seamlessly until you press stop."
       : `${plan.length} stages through ${movementLabel}; each stage starts exactly where the last one ends.`;
-    $("pickingRunMap").innerHTML = plan.map((stage, index) => {
+    // Loop mode is one stage repeating forever — a single-tile roadmap says
+    // nothing, so the map renders only for evolve runs.
+    $("pickingRunMap").innerHTML = state.picking.runMode === "loop" ? "" : plan.map((stage, index) => {
       const current = state.picking.playing && index === state.picking.runIndex;
       const complete = state.picking.playing && state.picking.runIndex != null && index < state.picking.runIndex;
-      return `<div class="picking-run-stage${current ? " current" : ""}${complete ? " complete" : ""}"><i>${complete ? "✓" : index + 1}</i><span><b>${escapeHtml(stage.tonic)} ${escapeHtml(M.MODES[state.modeId].short || M.MODES[state.modeId].name)}</b><small>${state.picking.runMode === "loop" ? "same route" : `shape near fret ${stage.lowFret}`}</small></span></div>`;
+      const stageMode = M.MODES[stage.modeId] || M.MODES[state.modeId];
+      return `<div class="picking-run-stage${current ? " current" : ""}${complete ? " complete" : ""}"><i>${complete ? "✓" : index + 1}</i><span><b>${escapeHtml(stage.tonic)} ${escapeHtml(stageMode.short || stageMode.name)}</b><small>${stage.lowFret != null ? `shape near fret ${stage.lowFret}` : "same shape, new key"}</small></span></div>`;
     }).join("");
   }
 
@@ -3725,20 +3737,39 @@
       const detail = node.crossing ? node.crossing : node.burst ? `${node.burst}-stroke burst` : node.phrase || "";
       const mark = pickingTechniqueMeta(node.technique);
       const tab = node.stringIndex != null && node.fret != null ? `${courseNames[node.stringIndex] || "?"}${node.fret}` : "";
-      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${node.rhythmFirst ? " on-one" : node.rhythmBeat ? " on-beat" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${tab ? `, ${escapeHtml(tab.replace(/(\D+)(\d+)/, "$1 string fret $2"))}` : ""}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u><small>${escapeHtml(mark.short)}</small></strong>${node.rhythmBeat ? `<em class="beat-chip${node.rhythmFirst ? " one" : ""}">${node.rhythmBeat}</em>` : ""}<b>${escapeHtml(note.name || "·")}</b><em class="ev-tab">${escapeHtml(tab)}${tab ? " · " : ""}${escapeHtml(note.roleLabel || note.degree || "·")}</em><small>${escapeHtml(detail)}</small></button>`;
+      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${node.rhythmFirst ? " on-one" : node.rhythmBeat ? " on-beat" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${tab ? `, ${escapeHtml(tab.replace(/(\D+)(\d+)/, "$1 string fret $2"))}` : ""}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u></strong>${node.rhythmBeat ? `<em class="beat-chip${node.rhythmFirst ? " one" : ""}">${node.rhythmBeat}</em>` : ""}<b>${escapeHtml(note.name || "·")}</b><em class="ev-tab">${escapeHtml(tab)}${tab ? " · " : ""}${escapeHtml(note.roleLabel || note.degree || "·")}</em><small>${escapeHtml(detail)}</small></button>`;
     }).join("");
-    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · stage ${mastery.step} · ${escapeHtml(mastery.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i><b>${escapeHtml(articulation.label)}</b></div></header>
-      <div class="picking-articulation"><span>${escapeHtml(articulation.mnemonic)}</span><b>${escapeHtml(articulation.label)}</b><p>${escapeHtml(articulation.detail)}</p></div>
+    // Stroke key: only the glyphs this session actually uses.
+    const usedMarks = [];
+    session.nodes.forEach((node) => { const key = node.technique || "hold"; if (!usedMarks.includes(key)) usedMarks.push(key); });
+    const hasFingerNumbers = fingerBases.some((base) => base != null);
+    const hasRoadDots = displayPath.some((node) => node.road);
+    const strokeKeyChips = usedMarks.map((markId) => {
+      const meta = pickingTechniqueMeta(markId);
+      return `<span><b>${escapeHtml(meta.glyph)}${markId && markId !== "hold" ? ` ${escapeHtml(markId)}` : ""}</b> ${escapeHtml(pickingTechniqueName(markId === "hold" ? null : markId))}</span>`;
+    }).join("");
+    const fingerChip = hasFingerNumbers ? `<span><b>1–4</b> finger · <b>0</b> open · <b>⇧</b> stretch</span>` : "";
+    const roadChips = hasRoadDots ? `<span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span>` : "";
+    const startLabel = state.picking.playing
+      ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.repeats}`)
+      : "▶ Start";
+    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · stage ${mastery.step} · ${escapeHtml(mastery.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i></div></header>
       <div class="picking-motion ${currentIndex == null ? "is-ready" : "is-playing"}" data-motion="${escapeHtml(motion.direction)}" aria-live="polite">
         <section class="picking-motion-now"><span>${currentIndex == null ? "Start with" : `Now · event ${motionIndex + 1}`}</span><b><i>${escapeHtml(motion.glyph)}</i>${escapeHtml(motion.label)}</b><p>${escapeHtml(motion.cue)}</p></section>
         <div class="picking-motion-visual" aria-hidden="true"><i class="pick-shape"></i><b></b><b></b><b></b><span>${motionEvent.accent ? "ACCENT" : "EVEN"}</span></div>
         <section class="picking-motion-next"><span>Prepare next</span><b><i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}</b><p>${escapeHtml(nextMotion.cue)}</p></section>
+        <button id="btnPickingMotionStart" class="deck-start picking-motion-start" type="button">${escapeHtml(startLabel)}</button>
       </div>
-      <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><span><b>1–4</b> one-finger-per-fret window (the modern, method-book layout) · <b>0</b> open · <b>⇧</b> stretch or small shift, your call</span><span>Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen)</span><span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span><em>Tap an event to hear it and see the motion.</em></div>
-      <div class="picking-rhythm-ruler"><b>${escapeHtml(S.byId(state.groove.styleId).title)}</b><span>${escapeHtml(S.byId(state.groove.styleId).meter)} · ${escapeHtml(S.byId(state.groove.styleId).pulse)}</span><i>the click, the accents, and the beat chips below all follow this rhythm</i></div>
+      <div class="picking-articulation"><span>${escapeHtml(articulation.mnemonic)}</span><b>${escapeHtml(articulation.label)}</b><p>${escapeHtml(articulation.detail)}</p></div>
+      <div class="picking-stroke-key">${strokeKeyChips}${fingerChip}${roadChips}<em>Tap an event to hear it and see the motion.</em></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
-      <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section class="picking-theory"><span>Theory inside the motion</span><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}</b><p>${escapeHtml(exercise.theory)}</p><small>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</small></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
-      <details class="picking-evidence"><summary>${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
+      <div class="picking-this-pass"><span>This pass</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol><p><b>Listen for:</b> ${escapeHtml(exercise.listen)}</p><p><b>Pass when:</b> ${escapeHtml(exercise.pass)}</p></div>
+      <details class="picking-evidence"><summary>Theory · ${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>Theory inside the motion</span><p class="picking-evidence-wide"><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}.</b> ${escapeHtml(exercise.theory)} <i>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</i></p><span>Fingering &amp; layout</span><p class="picking-evidence-wide"><b>1–4</b> is the one-finger-per-fret window (the modern, method-book layout); <b>0</b> is open; <b>⇧</b> is a stretch or small shift, your call. Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen).</p><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
+    const motionStart = $("btnPickingMotionStart");
+    if (motionStart) motionStart.onclick = () => {
+      if (state.picking.playing) { stopPlay(); renderPickingLab(); return; }
+      playPickingExercise();
+    };
     $("pickingLesson").querySelectorAll("[data-picking-step]").forEach((button) => button.onclick = () => {
       stopPlay();
       const index = +button.getAttribute("data-picking-step");
@@ -3751,7 +3782,9 @@
       renderPickingLab();
     });
 
-    $("pickingRouteChoice").classList.toggle("hidden", false);
+    // The route seg only shows for drills whose notes actually follow it;
+    // layout-locked and fixed-sequence drills would silently ignore it.
+    $("pickingRouteChoice").classList.toggle("hidden", !pickingExerciseRoutes(exercise));
     document.querySelectorAll("[data-picking-route]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-picking-route") === state.picking.route));
     document.querySelectorAll("[data-picking-subdivision]").forEach((button) => {
@@ -3777,7 +3810,7 @@
         : `<p class="picking-band"><b class="band-${band.strength}">${band.strength}</b> ${escapeHtml(band.note)}</p>`
       : "";
     const ceiling = state.picking.ceilingBpm
-      ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b>. Banked — this is a good place to end the block. It is your own judgement, logged, not a measurement. Skills consolidate between sessions: retest tomorrow before pushing higher (motor-consolidation research).</p>`
+      ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b> — banked (your own logged judgement); retest tomorrow before pushing higher (motor-consolidation research).</p>`
       : "";
     const tempoFamily = pickingTempoFamily(exercise);
     const levels = PICKING_TEMPO_LEVELS[tempoFamily];
@@ -3786,7 +3819,7 @@
       const active = tempoFamily === "tremolo" && index === 4 ? state.picking.subdivision === 8 : state.bpm === bpm && state.picking.subdivision !== 8;
       return `<button data-picking-level="${index}" class="${active ? "active" : ""}">${label}</button>`;
     }).join("")}</b><small>Printed anchors: Trinity 60/72/88 · Manolopoulos 60→80→120→140 · Mair 50–60 · Julin 100–130 (relayed). Triplet values and unmarked steps are app defaults.</small></div>`;
-    $("pickingPasses").innerHTML = `${levelsHtml}<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p><p class="picking-science">Difficulty just past comfort is the documented learning zone (challenge-point research); the 4 BPM step is app design, not a validated size. Mixing in a slower block is supported at pilot scale.</p>${bandHtml}${ceiling}`;
+    $("pickingPasses").innerHTML = `${levelsHtml}<div><span>Clean passes at ${state.bpm} BPM</span><b>${[0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "done" : ""}">${index < state.picking.cleanPasses ? "✓" : index + 1}</i>`).join("")}</b></div><p>${state.picking.cleanPasses < 3 ? "Log only a pass with even time, relaxed motion, and the stated listening goal." : "Three honest passes: raise 4 BPM, or stay here if the sound is not yet easy."}</p><p class="picking-science">Difficulty just past comfort is the documented learning zone (challenge-point research); the 4 BPM step is app design, not a validated size.</p>${bandHtml}${ceiling}`;
     $("pickingPasses").querySelectorAll("[data-picking-level]").forEach((button) => button.onclick = () => {
       const index = +button.getAttribute("data-picking-level");
       stopPlay();
@@ -3804,7 +3837,7 @@
 
     const pulse = S.byId(state.groove.styleId);
     const chordContext = session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "dromos route";
-    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${escapeHtml(category ? category.label : exercise.category)}</span><span class="ro-symbol" style="font-size:22px">${escapeHtml(session.context.tonic)} ${escapeHtml(M.MODES[state.modeId].name)}</span><span class="ro-key">${escapeHtml(chordContext)}</span></div><div class="lab-stats"><span><b>${session.nodes.length}</b> events</span><span>frets <b>${session.meta.lowFret}–${session.meta.highFret}</b></span><span class="x-out"><b>${session.meta.outside}</b> outside</span><span class="x-in"><b>${session.meta.inside}</b> inside</span></div><div class="ro-foot"><b>Pulse:</b> ${escapeHtml(pulse.title)} · ${escapeHtml(pulse.meter)} · ${escapeHtml(pulse.pulse)}.<br /><b>Route:</b> ${exercise.compare ? escapeHtml(state.picking.route) : escapeHtml(exercise.layout)}. Audio previews pitch and timing; your pick supplies the attack, tremolo continuity, and ornaments.</div>`;
+    $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">${escapeHtml(category ? category.label : exercise.category)}</span><span class="ro-symbol" style="font-size:22px">${escapeHtml(session.context.tonic)} ${escapeHtml(M.MODES[state.modeId].name)}</span><span class="ro-key">${escapeHtml(chordContext)}</span></div><div class="ro-foot"><b>Pulse:</b> ${escapeHtml(pulse.title)} · ${escapeHtml(pulse.meter)} · ${escapeHtml(pulse.pulse)}.<br /><b>Route:</b> ${exercise.compare ? escapeHtml(state.picking.route) : escapeHtml(exercise.layout)}. Audio previews pitch and timing; your pick supplies the attack, tremolo continuity, and ornaments.</div>`;
   }
 
   function finishPickingRun(token, plan) {
@@ -3931,7 +3964,8 @@
 
   function raisePickingTempo() {
     if (state.picking.cleanPasses < 3) return;
-    state.bpm = Math.min(180, state.bpm + 4);
+    // Ladder bounds match the transport slider (30-220).
+    state.bpm = Math.min(220, state.bpm + 4);
     state.picking.cleanPasses = 0;
     recordRung(state.bpm);
     AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab(); renderPageGuide();
@@ -3940,7 +3974,7 @@
   function missPickingPass() {
     if (state.picking.playing) return;
     state.picking.cleanPasses = 0;
-    state.bpm = Math.max(40, state.bpm - 4);
+    state.bpm = Math.max(30, state.bpm - 4);
     recordRung(state.bpm);
     AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab();
   }
