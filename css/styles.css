@@ -2520,3 +2520,47 @@ body.chrome-single .workbench { grid-template-columns: minmax(0, 1fr); }
 .today-card.done > i { color: var(--turquoise); }
 .today-card.up-next { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .today-card .up-next-tag { position: absolute; top: 8px; right: 10px; color: var(--terracotta-bright); font-size: var(--fs-micro); font-style: normal; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* ============ Interaction canon (docs/INTERACTION_CANON.md) ============ */
+/* §1 state system: hover lift (fine pointers), press compress, one focus ring */
+@media (hover: hover) and (pointer: fine) {
+  .mini:hover:not(:disabled), .tbtn:hover:not(:disabled), .seg button:hover:not(:disabled),
+  .deck-start:hover:not(:disabled), .today-card:hover, .roadmap-chord:hover,
+  .picking-levels button:hover:not(:disabled) {
+    transform: translateY(-1px); border-color: var(--line-strong);
+    transition: transform var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
+  }
+}
+.mini:active:not(:disabled), .tbtn:active:not(:disabled), .seg button:active:not(:disabled),
+.deck-start:active:not(:disabled), .today-card:active, .roadmap-chord:active,
+.picking-levels button:active:not(:disabled) {
+  transform: scale(0.97); transition: transform var(--dur-1) var(--ease-out);
+}
+:focus-visible { outline: 2px solid var(--turquoise); outline-offset: 2px; border-radius: 4px; }
+button:disabled { opacity: 0.45; pointer-events: none; }
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
+
+/* §2 beat pulses: class-retriggered, layout-free */
+@keyframes canon-pulse { 0% { box-shadow: 0 0 0 0 rgba(67, 199, 194, 0.55); } 100% { box-shadow: 0 0 0 10px rgba(67, 199, 194, 0); } }
+@keyframes canon-pulse-strong { 0% { box-shadow: 0 0 0 0 rgba(241, 154, 85, 0.7); } 100% { box-shadow: 0 0 0 14px rgba(241, 154, 85, 0); } }
+.on-pulse { animation: canon-pulse 360ms var(--ease-out); }
+.on-pulse-strong { animation: canon-pulse-strong 420ms var(--ease-out); }
+
+/* §3 play morph tick */
+@keyframes press-tick { 0% { transform: scale(1); } 40% { transform: scale(0.94); } 100% { transform: scale(1); } }
+.tbtn.tick, .deck-start.tick { animation: press-tick var(--dur-2) var(--ease-spring); }
+
+/* §4 entrances: new nodes transition in via @starting-style; exits stay instant */
+.roadmap-chord, .today-card, .picking-event {
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+@starting-style {
+  .roadmap-chord, .today-card, .picking-event { opacity: 0; transform: translateY(4px); }
+}
+@keyframes dot-in { from { opacity: 0; } to { opacity: 1; } }
+.fb-dot.path { animation: dot-in var(--dur-2) var(--ease-out) backwards; }
+
+/* §6 designed empty states */
+.empty-state { display: grid; justify-items: center; gap: var(--sp-2); padding: var(--sp-8) var(--sp-4); border: 1px dashed var(--line); border-radius: var(--r-md); color: var(--muted); text-align: center; }
+.empty-state b { color: var(--text); font-size: var(--fs-sec); }
+.empty-state .mini { min-height: var(--h-control); }

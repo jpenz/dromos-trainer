@@ -470,6 +470,17 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
     "the verbatim duplicate of the Today grid must not return");
   assert.match(app, /const visited = todayVisits\(\);/,
     "Today cards reflect what was actually visited today");
+  // Interaction canon: beat-synced pulses, one focus ring, designed states.
+  assert.match(app, /setTimeout\(\(\) => beatPulse\(!!\(pulseBeat && pulseBeat\.first\)\), delay\);/,
+    "the interface pulses on the transport's beat, scheduled to the audio clock");
+  assert.match(app, /if \(index % state\.picking\.subdivision === 0\) beatPulse\(false, \[\$\("btnPickingPlay"\)\]\);/,
+    "the picking Start button pulses on the drill's click beats");
+  assert.match(css, /:focus-visible \{ outline: 2px solid var\(--turquoise\); outline-offset: 2px;/,
+    "one focus ring everywhere");
+  assert.match(css, /@starting-style \{\n  \.roadmap-chord, \.today-card, \.picking-event \{ opacity: 0;/,
+    "re-rendered collections enter, they do not pop");
+  assert.match(read("js/fretboard.js"), /gg\.style\.animationDelay = /,
+    "fretboard dots cascade in");
 });
 
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
