@@ -5888,7 +5888,9 @@
             ? "Type chords, then Analyze · number keys still switch practice areas"
             : v === "songs"
               ? "Read the chart · switch tabs for the lyric sheet · number keys jump between practice areas"
-            : "Space plays · ← → steps · number keys follow the navigation");
+            : v === "video"
+              ? "Choose a lesson · Set A and Set B mark the loop · number keys switch practice areas"
+              : "Space plays · ← → steps · number keys follow the navigation");
     // Each primary destination is a new lesson, not another state of the old
     // page. Opening at the previous page's scroll depth hides the premise and
     // setup—especially on iPad—so always begin at the top.
