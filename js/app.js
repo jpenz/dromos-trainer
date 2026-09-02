@@ -351,6 +351,7 @@
       <details class="guide-workflow"><summary><span>Open the complete practice guide</span><b>3 steps · listening goal · success test</b></summary><div class="guide-workflow-body">
         <ol class="guide-steps" aria-label="How to use this page">${guide.steps.map((step, index) => `<li class="${index === 0 ? "is-first" : ""}"><i>${index + 1}</i><div><span>${index === 0 ? "Start here" : index === 1 ? "Then" : "Finish"}</span><b>${escapeHtml(step)}</b></div></li>`).join("")}</ol>
         <div class="guide-reason"><div><span>What to listen or look for</span><p>${escapeHtml(guide.why)}</p></div><div class="guide-success"><span>You are ready to move on when…</span><b>${escapeHtml(guide.done)}</b></div></div>
+        ${guide.boundary ? `<p class="guide-boundary"><b>What this page does not claim:</b> ${escapeHtml(guide.boundary)}</p>` : ""}
         <details class="guide-explain"><summary>New here? Explain the words and screen controls</summary><div><dl>${guide.terms.map(([term, meaning]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(meaning)}</dd></div>`).join("")}</dl><p><b>Using the screen:</b> Tap a button once. The selected choice is highlighted. You may change choices until an exercise says <i>Check</i>. Use <i>Stop</i> whenever you need silence; changing pages also stops the sound.</p></div></details>
       </div></details>
     </article>`;
@@ -2475,7 +2476,7 @@
     if ($("melodyAudioStatus")) $("melodyAudioStatus").textContent = "Loading the pitch-stable reference…";
     const studio = await AU.prepareStudioPiano();
     if (request !== melodyPlaybackRequest) return;
-    if ($("melodyAudioStatus")) $("melodyAudioStatus").textContent = `${studio ? "Sampled studio piano" : "Warm-keys fallback"} · Stop is always available`;
+    if ($("melodyAudioStatus")) $("melodyAudioStatus").textContent = `${studio ? "Sampled studio piano" : "Warm-keys fallback"} · Stop sits in Setup`;
     callback(studio ? "studio" : "piano", AU.now() + 0.06);
   }
 
@@ -2529,8 +2530,9 @@
 
   function renderMelodyReveal() {
     const root = $("melodyReveal");
+    const more = $("melodyMore");
     const prompt = state.melody.prompt;
-    if (!prompt || !state.melody.revealed) { root.classList.add("hidden"); return; }
+    if (!prompt || !state.melody.revealed) { root.classList.add("hidden"); if (more) more.open = false; return; }
     root.classList.remove("hidden");
     $("melodyIdentity").innerHTML = `<div><span>Heard note</span><strong>${escapeHtml(prompt.note.name)}</strong><b>degree ${escapeHtml(prompt.note.degree)} · ${prompt.note.off} semitone${prompt.note.off === 1 ? "" : "s"} above ${escapeHtml(prompt.tonic)}</b></div>
       <div><span>Hear its job</span><strong>${escapeHtml(prompt.hearing.short)}</strong><p>${escapeHtml(prompt.hearing.hear)}</p></div>
@@ -2553,6 +2555,11 @@
 
     const successors = selected ? selected.successors : [];
     const activeSuccessor = successors[Math.min(state.melody.selectedSuccessor, Math.max(0, successors.length - 1))] || null;
+    // The chord colours now live behind "More", so the anticipation heading
+    // has to name the chord these moves actually come from.
+    $("melodyNextTitle").textContent = selected
+      ? `What can follow ${selected.chord.symbol}?`
+      : "What can follow?";
     $("melodyNext").innerHTML = successors.length ? successors.map((successor, index) => `<button data-melody-next="${index}" class="melody-next-card${successor === activeSuccessor ? " selected" : ""}">
       <span>${escapeHtml(successor.evidenceLabel)}${successor.returnsHome ? " · returns home" : ""}</span><strong>→ ${escapeHtml(successor.chord.degreeLabel)}</strong><b>${escapeHtml(successor.chord.symbol)}</b>
       <p>${escapeHtml(successor.routes.map((route) => route.label).join(" · "))}</p><small>${escapeHtml(successor.routes[0].group)} · ${escapeHtml(successor.routes[0].tier)}</small></button>`).join("")
@@ -2587,10 +2594,21 @@
     document.querySelectorAll("[data-melody-depth]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-melody-depth") === m.depth));
     const scale = m.prompt ? m.prompt.scale : M.scaleOf(state.tonic, state.modeId);
-    $("melodyScaleRail").innerHTML = scale.map((note, index) => `<span class="melody-scale-degree${m.revealed && m.prompt && index === m.prompt.degreeIndex ? " heard" : ""}${note.isFlavour ? " flavour" : ""}">
-      <i>${index < 4 ? "lower" : "upper"}</i><b>${escapeHtml(note.degree)}</b><em>${m.revealed ? escapeHtml(note.name) : "?"}</em></span>`).join("");
-    $("melodyChoices").innerHTML = scale.map((note, index) => `<button data-melody-degree="${index}" class="${m.guess === index ? "selected" : ""}${m.revealed && m.prompt && index === m.prompt.degreeIndex ? " right" : ""}${m.revealed && m.guess === index && index !== m.prompt.degreeIndex ? " wrong" : ""}"${!m.prompt || m.revealed ? " disabled" : ""}>
-      <span>degree</span><b>${escapeHtml(note.degree)}</b><small>${index < 4 ? "lower tetrachord" : "upper tetrachord"}</small></button>`).join("");
+    // One row of seven, not two: the scale rail and the answer buttons showed
+    // the same seven degrees side by side. The button now carries everything
+    // the rail carried - tetrachord, degree, spelled name (hidden until the
+    // reveal), identity-tone marker, and the heard degree.
+    $("melodyChoices").innerHTML = scale.map((note, index) => {
+      const heard = m.revealed && m.prompt && index === m.prompt.degreeIndex;
+      const classes = [
+        m.guess === index ? "selected" : "",
+        heard ? "right" : "",
+        m.revealed && m.guess === index && !heard ? "wrong" : "",
+        note.isFlavour ? "flavour" : ""
+      ].filter(Boolean).join(" ");
+      return `<button data-melody-degree="${index}" class="${classes}"${!m.prompt || m.revealed ? " disabled" : ""}>
+      <i>${index < 4 ? "lower tetrachord" : "upper tetrachord"}</i><b>${escapeHtml(note.degree)}</b><em>${m.revealed ? escapeHtml(note.name) : "?"}</em></button>`;
+    }).join("");
     $("melodyChoices").querySelectorAll("[data-melody-degree]").forEach((button) => {
       button.onclick = () => { if (!m.revealed) { m.guess = +button.getAttribute("data-melody-degree"); renderMelodyLab(); } };
     });
@@ -5768,6 +5786,12 @@
     $("btnMelodyCheck").onclick = checkMelodyQuestion;
     $("btnMelodyStop").onclick = () => {
       stopPitchListening({ record: false, quiet: true }); stopPlay(); $("melodyAudioStatus").textContent = "Stopped · your answer and harmony map stay in place";
+    };
+    // The sing trainer lives inside the "More" fold. A microphone must never
+    // keep running behind a closed disclosure.
+    $("melodyMore").ontoggle = () => {
+      const sing = state.melody.sing;
+      if (!$("melodyMore").open && (sing.listening || sing.requesting)) stopPitchListening({ record: true });
     };
     $("btnSingTarget").onclick = playSingTarget;
     $("btnSingStart").onclick = startPitchListening;

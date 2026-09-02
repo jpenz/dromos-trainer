@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=53" />
+  <link rel="stylesheet" href="css/styles.css?v=54" />
 </head>
 <body>
   <div class="app">
@@ -472,75 +472,81 @@
 
             <!-- Melody to harmony -->
             <div id="panelMelody" class="panel melody-lab hidden">
-              <header class="melody-hero">
-                <span class="panel-label">Melody → Harmony</span>
-                <h2>Hear one note. Name its job. Try the chords beneath it.</h2>
-                <p>The melody never determines one automatic chord. This lab shows every lawful option, then separates trainer-evidenced routes from scale-derived possibilities.</p>
-              </header>
-              <section class="melody-setup music-context" aria-label="Melody lab setup">
-                <label for="melodyTonicSel">Known home<select id="melodyTonicSel"></select></label>
-                <div class="grow">
-                  <span class="panel-label">Scale / dromos</span>
-                  <div class="seg seg-5 melody-mode-grid">
-                    <button data-melody-mode="major">Major</button>
-                    <button data-melody-mode="minor">Natural minor</button>
-                    <button data-melody-mode="harmonicMinor">Harmonic minor</button>
-                    <button data-melody-mode="ousak">Ousak</button>
-                    <button data-melody-mode="hijaz">Hijaz</button>
-                  </div>
-                </div>
-                <div>
-                  <span class="panel-label">Harmony depth</span>
-                  <div class="seg melody-depth">
-                    <button data-melody-depth="triad">Triads</button>
-                    <button data-melody-depth="seventh">7ths</button>
-                  </div>
-                </div>
-              </section>
               <section class="melody-question" aria-labelledby="melodyQuestionTitle">
-                <div class="melody-question-head"><div><span>1 · Hear + identify</span><h3 id="melodyQuestionTitle">Set your home, then start a note</h3></div><div id="melodyScore" class="melody-score">0 / 0</div></div>
+                <div class="melody-question-head"><div><span>1 · Hear + identify</span><h3 id="melodyQuestionTitle">Start a note, then name its degree</h3></div><div id="melodyScore" class="melody-score">0 / 0</div></div>
                 <div class="melody-actions">
-                  <button id="btnMelodyHome" class="mini">♪ Hear home</button>
-                  <button id="btnMelodyNew" class="mini primary-mini">▶ Start next note</button>
+                  <button id="btnMelodyNew" class="melody-start">▶ Start next note</button>
                   <button id="btnMelodyReplay" class="mini">↻ Replay</button>
-                  <button id="btnMelodyStop" class="mini">■ Stop</button>
                 </div>
                 <div id="melodyAudioStatus" class="ear-audio-status" role="status" aria-live="polite">Known home first · sampled studio piano</div>
-                <div id="melodyScaleRail" class="melody-scale-rail" aria-label="Scale-degree answer choices"></div>
-                <div id="melodyChoices" class="melody-choices"></div>
+                <div id="melodyChoices" class="melody-choices" role="group" aria-label="Scale-degree answer choices"></div>
                 <div class="melody-check-row"><button id="btnMelodyHint" class="mini">Give one hint</button><button id="btnMelodyCheck" class="mini primary-mini">Check + build harmony map</button></div>
                 <p id="melodyFeedback" class="melody-feedback">The home stays known so the question trains relative hearing, not perfect pitch.</p>
+                <details class="melody-setup deck-advanced">
+                  <summary>Setup · home, scale, harmony depth, reference audio</summary>
+                  <div class="melody-setup-body music-context">
+                    <label for="melodyTonicSel">Known home<select id="melodyTonicSel"></select></label>
+                    <div class="grow">
+                      <span class="panel-label">Scale / dromos</span>
+                      <div class="seg seg-5 melody-mode-grid">
+                        <button data-melody-mode="major">Major</button>
+                        <button data-melody-mode="minor">Natural minor</button>
+                        <button data-melody-mode="harmonicMinor">Harmonic minor</button>
+                        <button data-melody-mode="ousak">Ousak</button>
+                        <button data-melody-mode="hijaz">Hijaz</button>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="panel-label">Harmony depth</span>
+                      <div class="seg melody-depth">
+                        <button data-melody-depth="triad">Triads</button>
+                        <button data-melody-depth="seventh">7ths</button>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="panel-label">Reference audio</span>
+                      <div class="melody-reference">
+                        <button id="btnMelodyHome" class="mini">♪ Hear home</button>
+                        <button id="btnMelodyStop" class="mini">■ Stop</button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
               </section>
               <section id="melodyReveal" class="melody-reveal hidden" aria-live="polite">
                 <div id="melodyIdentity" class="melody-identity"></div>
-                <div class="melody-workflow-grid">
-                  <section aria-labelledby="melodyCandidatesTitle"><div class="melody-section-head"><span>2 · Put harmony under it</span><h3 id="melodyCandidatesTitle">Chord colours</h3></div><div id="melodyCandidates" class="melody-candidates"></div></section>
-                  <section aria-labelledby="melodyNextTitle"><div class="melody-section-head"><span>3 · Anticipate</span><h3 id="melodyNextTitle">What can follow?</h3></div><div id="melodyNext" class="melody-next"></div></section>
-                </div>
-                <section class="melody-enhance" aria-labelledby="melodyMovesTitle"><div class="melody-section-head"><span>4 · Make an answer line</span><h3 id="melodyMovesTitle">Counter-melody and top-voice moves</h3></div><div id="melodyMoves" class="melody-moves"></div></section>
-                <section id="melodySing" class="melody-sing" aria-labelledby="melodySingTitle">
-                  <div class="melody-section-head"><span>5 · Sing it back</span><h3 id="melodySingTitle">Make the degree audible without the instrument</h3></div>
-                  <div class="sing-grid">
-                    <div class="sing-target-card">
-                      <span>Target · any octave</span><strong id="singTargetName">—</strong><b id="singTargetRole">Check the note first</b>
-                      <p>Hear it once, stop the reference, then hold the pitch. The microphone never plays through the speakers.</p>
-                      <div class="sing-actions"><button id="btnSingTarget" class="mini">♪ Hear target</button><button id="btnSingStart" class="mini primary-mini">● Enable mic + sing</button><button id="btnSingStop" class="mini" disabled>■ Stop mic</button></div>
-                      <label class="sing-input-label" for="singInputSel">Input device<select id="singInputSel" disabled><option value="">Default system input</option></select></label>
-                    </div>
-                    <div class="sing-feedback-card">
-                      <div class="sing-live"><span>Detected</span><strong id="singDetectedNote">—</strong><b id="singDetectedHz">Waiting for a clear pitch</b></div>
-                      <div id="singGauge" class="pitch-gauge" role="meter" aria-label="Pitch distance from target" aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0">
-                        <span class="gauge-flat">flat</span><span class="gauge-center">target</span><span class="gauge-sharp">sharp</span><i id="singNeedle"></i>
-                      </div>
-                      <div class="sing-readouts"><span><b id="singCents">—</b>accuracy</span><span><b id="singStabilityText">—</b>stability</span><span><b id="singHold">0.0 s</b>in tune</span></div>
-                      <div class="sing-stability" aria-hidden="true"><i id="singStabilityFill"></i></div>
-                      <p id="singInstruction">Start the mic, sing on “ah,” and keep the needle near the center for one second.</p>
-                    </div>
-                  </div>
-                  <div id="singStatus" class="sing-status" role="status" aria-live="polite">Microphone off · audio is analyzed only on this device and is never recorded or uploaded.</div>
-                  <p class="melody-boundary"><b>Input note:</b> laptops and desktop browsers can expose built-in, AirPods, and class-compliant interface inputs. iPadOS/Safari may follow the system-routed microphone even when an external device is connected, so this page always names the input the browser actually reports.</p>
+                <section class="melody-anticipate" aria-labelledby="melodyNextTitle">
+                  <div class="melody-section-head"><span>2 · Anticipate</span><h3 id="melodyNextTitle">What can follow?</h3></div>
+                  <div id="melodyNext" class="melody-next"></div>
                 </section>
-                <p class="melody-boundary"><b>Evidence boundary:</b> chord membership is derived from the selected scale; “can follow” appears only when that exact degree-to-degree move exists in this trainer’s documented progression bank.</p>
+                <details id="melodyMore" class="melody-more deck-advanced">
+                  <summary>More · chord colours, counter-melody, sing it back</summary>
+                  <div class="melody-more-body">
+                  <section aria-labelledby="melodyCandidatesTitle"><div class="melody-section-head"><span>3 · Put harmony under it</span><h3 id="melodyCandidatesTitle">Chord colours</h3></div><div id="melodyCandidates" class="melody-candidates"></div></section>
+                  <section class="melody-enhance" aria-labelledby="melodyMovesTitle"><div class="melody-section-head"><span>4 · Make an answer line</span><h3 id="melodyMovesTitle">Counter-melody and top-voice moves</h3></div><div id="melodyMoves" class="melody-moves"></div></section>
+                  <section id="melodySing" class="melody-sing" aria-labelledby="melodySingTitle">
+                    <div class="melody-section-head"><span>5 · Sing it back</span><h3 id="melodySingTitle">Make the degree audible without the instrument</h3></div>
+                    <div class="sing-grid">
+                      <div class="sing-target-card">
+                        <span>Target · any octave</span><strong id="singTargetName">—</strong><b id="singTargetRole">Check the note first</b>
+                        <p>Hear it once, stop the reference, then hold the pitch. The microphone never plays through the speakers.</p>
+                        <div class="sing-actions"><button id="btnSingTarget" class="mini">♪ Hear target</button><button id="btnSingStart" class="mini primary-mini">● Enable mic + sing</button><button id="btnSingStop" class="mini" disabled>■ Stop mic</button></div>
+                        <label class="sing-input-label" for="singInputSel">Input device<select id="singInputSel" disabled><option value="">Default system input</option></select></label>
+                      </div>
+                      <div class="sing-feedback-card">
+                        <div class="sing-live"><span>Detected</span><strong id="singDetectedNote">—</strong><b id="singDetectedHz">Waiting for a clear pitch</b></div>
+                        <div id="singGauge" class="pitch-gauge" role="meter" aria-label="Pitch distance from target" aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0">
+                          <span class="gauge-flat">flat</span><span class="gauge-center">target</span><span class="gauge-sharp">sharp</span><i id="singNeedle"></i>
+                        </div>
+                        <div class="sing-readouts"><span><b id="singCents">—</b>accuracy</span><span><b id="singStabilityText">—</b>stability</span><span><b id="singHold">0.0 s</b>in tune</span></div>
+                        <div class="sing-stability" aria-hidden="true"><i id="singStabilityFill"></i></div>
+                        <p id="singInstruction">Start the mic, sing on “ah,” and keep the needle near the center for one second.</p>
+                      </div>
+                    </div>
+                    <div id="singStatus" class="sing-status" role="status" aria-live="polite">Microphone off · audio is analyzed only on this device and is never recorded or uploaded.</div>
+                  </section>
+                  </div>
+                </details>
               </section>
             </div>
 
@@ -758,8 +764,8 @@
   <script src="js/fretboard.js?v=52"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=38"></script>
-  <script src="js/page-guides.js?v=53"></script>
-  <script src="js/app.js?v=53"></script>
+  <script src="js/page-guides.js?v=54"></script>
+  <script src="js/app.js?v=54"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

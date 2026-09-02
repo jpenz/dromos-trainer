@@ -79,11 +79,12 @@
       purpose: "Connect one melody note to harmony",
       answer: "Hear one note against a known home, name its scale-degree job, then compare the chords that can support it.",
       result: "One melody note can belong to several chords; this page explains the valid choices instead of pretending there is one automatic answer.",
-      steps: ["Choose Known home and Scale / dromos, then press ♪ Hear home.", "Press ▶ Start next note, choose its scale degree, and press Check + build harmony map.", "Audition the revealed chords, choose a next move, and sing the short answer line before playing it."],
+      steps: ["Press ▶ Start next note: the known home sounds first, then the note twice. Home, scale, and harmony depth live in Setup.", "Choose the degree you heard, then press Check + build harmony map.", "Read the note's job and what can follow it, then open More for the chord colours, counter-lines, and sing-back."],
       done: "You can sing the note, name its number, and explain why two different chords give it different meanings.",
       why: "Melodic hearing becomes useful in a band when you can place the note inside the current chord and anticipate where its nearest voice may move next.",
       terms: [["Scale degree", "The note's number measured from the home note."], ["Chord tone", "A note that is part of the chord sounding underneath."], ["Counter-melody", "A small answering line that supports the main melody instead of covering it."]],
-      targetId: "btnMelodyHome"
+      boundary: "Chord membership is derived from the selected scale; “can follow” appears only where this trainer's documented progression bank contains that exact degree-to-degree move.",
+      targetId: "btnMelodyNew"
     },
     triads: {
       purpose: "Accompany the song in time",
