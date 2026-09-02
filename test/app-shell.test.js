@@ -56,7 +56,12 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/picking-lab.js"), /Every note picked/);
   assert.match(read("js/picking-lab.js"), /not a .*transcription|not copied|not his prescribed exercise/i);
   assert.match(html, /id="panelMelody"/);
-  assert.match(html, /id="melodyScaleRail"/);
+  // The scale rail and the answer buttons showed the same seven degrees; they
+  // are one row now, so the degree surface is the choices grid itself.
+  assert.match(html, /id="melodyChoices"[^>]*aria-label="Scale-degree answer choices"/);
+  assert.doesNotMatch(html, /id="melodyScaleRail"/, "one row of seven degrees, not two");
+  assert.match(read("js/app.js"), /data-melody-degree="\$\{index\}"[\s\S]*?tetrachord[\s\S]*?escapeHtml\(note\.degree\)[\s\S]*?m\.revealed \? escapeHtml\(note\.name\)/,
+    "the merged degree button keeps the rail's tetrachord, degree, and revealed spelling");
   assert.match(html, /id="melodyCandidates"/);
   assert.match(html, /id="melodyNext"/);
   assert.match(html, /id="melodyMoves"/);
