@@ -2504,3 +2504,15 @@ body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
 }
 .picking-transport .transport-help { color: var(--faint); font-size: 8px; font-weight: 500; letter-spacing: 0; text-transform: none; }
 .picking-science { margin: 4px 0 0; color: var(--faint); font-size: 9px; line-height: 1.4; }
+#pickingBpmNum { width: 58px; min-height: 34px; padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-family: var(--font-mono); font-size: 12px; text-align: center; color-scheme: dark; }
+
+/* ---- rhythm channel: the notes follow the selected rhythm (FR-74) ---- */
+.picking-rhythm-ruler { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(255,255,255,0.02); }
+.picking-rhythm-ruler b { font-size: 11px; }
+.picking-rhythm-ruler span { color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+.picking-rhythm-ruler i { color: var(--faint); font-size: 9px; font-style: normal; }
+.picking-event { position: relative; }
+.picking-event .beat-chip { position: absolute; top: 2px; right: 3px; min-width: 12px; color: var(--faint); font-family: var(--font-mono); font-size: 7.5px; font-style: normal; line-height: 1; }
+.picking-event.on-beat { border-bottom: 2px solid rgba(67, 199, 194, 0.45); }
+.picking-event.on-one { border-bottom: 2px solid var(--turquoise); }
+.picking-event.on-one .beat-chip { color: var(--turquoise); font-weight: 700; }
