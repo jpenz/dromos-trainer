@@ -401,47 +401,6 @@ main {
 .pivot-banner.show { height: auto; opacity: 1; transform: none; padding: 8px 14px; }
 .pivot-banner b { font-family: var(--font-mono); }
 
-.keymap-wrap { display: grid; gap: 9px; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
-.keymap-wrap > header { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
-.keymap-wrap > header div { display: grid; gap: 2px; }
-.keymap-wrap > header span { color: var(--aegean); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.keymap-wrap > header b { color: var(--text); font-size: 12.5px; }
-.keymap-wrap > header p { max-width: 440px; margin: 0; color: var(--faint); font-size: 10.5px; line-height: 1.4; text-align: right; }
-.keymap { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); align-items: stretch; gap: 7px; }
-.key-node {
-  display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; align-items: center; min-width: 0; min-height: 58px; padding: 8px 10px; border-radius: var(--r-sm);
-  color: var(--faint); font-family: var(--font-mono); text-align: left;
-  border: 1px solid var(--line); background: var(--raised); transition: all var(--t-med) var(--ease);
-}
-.key-node span { grid-column: 1 / -1; font-family: var(--font-text); font-size: 8.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.key-node b { color: var(--text); font-size: 17px; }
-.key-node small { color: var(--faint); font-size: 9px; }
-.key-node.active { color: var(--terracotta-bright); border-color: var(--terracotta); background: var(--terracotta-soft); }
-.key-node.next { border-color: var(--turquoise); background: var(--turquoise-soft); }
-
-/* A readable look-ahead beats an 18-chip miniature: six chords show the
-   current cadence, its pivot, and the start of the following key. */
-.cycle-roadmap { display: grid; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
-.cycle-roadmap > header, .solo-progression-roadmap > header { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
-.cycle-roadmap > header > div, .solo-progression-roadmap > header > div { display: grid; gap: 2px; }
-.cycle-roadmap > header span, .solo-progression-roadmap > header span { color: var(--aegean-bright); font-size: 9px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; }
-.cycle-roadmap > header b, .solo-progression-roadmap > header b { color: var(--text); font-size: 12px; }
-.cycle-roadmap > header p, .solo-progression-roadmap > header p { max-width: 480px; margin: 0; color: var(--faint); font-size: 10.5px; line-height: 1.35; text-align: right; }
-.cycle-roadmap > header p b { color: var(--violet); }
-.cycle-roadmap-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.roadmap-chord {
-  display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; align-items: baseline; min-width: 0; min-height: 58px;
-  padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--muted); text-align: left;
-}
-.roadmap-chord > span { grid-column: 1 / -1; color: var(--faint); font-size: 8px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
-.roadmap-chord strong { color: var(--muted); font-family: var(--font-display); font-size: 18px; font-weight: 550; }
-.roadmap-chord b { overflow: hidden; color: var(--text); font-family: var(--font-mono); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.roadmap-chord small { grid-column: 1 / -1; color: var(--faint); font-size: 9px; }
-.roadmap-chord.now { border-color: var(--terracotta); border-left-width: 3px; background: var(--terracotta-soft); }
-.roadmap-chord.now > span, .roadmap-chord.now strong { color: var(--terracotta-bright); }
-.roadmap-chord.next { border-color: var(--turquoise); border-style: dashed; background: var(--turquoise-soft); }
-.roadmap-chord.next > span, .roadmap-chord.next strong { color: var(--turquoise); }
-
 .prog-strip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pchip {
   display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 74px; min-height: 52px;
@@ -2550,3 +2509,11 @@ body.chrome-single .workbench { grid-template-columns: minmax(0, 1fr); }
 
 /* the pivot banner enters on the spring */
 .pivot-banner.show { transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring), height var(--dur-2) var(--ease-out), padding var(--dur-2) var(--ease-out); }
+
+/* ---- cycle: merged roadmap strip + folded setup (redesign PR 3) ---- */
+.roadmap-keys { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: var(--fs-label); }
+.roadmap-keys .mini { min-width: 32px; min-height: var(--h-chip); }
+.cycle-setup { border-top: 1px solid var(--line); padding-top: var(--sp-2); }
+.cycle-setup > summary { color: var(--muted); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
+.cycle-setup[open] > summary { margin-bottom: var(--sp-2); }
+.cycle-setup .gym-note { margin: var(--sp-2) 0 0; color: var(--faint); font-size: var(--fs-micro); line-height: 1.4; }

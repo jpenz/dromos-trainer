@@ -20,7 +20,7 @@
 
   const DEFAULT_PREFERENCES = Object.freeze({
     tuningId: "bouzouki4", view: "cycle", tonic: "D", modeId: "major",
-    progressionId: "ii-V-I", bpm: 84, cycleMode: "full", cycleZone: "mid",
+    progressionId: "ii-V-I", bpm: 84, cycleMode: "pivot", cycleZone: "mid",
     triadZone: "mid", labelMode: "interval", lefty: false, loop: true
   });
 
