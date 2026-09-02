@@ -316,6 +316,10 @@
       return `${home === "blind" ? "Home hidden" : `Known home ${home}`} · sampled studio piano`;
     }
     if (state.view === "analyze") return `${instrument} · ${state.analysis.tonic} ${M.MODES[state.analysis.modeId].name}`;
+    if (state.view === "songs") {
+      const song = SL ? (SL.byId(state.songs.openId) || SL.SONGS[0]) : null;
+      return song ? `${instrument} · ${song.title} · home ${song.home} · ${song.meter}` : instrument;
+    }
     if (state.view === "picking") return `${instrument} · ${state.tonic} ${M.MODES[state.modeId].name} · ${S.byId(state.groove.styleId).title} · ${state.bpm} BPM`;
     if (state.view === "styles") return state.styles.section === "greek" ? `Greek styles · ${S.byId(state.styles.styleId).title}` : "Foundation · general musical skills";
     if (["video", "concepts", "progress", "today"].includes(state.view)) return instrument;
@@ -811,6 +815,9 @@
     if (!SL) return;
     const list = $("songList");
     if (list) {
+      // A picker for one chart is chrome, not a choice: it appears only when
+      // there is something to choose between.
+      list.classList.toggle("hidden", SL.SONGS.length < 2);
       list.innerHTML = SL.SONGS.map((song) => {
         const open = song.id === state.songs.openId;
         return `<button data-song="${escapeHtml(song.id)}" class="song-card${open ? " active" : ""}" aria-pressed="${open}">
@@ -847,15 +854,16 @@
     }).filter(Boolean).sort((a, b) => b.named - a.named);
   }
 
-  function fitHtml(song) {
-    const fit = dromosFit(song);
+  // The full count is evidence you can audit, so it stays — folded under the
+  // chart. Only the leading line is inline, next to the chart's own facts.
+  function fitHtml(fit) {
     if (!fit.length) return "";
     const best = fit[0];
     return `<div class="song-fit">
       <span>Which dromos explains this chart?</span>
       ${fit.map((f) => `<b class="${f.modeId === best.modeId ? "best" : ""}">
         ${escapeHtml(f.name)}<i>${f.named}/${f.total}</i></b>`).join("")}
-      <em>Counted by running the song's own chords through the analyzer: how many can each dromos name, and how many stay chromatic. ${escapeHtml(best.name)} names the most here — the evidence, not a verdict.</em>
+      <em>Counted by the analyzer from this chart's own chords: evidence, not a verdict.</em>
     </div>`;
   }
 
@@ -895,6 +903,14 @@
           </span>`).join("")}</div>`).join("")}
       </section>`).join("");
 
+    // One fit computation per render: the inline chip, the folded breakdown,
+    // and both action buttons all read the same numbers.
+    const fit = dromosFit(song);
+    const best = fit[0] || null;
+    const fitChip = best
+      ? `<span class="song-fit-chip" title="Counted by running this chart's own chords through the analyzer. It is the leading count, not a verdict on the song.">${escapeHtml(best.name)} names ${best.named}/${best.total}</span>`
+      : "";
+
     root.innerHTML = `
       <header class="song-head">
         <div>
@@ -903,20 +919,25 @@
         </div>
         <div class="song-meta">
           <span>${escapeHtml(song.home)}</span><span>${escapeHtml(song.meter)}</span>
-          <span>${escapeHtml(song.feel || "")}</span><span>${SL.barCount(song)} bars</span>
+          <span>${escapeHtml(song.feel || "")}</span><span>${SL.barCount(song)} bars</span>${fitChip}
         </div>
       </header>
-      <p class="song-note">${escapeHtml(song.note || "")}</p>
-      ${fitHtml(song)}
       <div class="song-tabs" role="tablist">
         <button role="tab" data-song-tab="chart" aria-selected="${tab === "chart"}" class="${tab === "chart" ? "active" : ""}">Chart</button>
         ${hasLyrics ? `<button role="tab" data-song-tab="lyrics" aria-selected="${tab === "lyrics"}" class="${tab === "lyrics" ? "active" : ""}">Lyrics</button>` : ""}
         <span class="song-actions">
           <button data-song-analyze>Analyze these changes</button>
-          <button data-song-solo>Solo in ${escapeHtml(song.home)}</button>
+          <button data-song-solo${best ? ` title="Opens the Solo map in this chart's home key and the dromos that names the most of its chords."` : ""}>Solo in ${escapeHtml(song.home)}${best ? " " + escapeHtml(best.name) : ""}</button>
         </span>
       </div>
       <div class="song-body">${tab === "lyrics" && hasLyrics ? lyricsHtml : chartHtml}</div>
+      <details class="song-evidence">
+        <summary>What this chart is made of</summary>
+        <div>
+          ${song.note ? `<p class="song-note">${escapeHtml(song.note)}</p>` : ""}
+          ${fitHtml(fit)}
+        </div>
+      </details>
       <footer class="song-credit">${escapeHtml(song.credit || "")}</footer>`;
 
     root.querySelectorAll("[data-song-tab]").forEach((b) => b.onclick = () => {
@@ -929,7 +950,6 @@
       const field = $("analysisChords");
       if (field) field.value = SL.chordMap(song);
       state.analysis.tonic = song.home;
-      const best = dromosFit(song)[0];
       if (best) state.analysis.modeId = best.modeId;
       setView("analyze");
       syncAnalysisControls();
@@ -938,7 +958,18 @@
     };
     const solo = root.querySelector("[data-song-solo]");
     if (solo) solo.onclick = () => {
+      // Carry the chart's colour, not just its home note: opening the Solo map
+      // in D while the dromos stayed on the last page's scale would improvise
+      // over a different set of notes than the chart's.
+      stopPlay();
       state.tonic = song.home;
+      if (best && M.MODES[best.modeId]) {
+        state.modeId = best.modeId;
+        state.progId = M.PROGRESSIONS[state.modeId][0].id;
+        state.progStep = 0;
+      }
+      persistPreferences();
+      syncProgControls();
       setView("solo");
     };
   }
@@ -5540,7 +5571,7 @@
     triads: { transport: true, journey: true, readout: true, split: true },
     solo: { transport: true, journey: true, readout: true, split: true },
     chordmap: { transport: false, journey: true, readout: true, split: true },
-    songs: { transport: false, journey: true, readout: true, split: true },
+    songs: { transport: false, journey: false, readout: false, split: false },
     examples: { transport: false, journey: true, readout: true, split: true },
     picking: { transport: false, journey: true, readout: true, split: true }
   };
@@ -5597,7 +5628,7 @@
     if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
     syncHarmonyTabs();
     ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelPicking", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelExamples", "panelSongs", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
-    $("stage").classList.toggle("hidden", v === "ear" || v === "melody" || v === "video" || v === "styles" || v === "examples" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
+    $("stage").classList.toggle("hidden", v === "ear" || v === "melody" || v === "video" || v === "styles" || v === "examples" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress" || v === "songs");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
     $("triadStrip").classList.toggle("hidden", v !== "triads");
@@ -5634,6 +5665,8 @@
           ? "Choose an example · Hear previews pitch only · Stop clears every sound"
           : v === "picking"
             ? "Space plays or stops · ← → changes exercise · tap any event to inspect it"
+            : v === "songs"
+              ? "Read the chart · switch tabs for the lyric sheet · number keys jump between practice areas"
         : "Space plays · ← → steps · number keys follow the navigation";
     // Each primary destination is a new lesson, not another state of the old
     // page. Opening at the previous page's scroll depth hides the premise and
@@ -6074,7 +6107,10 @@
         else if (state.view === "chordmap") auditionChordMap("strum");
         else if (state.view === "picking") togglePlay();
         else if (state.view === "solo" && ["path", "phrase", "cell"].includes(state.solo.section)) $("btnLabPlay").click();
-        else if (state.view !== "styles" && state.view !== "video" && state.view !== "examples" && state.view !== "analyze" && state.view !== "concepts" && state.view !== "coach" && state.view !== "today" && state.view !== "progress") togglePlay();
+        // Space drives the transport only where the transport exists. The same
+        // capability table that hides it here decides that, so a page like
+        // Songs cannot start invisible playback from the keyboard.
+        else if (VIEW_CHROME[state.view] && VIEW_CHROME[state.view].transport) togglePlay();
       }
       else if (e.code === "ArrowRight" && state.view === "triads") { e.preventDefault(); stepTriad(1); }
       else if (e.code === "ArrowLeft" && state.view === "triads") { e.preventDefault(); stepTriad(-1); }

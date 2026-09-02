@@ -149,7 +149,7 @@
       // What the chart's own vocabulary says, not a claim about the song:
       // Cm is a MINOR ♭VII and E♭ is a ♭II — both Usak markers — while A7,
       // D7, F7 and C7 are functional dominants from the Westernized layer.
-      note: "D minor family. The chart's Cm (minor ♭VII) and E♭ (♭II) are Usak markers; the secondary dominants (A7, D7, F7, C7) are the Westernized laiko layer on top. Run it through Analyze to see the evidence rather than take this on faith.",
+      note: "D minor family. The chart's Cm (minor ♭VII) and E♭ (♭II) are Usak markers; the secondary dominants (A7, D7, F7, C7) are the Westernized laiko layer on top.",
       sections: [
         { name: "Opening", tempo: "accelerando",
           lines: ["[Dm - E♭ - Dm - Cm]  [Dm!]"] },
