@@ -5811,7 +5811,9 @@
     solo: { transport: true, journey: true, readout: true, split: true },
     chordmap: { transport: false, journey: true, readout: true, split: true },
     songs: { transport: false, journey: false, readout: false, split: false },
-    examples: { transport: false, journey: true, readout: true, split: true },
+    // Examples plays only its own note path: no transport, no chord inspector
+    // (it kept whatever the previous view left in it) and no empty journey band.
+    examples: { transport: false, journey: false, readout: false, split: false },
     picking: { transport: false, journey: true, readout: true, split: true },
     // Styles has no transport and no stepper. Space and the arrows must stay
     // with the page's own controls (Space activates the focused pulse card),
@@ -5822,11 +5824,6 @@
       space: false, arrows: false,
       hint: "Choose a pulse map · number keys jump between practice areas"
     }
-    songs: { transport: false, journey: true, readout: true, split: true },
-    // Examples plays only its own note path: no transport, no chord inspector
-    // (it kept whatever the previous view left in it) and no empty journey band.
-    examples: { transport: false, journey: false, readout: false, split: false },
-    picking: { transport: false, journey: true, readout: true, split: true }
   };
 
   function motionOK() {
