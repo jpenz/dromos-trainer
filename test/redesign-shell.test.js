@@ -25,7 +25,9 @@ test("the shell exposes eleven primary destinations including Melody, Picking, a
   assert.match(html, /data-gym-keys="6"/, "the gym needs the six-key wheel");
   assert.match(html, /id="tglGymSkeleton"/, "the whole-note skeleton drill must be a real option");
   assert.match(html, /id="btnTaximiBridge"/, "the taximi bridge must sit next to the gym");
-  assert.match(html, /voice-leading gym, not folklore/, "the honesty line must ship");
+  // The honesty line moved from a standing paragraph into the folded Setup
+  // note the app writes at runtime - assert it ships in the source of truth.
+  assert.match(read("js/app.js"), /voice-leading gym, not folklore/, "the honesty line must ship");
   assert.match(html, /data-taximi-stage="low"/, "the taximi arc capstone must exist");
   assert.match(html, /data-solo-section="cell"[^>]*>5 Taximi/, "solo step 5 is the taximi capstone");
   assert.match(html, /id="settingsDrawer"/);

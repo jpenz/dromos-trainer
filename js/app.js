@@ -479,7 +479,9 @@
     const visible = Array.from({ length: count }, (_, offset) =>
       journey.items[(journey.cursor + offset) % journey.items.length]);
     root.classList.remove("hidden");
-    root.innerHTML = `<header><div><span>Chord roadmap · next ${count}</span><b>Read ahead while your hands stay on the current shape</b></div><p>Orange is sounding · turquoise is next · <b>pivot</b> marks the same root taking a new job.</p></header>
+    const pair = sequenceFor("pivot", state.index);
+    const oldI = cycle[pair[0]], newIi = cycle[pair[1]];
+    root.innerHTML = `<header><div><span>Chord roadmap · now + next ${count - 1}</span><b>Read ahead while your hands stay on the current shape</b></div><div class="roadmap-keys"><button data-roadmap-key="-1" class="mini" aria-label="Previous key in the pivot wheel">◀</button><span><b>${escapeHtml(oldI.symbol)}</b> I of ${escapeHtml(oldI.key)} → <b>${escapeHtml(newIi.symbol)}</b> ii of ${escapeHtml(newIi.key)}</span><button data-roadmap-key="1" class="mini" aria-label="Next key in the pivot wheel">▶</button></div></header>
       <div class="cycle-roadmap-grid">${visible.map((entry, offset) => {
         const previous = offset ? visible[offset - 1] : null;
         const pivot = previous && /^i$/i.test(previous.chord.fn || "") && /^ii/i.test(entry.chord.fn || "") && previous.keyLabel !== entry.keyLabel;
@@ -487,6 +489,9 @@
         return `<button data-cycle-roadmap="${entry.sourceIndex}" class="roadmap-chord${offset === 0 ? " now" : ""}${offset === 1 ? " next" : ""}">
           <span>${timing}${pivot ? " · pivot" : ""}</span><strong>${escapeHtml(entry.functionLabel)}</strong><b>${escapeHtml(entry.symbol)}</b><small>${escapeHtml(entry.keyLabel)}${entry.durationBars > 1 ? " · 2 bars" : " · 1 bar"}</small></button>`;
       }).join("")}</div>`;
+    root.querySelectorAll("[data-roadmap-key]").forEach((button) => button.onclick = () => {
+      stopPlay(); cancelTaximiBridge(); stepPivotPair(+button.getAttribute("data-roadmap-key"));
+    });
     root.querySelectorAll("[data-cycle-roadmap]").forEach((button) => {
       button.onclick = () => { stopPlay(); setCycleIndex(+button.getAttribute("data-cycle-roadmap")); auditionCurrent("block"); };
     });
@@ -722,15 +727,16 @@
     <div class="tri-tags"><span class="tri-set">${cur.setLabel} strings</span><span class="tri-fret">frets ${cur.lowFret}–${Math.max(...cur.placements.map((placement) => placement.fret))}</span></div>
     <div class="tri-move"><b>${move ? move.voices.filter((distance) => distance > 0).length : 0}</b> voices move · <b>${move ? move.total : 0}</b> semitones total from ${previous.chord.symbol}</div>
     <div class="ro-notes">${notes}</div>
-    <div class="ro-foot"><b>Think the full chord ${cur.chord.symbol}; play its triad skeleton.</b>${chordColour ? ` Hear ${chordColour.name} (${chordColour.roleLabel}) as the omitted colour tone.` : ""} Keep the top line singable; the next shape was chosen for the whole cycle, not just this one change.</div>`;
+    <div class="ro-foot"><b>Think ${cur.chord.symbol}, play its triad skeleton</b> — keep the top line singable.</div>`;
 
-    renderKeymap(cur.chord);
     renderChangeGuide(journey, cur, nextShape);
     renderCycleRoadmap(journey);
-    if (state.cycleMode === "pivot") {
-      // In the pivot drill the modulation IS the lesson, so the reinterpretation
-      // is spelled out: play ii-V-I-I, then the old I becomes the new ii.
-      const pair = sequenceFor("pivot", state.index);
+    const pivotPair = sequenceFor("pivot", state.index);
+    if (state.index === pivotPair[0]) {
+      // The banner fires only when the CURRENT chord is the pivot - the I
+      // that is about to become the next key's ii. On every other chord it
+      // was noise firing at the wrong moment.
+      const pair = pivotPair;
       const oldI = cycle[pair[0]], newIi = cycle[pair[1]];
       const oldThird = chordTone(oldI, "3");
       const newThird = chordTone(newIi, "b3");
@@ -775,15 +781,6 @@
   }
 
   function renderCycle() {
-    const pivotPair = sequenceFor("pivot", state.index);
-    $("pivotPairNav").classList.toggle("hidden", state.cycleMode !== "pivot");
-    if (state.cycleMode === "pivot") {
-      const oldI = cycle[pivotPair[0]], newIi = cycle[pivotPair[1]];
-      $("pivotPairLabel").innerHTML = `<b>${oldI.symbol}</b> I of ${oldI.key} <span>→</span> <b>${newIi.symbol}</b> ii of ${newIi.key}`;
-    }
-    $("btnPrev").disabled = false;
-    $("btnNext").disabled = false;
-    $("keymapWrap").classList.toggle("hidden", state.cycleComping.focus === "chords");
     document.querySelectorAll("[data-cycle-focus]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-cycle-focus") === state.cycleComping.focus));
     syncGymControls();
@@ -793,22 +790,6 @@
     renderCycleTriadRoute();
   }
 
-  function renderKeymap(cur) {
-    const journey = cycleJourney();
-    const keys = [];
-    journey.items.forEach((entry) => {
-      if (keys.some((item) => item.key === entry.keyLabel)) return;
-      keys.push({ key: entry.keyLabel, sourceIndex: entry.sourceIndex });
-    });
-    const active = keys.findIndex((item) => item.key === cur.key);
-    $("keymapTitle").textContent = `${keys.length}-key loop · old I becomes the next ii`;
-    $("keymap").innerHTML = keys.map((item, index) =>
-      `<button data-cycle-key="${item.sourceIndex}" class="key-node${index === active ? " active" : ""}${index === (active + 1) % keys.length && keys.length > 1 ? " next" : ""}"><span>${index === active ? "Now" : index === (active + 1) % keys.length && keys.length > 1 ? "Next" : `Key ${index + 1}`}</span><b>${escapeHtml(item.key)}</b><small>ii · V · I · I</small></button>`
-    ).join("");
-    $("keymap").querySelectorAll("[data-cycle-key]").forEach((button) => button.onclick = () => {
-      stopPlay(); setCycleIndex(+button.getAttribute("data-cycle-key")); auditionCurrent("block");
-    });
-  }
 
   function stepCycle(delta) {
     const seq = gymSequence(state.index);
@@ -5339,12 +5320,9 @@
       button.classList.toggle("active", +button.getAttribute("data-gym-keys") === state.gym.keys));
     if ($("tglGymSkeleton")) $("tglGymSkeleton").checked = state.gym.skeleton;
     const progressionWorkout = state.cycleComping.focus === "chords";
-    if ($("gymRouteNote")) $("gymRouteNote").textContent = progressionWorkout
-      ? "Choose one verified progression, then keep its Roman numerals fixed while the key moves by fourths. One key learns it; three or six test recall."
-      : "Not the circle of fifths: each key drops a whole step because every old I becomes the next key's ii. Six keys, then it loops.";
-    if ($("gymHonesty")) $("gymHonesty").textContent = progressionWorkout
-      ? "The progression comes from the selected Major, minor, Ousak, or Hijaz bank. Transposition is a practice route—not a claim that a performance modulates this way."
-      : "A voice-leading gym, not folklore. Greek bands usually re-center with a taximi or a relative-key move. Train your ear here, then try the real thing.";
+    if ($("gymNote")) $("gymNote").textContent = progressionWorkout
+      ? "Roman numerals stay fixed while the key moves by fourths — a practice route from the selected bank, not a claim that performances modulate this way."
+      : "Each key drops a whole step (old I becomes the next ii) — a voice-leading gym, not folklore; Greek bands usually re-center with a taximi or a relative move.";
     if ($("btnTaximiBridge")) $("btnTaximiBridge").classList.toggle("hidden", progressionWorkout);
   }
 
@@ -5607,7 +5585,6 @@
     syncHarmonyTabs();
     ["panelToday", "panelCycle", "panelProg", "panelChordMap", "panelEar", "panelMelody", "panelLab", "panelPicking", "panelTriads", "panelSolo", "panelVideo", "panelStyles", "panelExamples", "panelSongs", "panelAnalyze", "panelConcepts", "panelCoach", "panelProgress"].forEach((id) => $(id).classList.add("hidden"));
     $("stage").classList.toggle("hidden", v === "ear" || v === "melody" || v === "video" || v === "styles" || v === "examples" || v === "analyze" || v === "concepts" || v === "coach" || v === "today" || v === "progress");
-    $("keymapWrap").classList.toggle("hidden", v !== "cycle");
     $("scaleStrip").classList.toggle("hidden", v !== "prog");
     $("progStrip").classList.toggle("hidden", v !== "prog");
     $("triadStrip").classList.toggle("hidden", v !== "triads");
@@ -5768,8 +5745,6 @@
       auditionCurrent();
     };
     $("btnPlay").onclick = togglePlay;
-    $("btnPivotPairPrev").onclick = () => { stopPlay(); cancelTaximiBridge(); stepPivotPair(-1); };
-    $("btnPivotPairNext").onclick = () => { stopPlay(); cancelTaximiBridge(); stepPivotPair(1); };
     document.querySelectorAll("[data-gym-keys]").forEach((button) => button.onclick = () => {
       const wasPlaying = AU.isPlaying();
       stopPlay(); cancelTaximiBridge();

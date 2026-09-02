@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=49" />
+  <link rel="stylesheet" href="css/styles.css?v=50" />
 </head>
 <body>
   <div class="app">
@@ -132,10 +132,6 @@
           <div id="journeyAnnouncement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
           <section id="cycleRoadmap" class="cycle-roadmap hidden" aria-label="Six-chord look-ahead"></section>
           <div id="pivotBanner" class="pivot-banner"></div>
-          <section id="keymapWrap" class="keymap-wrap" aria-labelledby="keymapTitle">
-            <header><div><span>Moving key centers</span><b id="keymapTitle">Old I becomes the next ii</b></div><p>Tap a key to jump to its ii and hear that starting chord. “Next” marks a role change, not another chord.</p></header>
-            <div id="keymap" class="keymap"></div>
-          </section>
           <div id="progStrip" class="prog-strip hidden"></div>
           <div id="triadStrip" class="prog-strip hidden"></div>
           <section id="pickingSetup" class="picking-setup hidden" aria-labelledby="pickingSetupTitle">
@@ -181,39 +177,33 @@
 
             <!-- Cycle / Harmony -->
             <div id="panelCycle" class="panel">
-              <div id="pivotPairNav" class="pivot-pair-nav hidden">
-                <button id="btnPivotPairPrev" class="mini" aria-label="Previous key in the pivot wheel">◀ key</button>
-                <span id="pivotPairLabel"></span>
-                <button id="btnPivotPairNext" class="mini" aria-label="Next key in the pivot wheel">key ▶</button>
-              </div>
-              <div id="gymSettings" class="gym-settings">
-                <div class="gym-row">
-                  <span class="panel-label">Keys</span>
-                  <div class="seg" id="gymKeysSeg" aria-label="How many keys the gym chains">
-                    <button data-gym-keys="1">1 · learn the move</button>
-                    <button data-gym-keys="3">3</button>
-                    <button data-gym-keys="6" class="active">6 · the wheel</button>
-                  </div>
-                  <label class="gym-skeleton"><input type="checkbox" id="tglGymSkeleton" /> Skeleton first — one whole note per chord: just the 3rd. Start every new key count here.</label>
-                  <button id="btnTaximiBridge" class="mini" title="Drone on the next tonic. Set the new dromos with a free phrase, then the band comes back in.">Taximi bridge</button>
-                </div>
-                <p id="gymRouteNote" class="gym-note">Not the circle of fifths: each key drops a whole step because every old I becomes the next key's ii. Six keys, then it loops.</p>
-                <p id="gymHonesty" class="gym-honesty">A voice-leading gym, not folklore. Greek bands usually re-center with a taximi or a relative-key move. Train your ear here, then try the real thing.</p>
-              </div>
               <div class="cycle-workbench">
                 <span class="panel-label">What do you want to practise?</span>
                 <div class="seg">
                   <button data-cycle-focus="hear" class="active">Voice-led triad route</button>
                   <button data-cycle-focus="chords">Greek progression workout</button>
                 </div>
-                <div id="cyclePathControls" class="cycle-path-controls">
-                  <p class="workbench-note"><b>One register, one string set, all 18 changes.</b> The route is optimized as a complete loop so every displayed shape is playable under one hand.</p>
-                  <div class="control-pair">
-                    <label for="cycleSetSel">String set<select id="cycleSetSel"></select></label>
-                    <label for="cycleZoneSel">Neck area<select id="cycleZoneSel"></select></label>
+                <details class="cycle-setup deck-advanced" id="gymSettings">
+                  <summary>Setup — keys, skeleton, strings, neck area</summary>
+                  <div class="gym-row">
+                    <span class="panel-label">Keys</span>
+                    <div class="seg" id="gymKeysSeg" aria-label="How many keys the gym chains">
+                      <button data-gym-keys="1">1 · learn the move</button>
+                      <button data-gym-keys="3">3</button>
+                      <button data-gym-keys="6" class="active">6 · the wheel</button>
+                    </div>
+                    <label class="gym-skeleton"><input type="checkbox" id="tglGymSkeleton" /> Skeleton first (3rd only)</label>
+                    <button id="btnTaximiBridge" class="mini" title="Drone on the next tonic. Set the new dromos with a free phrase, then the band comes back in.">Taximi bridge</button>
                   </div>
-                  <div id="cyclePathStats" class="path-stats"></div>
-                </div>
+                  <div id="cyclePathControls" class="cycle-path-controls">
+                    <div class="control-pair">
+                      <label for="cycleSetSel">String set<select id="cycleSetSel"></select></label>
+                      <label for="cycleZoneSel">Neck area<select id="cycleZoneSel"></select></label>
+                    </div>
+                    <div id="cyclePathStats" class="path-stats"></div>
+                  </div>
+                  <p id="gymNote" class="gym-note"></p>
+                </details>
                 <div id="cycleCompingControls" class="cycle-comping-controls hidden"></div>
               </div>
             </div>
@@ -748,7 +738,7 @@
   </div>
 
   <script src="js/tuning.js?v=14"></script>
-  <script src="js/profiles.js?v=48"></script>
+  <script src="js/profiles.js?v=50"></script>
   <script src="js/theory.js?v=14"></script>
   <script src="js/harmony-journey.js?v=15"></script>
   <script src="js/modes.js?v=34"></script>
@@ -775,7 +765,7 @@
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=38"></script>
   <script src="js/page-guides.js?v=48"></script>
-  <script src="js/app.js?v=49"></script>
+  <script src="js/app.js?v=50"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
