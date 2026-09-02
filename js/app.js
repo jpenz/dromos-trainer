@@ -951,6 +951,15 @@
     return M.buildProgression(state.tonic, state.modeId, state.progId);
   }
 
+  // "Moved" and "held" are claims about a change the player just heard. On the
+  // first paint of a map, step 0's predecessor is the last bar of a loop that
+  // has not sounded yet, so the colouring would describe motion nobody made.
+  // The claim unlocks once the player actually moves inside THIS map; any new
+  // map (from this page, the coach, Ear, Examples…) invalidates it by key.
+  let progMotionKey = null;
+  function progMapKey() { return state.modeId + "/" + state.progId; }
+  function markProgMoved() { progMotionKey = progMapKey(); }
+
   function renderProg() {
     const { prog, chords } = currentProgression();
     const idx = Math.min(state.progStep, chords.length - 1);
@@ -959,8 +968,9 @@
     const journey = songJourney(chords, idx);
     const nextChord = journey.next ? journey.next.chord : null;
     const nextGrip = nextChord ? FB.findGrip(nextChord.notes, state.position) : null;
-    const moveClass = cur.notes.map((n) =>
-      prev.notes.some((p) => p.pc === n.pc) ? "held" : "moved");
+    const moveClass = progMotionKey === progMapKey()
+      ? cur.notes.map((n) => prev.notes.some((p) => p.pc === n.pc) ? "held" : "moved")
+      : cur.notes.map(() => "");
 
     const scale = M.scaleOf(state.tonic, state.modeId);
     drawChord(cur.notes, moveClass, {
@@ -973,21 +983,23 @@
     renderChordReadout(cur.symbol, cur.degreeLabel, mode.name + " on " + state.tonic,
       cur.notes, moveClass, prog.why);
 
-    // progression strip — one chip per bar, so a held tonic shows its second
-    // bar explicitly (ii · V · I · I) instead of hiding it in the audio.
+    // Song map strip — one chip per bar, so a held tonic shows its second bar
+    // explicitly (ii · V · I · I) instead of hiding it in the audio. The held
+    // bar is a TAIL on the same chip, never a second chord: it repeats neither
+    // the numeral nor the name, and it carries its own step attribute so the
+    // playback cursor cannot light two chips for one sounding chord.
     const nextIndex = journey.next ? journey.next.sourceIndex : -1;
     $("progStrip").innerHTML = chords.map((c, i) => {
       const main = `<button class="pchip${i < idx ? " played" : ""}${i === idx ? " active" : ""}${i === nextIndex ? " is-next" : ""}" data-step="${i}">
          <span class="pchip-deg">${c.degreeLabel}</span>
          <span class="pchip-sym">${c.symbol}</span></button>`;
-      const held = barsFor(c) > 1 ? `<button class="pchip pchip-held${i === idx ? " active" : ""}" data-step="${i}" data-held-for="${i}" aria-label="${c.symbol} holds for a second bar">
-         <span class="pchip-deg">${c.degreeLabel}</span>
-         <span class="pchip-sym">${c.symbol}</span>
+      const held = barsFor(c) > 1 ? `<button class="pchip-tail" data-hold-step="${i}" data-held-for="${i}" aria-label="${c.symbol} holds through a second bar">
          <span class="pchip-hold">hold</span></button>` : "";
-      return main + held;
+      return `<span class="pchip-pair${i === idx ? " on" : ""}${i < idx ? " played" : ""}">${main}${held}</span>`;
     }).join('<span class="pchip-arrow">→</span>');
-    $("progStrip").querySelectorAll("[data-step]").forEach((b) => {
-      b.onclick = () => { state.progStep = +b.getAttribute("data-step"); renderProg(); auditionProg(); };
+    $("progStrip").querySelectorAll("[data-step], [data-hold-step]").forEach((b) => {
+      const step = +(b.getAttribute("data-step") || b.getAttribute("data-hold-step"));
+      b.onclick = () => { markProgMoved(); state.progStep = step; renderProg(); auditionProg(); };
     });
 
     renderScaleStrip(scale, mode);
@@ -996,30 +1008,29 @@
     $("pivotBanner").classList.remove("show");
   }
 
+  // The strip shows the selected collection only. Its old five-mode comparator
+  // was a second mode switcher standing next to the seg; the signature tones it
+  // compared now ride on the seg buttons themselves (see syncProgControls), so
+  // one visible control writes state.modeId.
   function renderScaleStrip(scale, mode) {
-    let html = `<div class="scale-head"><b>${mode.name}</b> <span class="greek">${mode.greek}</span>
-      <span class="scale-blurb">${mode.blurb}</span></div><div class="scale-notes">`;
+    let html = `<div class="scale-head"><b>${escapeHtml(mode.name)}</b> <span class="greek">${escapeHtml(mode.greek)}</span></div><div class="scale-notes">`;
     scale.forEach((n) => {
       const cls = n.isTonic ? "tonic" : n.isFlavour ? "flavour" : "";
       html += `<span class="snote ${cls}"><b>${n.name}</b><i>${n.degree}</i></span>`;
     });
     html += `</div>`;
-    // Small signature sets are a comparison aid, not a claim that every
-    // modal/harmonic map is defined by its 2nd and 3rd alone. Harmonic minor
-    // must expose its leading tone (7) to stay distinct from natural minor.
-    html += `<div class="compare"><span class="cmp-label">signature tones separate these maps:</span>`;
-    M.MODE_ORDER.forEach((id) => {
-      const m = M.MODES[id];
-      const s = M.scaleOf(state.tonic, id);
-      const f = m.flavour.map((off) => s.find((x) => x.off === off));
-      html += `<span class="cmp ${id === state.modeId ? "on" : ""}" data-jump="${id}">
-        <b>${m.name}</b> ${f.map((x) => x ? x.name : "?").join(" ")} <i>(${m.signature})</i></span>`;
-    });
-    html += `</div>`;
     $("scaleStrip").innerHTML = html;
-    $("scaleStrip").querySelectorAll("[data-jump]").forEach((el) => {
-      el.onclick = () => selectMode(el.getAttribute("data-jump"));
-    });
+  }
+
+  // Signature tones for one dromos in the current key — the comparison the
+  // deleted scale-strip comparator used to make, now attached to the control
+  // that actually selects the mode.
+  function modeSignatureTones(id) {
+    const s = M.scaleOf(state.tonic, id);
+    return M.MODES[id].flavour.map((off) => {
+      const note = s.find((x) => x.off === off);
+      return note ? note.name : "?";
+    }).join(" ");
   }
 
   function selectMode(id) {
@@ -1037,6 +1048,18 @@
   function syncProgControls() {
     document.querySelectorAll("[data-modeid]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-modeid") === state.modeId));
+    // One mode control: each choice shows its own signature tones in the
+    // current key, and the selected map's documented note sits under the seg
+    // instead of a standing explainer paragraph.
+    document.querySelectorAll("#panelProg [data-modeid]").forEach((b) => {
+      const id = b.getAttribute("data-modeid");
+      const mode = M.MODES[id];
+      if (!mode) return;
+      b.innerHTML = `<b>${escapeHtml(mode.name)}</b><small>${escapeHtml(modeSignatureTones(id))}</small>`;
+      b.title = `Signature tones: ${mode.signature}`;
+    });
+    const note = $("progModeNote");
+    if (note) note.textContent = M.MODES[state.modeId] ? M.MODES[state.modeId].blurb : "";
     const list = M.PROGRESSIONS[state.modeId];
     const tiers = [];
     list.forEach((progression) => {
@@ -1048,17 +1071,31 @@
       if (!job) { job = { name: jobName, items: [] }; tier.jobs.push(job); }
       job.items.push(progression);
     });
-    $("progList").innerHTML = tiers.map((tier) => `<section class="progression-tier">
-      <header><span>Layer</span><h3>${tier.name}</h3></header>
-      ${tier.jobs.map((job) => `<div class="progression-job"><h4>${job.name}</h4>
+    // A heading is only worth its space when it groups more than one choice.
+    // The major bank framed four cards with EIGHT heading elements. A tier of
+    // one or two maps loses its header, and so does a job holding a single
+    // map; the collapsed names ride on the card, so the documented historical
+    // layering is never lost - only its chrome.
+    $("progList").innerHTML = tiers.map((tier) => {
+      const count = tier.jobs.reduce((total, job) => total + job.items.length, 0);
+      const flat = count <= 2;
+      return `<section class="progression-tier">
+      ${flat ? "" : `<header><span>Layer</span><h3>${tier.name}</h3></header>`}
+      ${tier.jobs.map((job) => {
+        const jobHeader = !flat && tier.jobs.length > 1 && job.items.length > 1;
+        const caption = [flat ? tier.name : "", jobHeader ? "" : job.name].filter(Boolean).join(" · ");
+        return `<div class="progression-job">${jobHeader ? `<h4>${job.name}</h4>` : ""}
       ${job.items.map((progression) => {
         const symbols = M.buildProgression(state.tonic, state.modeId, progression.id).chords.map((chord) => chord.symbol).join(" → ");
         return `<button class="prog-item${progression.id === state.progId ? " active" : ""}" data-prog="${progression.id}">
           <span class="prog-function"><b>${progression.label}</b><i>${progression.tag}</i></span>
           <span class="prog-symbols">${symbols}</span>
+          ${caption ? `<span class="prog-layer">${escapeHtml(caption)}</span>` : ""}
           <span class="prog-why">${progression.why}</span></button>`;
-      }).join("")}</div>`).join("")}
-    </section>`).join("");
+      }).join("")}</div>`;
+      }).join("")}
+    </section>`;
+    }).join("");
     $("progList").querySelectorAll("[data-prog]").forEach((b) => {
       b.onclick = () => {
         stopPlay();
@@ -1447,6 +1484,7 @@
 
   function stepProg(delta) {
     const { chords } = currentProgression();
+    markProgMoved();
     state.progStep = (state.progStep + delta + chords.length) % chords.length;
     state.view === "solo" ? renderSoloSection() : renderProg();
   }
@@ -5426,7 +5464,11 @@
   function updateProgStripCursor() {
     markHeldBar(-1);
     document.querySelectorAll("#progStrip [data-step]").forEach((el) => {
-      el.classList.toggle("active", +el.getAttribute("data-step") === state.progStep);
+      const on = +el.getAttribute("data-step") === state.progStep;
+      el.classList.toggle("active", on);
+      // The hold tail belongs to the same chip, so the pair carries the
+      // outline; only ONE element per sounding chord ever reads as selected.
+      if (el.parentElement) el.parentElement.classList.toggle("on", on);
     });
     document.querySelectorAll(".solo-current-change [data-solo-step]").forEach((el) => {
       el.classList.toggle("active", +el.getAttribute("data-solo-step") === state.progStep);
@@ -5539,6 +5581,7 @@
             state.triads.step = pb.pos;
             renderTriads();
           } else {
+            markProgMoved();
             state.progStep = pb.pos;
             state.solo.matrixBeat = 0;
             state.view === "solo" ? renderSoloSection() : renderProg();
@@ -5960,7 +6003,10 @@
     tonicSel.onchange = (e) => {
       state.tonic = e.target.value;
       persistPreferences();
-      if (state.view === "prog") renderProg();
+      // Every chord name on this page is spelled from the key: the mode
+      // signature tones and the map cards must be rebuilt, not left in the
+      // old key while the strip moves.
+      if (state.view === "prog") { syncProgControls(); renderProg(); }
       else if (state.view === "solo") { renderSoloMapControls(); renderSoloSection(); }
       else if (state.view === "triads") renderTriads();
       renderPageGuide();

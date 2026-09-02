@@ -75,12 +75,20 @@ test("the held tonic stays audible and visible, not implied", () => {
   const app = read("js/app.js");
   const holdReturns = app.match(/hold: true, notes:/g) || [];
   assert.ok(holdReturns.length >= 2, "held bars must re-comp the chord in cycle AND progression playback");
-  assert.match(app, /pchip-held/, "the prog strip must render the held tonic bar as its own chip");
-  assert.match(app, /data-held-for/, "held chips must be addressable for the bar-accurate cursor");
+  // The held bar is now a TAIL on the sounding chord's own chip (blueprint
+  // 2.3): still visible, still separately addressable, but it never reads as
+  // an extra chord and never lights a second .active for one sounding bar.
+  assert.match(app, /pchip-tail/, "the prog strip must render the held tonic bar as a visible tail");
+  assert.match(app, /data-held-for/, "held bars must be addressable for the bar-accurate cursor");
+  assert.match(app, /data-hold-step="\$\{i\}"/,
+    "the hold tail carries its own step attribute, not the main chip's data-step");
+  const stripMarkup = (app.match(/\$\("progStrip"\)\.innerHTML[\s\S]*?pchip-arrow/) || [""])[0];
+  assert.doesNotMatch(stripMarkup, /pchip-tail[^`]*\bactive\b/,
+    "the hold tail must never take .active alongside its own chord chip");
   assert.match(app, /function markHeldBar/, "playback must move the highlight onto the held bar");
   assert.doesNotMatch(app, /c\.fn \|\| c\.scaleDegree/, "numeric scaleDegree must never shadow the roman function");
   const css = read("css/styles.css");
-  assert.match(css, /\.pchip\.pchip-held/, "held chips need their own visual treatment");
+  assert.match(css, /\.pchip-tail \{/, "the held tail needs its own visual treatment");
   assert.match(css, /held-sounding/, "the sounding held bar needs an active state");
 });
 
@@ -182,4 +190,31 @@ test("the ear page leads with Start and never sounds before the player asks", ()
   // One vocabulary: the button says Check + reveal, so the copy must too.
   assert.doesNotMatch(app, /Check answer/);
   assert.doesNotMatch(app, /Choose the map you hear first/);
+});
+
+test("Song Map leads with the strip, switches modes from one control, and claims no unheard motion", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  // LEAD: the strip IS the song map, so it paints before the Now/Next guide.
+  const band = (html.match(/<section id="journeyBand"[\s\S]*?<\/section>\s*<!--/) || [""])[0];
+  assert.ok(band.indexOf('id="progStrip"') > -1 && band.indexOf('id="progStrip"') < band.indexOf('id="changeGuide"'),
+    "the song map strip leads the journey band, above the fretboard");
+  // ONE mode switcher: the scale strip's five-mode comparator is gone and its
+  // signature tones ride on the seg that actually writes state.modeId.
+  assert.doesNotMatch(app, /data-jump=/, "a second mode switcher must not return to the scale strip");
+  assert.match(app, /function modeSignatureTones/, "the surviving mode control carries the signature tones");
+  assert.match(app, /#panelProg \[data-modeid\]/, "the mode seg is rendered from the mode data it compares");
+  // One purpose sentence: the standing workbench paragraph is gone and the
+  // dromos note is contextual to the selection.
+  assert.doesNotMatch(html, /class="workbench-note"/, "standing explainer paragraphs are banned on this page");
+  assert.match(html, /id="progModeNote"/, "the selected dromos gets one contextual line");
+  // Changing the key respells every chord name on the page, cards included.
+  assert.match(app, /if \(state\.view === "prog"\) \{ syncProgControls\(\); renderProg\(\); \}/,
+    "a key change must rebuild the map cards, not only the strip");
+  // FIRST PAINT: "moved"/"held" is a claim about a change the player heard.
+  assert.match(app, /progMotionKey === progMapKey\(\)/,
+    "moved/held colouring is gated on real movement inside this map");
+  assert.match(app, /function markProgMoved/, "movement is recorded where the step actually changes");
+  // Small tiers stop chroming a handful of cards with headings.
+  assert.match(app, /const flat = count <= 2;/, "tier and job headings collapse for one- or two-map tiers");
 });
