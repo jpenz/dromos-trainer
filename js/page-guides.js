@@ -159,7 +159,7 @@
       purpose: "Build transferable musical habits",
       answer: "Learn the general skills first; then place them inside a specific Greek pulse and dromos.",
       result: "This keeps universal soloing ideas separate from claims about one Greek style.",
-      steps: ["Read the foundation cards from top to bottom and choose the first weak skill.", "Practise only its small instruction for five slow repetitions.", "Open Greek styles and test the same skill inside one pulse family."],
+      steps: ["Read the foundation cards from top to bottom and choose the first weak skill.", "Practise only its small instruction for five slow repetitions.", "Open Greek pulse and test the same skill inside one pulse family."],
       done: "You can explain the skill without naming a favorite lick or player.",
       why: "Targeting, motif development, space, voice leading, and rhythmic control transfer across instruments; style determines how they are voiced and timed.",
       terms: [["Foundation", "A general skill that supports many styles."], ["Motif", "A short recognizable musical idea that can be repeated or changed."], ["Style", "A shared language of rhythm, phrasing, articulation, and repertoire practice."]],

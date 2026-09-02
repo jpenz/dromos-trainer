@@ -93,3 +93,36 @@ test("the design system defines the redesigned tokens", () => {
   assert.match(css, /env\(safe-area-inset-bottom\)/, "safe areas must be respected");
   assert.match(css, /prefers-reduced-motion: reduce/);
 });
+
+test("Greek Pulse opens on the pulse it is named after (blueprint 2.11)", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  const css = read("css/styles.css");
+  assert.match(html, /data-style-section="greek" class="active"/,
+    "the destination called Greek Pulse must open on the Greek pulse maps");
+  assert.match(app, /styles: \{ section: "greek"/, "the default section must match the shipped markup");
+  assert.ok(html.indexOf('id="styleExplorer"') < html.indexOf('id="foundationGuide"'),
+    "the default section must ship visible instead of relying on a render to unhide it");
+  assert.doesNotMatch(html, /id="styleExplorer" class="style-explorer hidden"/,
+    "the shipped markup must not hide the default section");
+
+  const explorer = (app.match(/\$\("styleExplorer"\)\.innerHTML = `[\s\S]*?`;/) || [""])[0];
+  assert.ok(explorer, "the Greek section must still render from one template");
+  assert.ok(explorer.indexOf("pulse-strip") < explorer.indexOf("style-jobs"),
+    "the pulse strip leads the card instead of sitting mid-card under prose");
+  assert.ok(explorer.indexOf("pulse-strip") < explorer.indexOf('id="btnOpenSongMap"'),
+    "the primary action sits directly under the answer it acts on");
+  assert.doesNotMatch(explorer, /<span>Map next<\/span>/,
+    "'then open Song Map' is stated once, as the button");
+  assert.doesNotMatch(app, /class="style-intro"/, "standing intro paragraphs are the page guide's job");
+  assert.doesNotMatch(css, /\.style-intro/, "the deleted intro must not keep dead CSS");
+  assert.match(app, /class="foundation-card"[\s\S]*?style-source/,
+    "the provenance note folds into the last foundation card");
+
+  assert.match(app, /hint: "Choose a pulse map/, "the keyboard hint must come from the view table");
+  assert.match(app, /space: false, arrows: false/,
+    "a page with no transport must not swallow Space or the arrow keys");
+  assert.match(app, /keys\.space === false && e\.code === "Space"/);
+  assert.match(css, /\.style-actions \.primary-mini \{ min-height: var\(--h-primary\)/,
+    "the one primary action must be a primary-height control");
+});
