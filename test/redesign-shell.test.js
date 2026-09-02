@@ -132,6 +132,26 @@ test("Melody leads with Start plus the seven degrees and stages everything else"
   assert.doesNotMatch(html, /class="melody-boundary"/, "standing disclaimer paragraphs are banned");
   assert.match(read("js/page-guides.js"), /boundary: "Chord membership is derived from the selected scale/);
   assert.match(app, /guide\.boundary \? `<p class="guide-boundary"/, "the honesty line renders inside the collapsed guide");
+test("the video lab leads with the library and survives a player that never loads", () => {
+  const video = read("js/video.js");
+  const css = read("css/styles.css");
+  const library = video.indexOf('class="video-library"');
+  const layout = video.indexOf('class="video-layout"');
+  assert.ok(library > -1 && layout > library,
+    "choosing a lesson is step 1, so the library must render above the player");
+  // The offline-capable app's worst failure: with no error and no timeout path
+  // the "Open on YouTube" fallback could never render.
+  assert.match(video, /script\.onerror/, "a blocked API script must reach the fallback");
+  assert.match(video, /API_TIMEOUT/, "a silent API must time out into the fallback");
+  assert.match(video, /function showFallback/, "an unreachable lesson needs a link, not an empty box");
+  assert.match(css, /\.video-offline/, "the fallback link needs a visible treatment");
+  // Nothing that needs the embedded player may look live before it is ready.
+  assert.match(video, /play\.disabled = !ready/, "Play must be disabled until the player is ready");
+  assert.match(video, /slider\.disabled = !ready/, "the A/B sliders must wait for a real duration");
+  assert.doesNotMatch(video, /max="300"/, "the A/B range must be a variable ceiling, not a hardcoded 5:00");
+  assert.doesNotMatch(video, /video-study-tip/, "the study tip duplicated the page guide step for step");
+  assert.match(read("js/app.js"), /Set A and Set B mark the loop/,
+    "the Video view needs its own keyboard hint instead of the false Space/arrows line");
 });
 
 test("the design system defines the redesigned tokens", () => {
