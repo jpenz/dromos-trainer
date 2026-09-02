@@ -5555,7 +5555,25 @@
     picking: { transport: false, journey: true, readout: true, split: true }
   };
 
+  function motionOK() {
+    return !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
   function setView(v) {
+    // Same-document view transition (Baseline 2025): the stage and the
+    // transport carry view-transition-names, so the two persistent objects
+    // morph between views instead of teleporting. Fallback: instant swap.
+    if (document.startViewTransition && motionOK() && !document.hidden && state.view && state.view !== v) {
+      // A rapid second switch aborts the running transition - expected, and
+      // the DOM swap still happens; swallow the abort so it never logs.
+      const transition = document.startViewTransition(() => applyView(v));
+      transition.finished.catch(() => {});
+      return;
+    }
+    applyView(v);
+  }
+
+  function applyView(v) {
     if (v === "lab") v = "solo";   // compatibility with bookmarks from the first version
     if (state.view === "video" && v !== "video" && V) V.destroy();
     stopPitchListening({ record: false, quiet: true });

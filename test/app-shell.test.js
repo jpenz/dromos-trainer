@@ -457,6 +457,13 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
     "control-height tokens are the sizing law");
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\n  :root \{ --dur-1: 0ms; --dur-2: 0ms; --dur-3: 0ms; \}/,
     "reduced motion zeroes the kit in one place");
+  // Motion kit: view transitions with a working fallback and a motion gate.
+  assert.match(app, /if \(document\.startViewTransition && motionOK\(\) && !document\.hidden && state\.view && state\.view !== v\)/,
+    "view switches use the View Transitions API only when supported AND motion is allowed");
+  assert.match(css, /#stage \{ view-transition-name: stage; \}/,
+    "the stage morphs between views instead of teleporting");
+  assert.match(css, /@supports \(animation-timing-function: linear\(0, 1\)\)/,
+    "the spring easing upgrades progressively behind @supports");
 });
 
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
