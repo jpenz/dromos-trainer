@@ -3954,6 +3954,12 @@
     return hit ? hit.name : M.simplify(M.nameFor(0, pc));
   }
 
+  // The one status line on Comp. It names the control that actually starts the
+  // pulse (the panel Play beside the skeleton) and the drawer group that owns
+  // bass/drums - the copy used to point at a hidden transport and at a settings
+  // group that had been renamed "Practice ensemble".
+  const COMP_IDLE_LINE = "Press ▶ Play under this skeleton to move the pulse through it. Bass and drums are optional timing aids in Settings → Practice ensemble.";
+
   function renderCompSkeleton(chord) {
     const root = $("compSkeleton");
     if (!root) return;
@@ -3971,7 +3977,7 @@
         return `<span data-comp-unit="${slot.unit}" class="comp-slot ${slot.action}${slot.groupStart ? " group-start" : ""}"><i>${slot.unit}</i><b>${escapeHtml(label[0])}</b><small>${escapeHtml(label[1])}</small></span>`;
       }).join("")}</div>
       <p class="comp-level-note">${escapeHtml(plan.note)}</p>
-      <p class="comp-pulse-now" data-comp-now aria-live="polite">Press Play to move the pulse through this skeleton. Bass and drums in Practice setup are optional timing aids.</p>`;
+      <p class="comp-pulse-now" data-comp-now aria-live="polite">${COMP_IDLE_LINE}</p>`;
     root.querySelectorAll("[data-comp-level]").forEach((button) => button.onclick = () => {
       stopPlay();
       state.triads.rhythmLevel = +button.getAttribute("data-comp-level");
@@ -3994,6 +4000,18 @@
     });
     const now = root.querySelector("[data-comp-now]");
     if (now && beatInBar >= 0) now.textContent = `Beat ${beatInBar + 1} of ${beatCount} · keep the marked job clear.`;
+  }
+
+  // When playback stops the skeleton must stop claiming a beat is sounding.
+  function resetCompPulse() {
+    const root = $("compSkeleton");
+    if (!root) return;
+    root.querySelectorAll("[data-comp-unit]").forEach((slot) => {
+      slot.classList.remove("current");
+      slot.removeAttribute("aria-current");
+    });
+    const now = root.querySelector("[data-comp-now]");
+    if (now) now.textContent = COMP_IDLE_LINE;
   }
 
   function renderTriads() {
@@ -5506,9 +5524,18 @@
     AU.stopAll(); setPlayingUI(false);
   }
   function setPlayingUI(p, label) {
+    const text = label || (p ? "⏸ Pause" : "▶ Play");
     const b = $("btnPlay");
-    b.textContent = label || (p ? "⏸ Pause" : "▶ Play");
+    b.textContent = text;
     b.classList.toggle("playing", p);
+    // Comp keeps its own Play next to the skeleton it starts; it mirrors the
+    // transport rather than owning a second playback state.
+    const comp = $("btnCompPlay");
+    if (comp) {
+      comp.textContent = text;
+      comp.classList.toggle("playing", p);
+    }
+    if (!p && state.view === "triads") resetCompPulse();
   }
   function togglePlay() {
     if (state.view === "picking") { state.picking.playing ? (stopPlay(), renderPickingLab()) : playPickingExercise(); return; }
@@ -5935,6 +5962,7 @@
     $("tglAllShapes").onchange = (e) => { state.triads.showAll = e.target.checked; renderTriads(); };
     $("btnTriadPrev").onclick = () => { stopPlay(); stepTriad(-1); };
     $("btnTriadNext").onclick = () => { stopPlay(); stepTriad(1); };
+    $("btnCompPlay").onclick = togglePlay;
 
     // --- scale lab ---
     document.querySelectorAll("[data-drill]").forEach((b) => b.onclick = () => {

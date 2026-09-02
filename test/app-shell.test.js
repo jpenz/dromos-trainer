@@ -500,4 +500,25 @@ test("Comp starts from a Greek pulse skeleton and transport actually enters the 
     "Play on Comp must start a real progression transport");
   assert.match(app, /state\.view === "triads"[^]*updateCompPulse\(beatInBar\)/,
     "transport must move a visible cursor through the selected pulse");
+  // The skeleton leads the page, so the control that starts it is next to it
+  // instead of only in the footer transport, and it mirrors the one transport.
+  const panel = (html.match(/<div id="panelTriads"[\s\S]*?\n            <\/div>/) || [""])[0];
+  assert.match(panel, /id="btnCompPlay"/, "Comp needs a visible Play beside the skeleton it starts");
+  assert.ok(panel.indexOf("compSkeleton") < panel.indexOf("btnCompPlay"),
+    "the pulse skeleton is the answer object and leads its own primary action");
+  assert.match(app, /\$\("btnCompPlay"\)\.onclick = togglePlay/,
+    "the panel Play must drive the one transport, not a second playback state");
+  assert.match(app, /const comp = \$\("btnCompPlay"\)[^]*comp\.textContent = text/,
+    "the panel Play must mirror the transport label instead of lying about state");
+  // The pulse line pointed at a Play the CSS hid and at a settings group that
+  // had been renamed; both claims must match what actually ships.
+  assert.match(app, /COMP_IDLE_LINE = "Press ▶ Play under this skeleton/,
+    "Comp's status line must name the control that really starts the pulse");
+  assert.doesNotMatch(app, /Bass and drums in Practice setup/,
+    "the drawer group is called Practice ensemble");
+  assert.match(app, /function resetCompPulse/,
+    "a stopped skeleton must stop claiming a beat is sounding");
+  // Layer 2 per the disclosure doctrine: one Setup fold holds the shape config.
+  assert.match(panel, /<details id="triadSetup"[\s\S]*id="setSel"[\s\S]*id="triadZoneSel"[\s\S]*id="tglAllShapes"[\s\S]*<\/details>/,
+    "strings, neck area, and the faint-shapes toggle belong in one Setup fold");
 });
