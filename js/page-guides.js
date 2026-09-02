@@ -206,6 +206,16 @@
       terms: [["MusicXML", "A notation-file format exported by many score-writing apps; it is not a PDF or audio file."], ["Chord symbol", "A short name such as Dm or A7."], ["Outside note", "A note outside the selected scale or chord; it may still work as intentional tension or approach."]],
       targetId: "analysisChords"
     },
+    songs: {
+      purpose: "Play from the band's own chart",
+      answer: "Read the chart section by section, exactly as it was written for the band.",
+      result: "The app keeps the author's spelling and adds two moves paper cannot: send these chords to the analyzer, or open the Solo map in the chart's home and leading dromos.",
+      steps: ["Read the Chart tab one section at a time; each bar shows its chord and four beat slashes.", "Open the Lyrics tab to see which word each chord lands on.", "Press Analyze these changes for the evidence, or the Solo button to take the chart's home to the neck."],
+      done: "You can play through a section without stopping to work out where the next chord starts.",
+      why: "A working chart is a rehearsal document, not an analysis. Reading it in sections and bars is how the music is actually passed between players; naming the dromos is a second question, asked after the chart is legible.",
+      terms: [["Bar", "One measure of time; the four slashes stand for its beats."], ["Stab", "A short accented hit, written in the chart with an exclamation mark."], ["Held bar", "A % bar: keep the previous chord sounding for one more bar."]],
+      targetId: "songChart"
+    },
     concepts: {
       purpose: "Diagnose the real musical problem",
       answer: "Decide whether the weak layer is time, harmony, fretboard route, hearing, or touch—then practise only that layer.",
@@ -256,9 +266,12 @@
 
   function selfTest() {
     const results = [];
-    const requiredViews = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "examples", "analyze", "concepts", "coach", "progress"];
-    const missingViews = requiredViews.filter((view) => !resolve({ view }));
-    results.push({ name: "every workspace resolves to a guide", pass: missingViews.length === 0, got: missingViews.join(", "), want: "" });
+    const requiredViews = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "styles", "video", "examples", "songs", "analyze", "concepts", "coach", "progress"];
+    // A view with no entry of its own silently inherits the Cycle guide, so a
+    // page can ship teaching copy about a different page. That is the failure
+    // this checks for — not merely that resolve() returned an object.
+    const missingViews = requiredViews.filter((view) => view !== "cycle" && resolve({ view }).key === "cycle");
+    results.push({ name: "every workspace resolves to its own guide", pass: missingViews.length === 0, got: missingViews.join(", "), want: "" });
     const incomplete = Object.entries(GUIDES).filter(([, guide]) => !guide.answer || !guide.result || guide.steps.length !== 3 || !guide.done || !guide.why || !guide.targetId || guide.terms.length < 2).map(([key]) => key);
     results.push({ name: "every guide has the full answer-first pyramid", pass: incomplete.length === 0, got: incomplete.join(", "), want: "" });
     const subviews = ["targets", "road", "path", "phrase", "cell"].map((soloSection) => resolve({ view: "solo", soloSection }).key);
