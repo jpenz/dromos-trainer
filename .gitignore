@@ -9,3 +9,4 @@ node_modules/
 # Kombai workspace files
 .kombai/
 .vercel
+.claude/
