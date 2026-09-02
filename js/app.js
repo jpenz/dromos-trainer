@@ -50,7 +50,7 @@
     // --- foundation and Greek styles ---
     styles: { section: "foundation", styleId: "zeibekiko" },
     // --- source-bounded tactical example index ---
-    examples: { category: "all", selectedId: "chiotis-mimisis" },
+    examples: { selectedId: "chiotis-mimisis" },
     // --- repertoire songs ---
     songs: { openId: "ta-mavra-matia-sou", tab: "chart" },
     // --- transparent analysis ---
@@ -1532,7 +1532,6 @@
       state.progStep = 0;
       persistPreferences();
     }
-    state.examples.category = template.category;
     state.examples.selectedId = template.id;
     setView("examples");
   }
@@ -1592,68 +1591,102 @@
     }).filter(Boolean);
   }
 
+  // Redesign PR 15 (blueprint 2.13): the example article leads - its numbered
+  // steps and "Hear the note path" are the answer. One grouped picker replaces
+  // the category filter plus the parallel index list (17 controls -> 1), key
+  // and dromos live in the single Setup fold, and the evidence, the source and
+  // the compact route fold into the article's own details. Both folds keep
+  // their open state across re-renders, because the controls that trigger a
+  // re-render live inside them.
+  let examplesSetupOpen = false;
+  let examplesEvidenceOpen = false;
+
   function renderTacticalExamples() {
     const root = $("tacticalExamples");
     if (!root || !TE) return;
     const ctx = tacticalContext();
     const built = new Map(TE.available(ctx).map((example) => [example.id, example]));
-    const visibleTemplates = TE.TEMPLATES.filter((template) =>
-      state.examples.category === "all" || template.category === state.examples.category);
     let selected = built.get(state.examples.selectedId);
-    if (!selected || !visibleTemplates.some((template) => template.id === selected.id)) {
-      const first = visibleTemplates.find((template) => built.has(template.id));
-      selected = first ? built.get(first.id) : built.values().next().value;
+    if (!selected) {
+      selected = built.values().next().value;
       if (selected) state.examples.selectedId = selected.id;
     }
+    const tuning = window.Tuning.current();
+    const courseWord = tuning.open.length === 6 ? "string" : "course";
     const instrumentRoute = selected ? tacticalInstrumentRoute(selected.notes) : [];
     const categoryName = (id) => TE.CATEGORIES.find((category) => category.id === id)?.name || "Practice";
+    const modeName = (id) => (M.MODES[id] ? M.MODES[id].name : id);
+    const gateNote = (template) => ` · needs ${template.modeGate.map(modeName).join(" or ")}`;
+    const picker = TE.CATEGORIES.map((category) => {
+      const items = TE.TEMPLATES.filter((template) => template.category === category.id);
+      if (!items.length) return "";
+      return `<optgroup label="${escapeHtml(category.name)} · ${escapeHtml(category.question)}">${items.map((template) => {
+        const ready = built.has(template.id);
+        return `<option value="${escapeHtml(template.id)}"${selected && template.id === selected.id ? " selected" : ""}${ready ? "" : " disabled"}>${escapeHtml(template.title)} · ${escapeHtml(template.figure)}${ready ? "" : escapeHtml(gateNote(template))}</option>`;
+      }).join("")}</optgroup>`;
+    }).join("");
     root.innerHTML = `
-      <section class="examples-context" aria-label="Tactical example key and scale">
-        <div><span>All examples recalculate</span><b>Choose the same home and dromos as the music you are practising.</b></div>
-        <label for="examplesTonicSel">Key<select id="examplesTonicSel">${M.TONICS.map((tonic) => `<option value="${escapeHtml(tonic)}"${tonic === state.tonic ? " selected" : ""}>${escapeHtml(tonic)}</option>`).join("")}</select></label>
-        <div class="seg seg-5" aria-label="Tactical example scale or dromos">${M.MODE_ORDER.map((modeId) => `<button data-example-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}">${escapeHtml(M.MODES[modeId].name)}</button>`).join("")}</div>
-      </section>
-      <section class="examples-filter" aria-label="Tactical example categories">
-        <button data-example-category="all" class="${state.examples.category === "all" ? "active" : ""}"><b>All</b><span>${TE.TEMPLATES.length} examples</span></button>
-        ${TE.CATEGORIES.map((category) => `<button data-example-category="${category.id}" class="${state.examples.category === category.id ? "active" : ""}"><b>${escapeHtml(category.name)}</b><span>${escapeHtml(category.question)}</span></button>`).join("")}
-      </section>
-      <div class="examples-layout">
-        <nav class="examples-index" aria-label="Tactical example index">${visibleTemplates.map((template) => {
-          const example = built.get(template.id);
-          const unavailable = !example;
-          return `<button data-example-id="${template.id}" class="${selected && template.id === selected.id ? "active" : ""}"${unavailable ? " disabled" : ""}>
-            <span>${escapeHtml(categoryName(template.category))}</span><b>${escapeHtml(template.title)}</b><small>${escapeHtml(template.figure)}${unavailable ? " · choose Major or Harmonic minor" : ""}</small>
-          </button>`;
-        }).join("")}</nav>
-        ${selected ? `<article class="example-detail">
-          <header><div><span>${escapeHtml(categoryName(selected.category))}</span><h2>${escapeHtml(selected.title)}</h2><p>${escapeHtml(selected.figure)}</p></div><i>Source-bounded</i></header>
-          <section class="example-evidence"><span>What the source supports</span><p>${escapeHtml(selected.evidence)}</p>${selected.source.href ? `<a href="${escapeHtml(selected.source.href)}" target="_blank" rel="noopener noreferrer">Open source · ${escapeHtml(selected.source.name)}</a>` : `<small>${escapeHtml(selected.source.name)}</small>`}</section>
-          <section class="example-setup"><span>Use it now</span><b>${escapeHtml(selected.setup)}</b><p>${escapeHtml(selected.noteLine)}</p></section>
-          <section class="example-instrument"><span>One compact starting route · ${escapeHtml(window.Tuning.current().name)}</span><div>${instrumentRoute.map((placement) => `<b><i>${escapeHtml(placement.note.name)}</i><small>${escapeHtml(placement.course)} ${window.Tuning.current().open.length === 6 ? "string" : "course"} · fret ${placement.fret}</small></b>`).join("")}</div><p>First ${instrumentRoute.length} note${instrumentRoute.length === 1 ? "" : "s"} only, kept at fret 15 or lower. This is one practical start—not the only fingering. Pennanen's comparison still asks you to test a same-course route against this compact route for tone color.</p></section>
-          <ol class="example-steps">${selected.steps.map((step, index) => `<li><i>${index + 1}</i><p>${escapeHtml(step)}</p></li>`).join("")}</ol>
-          <div class="example-checks"><div><span>Listen for</span><p>${escapeHtml(selected.listen)}</p></div><div><span>Pass when</span><p>${escapeHtml(selected.pass)}</p></div></div>
-          <p class="example-boundary"><b>Evidence boundary:</b> ${escapeHtml(selected.boundary)}</p>
-          <footer><button class="mini" data-example-hear="${selected.id}">♪ Hear the note path</button><button class="mini" data-example-stop>■ Stop</button><button class="mini primary-mini" data-example-practise="${selected.id}">Open in ${selected.toolId ? "Solo Toolkit" : "Picking Path"}</button><button class="mini" data-example-all="${selected.category}">See all in this category</button></footer>
-        </article>` : ""}
-      </div>`;
+      ${selected ? `<article class="example-detail">
+        <header>
+          <div><span>${escapeHtml(categoryName(selected.category))} · ${escapeHtml(selected.figure)}</span><h2>${escapeHtml(selected.title)}</h2></div><i>Source-bounded</i>
+        </header>
+        <p class="example-setup"><b>${escapeHtml(selected.setup)}</b><span>${escapeHtml(selected.noteLine)}</span></p>
+        <div class="example-do">
+          <button class="example-hear" data-example-hear="${escapeHtml(selected.id)}">♪ Hear the note path</button>
+          <button class="mini" data-example-stop>■ Stop</button>
+          <button class="mini" data-example-practise="${escapeHtml(selected.id)}">Open in ${selected.toolId ? "Solo Toolkit" : "Picking Path"}</button>
+        </div>
+        <ol class="example-steps">${selected.steps.map((step, index) => `<li><i>${index + 1}</i><p>${escapeHtml(step)}</p></li>`).join("")}</ol>
+        <div class="example-checks"><div><span>Listen for</span><p>${escapeHtml(selected.listen)}</p></div><div><span>Pass when</span><p>${escapeHtml(selected.pass)}</p></div></div>
+        <details class="example-evidence"${examplesEvidenceOpen ? " open" : ""}>
+          <summary>Source, evidence boundary and one route on ${escapeHtml(tuning.name)}</summary>
+          <div class="example-evidence-body">
+            <p>${escapeHtml(selected.evidence)}</p>
+            ${selected.source.href
+              ? `<a href="${escapeHtml(selected.source.href)}" target="_blank" rel="noopener noreferrer">Open source · ${escapeHtml(selected.source.name)}</a>`
+              : `<small>${escapeHtml(selected.source.name)}</small>`}
+            <div class="example-route">
+              <span>One compact starting route</span>
+              <div>${instrumentRoute.map((placement) => `<b><i>${escapeHtml(placement.note.name)}</i><small>${escapeHtml(placement.course)} ${courseWord} · fret ${placement.fret}</small></b>`).join("")}</div>
+              <p>First ${instrumentRoute.length} note${instrumentRoute.length === 1 ? "" : "s"} only, kept at fret 15 or lower. This is one practical start—not the only fingering.</p>
+            </div>
+            <p class="example-boundary"><b>Evidence boundary:</b> ${escapeHtml(selected.boundary)}</p>
+          </div>
+        </details>
+      </article>` : `<div class="empty-state"><b>No example fits ${escapeHtml(state.tonic)} ${escapeHtml(modeName(state.modeId))}</b><span>Open Setup and choose another dromos.</span></div>`}
+      <label class="examples-picker" for="examplePick">Example
+        <select id="examplePick">${picker}</select>
+      </label>
+      <details class="examples-setup"${examplesSetupOpen ? " open" : ""}>
+        <summary>Setup · ${escapeHtml(state.tonic)} ${escapeHtml(modeName(state.modeId))}</summary>
+        <div class="examples-setup-body">
+          <label for="examplesTonicSel">Key<select id="examplesTonicSel">${M.TONICS.map((tonic) => `<option value="${escapeHtml(tonic)}"${tonic === state.tonic ? " selected" : ""}>${escapeHtml(tonic)}</option>`).join("")}</select></label>
+          <div class="seg seg-5" aria-label="Scale or dromos">${M.MODE_ORDER.map((modeId) => `<button data-example-mode="${modeId}" class="${modeId === state.modeId ? "active" : ""}">${escapeHtml(modeName(modeId))}</button>`).join("")}</div>
+        </div>
+      </details>`;
+    const setupFold = root.querySelector(".examples-setup");
+    if (setupFold) setupFold.addEventListener("toggle", () => { examplesSetupOpen = setupFold.open; });
+    const evidenceFold = root.querySelector(".example-evidence");
+    if (evidenceFold) evidenceFold.addEventListener("toggle", () => { examplesEvidenceOpen = evidenceFold.open; });
+    $("examplePick").onchange = (event) => {
+      state.examples.selectedId = event.target.value;
+      renderTacticalExamples();
+      $("examplePick").focus();
+    };
     $("examplesTonicSel").onchange = (event) => {
       stopPlay(); state.tonic = event.target.value; state.progId = M.PROGRESSIONS[state.modeId][0].id; state.progStep = 0;
       persistPreferences(); renderTacticalExamples(); renderPageGuide();
+      $("examplesTonicSel").focus();
     };
     root.querySelectorAll("[data-example-mode]").forEach((button) => button.onclick = () => {
-      stopPlay(); state.modeId = button.getAttribute("data-example-mode"); state.progId = M.PROGRESSIONS[state.modeId][0].id; state.progStep = 0;
+      const modeId = button.getAttribute("data-example-mode");
+      stopPlay(); state.modeId = modeId; state.progId = M.PROGRESSIONS[state.modeId][0].id; state.progStep = 0;
       persistPreferences(); renderTacticalExamples(); renderPageGuide();
-    });
-    root.querySelectorAll("[data-example-category]").forEach((button) => button.onclick = () => {
-      state.examples.category = button.getAttribute("data-example-category"); renderTacticalExamples();
-    });
-    root.querySelectorAll("[data-example-id]").forEach((button) => button.onclick = () => {
-      state.examples.selectedId = button.getAttribute("data-example-id"); renderTacticalExamples();
+      root.querySelector(`[data-example-mode="${modeId}"]`)?.focus();
     });
     root.querySelector("[data-example-hear]")?.addEventListener("click", () => playTacticalExample(selected));
     root.querySelector("[data-example-stop]")?.addEventListener("click", stopPlay);
     root.querySelector("[data-example-practise]")?.addEventListener("click", () => useTacticalExample(selected));
-    root.querySelector("[data-example-all]")?.addEventListener("click", () => { state.examples.category = "all"; renderTacticalExamples(); });
   }
 
   // ============================ ANALYZER ================================
@@ -5558,7 +5591,9 @@
     solo: { transport: true, journey: true, readout: true, split: true },
     chordmap: { transport: false, journey: true, readout: true, split: true },
     songs: { transport: false, journey: true, readout: true, split: true },
-    examples: { transport: false, journey: true, readout: true, split: true },
+    // Examples plays only its own note path: no transport, no chord inspector
+    // (it kept whatever the previous view left in it) and no empty journey band.
+    examples: { transport: false, journey: false, readout: false, split: false },
     picking: { transport: false, journey: true, readout: true, split: true }
   };
 

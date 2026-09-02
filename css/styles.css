@@ -1989,79 +1989,92 @@ body[data-view="melody"] main { max-width: 1180px; }
 @media (prefers-reduced-motion: reduce) { .breath-bar i { transform: scaleX(0.5); opacity: 0.6; } }
 @keyframes breath-cycle { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
-/* ============ Tactical Examples (FR-66) ============ */
-.tactical-examples { display: grid; gap: 12px; }
-.examples-context { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(130px, 180px) minmax(420px, 1.5fr); align-items: end; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
-.examples-context > div:first-child { align-self: center; }
-.examples-context > div:first-child span, .example-evidence > span, .example-setup > span, .example-instrument > span, .example-checks span { display: block; margin-bottom: 3px; color: var(--faint); font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-.examples-context > div:first-child b { font-family: var(--font-display); font-size: 15px; font-weight: 500; line-height: 1.25; }
-.examples-context label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 650; }
-.examples-context select { width: 100%; }
-.examples-filter { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
-.examples-filter button { display: grid; align-content: start; gap: 2px; min-height: 58px; padding: 8px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); text-align: left; }
-.examples-filter button b { color: var(--text); font-size: 11px; }
-.examples-filter button span { font-size: 9px; line-height: 1.25; }
-.examples-filter button.active { border-color: var(--turquoise); background: rgba(82,168,157,0.11); }
-.examples-layout { display: grid; grid-template-columns: minmax(245px, 0.72fr) minmax(0, 1.8fr); gap: 10px; align-items: start; }
-.examples-index { display: grid; gap: 4px; max-height: min(670px, 72vh); overflow-y: auto; padding-right: 3px; }
-.examples-index button { display: grid; gap: 2px; padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; }
-.examples-index button span { color: var(--faint); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.examples-index button b { font-family: var(--font-display); font-size: 13px; font-weight: 500; }
-.examples-index button small { color: var(--muted); font-size: 9.5px; }
-.examples-index button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
-.examples-index button:disabled { opacity: 0.45; }
-.example-detail { display: grid; gap: 10px; padding: 15px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
-.example-detail > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-.example-detail > header span { color: var(--terracotta-bright); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.example-detail > header h2 { margin: 3px 0 2px; font-family: var(--font-display); font-size: clamp(21px, 2.4vw, 29px); font-weight: 400; }
-.example-detail > header p { margin: 0; color: var(--muted); font-size: 11px; }
-.example-detail > header > i { padding: 4px 8px; border: 1px solid var(--turquoise); border-radius: 999px; color: var(--turquoise); font-size: 9px; font-style: normal; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
-.example-evidence, .example-setup { padding: 10px 11px; border-left: 3px solid var(--turquoise); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: rgba(82,168,157,0.075); }
-.example-setup { border-left-color: var(--terracotta); background: var(--terracotta-soft); }
-.example-evidence p, .example-setup p { margin: 0; font-size: 12px; line-height: 1.48; }
-.example-evidence a, .example-evidence small { display: inline-block; margin-top: 6px; color: var(--turquoise); font-size: 10.5px; }
-.example-setup b { display: block; margin-bottom: 4px; font-size: 12px; }
-.example-setup p { color: var(--text); font-family: var(--font-mono); font-size: 11px; }
-.example-instrument { display: grid; gap: 6px; padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); }
-.example-instrument > div { display: flex; flex-wrap: wrap; gap: 4px; }
-.example-instrument > div b { display: grid; gap: 1px; min-width: 74px; padding: 5px 7px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(255,255,255,0.025); }
-.example-instrument > div i { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 11px; font-style: normal; }
-.example-instrument > div small { color: var(--muted); font-size: 8.5px; }
-.example-instrument > p { margin: 0; color: var(--muted); font-size: 9.5px; line-height: 1.4; }
-.example-steps { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
-.example-steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: start; gap: 8px; padding: 8px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); }
-.example-steps li i { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: var(--terracotta); color: #14110f; font-family: var(--font-mono); font-size: 10px; font-style: normal; font-weight: 700; }
-.example-steps li p { margin: 2px 0 0; font-size: 12px; line-height: 1.45; }
-.example-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.example-checks > div { padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); }
+/* ============ Tactical Examples (FR-66 · redesign PR 15, blueprint 2.13) ====
+   The example article leads: header, the concrete setup line, the primary
+   "Hear the note path" action, the numbered steps, the pass test. The picker
+   is one grouped select below it; key/dromos live in the single Setup fold;
+   source, evidence boundary and the compact route fold into the article. */
+.tactical-examples { display: grid; gap: var(--sp-3); }
+
+.example-detail { display: grid; gap: var(--sp-3); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,0.025); }
+.example-detail > header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line); }
+.example-detail > header span { display: block; color: var(--terracotta-bright); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.example-detail > header h2 { margin: var(--sp-1) 0 0; max-width: 26ch; font-family: var(--font-display); font-size: var(--fs-display); font-weight: 400; line-height: 1.15; }
+.example-detail > header > i { flex: 0 0 auto; padding: var(--sp-1) var(--sp-2); border: 1px solid var(--turquoise); border-radius: 999px; color: var(--turquoise); font-size: var(--fs-micro); font-style: normal; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+
+.example-setup { display: grid; gap: var(--sp-1); margin: 0; padding: var(--sp-3); border-left: 3px solid var(--terracotta); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--terracotta-soft); }
+.example-setup b { max-width: 65ch; font-size: var(--fs-sec); line-height: 1.4; }
+.example-setup span { max-width: 65ch; color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-label); line-height: 1.45; }
+
+.example-do { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.example-hear { flex: 1 1 260px; min-height: var(--h-primary); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-sm); background: var(--terracotta); color: #14110F; font-size: var(--fs-body); font-weight: 600; }
+.example-hear:hover { background: var(--terracotta-bright); }
+/* interaction canon §1: the primary action lifts on hover and compresses on press */
+@media (hover: hover) and (pointer: fine) {
+  .example-hear:hover { transform: translateY(-1px); transition: transform var(--dur-1) var(--ease-out); }
+}
+.example-hear:active { transform: scale(0.97); transition: transform var(--dur-1) var(--ease-out); }
+.example-do .mini { flex: 0 1 auto; min-height: var(--h-control); font-size: var(--fs-sec); }
+
+.example-steps { display: grid; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+.example-steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: start; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.example-steps li i { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; background: var(--terracotta); color: #14110f; font-family: var(--font-mono); font-size: var(--fs-micro); font-style: normal; font-weight: 700; }
+.example-steps li p { margin: 0; max-width: 65ch; font-size: var(--fs-sec); line-height: 1.5; }
+
+.example-checks { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.example-checks > div { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); }
 .example-checks > div:last-child { border-color: rgba(212,118,59,0.45); }
-.example-checks p { margin: 0; font-size: 11px; line-height: 1.45; }
-.example-boundary { margin: 0; padding: 8px 10px; border: 1px dashed var(--line-strong); border-radius: var(--r-sm); color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+.example-checks span { display: block; margin-bottom: var(--sp-1); color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.example-checks p { margin: 0; max-width: 65ch; font-size: var(--fs-sec); line-height: 1.45; }
+
+.example-evidence { border: 1px solid var(--line); border-radius: var(--r-sm); }
+.example-evidence > summary { display: flex; align-items: center; min-height: var(--h-control); padding: var(--sp-2) var(--sp-3); color: var(--muted); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.05em; cursor: pointer; }
+.example-evidence-body { display: grid; gap: var(--sp-2); padding: 0 var(--sp-3) var(--sp-3); }
+.example-evidence-body > p { margin: 0; max-width: 65ch; font-size: var(--fs-sec); line-height: 1.5; }
+.example-evidence-body a, .example-evidence-body small { justify-self: start; color: var(--turquoise); font-size: var(--fs-label); }
+.example-evidence-body a { display: inline-flex; align-items: center; min-height: var(--h-chip); }
+.example-route { display: grid; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.example-route > span { color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.example-route > div { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+.example-route b { display: grid; gap: 2px; min-width: 92px; padding: var(--sp-1) var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-sm); background: rgba(255,255,255,0.025); }
+.example-route i { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: var(--fs-label); font-style: normal; }
+.example-route small { color: var(--muted); font-size: var(--fs-micro); }
+.example-route > p { margin: 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-micro); line-height: 1.45; }
+.example-boundary { margin: 0; max-width: 65ch; padding: var(--sp-2) var(--sp-3); border: 1px dashed var(--line-strong); border-radius: var(--r-sm); color: var(--muted); font-size: var(--fs-micro); line-height: 1.5; }
 .example-boundary b { color: var(--text); }
-.example-detail > footer { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.examples-picker { display: grid; gap: var(--sp-1); color: var(--muted); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.examples-picker select { width: 100%; min-height: var(--h-control); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-size: var(--fs-sec); font-weight: 400; letter-spacing: 0; text-transform: none; color-scheme: dark; }
+.examples-setup { border: 1px solid var(--line); border-radius: var(--r-sm); }
+.examples-setup > summary { display: flex; align-items: center; min-height: var(--h-control); padding: var(--sp-2) var(--sp-3); color: var(--muted); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.05em; cursor: pointer; }
+.examples-setup-body { display: grid; grid-template-columns: minmax(130px, 190px) minmax(0, 1fr); gap: var(--sp-2); align-items: end; padding: 0 var(--sp-3) var(--sp-3); }
+.examples-setup-body label { display: grid; gap: var(--sp-1); color: var(--muted); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.examples-setup-body select { width: 100%; min-height: var(--h-control); padding: var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-size: var(--fs-sec); font-weight: 400; letter-spacing: 0; text-transform: none; color-scheme: dark; }
+
 .melody-example-links { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 2px; }
 .melody-example-links .mini { white-space: normal; text-align: left; }
-.examples-filter button:focus-visible, .examples-index button:focus-visible, .example-detail button:focus-visible { outline: 3px solid var(--turquoise); outline-offset: 2px; }
+.example-detail button:focus-visible { outline: 3px solid var(--turquoise); outline-offset: 2px; }
 
-@media (max-width: 1040px) {
-  .examples-context { grid-template-columns: 1fr 170px; }
-  .examples-context .seg-5 { grid-column: 1 / -1; }
-  .examples-filter { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
+/* Examples reads like a page, not a workbench: one column, prose measure. */
+body[data-view="examples"] main { max-width: 980px; }
+
 @media (max-width: 720px) {
   .tk-origin { align-items: flex-start; flex-direction: column; }
-  .examples-context, .examples-layout { grid-template-columns: 1fr; }
-  .examples-context .seg-5 { grid-column: auto; }
-  .examples-filter { display: flex; overflow-x: auto; padding-bottom: 3px; }
-  .examples-filter button { flex: 0 0 148px; }
-  .examples-index { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; overflow: visible; }
   .example-checks { grid-template-columns: 1fr; }
+  .examples-setup-body { grid-template-columns: 1fr; }
 }
 @media (max-width: 430px) {
-  .examples-index { grid-template-columns: 1fr; }
-  .example-detail { padding: 12px; }
+  .example-detail { padding: var(--sp-3); }
   .example-detail > header { flex-direction: column; }
-  .example-detail > footer .mini { width: 100%; }
+  .example-do .mini { flex: 1 1 100%; }
+}
+/* WCAG 2.5.5 / Apple HIG: every target on this page clears 44px on touch. */
+@media (pointer: coarse) {
+  .example-detail button, .example-do .mini, .example-evidence > summary, .example-evidence-body a,
+  .examples-setup > summary, .examples-picker select, .examples-setup-body select,
+  .examples-setup-body .seg button { min-height: 44px; }
+  /* the one primary action stays at its own, taller step */
+  .example-detail .example-hear { min-height: var(--h-primary); }
 }
 
 /* ============ Picking Lab (FR-67) ============ */

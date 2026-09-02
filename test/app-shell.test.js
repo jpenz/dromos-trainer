@@ -501,6 +501,31 @@ test("Solo Toolkit choices keep keyboard focus and promise only implemented beha
     "Thirds Shadow must describe its written rail rather than imply a neck overlay");
 });
 
+test("Tactical Examples lead with the drill and borrow no chrome", () => {
+  const app = read("js/app.js");
+  const css = read("css/styles.css");
+  // Blueprint 2.13: the example article is the answer, one grouped picker
+  // replaces the category filter plus the parallel index, and the page carries
+  // no transport, no stale chord inspector and no empty journey band.
+  assert.match(app, /examples: \{ transport: false, journey: false, readout: false, split: false \}/,
+    "Examples must not inherit the transport, the chord inspector or an empty journey band");
+  assert.match(app, /<select id="examplePick">/, "the example picker is one grouped select");
+  assert.match(app, /<optgroup label="\$\{escapeHtml\(category\.name\)\}/,
+    "the picker groups examples by category instead of a separate filter row");
+  assert.doesNotMatch(app, /data-example-category/,
+    "the six-button category filter must not return alongside the picker");
+  assert.match(app, /class="examples-setup"\$\{examplesSetupOpen \? " open" : ""\}/,
+    "key and dromos live in one Setup fold that survives its own re-render");
+  assert.match(app, /class="example-evidence"\$\{examplesEvidenceOpen \? " open" : ""\}/,
+    "source, evidence boundary and the compact route fold into the article");
+  assert.match(app, /class="example-hear" data-example-hear=/,
+    "Hear the note path is the page's single primary action");
+  assert.match(css, /\.example-hear \{[^}]*min-height: var\(--h-primary\)/,
+    "the primary action must use the 48px primary control height");
+  assert.match(app, /needs \$\{template\.modeGate\.map\(modeName\)\.join\(" or "\)\}/,
+    "a mode-gated example must say which dromos it needs instead of silently vanishing");
+});
+
 test("Comp starts from a Greek pulse skeleton and transport actually enters the page", () => {
   const html = read("index.html");
   const app = read("js/app.js");
