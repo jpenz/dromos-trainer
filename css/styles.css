@@ -7,6 +7,17 @@
    ======================================================================== */
 
 :root {
+  /* Redesign tokens (docs/REDESIGN_BLUEPRINT.md §1.1/1.3): M3 type steps with
+     the Apple 11px floor, 8px spacing grid, M3 control heights, and a motion
+     kit the reduced-motion query can zero in one place. */
+  --fs-display: clamp(22px, 3.5vw, 28px);
+  --fs-title: 18px; --fs-body: 16px; --fs-sec: 14px; --fs-label: 12px; --fs-micro: 11px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px;
+  --h-primary: 48px; --h-control: 40px; --h-chip: 32px;
+  --dur-1: 120ms; --dur-2: 220ms; --dur-3: 320ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.3, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   /* foundations */
   --bg: #0F1418;
   --bg2: #12191E;
@@ -1718,51 +1729,12 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .hint { font-size: 11.5px; color: var(--faint); text-align: center; padding-top: 6px; }
 
 /* ========================= Per-view visibility ========================= */
-body[data-view="ear"] .journey-band,
-body[data-view="melody"] .journey-band,
-body[data-view="chordmap"] .journey-band,
-body[data-view="video"] .journey-band,
-body[data-view="styles"] .journey-band,
-body[data-view="analyze"] .journey-band,
-body[data-view="concepts"] .journey-band,
-body[data-view="coach"] .journey-band,
-body[data-view="today"] .journey-band,
-body[data-view="progress"] .journey-band { display: none; }
 
-body[data-view="ear"] .transport-bar,
-body[data-view="melody"] .transport-bar,
-body[data-view="chordmap"] .transport-bar,
-body[data-view="video"] .transport-bar,
-body[data-view="styles"] .transport-bar,
-body[data-view="analyze"] .transport-bar,
-body[data-view="concepts"] .transport-bar,
-body[data-view="coach"] .transport-bar,
-body[data-view="today"] .transport-bar,
-body[data-view="progress"] .transport-bar,
-body[data-view="triads"] .transport-bar,
 body[data-view="solo"][data-solo-section="path"] .transport-bar,
 body[data-view="solo"][data-solo-section="phrase"] .transport-bar,
 body[data-view="solo"][data-solo-section="cell"] .transport-bar { display: none; }
 
-body[data-view="ear"] .readout,
-body[data-view="melody"] .readout,
-body[data-view="video"] .readout,
-body[data-view="styles"] .readout,
-body[data-view="analyze"] .readout,
-body[data-view="concepts"] .readout,
-body[data-view="coach"] .readout,
-body[data-view="today"] .readout,
-body[data-view="progress"] .readout { display: none; }
 
-body[data-view="ear"] .workbench,
-body[data-view="melody"] .workbench,
-body[data-view="video"] .workbench,
-body[data-view="styles"] .workbench,
-body[data-view="analyze"] .workbench,
-body[data-view="concepts"] .workbench,
-body[data-view="coach"] .workbench,
-body[data-view="today"] .workbench,
-body[data-view="progress"] .workbench { grid-template-columns: minmax(0, 1fr); }
 
 body[data-view="video"] .panel,
 body[data-view="coach"] .panel,
@@ -2256,7 +2228,6 @@ body[data-view="melody"] main { max-width: 1180px; }
 .picking-event:focus-visible { outline: 3px solid var(--turquoise); outline-offset: 2px; }
 body[data-view="picking"] main { width: min(1360px, 100%); }
 body[data-view="picking"] .legend { display: none; }
-body[data-view="picking"] .transport-bar { display: none; }
 body[data-view="picking"] .coach-cue, body[data-view="picking"] .mode-purpose { display: none; }
 body[data-view="picking"] main { gap: 12px; padding-top: 14px; }
 body[data-view="picking"] .lesson-head { gap: 8px; }
@@ -2524,3 +2495,32 @@ body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
 .picking-levels button { min-height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--text); font-family: var(--font-mono); font-size: 10px; cursor: pointer; }
 .picking-levels button.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .picking-levels small { color: var(--faint); font-size: 8.5px; line-height: 1.35; }
+
+/* ---- shell chrome: one capability table in app.js drives these ---- */
+body.chrome-no-transport .transport-bar:not(.picking-transport) { display: none; }
+body.chrome-no-journey .journey-band { display: none; }
+body.chrome-no-readout .readout { display: none; }
+body.chrome-single .workbench { grid-template-columns: minmax(0, 1fr); }
+
+/* ---- drawer close ---- */
+.drawer-head { position: relative; }
+.drawer-close { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; }
+.drawer-close:hover { color: var(--text); border-color: var(--line-strong); }
+
+/* ---- nav: More sheet on compact screens ---- */
+.nav-more { display: none; }
+@media (max-width: 900px) {
+  .nav-more { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); font-size: var(--fs-label); }
+  .app-nav .nav-secondary { display: none; }
+  .app-nav.nav-open .nav-secondary { position: fixed; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 80; display: grid; gap: 4px; padding: 10px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: rgba(15, 20, 24, 0.98); backdrop-filter: blur(12px); box-shadow: 0 12px 34px rgba(0,0,0,0.5); }
+  .app-nav.nav-open .nav-secondary [data-nav] { min-height: 44px; width: 160px; text-align: left; }
+}
+@media (min-width: 901px) {
+  .nav-secondary { display: contents; }
+}
+
+/* ---- reduced motion: zero the kit in one move ---- */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-1: 0ms; --dur-2: 0ms; --dur-3: 0ms; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

@@ -46,13 +46,17 @@
       tonic: TONICS.includes(raw.tonic) ? raw.tonic : DEFAULT_PREFERENCES.tonic,
       modeId: MODES.includes(raw.modeId) ? raw.modeId : DEFAULT_PREFERENCES.modeId,
       progressionId: typeof raw.progressionId === "string" && /^[\w♭#-]{1,50}$/.test(raw.progressionId) ? raw.progressionId : DEFAULT_PREFERENCES.progressionId,
-      bpm: Number.isFinite(raw.bpm) ? Math.max(40, Math.min(200, Math.round(raw.bpm))) : DEFAULT_PREFERENCES.bpm,
+      bpm: Number.isFinite(raw.bpm) ? Math.max(30, Math.min(220, Math.round(raw.bpm))) : DEFAULT_PREFERENCES.bpm,
       cycleMode: CYCLE_MODES.includes(raw.cycleMode) ? raw.cycleMode : DEFAULT_PREFERENCES.cycleMode,
       cycleZone: ZONES.includes(raw.cycleZone) ? raw.cycleZone : DEFAULT_PREFERENCES.cycleZone,
       triadZone: ZONES.includes(raw.triadZone) ? raw.triadZone : DEFAULT_PREFERENCES.triadZone,
       labelMode: LABELS.includes(raw.labelMode) ? raw.labelMode : DEFAULT_PREFERENCES.labelMode,
       lefty: typeof raw.lefty === "boolean" ? raw.lefty : DEFAULT_PREFERENCES.lefty,
-      loop: typeof raw.loop === "boolean" ? raw.loop : DEFAULT_PREFERENCES.loop
+      loop: typeof raw.loop === "boolean" ? raw.loop : DEFAULT_PREFERENCES.loop,
+      ghosts: typeof raw.ghosts === "boolean" ? raw.ghosts : true,
+      scaleOverlay: typeof raw.scaleOverlay === "boolean" ? raw.scaleOverlay : true,
+      metronome: typeof raw.metronome === "boolean" ? raw.metronome : false,
+      holdI: typeof raw.holdI === "boolean" ? raw.holdI : false
     };
   }
 
@@ -219,7 +223,7 @@
     add("profiles keep independent ear progress", second.progress.earColour.attempts === 0 && testStore.list()[0].progress.earColour.correct === 1);
     add("profiles keep independent sing-back progress", second.progress.singPitch.attempts === 0 && testStore.list()[0].progress.singPitch.correct === 1);
     testStore.updatePreferences({ tuningId: "unknown", bpm: 999 });
-    add("invalid preferences fall back safely", testStore.active().preferences.tuningId === "bouzouki4" && testStore.active().preferences.bpm === 200);
+    add("invalid preferences fall back safely", testStore.active().preferences.tuningId === "bouzouki4" && testStore.active().preferences.bpm === 220);
     testStore.remove(second.id);
     add("removing the active profile selects another", testStore.active().displayName === "Dre");
     add("transient score content is never persisted", !memory.get(STORAGE_KEY).includes("analysisLine"));

@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=47" />
+  <link rel="stylesheet" href="css/styles.css?v=48" />
 </head>
 <body>
   <div class="app">
@@ -28,12 +28,15 @@
         <button data-nav="harmony">Harmony</button>
         <button data-nav="solo">Solo</button>
         <button data-nav="picking">Picking</button>
-        <span class="nav-group-label">Reference &amp; support</span>
-        <button data-nav="matrix">Matrix</button>
-        <button data-nav="repertoire">Repertoire</button>
-        <button data-nav="learn">Learn</button>
-        <button data-nav="coach">Coach</button>
-        <button data-nav="progress">Progress</button>
+        <button id="navMore" class="nav-more" type="button" aria-expanded="false" aria-controls="navSecondary">More</button>
+        <div id="navSecondary" class="nav-secondary">
+          <span class="nav-group-label">Reference &amp; support</span>
+          <button data-nav="matrix">Matrix</button>
+          <button data-nav="repertoire">Repertoire</button>
+          <button data-nav="learn">Learn</button>
+          <button data-nav="coach">Coach</button>
+          <button data-nav="progress">Progress</button>
+        </div>
       </nav>
       <div class="nav-foot">
         <div id="testBadge" class="test-badge"></div>
@@ -43,7 +46,6 @@
     <div class="app-main">
       <!-- ================= Top bar ================= -->
       <header class="topbar">
-        <span id="pageTitle" class="page-title">Harmony</span>
         <div class="top-right">
           <div class="top-instrument">
             <label for="tuningSel">Instrument</label>
@@ -59,7 +61,7 @@
               </svg>
             </summary>
             <div class="drawer-panel" role="group" aria-label="All settings">
-              <div class="drawer-head"><b>All settings</b><span>Grouped by what they change. Everything applies immediately.</span></div>
+              <div class="drawer-head"><b>All settings</b><span>Grouped by what they change. Everything applies immediately.</span><button id="drawerClose" class="drawer-close" type="button" aria-label="Close settings">✕</button></div>
               <section class="drawer-group">
                 <h3>Harmony</h3>
                 <label><input type="checkbox" id="tglHoldI" checked /> Phrase as ii · V · I · I (hold I two bars)</label>
@@ -96,14 +98,12 @@
         <!-- ================= Session header ================= -->
         <section class="lesson-head">
           <div id="pageGuide" class="page-guide" aria-live="polite"></div>
-          <div id="coachCue" class="coach-cue" aria-live="polite"></div>
 
           <nav id="harmonyTabs" class="mode-tabs hidden" aria-label="Harmony workspace mode">
             <button data-harmony-mode="pivot">Changes Gym</button>
             <button data-view="prog">Song Map</button>
             <button data-view="triads">Comp</button>
           </nav>
-          <p id="modePurpose" class="mode-purpose hidden" aria-live="polite"></p>
           <nav id="repertoireTabs" class="mode-tabs hidden" aria-label="Repertoire area">
             <button data-view="songs">Songs</button>
             <button data-view="analyze">Analyze</button>
@@ -114,7 +114,6 @@
             <button data-view="examples">Tactical Examples</button>
             <button data-view="concepts">Concepts</button>
           </nav>
-          <!-- direct view shortcuts kept for assistive tech, deep links and tests -->
           <nav class="visually-hidden" aria-hidden="true">
             <button data-view="cycle" tabindex="-1">Hear movement</button>
             <button data-view="ear" tabindex="-1">Ear checks</button>
@@ -572,7 +571,7 @@
               <div class="row tonic-row ear-reference music-context">
                 <label for="earTonicSel">Training home</label>
                 <select id="earTonicSel"></select>
-                <button id="btnEarTonic" class="mini">♪ Hear D</button>
+                <button id="btnEarTonic" class="mini">♪ Hear home</button>
               </div>
               <section id="earColour" class="sub">
                 <p class="ear-hint">You hear one scale-and-harmony-coherent cadence twice through the same sampled studio piano.
@@ -704,7 +703,7 @@
           <aside id="readout" class="readout" aria-label="Chord inspector"></aside>
         </section>
 
-        <div id="keyboardHint" class="hint">Space plays · ← → steps · number keys follow the navigation</div>
+        <div id="keyboardHint" class="hint">Number keys jump between practice areas</div>
       </main>
 
       <!-- ================= Transport ================= -->
@@ -749,7 +748,7 @@
   </div>
 
   <script src="js/tuning.js?v=14"></script>
-  <script src="js/profiles.js?v=16"></script>
+  <script src="js/profiles.js?v=48"></script>
   <script src="js/theory.js?v=14"></script>
   <script src="js/harmony-journey.js?v=15"></script>
   <script src="js/modes.js?v=34"></script>
@@ -775,8 +774,8 @@
   <script src="js/fretboard.js?v=39"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=38"></script>
-  <script src="js/page-guides.js?v=46"></script>
-  <script src="js/app.js?v=47"></script>
+  <script src="js/page-guides.js?v=48"></script>
+  <script src="js/app.js?v=48"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
