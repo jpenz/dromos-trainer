@@ -441,6 +441,19 @@ test("analyzer explains modal colour while preserving harmonic uncertainty", () 
   assert.ok(majorFour.notes.some((note) => note.type === "secondary"), "D → G is also a possible temporary dominant pull");
   const line = AnalysisEngine.analyzeLine("Dm: A C D | A7: C♯ E G", { tonic: "D", modeId: "minor" });
   assert.equal(line.segments[1].landing.role, "♭7");
+
+  // Harmonic minor is a real analysis mode, not a silent fallback to natural
+  // minor: it keeps its own identity, scale, and degree names, and the raised
+  // 7th is a dromos tone instead of an "outside" note.
+  const harmonic = AnalysisEngine.analyzeProgression("Dm Gm A7 Dm", { tonic: "D", modeId: "harmonicMinor" });
+  assert.equal(harmonic.modeId, "harmonicMinor", "harmonicMinor must not fall back to minor");
+  assert.equal(harmonic.scaleOffsets.join(","), "0,2,3,5,7,8,11");
+  assert.match(harmonic.summary, /^In D Harmonic minor/);
+  assert.equal(harmonic.records[2].label, "V7", "A7 is the diatonic dominant of D harmonic minor");
+  const naturalOffsets = AnalysisEngine.analyzeProgression("Dm Gm A7 Dm", { tonic: "D", modeId: "minor" }).scaleOffsets;
+  assert.notEqual(harmonic.scaleOffsets.join(","), naturalOffsets.join(","), "the two minors must analyze differently");
+  const raised = AnalysisEngine.analyzeLine("Gm: C♯", { tonic: "D", modeId: "harmonicMinor" }).segments[0].notes[0];
+  assert.equal(raised.kind, "inside", "the raised 7th belongs to harmonic minor");
   assert.equal(AnalysisEngine.parseProgression("C-7 F7 B♭M7").length, 3,
     "lead-sheet dash notation for minor chords must remain a single chord token");
   assert.equal(AnalysisEngine.parseChord("B♭M7").quality, "maj7");

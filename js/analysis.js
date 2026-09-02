@@ -14,6 +14,10 @@
     minor: [
       [0, "i"], [2, "ii°"], [3, "♭III"], [5, "iv"], [7, "v"], [8, "♭VI"], [10, "♭VII"]
     ],
+    // Degree names match the chord-map ladder (js/chord-map.js): i ii° ♭III+ iv V ♭VI vii°.
+    harmonicMinor: [
+      [0, "i"], [2, "ii°"], [3, "♭III+"], [5, "iv"], [7, "V"], [8, "♭VI"], [11, "vii°"]
+    ],
     ousak: [
       [0, "i"], [1, "♭II"], [3, "♭III"], [5, "iv"], [7, "v"], [8, "♭VI"], [10, "♭VII"]
     ],
@@ -24,6 +28,7 @@
   const MODE_OFFSETS = {
     major: [0, 2, 4, 5, 7, 9, 11],
     minor: [0, 2, 3, 5, 7, 8, 10],
+    harmonicMinor: [0, 2, 3, 5, 7, 8, 11],
     ousak: [0, 1, 3, 5, 7, 8, 10],
     hijaz: [0, 1, 4, 5, 7, 8, 10]
   };
@@ -131,11 +136,11 @@
     const notes = [];
     let label = degree.label || "chromatic";
 
-    if (context.modeId === "minor" && degree.offset === 7 && (chord.quality === "major" || chord.quality === "dominant")) {
+    if ((context.modeId === "minor" || context.modeId === "harmonicMinor") && degree.offset === 7 && (chord.quality === "major" || chord.quality === "dominant")) {
       label = chord.quality === "dominant" ? "V7" : "V";
       notes.push({ type: "harmonic-minor", title: "Raised-7th dominant pull", detail: "Major V in minor introduces the leading tone. Hear its 3rd resolve by semitone into the tonic or a stable chord tone." });
     }
-    if (context.modeId === "minor" && degree.offset === 5 && (chord.quality === "major" || chord.quality === "dominant")) {
+    if ((context.modeId === "minor" || context.modeId === "harmonicMinor") && degree.offset === 5 && (chord.quality === "major" || chord.quality === "dominant")) {
       label = chord.quality === "dominant" ? "IV7" : "IV";
       notes.push({ type: "modal-mixture", title: "Major IV in minor", detail: "This raises the 6th relative to natural minor, often giving a Dorian/modal colour. If it then resolves up a fourth, hear it also as a possible dominant function toward the next chord." });
     }
@@ -173,7 +178,7 @@
       return Object.assign({ chord, tones: tonesFor(chord), strong: strongTones(chord), next }, classification);
     });
     const concepts = records.flatMap((record) => record.notes.map((note) => Object.assign({ chord: record.chord.raw }, note)));
-    const homeLabel = tonic.raw + " " + ({ major: "Major", minor: "Minor", ousak: "Ousak", hijaz: "Hijaz" }[modeId]);
+    const homeLabel = tonic.raw + " " + ({ major: "Major", minor: "Minor", harmonicMinor: "Harmonic minor", ousak: "Ousak", hijaz: "Hijaz" }[modeId]);
     const summary = records.length
       ? "In " + homeLabel + ", this is " + records.map((record) => record.label).join(" – ") + ". " + (concepts[0] ? concepts[0].title + " is the first thing to hear." : "Start by making each chord change audible with its 3rd.")
       : "Enter chord symbols such as Dm Gm A7 Dm to build a harmonic map.";
@@ -233,6 +238,13 @@
     check("Hijaz ♭II is labelled as colour", hijaz.records[1].notes.some((note) => note.type === "hijaz-bII"));
     const line = analyzeLine("Dm: A C D | A7: C♯ E G", { tonic: "D", modeId: "minor" });
     check("line analysis identifies chord-tone landings", line.segments[1].landing.role === "♭7");
+    const harmonic = analyzeProgression("Dm Gm A7 Dm", { tonic: "D", modeId: "harmonicMinor" });
+    check("harmonic minor is analyzed as its own mode, not natural minor",
+      harmonic.modeId === "harmonicMinor" && harmonic.scaleOffsets.includes(11) && !harmonic.scaleOffsets.includes(10));
+    check("harmonic minor names its home in the summary", harmonic.summary.indexOf("In D Harmonic minor") === 0);
+    check("A7 is the diatonic V7 of D harmonic minor", harmonic.records[2].label === "V7");
+    const raised = analyzeLine("Gm: C♯", { tonic: "D", modeId: "harmonicMinor" }).segments[0].notes[0];
+    check("the raised 7th is a dromos tone in harmonic minor, not outside", raised.kind !== "outside");
     check("pyramid layers are MECE teaching buckets", new Set(PYRAMID.map((item) => item.id)).size === 4 && PYRAMID.length === 4);
     return { ok: results.every((result) => result.pass), results };
   }

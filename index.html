@@ -640,36 +640,35 @@
             </div>
 
             <div id="panelAnalyze" class="panel hidden">
-              <span class="panel-label">Study analyzer</span>
-              <p class="analysis-intro">Enter a chord progression or a chord-aligned line. The result explains the map, strong notes, and a specific next drill. It does not claim to transcribe audio or replace listening.</p>
-              <div id="studyStarters" class="study-starters" aria-label="Authorised study starters"></div>
-              <section class="score-import" aria-labelledby="scoreImportTitle">
-                <div><b id="scoreImportTitle">Import a score you own</b><p>Choose an uncompressed, partwise MusicXML score with chord symbols. The app reads its written harmony and notes locally; it does not OCR PDFs, transcribe recordings, or copy repertoire.</p></div>
-                <label class="file-button" for="scoreFile">Choose MusicXML<input id="scoreFile" type="file" accept=".musicxml,.xml,application/vnd.recordare.musicxml+xml,text/xml,application/xml" /></label>
-              </section>
-              <p id="scoreImportStatus" class="score-import-status" role="status"></p>
-              <div class="row tonic-row">
-                <label for="analysisTonic">Key</label>
-                <select id="analysisTonic"></select>
-              </div>
-              <div class="seg seg-5" aria-label="Analysis dromos">
-                <button data-analysis-mode="major">Major</button>
-                <button data-analysis-mode="minor" class="active">Natural minor</button>
-                <button data-analysis-mode="harmonicMinor">Harmonic minor</button>
-                <button data-analysis-mode="ousak">Ousak</button>
-                <button data-analysis-mode="hijaz">Hijaz</button>
-              </div>
               <label class="analysis-label" for="analysisChords">Chord map</label>
               <textarea id="analysisChords" rows="2" spellcheck="false" placeholder="Dm Gm A7 Dm"></textarea>
-              <div class="row">
+              <div class="row analysis-actions">
                 <button id="btnAnalyze" class="mini primary-mini grow">Analyze chord map</button>
                 <button id="btnUseSongMap" class="mini grow">Use current Song Map</button>
+                <label class="file-button" for="scoreFile">Import MusicXML<input id="scoreFile" type="file" accept=".musicxml,.xml,application/vnd.recordare.musicxml+xml,text/xml,application/xml" /></label>
               </div>
-              <label class="analysis-label" for="analysisLine">Optional line / solo fragment</label>
-              <textarea id="analysisLine" rows="3" spellcheck="false" placeholder="Dm: A C D | Gm: B♭ A G | A7: C♯ E G | Dm: F E D"></textarea>
-              <p class="analysis-help">Write one chord per bar or phrase, then its notes after a colon. This labels chord tones, dromos tones, and outside/approach notes—it does not judge them as automatically right or wrong.</p>
+              <p id="scoreImportStatus" class="score-import-status" role="status"></p>
+              <div id="studyStarters" class="study-starters" aria-label="Authorised study starters"></div>
               <div id="analysisResult" class="analysis-result" aria-live="polite"></div>
               <div id="analysisInstrument" class="analysis-instrument" aria-live="polite"></div>
+              <div id="analysisDetail" class="analysis-detail"></div>
+              <details id="analysisSetup" class="analysis-setup deck-advanced">
+                <summary>Setup — key, dromos, line fragment</summary>
+                <div class="row tonic-row">
+                  <label for="analysisTonic">Key</label>
+                  <select id="analysisTonic"></select>
+                </div>
+                <div class="seg seg-5" aria-label="Analysis dromos">
+                  <button data-analysis-mode="major">Major</button>
+                  <button data-analysis-mode="minor" class="active">Natural minor</button>
+                  <button data-analysis-mode="harmonicMinor">Harmonic minor</button>
+                  <button data-analysis-mode="ousak">Ousak</button>
+                  <button data-analysis-mode="hijaz">Hijaz</button>
+                </div>
+                <label class="analysis-label" for="analysisLine">Optional line / solo fragment</label>
+                <textarea id="analysisLine" rows="3" spellcheck="false" placeholder="Dm: A C D | Gm: B♭ A G | A7: C♯ E G | Dm: F E D"></textarea>
+                <p id="analysisLineHelp" class="analysis-help hidden">Write one chord per bar or phrase, then its notes after a colon.</p>
+              </details>
             </div>
 
             <!-- Concepts -->
