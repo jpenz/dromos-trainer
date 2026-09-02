@@ -1274,35 +1274,42 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .cell-target { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 .cell-target b { color: var(--text); }
 
-/* styles / foundation */
-.style-intro { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0; }
-.foundation-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.foundation-card { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); }
-.foundation-card > span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--terracotta-soft); color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
-.foundation-card h3, .style-detail h3 { margin: 0; color: var(--text); font-size: 14.5px; }
-.foundation-card p, .style-source { margin: 5px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
-.style-source { padding: 10px 13px; border-left: 2px solid var(--amber); background: var(--amber-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
-.style-list { display: flex; gap: 8px; flex-wrap: wrap; }
-.style-choice { display: flex; flex: 1 1 135px; flex-direction: column; gap: 2px; min-width: 0; min-height: 52px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: transparent; color: var(--text); }
+/* styles / foundation (redesign PR 13: the pulse strip is the answer, the
+   standing intros are gone, and every size is a token) */
+.foundation-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.foundation-card { display: grid; grid-template-columns: 30px 1fr; gap: var(--sp-3); align-items: start; padding: var(--sp-4); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); }
+.foundation-card > span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--terracotta-soft); color: var(--terracotta-bright); font-family: var(--font-mono); font-size: var(--fs-label); font-weight: 600; }
+.foundation-card h3 { margin: 0; color: var(--text); font-size: var(--fs-title); }
+.foundation-card p { margin: var(--sp-1) 0 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-sec); line-height: 1.5; }
+.foundation-card .style-source { margin: var(--sp-3) 0 0; padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--amber); background: var(--amber-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; font-size: var(--fs-label); }
+.style-list { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.style-choice { display: flex; flex: 1 1 135px; flex-direction: column; gap: 2px; min-width: 0; min-height: 52px; text-align: left; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: transparent; color: var(--text); }
 .style-choice:hover { background: var(--panel2); border-color: var(--line-strong); }
 .style-choice.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
-.style-choice b { font-size: 13px; }
-.style-choice span { color: var(--faint); font-size: 11px; }
-.style-detail { padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); }
-.style-detail-head { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; }
-.style-detail-head h3 { font-family: var(--font-display); font-size: 22px; font-weight: 500; margin-top: 4px; }
-.style-detail-head h3 i { font-size: 14px; color: var(--aegean-bright); font-style: normal; }
-.style-detail-head > strong { flex: 0 0 auto; padding: 5px 11px; border-radius: 999px; color: #14110F; background: var(--amber); font-size: 12px; }
-.style-meter { color: var(--faint); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; }
-.style-detail > p { margin: 12px 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
-.pulse-strip { display: flex; gap: 5px; align-items: stretch; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg2); }
-.pulse-beat { position: relative; display: grid; flex: 1; min-width: 23px; min-height: 34px; place-items: center; border-radius: 6px; color: var(--muted); background: var(--panel2); font-family: var(--font-mono); font-size: 12px; }
+.style-choice b { font-size: var(--fs-sec); }
+.style-choice span { color: var(--faint); font-size: var(--fs-micro); }
+.style-detail { margin-top: var(--sp-3); padding: var(--sp-4); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.style-detail-head { display: flex; gap: var(--sp-3); justify-content: space-between; align-items: flex-start; }
+.style-detail-head h3 { margin: var(--sp-1) 0 0; color: var(--text); font-family: var(--font-display); font-size: var(--fs-title); font-weight: 500; }
+.style-detail-head h3 i { font-size: var(--fs-sec); color: var(--aegean-bright); font-style: normal; }
+.style-detail-head > strong { flex: 0 0 auto; padding: var(--sp-1) var(--sp-3); border-radius: 999px; color: #14110F; background: var(--amber); font-family: var(--font-mono); font-size: var(--fs-body); }
+.style-meter { color: var(--faint); font-family: var(--font-mono); font-size: var(--fs-label); letter-spacing: 0.08em; }
+.style-detail > p { margin: var(--sp-4) 0 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-sec); line-height: 1.55; }
+/* nine beats do not fit a 375px phone: the strip scrolls inside itself
+   rather than spilling out of the card or widening the page */
+.pulse-strip { display: flex; gap: var(--sp-1); align-items: stretch; overflow-x: auto; margin-top: var(--sp-4); padding: var(--sp-4) var(--sp-3) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg2); }
+.pulse-beat { position: relative; display: grid; flex: 1; min-width: 28px; min-height: var(--h-control); place-items: center; border-radius: var(--r-sm); color: var(--muted); background: var(--panel2); font-family: var(--font-mono); font-size: var(--fs-body); }
 .pulse-beat.group-start { background: var(--aegean-soft); color: var(--aegean-bright); border: 1px solid rgba(91, 135, 181, 0.6); }
-.pulse-beat i { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); padding: 0 3px; background: var(--bg2); color: var(--amber); font-size: 9px; font-style: normal; font-weight: 700; }
-.style-jobs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 13px 0; }
-.style-jobs > div { padding: 11px; border-radius: var(--r-md); background: var(--panel2); }
-.style-jobs span { color: var(--aegean); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.style-jobs p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.pulse-beat i { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 0 var(--sp-1); background: var(--bg2); color: var(--amber); font-size: var(--fs-micro); font-style: normal; font-weight: 700; line-height: 1.2; }
+/* the page's one primary action sits directly under the pulse it acts on */
+.style-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-4); }
+.style-actions .mini { flex: 1 1 220px; min-height: var(--h-control); font-size: var(--fs-sec); }
+.style-actions .primary-mini { min-height: var(--h-primary); }
+.style-jobs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); margin: var(--sp-4) 0 0; }
+.style-jobs > div { padding: var(--sp-3); border-radius: var(--r-md); background: var(--panel2); }
+.style-jobs span { color: var(--aegean); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.style-jobs p { margin: var(--sp-1) 0 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-sec); line-height: 1.45; }
+@media (pointer: coarse) { .style-actions .mini, .style-choice, #panelStyles .seg button { min-height: 44px; } }
 
 /* analyzer + concepts */
 .analysis-help { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
