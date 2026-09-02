@@ -1713,9 +1713,10 @@
 
   function renderStudyStarters() {
     if (!U || !$("studyStarters")) return;
-    $("studyStarters").innerHTML = `<span class="analysis-label">Authorised study starters</span><div class="study-list">${U.STUDIES.map((study) =>
-      `<button class="study-choice${study.id === state.analysis.studyId ? " active" : ""}" data-study-id="${escapeHtml(study.id)}"><b>${escapeHtml(study.title)}</b><span>${escapeHtml(study.style)} · ${escapeHtml(study.focus)}</span><i>${escapeHtml(study.source)}</i></button>`
-    ).join("")}</div>`;
+    // One row of chips; each chip's focus + authorised source live in its title.
+    $("studyStarters").innerHTML = `<span class="analysis-label">Try:</span>${U.STUDIES.map((study) =>
+      `<button class="study-chip${study.id === state.analysis.studyId ? " active" : ""}" data-study-id="${escapeHtml(study.id)}" title="${escapeHtml(study.style + " · " + study.focus + " (" + study.source + ")")}">${escapeHtml(study.title)}</button>`
+    ).join("")}`;
     $("studyStarters").querySelectorAll("[data-study-id]").forEach((button) => {
       button.onclick = () => {
         const study = U.byId(button.getAttribute("data-study-id"));
@@ -1770,13 +1771,13 @@
     state.analysis.selected = Math.max(0, Math.min(state.analysis.selected, result.records.length - 1));
     const record = result.records[state.analysis.selected];
     const grip = FB.findGrip(analysisVoicing(record), state.position);
-    const location = grip ? (grip.lowFret === 0 ? "open / first position" : "around fret " + grip.lowFret) + " · " + grip.span + "-fret span" : "no compact shape in this range";
-    holder.innerHTML = `<section class="instrument-answer"><div><span>Instrument map</span><h3>${escapeHtml(record.chord.raw)} on ${escapeHtml(window.Tuning.current().name)}</h3><p>Auto-selected ${location}. Gold rings are the strong arrival tones; the shape is a compact voicing, not the only valid fingering.</p></div><div class="analysis-position-strip">${result.records.map((item, index) =>
-      `<button data-analysis-chord="${index}" class="${index === state.analysis.selected ? "active" : ""}"><b>${escapeHtml(item.chord.raw)}</b><span>${escapeHtml(item.label)}</span></button>`
-    ).join("")}</div><div class="analysis-fretboard-wrap"><svg id="analysisFretboard" role="img" aria-label="${escapeHtml(record.chord.raw)} chord chart"></svg></div><div class="analysis-tab"><b>Playable tab · high to low</b><pre>${escapeHtml(tabForGrip(grip))}</pre><p>Strong targets: ${record.strong.map((tone) => escapeHtml(tone.name + " (" + tone.role + ")")).join(" · ")}</p></div></section>`;
-    holder.querySelectorAll("[data-analysis-chord]").forEach((button) => {
-      button.onclick = () => { state.analysis.selected = +button.getAttribute("data-analysis-chord"); renderAnalyzer(); };
-    });
+    const location = grip ? (grip.lowFret === 0 ? "open / first position" : "around fret " + grip.lowFret) + " · " + grip.span + "-fret span" : null;
+    // The position button is a soft preference in findGrip, so say "near",
+    // never "Auto-selected", once the player has pinned one.
+    const chosen = !location ? "No compact shape in this range"
+      : state.position == null ? "Auto-selected " + location
+        : "Near pinned position " + state.position + " · " + location;
+    holder.innerHTML = `<section class="instrument-answer"><div><span>Instrument map</span><h3>${escapeHtml(record.chord.raw)} on ${escapeHtml(window.Tuning.current().name)}</h3><p>${escapeHtml(chosen)}. Gold rings mark the strong arrival tones.</p></div><div class="analysis-fretboard-wrap"><svg id="analysisFretboard" role="img" aria-label="${escapeHtml(record.chord.raw)} chord chart"></svg></div><div class="analysis-tab"><b>Playable tab · high to low</b><pre>${escapeHtml(tabForGrip(grip))}</pre><p>Strong targets: ${record.strong.map((tone) => escapeHtml(tone.name + " (" + tone.role + ")")).join(" · ")}</p></div></section>`;
     if (!grip) return;
     FB.render($("analysisFretboard"), {
       grip,
@@ -1807,6 +1808,7 @@
       ).join("")}</div>`
       : "";
     const lineText = $("analysisLine").value.trim();
+    if ($("analysisLineHelp")) $("analysisLineHelp").classList.toggle("hidden", !lineText && document.activeElement !== $("analysisLine"));
     const line = lineText ? A.analyzeLine(lineText, analysisContext()) : null;
     const lineResult = line && line.segments.length
       ? `<section class="analysis-line"><h3>Line annotation</h3><p>${escapeHtml(line.summary)}</p>${line.segments.map((segment) =>
@@ -1816,11 +1818,16 @@
       ).join("")}</section>`
       : lineText ? `<section class="analysis-line"><h3>Line annotation</h3><p>Use the form <b>Chord: notes | Chord: notes</b> so the app can explain each note against the harmony.</p></section>` : "";
 
+    // Answer and chord map first, the fretboard directly under them; the
+    // longer explanations land after the instrument in #analysisDetail.
     $("analysisResult").innerHTML = `
-      <section class="analysis-answer"><span>Answer first</span><h3>${escapeHtml(result.summary)}</h3><p>Strong notes are not the only valid notes. They are the reliable arrivals that let you use dromos tones, approaches, motifs, and ornaments intentionally.</p></section>
-      ${map}${concepts ? `<section class="analysis-section"><h3>What is happening</h3>${concepts}</section>` : ""}
-      ${linePlan ? `<section class="analysis-section"><h3>Solo plan</h3>${linePlan}</section>` : ""}
-      ${lineResult}`;
+      <section class="analysis-answer"><span>Answer first</span><h3>${escapeHtml(result.summary)}</h3></section>
+      ${map}`;
+    $("analysisDetail").innerHTML = [
+      concepts ? `<section class="analysis-section"><h3>What is happening</h3>${concepts}</section>` : "",
+      linePlan ? `<section class="analysis-section"><h3>Solo plan</h3>${linePlan}</section>` : "",
+      lineResult
+    ].filter(Boolean).join("");
     $("analysisResult").querySelectorAll("[data-analysis-chord]").forEach((button) => {
       button.onclick = () => { state.analysis.selected = +button.getAttribute("data-analysis-chord"); renderAnalyzer(); };
     });
@@ -5828,6 +5835,8 @@
           ? "Choose an example · Hear previews pitch only · Stop clears every sound"
           : v === "picking"
             ? "Space plays or stops · ← → changes exercise · tap any event to inspect it"
+          : v === "analyze"
+            ? "Type chords, then Analyze · number keys still switch practice areas"
         : "Space plays · ← → steps · number keys follow the navigation";
     // Each primary destination is a new lesson, not another state of the old
     // page. Opening at the previous page's scroll depth hides the premise and
@@ -6040,6 +6049,11 @@
       };
     });
     $("btnAnalyze").onclick = () => { state.analysis.studyId = null; state.analysis.selected = 0; renderAnalyzer(); };
+    // The line-format help appears only while the line field is in use
+    // (focused or non-empty) — no standing explainer paragraph.
+    const syncLineHelp = () => $("analysisLineHelp").classList.toggle("hidden",
+      document.activeElement !== $("analysisLine") && !$("analysisLine").value.trim());
+    ["focus", "blur", "input"].forEach((type) => $("analysisLine").addEventListener(type, syncLineHelp));
     $("btnUseSongMap").onclick = () => {
       const { chords } = currentProgression();
       state.analysis.tonic = state.tonic;
