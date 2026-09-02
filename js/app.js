@@ -48,7 +48,7 @@
       // meant to be seen TOGETHER, so both default on.
       layers: { scale: true, pentatonic: false, triads: false, next: true, shapes: true }, neckMode: "auto" },
     // --- foundation and Greek styles ---
-    styles: { section: "foundation", styleId: "zeibekiko" },
+    styles: { section: "greek", styleId: "zeibekiko" },
     // --- source-bounded tactical example index ---
     examples: { category: "all", selectedId: "chiotis-mimisis" },
     // --- repertoire songs ---
@@ -323,7 +323,7 @@
       return song ? `${instrument} · ${song.title} · home ${song.home} · ${song.meter}` : instrument;
     }
     if (state.view === "picking") return `${instrument} · ${state.tonic} ${M.MODES[state.modeId].name} · ${S.byId(state.groove.styleId).title} · ${state.bpm} BPM`;
-    if (state.view === "styles") return state.styles.section === "greek" ? `Greek styles · ${S.byId(state.styles.styleId).title}` : "Foundation · general musical skills";
+    if (state.view === "styles") return state.styles.section === "greek" ? `Greek pulse · ${S.byId(state.styles.styleId).title}` : "Foundation · general musical skills";
     if (["video", "concepts", "progress", "today"].includes(state.view)) return instrument;
     const mode = M.MODES[state.modeId];
     return `${instrument} · ${state.tonic} ${mode ? mode.name : ""}`;
@@ -1536,34 +1536,41 @@
       button.classList.toggle("active", button.getAttribute("data-style-section") === section));
 
     if (section === "foundation") {
+      // The page guide already says what these cards are for; a standing
+      // intro paragraph would be a second purpose sentence. The provenance
+      // note folds into the last card instead of standing alone.
+      const last = S.FOUNDATION.length - 1;
       $("foundationGuide").innerHTML = `
-        <p class="style-intro">These are transferable modern improvisation skills. Learn them first; the Greek style maps then decide the pulse, accompaniment role, and phrase shape.</p>
         <div class="foundation-list">${S.FOUNDATION.map((item, index) => `
-          <article class="foundation-card"><span>${index + 1}</span><div><h3>${item.title}</h3><p>${item.detail}</p></div></article>`).join("")}</div>
-        <p class="style-source">Modern input: pentatonic triad clusters and chord-tone targeting are a route between familiar shapes and real harmony. The goal here is musical decision-making, not copying another player’s licks.</p>`;
+          <article class="foundation-card"><span>${index + 1}</span><div><h3>${item.title}</h3><p>${item.detail}</p>${index === last
+            ? `<p class="style-source">Modern input: pentatonic triad clusters and chord-tone targeting are a route between familiar shapes and real harmony. The goal here is musical decision-making, not copying another player’s licks.</p>`
+            : ""}</div></article>`).join("")}</div>`;
       return;
     }
 
     const style = S.byId(state.styles.styleId);
     const beats = S.beatMap(style);
+    // Answer first: pick a pulse, see the grouped beats, act. The "Map next"
+    // job block was the fourth restatement of "then open Song Map"; the
+    // button below the strip is that instruction in its actionable form.
     $("styleExplorer").innerHTML = `
-      <p class="style-intro">Select a pulse map. It gives you the feel, comping role, and phrasing job; then open Song Map to choose the tune’s actual dromos and harmony.</p>
       <div class="style-list" aria-label="Greek style maps">${S.STYLES.map((item) =>
         `<button class="style-choice${item.id === style.id ? " active" : ""}" data-style-id="${item.id}"><b>${item.title}</b><span>${item.greek} · ${item.meter}</span></button>`
       ).join("")}</div>
       <article class="style-detail">
         <div class="style-detail-head"><div><span class="style-meter">${style.meter}</span><h3>${style.title} <i>${style.greek}</i></h3></div><strong>${style.pulse}</strong></div>
-        <p>${style.character}</p>
         <div class="pulse-strip" aria-label="${style.title} pulse: ${style.pulse}">${beats.map((beat) =>
           `<span class="pulse-beat${beat.first ? " group-start" : ""}" data-group="${beat.group}"><b>${beat.beat}</b>${beat.first ? `<i>${beat.size}</i>` : ""}</span>`
         ).join("")}</div>
+        <div class="style-actions">
+          <button id="btnOpenSongMap" class="mini primary-mini">Open Song Map — choose the dromos</button>
+          <button id="btnUseStyleGroove" class="mini">${state.groove.styleId === style.id ? "✓ Selected in Practice Ensemble" : "Use this pulse in Practice Ensemble"}</button>
+        </div>
+        <p>${style.character}</p>
         <div class="style-jobs">
           <div><span>Comp first</span><p>${style.comp}</p></div>
           <div><span>Phrase job</span><p>${style.phrase}</p></div>
-          <div><span>Map next</span><p>${style.route}</p></div>
         </div>
-        <button id="btnUseStyleGroove" class="mini">${state.groove.styleId === style.id ? "✓ Selected in Practice Ensemble" : "Use this pulse in Practice Ensemble"}</button>
-        <button id="btnOpenSongMap" class="mini primary-mini">Open Song Map — choose the dromos</button>
       </article>`;
     $("styleExplorer").querySelectorAll("[data-style-id]").forEach((button) => {
       button.onclick = () => { state.styles.styleId = button.getAttribute("data-style-id"); renderStyles(); };
@@ -5772,7 +5779,16 @@
     chordmap: { transport: false, journey: true, readout: true, split: true },
     songs: { transport: false, journey: false, readout: false, split: false },
     examples: { transport: false, journey: true, readout: true, split: true },
-    picking: { transport: false, journey: true, readout: true, split: true }
+    picking: { transport: false, journey: true, readout: true, split: true },
+    // Styles has no transport and no stepper. Space and the arrows must stay
+    // with the page's own controls (Space activates the focused pulse card),
+    // and the hint says what the keyboard actually does here instead of
+    // promising playback the page cannot start.
+    styles: {
+      transport: false, journey: false, readout: false, split: false,
+      space: false, arrows: false,
+      hint: "Choose a pulse map · number keys jump between practice areas"
+    }
   };
 
   function motionOK() {
@@ -5858,7 +5874,9 @@
     // view only needs the strip cleared (chordmap manages stageLayers itself).
     if (v !== "solo") renderSoloLayerChips();
     renderPageGuide();
-    $("keyboardHint").textContent = v === "melody"
+    // The view table owns the keyboard promise; pages without one keep the
+    // legacy chain until their own PR derives it.
+    $("keyboardHint").textContent = chrome.hint || (v === "melody"
       ? "Space replays the note · choose one degree · Check builds the harmony map"
       : v === "ear"
         ? "Space starts or replays the question · answers stay editable until Check + reveal"
@@ -5870,7 +5888,7 @@
             ? "Type chords, then Analyze · number keys still switch practice areas"
             : v === "songs"
               ? "Read the chart · switch tabs for the lyric sheet · number keys jump between practice areas"
-        : "Space plays · ← → steps · number keys follow the navigation";
+            : "Space plays · ← → steps · number keys follow the navigation");
     // Each primary destination is a new lesson, not another state of the old
     // page. Opening at the previous page's scroll depth hides the premise and
     // setup—especially on iPad—so always begin at the top.
@@ -6314,6 +6332,11 @@
     }
     document.addEventListener("keydown", async (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+      // A page that declares no transport must not swallow the keys either:
+      // Space stays with the focused button and the arrows keep scrolling.
+      const keys = VIEW_CHROME[state.view] || {};
+      if (keys.space === false && e.code === "Space") return;
+      if (keys.arrows === false && (e.code === "ArrowLeft" || e.code === "ArrowRight")) return;
       if (e.code === "Space") {
         e.preventDefault();
         const voice = state.view === "picking" ? pickingReferenceVoice() : chordReferenceVoice();
