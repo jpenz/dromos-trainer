@@ -3507,6 +3507,23 @@
       if (index > 0) node.crossing = P.crossingType(nodes[index - 1].stringIndex, node.stringIndex, priorPick);
       if (node.stroke) priorPick = node.stroke;
     }
+    // The notes follow the selected RHYTHM, not just the click: each event
+    // learns which beat of the rhythm it lands on (duration-aware, so dotted
+    // formations stay honest). Group starts and beat one get visible marks;
+    // drills that own structural accents keep them - this is a second,
+    // rhythm-coloured channel, never an overwrite.
+    let beatCursor = 0;
+    for (let index = 0; index < nodes.length; index++) {
+      const node = nodes[index];
+      const onBeat = Math.abs(beatCursor - Math.round(beatCursor)) < 1e-6;
+      if (onBeat) {
+        const beatIndex = Math.round(beatCursor) % pulse.length;
+        node.rhythmBeat = beatIndex + 1;
+        node.rhythmFirst = !!pulse[beatIndex].first;
+        node.rhythmGroup = pulse[beatIndex].group;
+      }
+      beatCursor += (node.durMult > 0 ? node.durMult : 1) / state.picking.subdivision;
+    }
     const frets = nodes.map((node) => node.fret);
     return {
       exercise, nodes, pulse, current: base.current, next: base.next, context: resolved,
@@ -3735,7 +3752,7 @@
       const detail = node.crossing ? node.crossing : node.burst ? `${node.burst}-stroke burst` : node.phrase || "";
       const mark = pickingTechniqueMeta(node.technique);
       const tab = node.stringIndex != null && node.fret != null ? `${courseNames[node.stringIndex] || "?"}${node.fret}` : "";
-      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${tab ? `, ${escapeHtml(tab.replace(/(\D+)(\d+)/, "$1 string fret $2"))}` : ""}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u><small>${escapeHtml(mark.short)}</small></strong><b>${escapeHtml(note.name || "·")}</b><em class="ev-tab">${escapeHtml(tab)}${tab ? " · " : ""}${escapeHtml(note.roleLabel || note.degree || "·")}</em><small>${escapeHtml(detail)}</small></button>`;
+      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${node.rhythmFirst ? " on-one" : node.rhythmBeat ? " on-beat" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${tab ? `, ${escapeHtml(tab.replace(/(\D+)(\d+)/, "$1 string fret $2"))}` : ""}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u><small>${escapeHtml(mark.short)}</small></strong>${node.rhythmBeat ? `<em class="beat-chip${node.rhythmFirst ? " one" : ""}">${node.rhythmBeat}</em>` : ""}<b>${escapeHtml(note.name || "·")}</b><em class="ev-tab">${escapeHtml(tab)}${tab ? " · " : ""}${escapeHtml(note.roleLabel || note.degree || "·")}</em><small>${escapeHtml(detail)}</small></button>`;
     }).join("");
     $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · stage ${mastery.step} · ${escapeHtml(mastery.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i><b>${escapeHtml(articulation.label)}</b></div></header>
       <div class="picking-articulation"><span>${escapeHtml(articulation.mnemonic)}</span><b>${escapeHtml(articulation.label)}</b><p>${escapeHtml(articulation.detail)}</p></div>
@@ -3745,6 +3762,7 @@
         <section class="picking-motion-next"><span>Prepare next</span><b><i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}</b><p>${escapeHtml(nextMotion.cue)}</p></section>
       </div>
       <div class="picking-stroke-key"><span><b>↓ D · TA</b> downstroke</span><span><b>↑ U · KA</b> upstroke</span><span><b>↓↘ DG</b> glide through</span><span><b>H</b> hammer-on</span><span><b>P</b> pull-off</span><span><b>SL</b> slide</span><span><b>1–4</b> one-finger-per-fret window (the modern, method-book layout) · <b>0</b> open · <b>⇧</b> stretch or small shift, your call</span><span>Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen)</span><span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span><em>Tap an event to hear it and see the motion.</em></div>
+      <div class="picking-rhythm-ruler"><b>${escapeHtml(S.byId(state.groove.styleId).title)}</b><span>${escapeHtml(S.byId(state.groove.styleId).meter)} · ${escapeHtml(S.byId(state.groove.styleId).pulse)}</span><i>the click, the accents, and the beat chips below all follow this rhythm</i></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(12, Math.max(4, session.nodes.length))}">${rail}</div>
       <div class="picking-detail-grid"><section><span>Do this</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section><section><span>Listen for</span><p>${escapeHtml(exercise.listen)}</p></section><section class="picking-theory"><span>Theory inside the motion</span><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}</b><p>${escapeHtml(exercise.theory)}</p><small>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</small></section><section><span>Pass when</span><p>${escapeHtml(exercise.pass)}</p></section></div>
       <details class="picking-evidence"><summary>${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
@@ -5929,10 +5947,13 @@
       stopPlay(); state.picking.runMode = button.getAttribute("data-picking-run") === "evolve" ? "evolve" : "loop";
       state.picking.cleanPasses = 0; renderPickingLab(); renderPageGuide();
     });
-    $("pickingBpm").oninput = (event) => {
-      stopPlay(); state.bpm = Math.max(40, Math.min(180, +event.target.value || 84));
+    const setPickingBpm = (raw) => {
+      stopPlay(); state.bpm = Math.max(30, Math.min(220, Math.round(+raw) || 84));
       state.picking.cleanPasses = 0; AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab();
     };
+    $("pickingBpm").oninput = (event) => setPickingBpm(event.target.value);
+    $("pickingBpmNum").value = String(state.bpm);
+    $("pickingBpmNum").onchange = (event) => setPickingBpm(event.target.value);
     $("pickingRepeatsSel").onchange = (event) => {
       stopPlay(); state.picking.repeats = [1, 2, 4, 6].includes(+event.target.value) ? +event.target.value : 4;
       state.picking.cleanPasses = 0; renderPickingLab();

@@ -30,7 +30,9 @@ test("the installable app shell links its offline assets", () => {
   assert.match(html, /data-picking-run="evolve"/);
   assert.match(html, /id="tglPickingMetronome"/);
   assert.match(html, /id="tglPickingCountIn"/);
-  assert.match(html, /id="pickingBpm"[^>]*min="40"[^>]*max="180"/);
+  assert.match(html, /id="pickingBpm"[^>]*min="30"[^>]*max="220"/);
+  assert.match(html, /id="pickingBpmNum"[^>]*min="30"[^>]*max="220"/,
+    "exact BPM entry accompanies the slider");
   assert.match(html, /js\/bouzouki-knowledge\.js\?v=\d+/);
   assert.match(html, /js\/picking-lab\.js\?v=\d+/);
   assert.match(html, /id="pickingMasterySpine"/);
