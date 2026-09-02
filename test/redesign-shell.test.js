@@ -132,31 +132,6 @@ test("Melody leads with Start plus the seven degrees and stages everything else"
   assert.doesNotMatch(html, /class="melody-boundary"/, "standing disclaimer paragraphs are banned");
   assert.match(read("js/page-guides.js"), /boundary: "Chord membership is derived from the selected scale/);
   assert.match(app, /guide\.boundary \? `<p class="guide-boundary"/, "the honesty line renders inside the collapsed guide");
-test("Song Map leads with the strip, switches modes from one control, and claims no unheard motion", () => {
-  const html = read("index.html");
-  const app = read("js/app.js");
-  // LEAD: the strip IS the song map, so it paints before the Now/Next guide.
-  const band = (html.match(/<section id="journeyBand"[\s\S]*?<\/section>\s*<!--/) || [""])[0];
-  assert.ok(band.indexOf('id="progStrip"') > -1 && band.indexOf('id="progStrip"') < band.indexOf('id="changeGuide"'),
-    "the song map strip leads the journey band, above the fretboard");
-  // ONE mode switcher: the scale strip's five-mode comparator is gone and its
-  // signature tones ride on the seg that actually writes state.modeId.
-  assert.doesNotMatch(app, /data-jump=/, "a second mode switcher must not return to the scale strip");
-  assert.match(app, /function modeSignatureTones/, "the surviving mode control carries the signature tones");
-  assert.match(app, /#panelProg \[data-modeid\]/, "the mode seg is rendered from the mode data it compares");
-  // One purpose sentence: the standing workbench paragraph is gone and the
-  // dromos note is contextual to the selection.
-  assert.doesNotMatch(html, /class="workbench-note"/, "standing explainer paragraphs are banned on this page");
-  assert.match(html, /id="progModeNote"/, "the selected dromos gets one contextual line");
-  // Changing the key respells every chord name on the page, cards included.
-  assert.match(app, /if \(state\.view === "prog"\) \{ syncProgControls\(\); renderProg\(\); \}/,
-    "a key change must rebuild the map cards, not only the strip");
-  // FIRST PAINT: "moved"/"held" is a claim about a change the player heard.
-  assert.match(app, /progMotionKey === progMapKey\(\)/,
-    "moved/held colouring is gated on real movement inside this map");
-  assert.match(app, /function markProgMoved/, "movement is recorded where the step actually changes");
-  // Small tiers stop chroming a handful of cards with headings.
-  assert.match(app, /const flat = count <= 2;/, "tier and job headings collapse for one- or two-map tiers");
 });
 
 test("the design system defines the redesigned tokens", () => {
@@ -215,4 +190,31 @@ test("the ear page leads with Start and never sounds before the player asks", ()
   // One vocabulary: the button says Check + reveal, so the copy must too.
   assert.doesNotMatch(app, /Check answer/);
   assert.doesNotMatch(app, /Choose the map you hear first/);
+});
+
+test("Song Map leads with the strip, switches modes from one control, and claims no unheard motion", () => {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  // LEAD: the strip IS the song map, so it paints before the Now/Next guide.
+  const band = (html.match(/<section id="journeyBand"[\s\S]*?<\/section>\s*<!--/) || [""])[0];
+  assert.ok(band.indexOf('id="progStrip"') > -1 && band.indexOf('id="progStrip"') < band.indexOf('id="changeGuide"'),
+    "the song map strip leads the journey band, above the fretboard");
+  // ONE mode switcher: the scale strip's five-mode comparator is gone and its
+  // signature tones ride on the seg that actually writes state.modeId.
+  assert.doesNotMatch(app, /data-jump=/, "a second mode switcher must not return to the scale strip");
+  assert.match(app, /function modeSignatureTones/, "the surviving mode control carries the signature tones");
+  assert.match(app, /#panelProg \[data-modeid\]/, "the mode seg is rendered from the mode data it compares");
+  // One purpose sentence: the standing workbench paragraph is gone and the
+  // dromos note is contextual to the selection.
+  assert.doesNotMatch(html, /class="workbench-note"/, "standing explainer paragraphs are banned on this page");
+  assert.match(html, /id="progModeNote"/, "the selected dromos gets one contextual line");
+  // Changing the key respells every chord name on the page, cards included.
+  assert.match(app, /if \(state\.view === "prog"\) \{ syncProgControls\(\); renderProg\(\); \}/,
+    "a key change must rebuild the map cards, not only the strip");
+  // FIRST PAINT: "moved"/"held" is a claim about a change the player heard.
+  assert.match(app, /progMotionKey === progMapKey\(\)/,
+    "moved/held colouring is gated on real movement inside this map");
+  assert.match(app, /function markProgMoved/, "movement is recorded where the step actually changes");
+  // Small tiers stop chroming a handful of cards with headings.
+  assert.match(app, /const flat = count <= 2;/, "tier and job headings collapse for one- or two-map tiers");
 });
