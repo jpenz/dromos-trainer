@@ -312,8 +312,10 @@
     const instrument = window.Tuning.current().name;
     if (state.view === "cycle") return `${instrument} · ${state.gym.keys} key${state.gym.keys === 1 ? "" : "s"} · ${state.bpm} BPM`;
     if (state.view === "ear") {
+      // "random" is the blind-training value the home select actually writes;
+      // testing for "blind" here always fell through to the known-home copy.
       const home = state.ear.drill === "map" ? state.ear.map.homePreset : state.ear.tonic;
-      return `${home === "blind" ? "Home hidden" : `Known home ${home}`} · sampled studio piano`;
+      return `${home === "random" ? "Home hidden · training blind" : `Known home ${home}`} · sampled studio piano`;
     }
     if (state.view === "analyze") return `${instrument} · ${state.analysis.tonic} ${M.MODES[state.analysis.modeId].name}`;
     if (state.view === "picking") return `${instrument} · ${state.tonic} ${M.MODES[state.modeId].name} · ${S.byId(state.groove.styleId).title} · ${state.bpm} BPM`;
@@ -1862,11 +1864,28 @@
     if (played) earAudioStatus(`Home pitch: ${state.ear.tonic} · sampled studio piano · Stop anytime`, "playing");
   }
 
-  function renderEarReference() {
-    const select = $("earTonicSel");
+  // ONE home control with two states (blueprint 2.5): the colour drill always
+  // names a training home, the map drill may hide it ("random" = train blind).
+  function earHomeValue() {
+    return state.ear.drill === "map" ? state.ear.map.homePreset : state.ear.tonic;
+  }
+
+  function renderEarHome() {
+    const select = $("earHomeSel");
     if (!select) return;
-    select.innerHTML = M.TONICS.map((tonic) => `<option value="${tonic}"${tonic === state.ear.tonic ? " selected" : ""}>${tonic}</option>`).join("");
-    $("btnEarTonic").textContent = `♪ Hear ${state.ear.tonic}`;
+    const isMap = state.ear.drill === "map";
+    const value = earHomeValue();
+    const blind = isMap && value === "random";
+    select.innerHTML = (isMap ? `<option value="random">Blind — the app hides the home</option>` : "")
+      + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}${isMap ? " — known home" : ""}</option>`).join("");
+    select.value = value;
+    $("btnEarHome").disabled = blind;
+    $("btnEarHome").textContent = blind ? "Home hidden · training blind"
+      : isMap ? `♪ Hear ${value} home chord` : `♪ Hear ${value}`;
+    $("earHomeNote").textContent = blind
+      ? "Blind: the home is part of the question, so nothing here plays it before you answer."
+      : isMap ? `Known home ${value}: the map is built on it, and you can re-hear its home chord at any time.`
+        : `Known home ${value}: the cadence is built on it, so you are naming colour, not absolute pitch.`;
   }
 
   function renderColourChoices() {
@@ -1895,12 +1914,29 @@
     state.ear.locked = false;
     $("earReveal").classList.add("hidden");
     $("earReveal").innerHTML = "";
-    $("btnEarNew").textContent = "Next question";
+    $("btnEarNew").textContent = "▶ Next question";
     $("earFeedback").className = "ear-feedback";
-    $("earFeedback").textContent = `Reference tonic: ${state.ear.tonic}. Listen to the chord cadence twice. Choose a map, ask for a hint if needed, then check.`;
+    $("earFeedback").textContent = `Training home ${state.ear.tonic}. The cadence plays twice. Choose one colour family, ask for a hint if you need one, then Check + reveal.`;
     renderColourChoices();
-    renderEarReference();
+    renderEarHome();
     playEarPrompt();
+    renderEarScore();
+  }
+
+  // Changing the home invalidates the sounding question. Clear it back to the
+  // idle state instead of firing a fresh cadence the player never asked for.
+  function resetEarQuestion() {
+    stopPlay();
+    state.ear.answer = null;
+    state.ear.guess = null;
+    state.ear.hintLevel = 0;
+    state.ear.locked = false;
+    $("earReveal").classList.add("hidden");
+    $("earReveal").innerHTML = "";
+    $("btnEarNew").textContent = "▶ Start question";
+    $("earFeedback").className = "ear-feedback";
+    $("earFeedback").textContent = `Training home ${state.ear.tonic}. Press ▶ Start question when you are ready; the cadence then plays twice.`;
+    renderColourChoices();
     renderEarScore();
   }
 
@@ -1920,7 +1956,7 @@
     state.ear.guess = guess;
     const label = E ? E.choicePrompt(guess) : `Test ${M.MODES[guess].name} against the home.`;
     $("earFeedback").className = "ear-feedback";
-    $("earFeedback").textContent = label + " When you are ready, use Check answer.";
+    $("earFeedback").textContent = label + " When you are ready, use Check + reveal.";
     renderColourChoices();
   }
 
@@ -1933,7 +1969,7 @@
 
   function checkColourGuess() {
     if (state.ear.locked || !state.ear.guess) {
-      if (!state.ear.locked) $("earFeedback").textContent = "Choose the map you hear first. Selection is reversible until you press Check answer.";
+      if (!state.ear.locked) $("earFeedback").textContent = "Choose the colour family you hear first. Selection is reversible until you press Check + reveal.";
       return;
     }
     state.ear.locked = true;
@@ -2002,7 +2038,11 @@
     return picked.sort(() => Math.random() - 0.5);
   }
 
-  function newEarMap() {
+  function newEarMap() { prepareEarMap(true); }
+
+  // Opening the tab (or changing the home) must never make sound: the drill is
+  // armed silently and only the player's Start press plays the map.
+  function prepareEarMap(play) {
     stopPlay();
     const map = state.ear.map;
     const ids = E ? E.FAMILY_ORDER : M.MODE_ORDER;
@@ -2018,13 +2058,18 @@
     map.familyGuess = null; map.progressionGuess = null; map.hintLevel = 0; map.locked = false;
     $("earMapReveal").classList.add("hidden");
     $("earMapReveal").innerHTML = "";
-    $("btnEarMapNew").textContent = "Next map";
+    $("btnEarMapNew").textContent = play ? "▶ Next map" : "▶ Start map";
     $("earMapFeedback").className = "ear-feedback";
-    $("earMapFeedback").textContent = map.homePreset === "random"
-      ? "Listen twice. Choose the home, then the harmonic/dromos family and its change boxes."
-      : `Training home: ${tonic}. Listen twice, then identify the harmonic/dromos family and its change boxes.`;
+    $("earMapFeedback").textContent = play
+      ? (map.homePreset === "random"
+        ? "Listen twice. Choose the home, then the harmonic/dromos family and its change boxes."
+        : `Training home ${tonic}. Listen twice, then identify the harmonic/dromos family and its change boxes.`)
+      : (map.homePreset === "random"
+        ? "Press ▶ Start map when you are ready. The changes play twice and the home stays hidden until you check."
+        : `Training home ${tonic}. Press ▶ Start map when you are ready; the changes then play twice.`);
+    renderEarHome();
     renderEarMap();
-    playEarMapPrompt();
+    if (play) playEarMapPrompt();
   }
 
   async function playEarMapPrompt() {
@@ -2050,16 +2095,11 @@
   function renderEarMap() {
     const map = state.ear.map;
     if (!map.answer) return;
-    const homeSelect = $("earMapHomeSel");
-    homeSelect.innerHTML = `<option value="random">Random — test the home</option>` + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic} — known home</option>`).join("");
-    homeSelect.value = map.homePreset;
-    $("btnEarMapHome").disabled = map.homePreset === "random";
     $("btnEarMapHint").disabled = map.locked;
     $("btnEarMapCheck").disabled = map.locked;
-    $("btnEarMapHome").textContent = map.homePreset === "random" ? "Home hidden · train blind" : `♪ Hear ${map.answer.tonic} home chord`;
     $("earKeyChoices").innerHTML = map.homePreset === "random"
       ? map.keyOptions.map((tonic) => `<button data-ear-key="${tonic}" class="${map.keyGuess === tonic ? "selected " : ""}${map.locked && tonic === map.answer.tonic ? "right" : map.locked && tonic === map.keyGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}>${tonic}</button>`).join("")
-      : `<div class="ear-home-anchor"><b>${map.answer.tonic}</b><span>Known training home. Use ♪ Hear ${map.answer.tonic} if you need to reset your ear.</span></div>`;
+      : `<div class="ear-home-anchor"><b>${map.answer.tonic}</b><span>Known training home. Open Setup to hear it again or to train blind.</span></div>`;
     $("earFamilyChoices").innerHTML = (E ? E.families() : M.MODE_ORDER.map((id) => ({ id, label: M.MODES[id].name, signature: "signature tones" }))).map((item) =>
       `<button data-ear-family="${item.id}" class="${map.familyGuess === item.id ? "selected " : ""}${map.locked && item.id === map.answer.modeId ? "right" : map.locked && item.id === map.familyGuess ? "wrong" : ""}"${map.locked ? " disabled" : ""}><b>${item.label}</b><span>${item.signature}</span></button>`
     ).join("");
@@ -2130,27 +2170,34 @@
     $("earMap").classList.toggle("hidden", drill !== "map");
     document.querySelectorAll("[data-ear-drill]").forEach((button) =>
       button.classList.toggle("active", button.getAttribute("data-ear-drill") === drill));
-    document.querySelector(".ear-reference").classList.toggle("hidden", drill !== "colour");
-    renderEarReference();
     const studioState = AU.studioStatus();
     earAudioStatus(studioState === "ready"
       ? "Sampled studio piano ready · Start, replay, or stop without changing your answer"
       : studioState === "fallback"
         ? "Warm-keys fallback ready · Start, replay, or stop without changing your answer"
         : "Studio piano loads on first play · Stop always keeps your answer choices", studioState === "ready" ? "ready" : "");
-    if (drill === "map" && !state.ear.map.answer) newEarMap();
+    if (drill === "map" && !state.ear.map.answer) prepareEarMap(false);
+    else if (drill === "map") { renderEarHome(); renderEarMap(); }
+    else renderEarHome();
     renderEarScore();
     if (state.view === "ear") renderPageGuide();
   }
 
+  // The score line answers the drill you are actually doing; the other drill's
+  // totals stay one tap away instead of competing with the answer.
   function renderEarScore() {
     const e = state.ear;
     const pct = e.total ? Math.round((e.score / e.total) * 100) : 0;
     const mpct = e.map.total ? Math.round((e.map.score / e.map.total) * 100) : 0;
-    $("earScore").innerHTML =
-      `<span>colour <b>${e.score}</b>/${e.total} <i>(${pct}%)</i></span>
-       <span>map <b>${e.map.score}</b>/${e.map.total} <i>(${mpct}%)</i></span>
-       <span>streak <b>${state.ear.drill === "map" ? e.map.streak : e.streak}</b></span>`;
+    const isMap = e.drill === "map";
+    const line = $("earScoreLine");
+    if (!line) return;
+    line.innerHTML = isMap
+      ? `<span>Home + changes <b>${e.map.score}</b>/${e.map.total} <i>(${mpct}%)</i></span><span>Map streak <b>${e.map.streak}</b></span>`
+      : `<span>Colour ID <b>${e.score}</b>/${e.total} <i>(${pct}%)</i></span><span>Colour streak <b>${e.streak}</b></span>`;
+    $("earScoreTotals").innerHTML =
+      `<span>Colour ID <b>${e.score}</b>/${e.total} <i>(${pct}%)</i> · best streak <b>${e.best}</b></span>
+       <span>Home + changes <b>${e.map.score}</b>/${e.map.total} <i>(${mpct}%)</i> · best streak <b>${e.map.best}</b></span>`;
   }
 
   // ======================= MELODY -> HARMONY ===========================
@@ -5646,7 +5693,7 @@
     $("keyboardHint").textContent = v === "melody"
       ? "Space replays the note · choose one degree · Check builds the harmony map"
       : v === "ear"
-        ? "Space replays · answers stay editable until Check"
+        ? "Space starts or replays the question · answers stay editable until Check + reveal"
         : v === "examples"
           ? "Choose an example · Hear previews pitch only · Stop clears every sound"
           : v === "picking"
@@ -6035,25 +6082,20 @@
     $("btnPickingTempoUp").onclick = raisePickingTempo;
     $("btnPickingMiss").onclick = missPickingPass;
 
-    $("earTonicSel").onchange = (event) => {
-      state.ear.tonic = event.target.value;
-      renderEarReference();
+    $("earHomeSel").onchange = (event) => {
+      const value = event.target.value;
+      if (state.ear.drill === "map") { state.ear.map.homePreset = value; prepareEarMap(false); }
+      else { state.ear.tonic = value; resetEarQuestion(); }
+      renderEarHome();
       renderPageGuide();
-      if (state.view === "ear" && state.ear.drill === "colour") newEarQuestion();
     };
-    $("btnEarTonic").onclick = playEarTonic;
+    $("btnEarHome").onclick = () => (state.ear.drill === "map" ? playEarMapHome() : playEarTonic());
     $("btnEarNew").onclick = newEarQuestion;
     $("btnEarReplay").onclick = () => { if (state.ear.answer) playEarPrompt(); else newEarQuestion(); };
     $("btnEarStop").onclick = () => { stopPlay(); earAudioStatus("Stopped · your answer choices are unchanged", "stopped"); };
     $("btnEarHint").onclick = hintColour;
     $("btnEarCheck").onclick = checkColourGuess;
-    $("earMapHomeSel").onchange = (event) => {
-      state.ear.map.homePreset = event.target.value;
-      renderPageGuide();
-      if (state.view === "ear" && state.ear.drill === "map") newEarMap();
-    };
     $("btnEarMapNew").onclick = newEarMap;
-    $("btnEarMapHome").onclick = playEarMapHome;
     $("btnEarMapReplay").onclick = () => { if (state.ear.map.answer) playEarMapPrompt(); else newEarMap(); };
     $("btnEarMapStop").onclick = () => { stopPlay(); earAudioStatus("Stopped · your map choices are unchanged", "stopped"); };
     $("btnEarMapHint").onclick = hintEarMap;
@@ -6086,7 +6128,7 @@
         e.preventDefault();
         const voice = state.view === "picking" ? pickingReferenceVoice() : chordReferenceVoice();
         if (!await readyPracticeAudio(voice)) return;
-        if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : playEarPrompt();
+        if (state.view === "ear") state.ear.drill === "map" ? playEarMapPrompt() : (state.ear.answer ? playEarPrompt() : newEarQuestion());
         else if (state.view === "melody") state.melody.prompt ? playMelodyPrompt(false) : newMelodyQuestion();
         else if (state.view === "chordmap") auditionChordMap("strum");
         else if (state.view === "picking") togglePlay();

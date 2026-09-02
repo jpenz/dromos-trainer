@@ -59,21 +59,21 @@
       purpose: "Recognize the sound of a scale family",
       answer: "Keep the home known, then identify whether the cadence sounds Major, minor, Harmonic minor, Ousak, or Hijaz.",
       result: "This trains relative hearing—the color and pull around a known home—not perfect pitch.",
-      steps: ["Choose Training home and press ♪ Hear home once.", "Press ▶ Start question, listen twice, and choose one color family.", "Press Check + reveal; read the exact chords and replay the answer before starting another."],
+      steps: ["Press ▶ Start question and listen to the cadence twice.", "Choose one color family; the choice stays editable, and one hint is available.", "Press Check + reveal; read the exact chords and replay the answer before starting another."],
       done: "You can explain which color note or chord quality separated your answer from the nearest alternative.",
       why: "Knowing the home removes a guessing variable. You can concentrate on the 2nd, 3rd, leading tone, and the way the cadence resolves.",
-      terms: [["Cadence", "A short chord movement that creates arrival or resolution."], ["Relative hearing", "Hearing a note or chord by its relationship to a known home."], ["Color family", "The scale or dromos choice that gives the example its characteristic sound."]],
-      targetId: "btnEarTonic"
+      terms: [["Cadence", "A short chord movement that creates arrival or resolution."], ["Relative hearing", "Hearing a note or chord by its relationship to a known home."], ["Color family", "The scale or dromos choice that gives the example its characteristic sound."], ["Training home", "The known key the example is built on; change or hear it inside Setup."]],
+      targetId: "btnEarNew"
     },
     earMap: {
       purpose: "Recognize the home and complete progression",
       answer: "Hear a short chord map, then identify its home, scale family, and Roman-numeral change boxes.",
       result: "You are identifying three separate facts; the page does not score anything until you press Check + reveal map.",
-      steps: ["Choose a known Training home for easier practice, then press ♪ Hear the known home.", "Press ▶ Start map and listen for the chord that feels finished.", "Choose Home key, Harmonic / dromos family, and Change boxes; then press Check + reveal map."],
+      steps: ["Press ▶ Start map and listen for the chord that feels finished.", "Choose Home key, Harmonic / dromos family, and Change boxes.", "Press Check + reveal map; nothing is scored until you do."],
       done: "You can point to the home chord and describe at least one chord's pull toward it.",
       why: "Separating home, family, and progression prevents a partly correct label from hiding the exact thing your ear missed.",
-      terms: [["Home key", "The note and chord that feel settled."], ["Change boxes", "The Roman-numeral order of the chords that played."], ["Blind", "The app does not tell you the home before the question."]],
-      targetId: "btnEarMapHome"
+      terms: [["Home key", "The note and chord that feel settled."], ["Change boxes", "The Roman-numeral order of the chords that played."], ["Blind", "The Setup choice that hides the home, so naming it becomes part of the question."]],
+      targetId: "btnEarMapNew"
     },
     melody: {
       purpose: "Connect one melody note to harmony",

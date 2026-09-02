@@ -51,7 +51,7 @@
 
   function choicePrompt(familyId) {
     const item = family(familyId);
-    if (!item) return "Choose a map, then test it against the home and the change.";
+    if (!item) return "Choose a colour family, then test it against the home and the change.";
     return `Test ${item.label}: listen for ${item.signature}; then see whether its cadence makes the final chord feel like home.`;
   }
 

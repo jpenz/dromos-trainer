@@ -546,32 +546,16 @@
 
             <!-- Ear trainer -->
             <div id="panelEar" class="panel hidden">
-              <header class="ear-start">
-                <span class="panel-label">Ear training</span>
-                <h2>Hear it. Name it. See exactly what sounded.</h2>
-                <p>Fast start: choose a home, press Start, then answer. Nothing is scored until you check, and every answer reveals the exact Roman numerals, chord names, and chord tones that played.</p>
-                <div class="ear-start-steps" aria-label="Ear training quick start"><span><b>1</b>Set home</span><span><b>2</b>Listen twice</span><span><b>3</b>Check + inspect</span></div>
-              </header>
               <div class="seg" aria-label="Ear check type">
                 <button data-ear-drill="colour" class="active">1 · Colour ID</button>
                 <button data-ear-drill="map">2 · Home + changes</button>
               </div>
-              <div id="earAudioStatus" class="ear-audio-status" role="status" aria-live="polite">Studio piano loads on first play · Stop is always available</div>
-              <div class="row tonic-row ear-reference music-context">
-                <label for="earTonicSel">Training home</label>
-                <select id="earTonicSel"></select>
-                <button id="btnEarTonic" class="mini">♪ Hear home</button>
-              </div>
               <section id="earColour" class="sub">
-                <p class="ear-hint">You hear one scale-and-harmony-coherent cadence twice through the same sampled studio piano.
-                  <b>Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers:</b> identify the chord qualities and their pull toward home.</p>
-                <div class="ear-voice-note"><span>Reference voice</span><b>Sampled grand piano · chords only · no answer-leaking scale run</b></div>
                 <div class="ear-primary-actions">
                   <button id="btnEarNew" class="mini primary-mini grow">▶ Start question</button>
                   <button id="btnEarReplay" class="mini grow">↻ Replay (Space)</button>
                   <button id="btnEarStop" class="mini">■ Stop</button>
                 </div>
-                <div id="earFeedback" class="ear-feedback">Press <b>Start question</b> to begin.</div>
                 <div class="guess-grid">
                   <button class="guess-btn" data-guess="major">Major</button>
                   <button class="guess-btn" data-guess="minor">Natural minor</button>
@@ -583,18 +567,15 @@
                   <button id="btnEarHint" class="mini grow">Give one hint</button>
                   <button id="btnEarCheck" class="mini primary-mini grow">Check + reveal</button>
                 </div>
+                <div id="earFeedback" class="ear-feedback">Press <b>▶ Start question</b>: one cadence plays twice on the sampled studio piano. Major, Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers — name the chord qualities and their pull toward home.</div>
                 <div id="earReveal" class="ear-reveal hidden" aria-live="polite"></div>
               </section>
               <section id="earMap" class="sub hidden">
-                <p class="ear-hint">Train blind, or select a known home first. Then identify the <b>harmonic/dromos family</b> and the <b>functional boxes</b>. Choosing is reversible; only <b>Check map</b> scores it.</p>
-                <div class="row tonic-row ear-map-home-control music-context"><label for="earMapHomeSel">Training home</label><select id="earMapHomeSel"></select></div>
-                <button id="btnEarMapHome" class="mini ear-home-button">♪ Hear the known home</button>
                 <div class="ear-primary-actions">
                   <button id="btnEarMapNew" class="mini primary-mini grow">▶ Start map</button>
                   <button id="btnEarMapReplay" class="mini grow">↻ Replay changes</button>
                   <button id="btnEarMapStop" class="mini">■ Stop</button>
                 </div>
-                <div id="earMapFeedback" class="ear-feedback">Press <b>Start map</b>, listen, then commit to the map.</div>
                 <div class="ear-map-prompt"><span>1 · Home key</span><div id="earKeyChoices" class="ear-key-choices"></div></div>
                 <div class="ear-map-prompt"><span>2 · Harmonic / dromos family</span><div id="earFamilyChoices" class="ear-family-choices"></div></div>
                 <div class="ear-map-prompt"><span>3 · Change boxes</span><div id="earProgressionChoices" class="ear-progression-choices"></div></div>
@@ -602,9 +583,23 @@
                   <button id="btnEarMapHint" class="mini grow">Give one hint</button>
                   <button id="btnEarMapCheck" class="mini primary-mini grow">Check + reveal map</button>
                 </div>
+                <div id="earMapFeedback" class="ear-feedback">Press <b>▶ Start map</b>: the changes play twice. Name the home, the harmonic/dromos family, and the change boxes. Choices stay editable; only <b>Check + reveal map</b> scores it.</div>
                 <div id="earMapReveal" class="ear-reveal hidden" aria-live="polite"></div>
               </section>
-              <div id="earScore" class="ear-score"></div>
+              <details class="ear-setup" id="earSetup">
+                <summary>Setup — training home</summary>
+                <div class="row tonic-row ear-home music-context">
+                  <label for="earHomeSel">Training home</label>
+                  <select id="earHomeSel"></select>
+                  <button id="btnEarHome" class="mini">♪ Hear home</button>
+                </div>
+                <p id="earHomeNote" class="ear-home-note"></p>
+              </details>
+              <div id="earAudioStatus" class="ear-audio-status" role="status" aria-live="polite">Studio piano loads on first play · Stop is always available</div>
+              <details id="earScore" class="ear-score">
+                <summary id="earScoreLine"></summary>
+                <div id="earScoreTotals"></div>
+              </details>
             </div>
 
             <!-- Video study -->
