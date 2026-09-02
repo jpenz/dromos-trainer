@@ -401,10 +401,11 @@ main {
 .pivot-banner.show { height: auto; opacity: 1; transform: none; padding: 8px 14px; }
 .pivot-banner b { font-family: var(--font-mono); }
 
-.prog-strip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.prog-strip { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
 .pchip {
-  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 74px; min-height: 52px;
-  padding: 7px 12px; border-radius: var(--r-md); background: transparent; border: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-1);
+  min-width: 74px; min-height: var(--h-control);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: transparent; border: 1px solid var(--line);
   color: var(--muted); transition: all var(--t-fast) var(--ease);
 }
 .pchip:hover { border-color: var(--line-strong); color: var(--text); }
@@ -412,15 +413,25 @@ main {
 .pchip.active .pchip-deg { color: var(--terracotta-bright); }
 .pchip.played:not(.active) { opacity: 0.5; }
 .pchip.is-next:not(.active) { border-color: var(--turquoise); border-style: dashed; color: var(--text); }
-.pchip-deg { font-family: var(--font-display); font-size: 13px; }
-.pchip-sym { font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
+.pchip-deg { font-family: var(--font-display); font-size: var(--fs-label); }
+.pchip-sym { font-family: var(--font-mono); font-size: var(--fs-body); font-weight: 500; }
 .pchip-arrow { color: var(--faint); opacity: 0.5; }
-/* The held-tonic bar gets its own chip so ii · V · I · I is visible, not implied. */
-.pchip.pchip-held { border-style: dashed; opacity: 0.75; }
-.pchip.pchip-held.active:not(.held-sounding) { opacity: 0.6; }
-.pchip-hold { color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-.pchip.pchip-held.held-sounding { border-color: var(--terracotta); border-style: solid; background: var(--terracotta-soft); opacity: 1; }
-.pchip.pchip-held.held-sounding .pchip-hold { color: var(--terracotta-bright); }
+/* One chord, one chip. A bar that holds grows a TAIL on the same chip so
+   ii · V · I · I stays visible without reading as a fourth chord. */
+.pchip-pair { display: flex; align-items: stretch; }
+.pchip-pair .pchip { flex: 0 1 auto; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.pchip-tail {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 34px; min-height: var(--h-control); padding: 0 var(--sp-2);
+  border: 1px solid var(--line); border-left: 0; border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: transparent; transition: all var(--t-fast) var(--ease);
+}
+.pchip-tail:hover { border-color: var(--line-strong); }
+.pchip-pair.played .pchip-tail { opacity: 0.5; }
+.pchip-pair.on .pchip-tail { border-color: var(--terracotta); opacity: 1; }
+.pchip-hold { color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.pchip-tail.held-sounding { border-color: var(--terracotta); background: var(--terracotta-soft); opacity: 1; }
+.pchip-tail.held-sounding .pchip-hold { color: var(--terracotta-bright); }
 
 /* ========================= Instrument stage ========================= */
 .stage { position: relative; min-width: 0; }
@@ -669,24 +680,17 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .legend-note { font-size: 11.5px; color: var(--faint); margin-left: auto; }
 
 /* scale strip */
-.scale-strip { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--panel); padding: 16px 18px; }
-.scale-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.scale-head b { font-family: var(--font-display); font-size: 18px; font-weight: 500; }
-.scale-head .greek { color: var(--aegean-bright); font-size: 13px; }
-.scale-blurb { color: var(--muted); font-size: 12.5px; flex: 1 1 260px; }
-.scale-notes { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-.snote { display: flex; flex-direction: column; align-items: center; min-width: 46px; padding: 7px 9px; border-radius: var(--r-sm); background: var(--panel2); border: 1px solid transparent; }
-.snote b { font-size: 15px; font-weight: 600; font-family: var(--font-mono); }
-.snote i { font-style: normal; font-size: 11px; color: var(--faint); }
+.scale-strip { margin-top: var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--panel); padding: var(--sp-4) var(--sp-4); }
+.scale-head { display: flex; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap; }
+.scale-head b { font-family: var(--font-display); font-size: var(--fs-title); font-weight: 500; }
+.scale-head .greek { color: var(--aegean-bright); font-size: var(--fs-label); }
+.scale-notes { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); flex-wrap: wrap; }
+.snote { display: flex; flex-direction: column; align-items: center; min-width: 46px; padding: var(--sp-2) var(--sp-2); border-radius: var(--r-sm); background: var(--panel2); border: 1px solid transparent; }
+.snote b { font-size: var(--fs-body); font-weight: 600; font-family: var(--font-mono); }
+.snote i { font-style: normal; font-size: var(--fs-micro); color: var(--faint); }
 .snote.tonic { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .snote.flavour { border-color: var(--amber); background: var(--amber-soft); }
 .snote.flavour i, .snote.tonic i { color: var(--text); }
-.compare { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
-.cmp-label { font-size: 12px; color: var(--faint); }
-.cmp { font-size: 12.5px; padding: 6px 10px; border-radius: var(--r-sm); background: transparent; border: 1px solid var(--line); color: var(--muted); cursor: pointer; transition: all var(--t-fast) var(--ease); }
-.cmp:hover { color: var(--text); border-color: var(--line-strong); }
-.cmp b { color: var(--text); margin-right: 5px; }
-.cmp.on { border-color: var(--amber); background: var(--amber-soft); color: var(--text); }
 
 /* ========================= Workbench ========================= */
 .workbench {
@@ -766,8 +770,6 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .inline-tgl { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); cursor: pointer; white-space: nowrap; min-height: 32px; }
 .inline-tgl input { accent-color: var(--terracotta); }
 
-.workbench-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.workbench-note b { color: var(--text); }
 
 /* cycle workbench */
 .cycle-workbench { display: grid; gap: 10px; }
@@ -831,21 +833,23 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .pivot-pair-nav span span { color: var(--violet); padding: 0 4px; }
 
 /* progression list */
-.prog-list { display: flex; flex-direction: column; gap: 10px; }
-.progression-tier { display: grid; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
-.progression-tier > header { display: flex; align-items: baseline; gap: 8px; }
-.progression-tier > header span { color: var(--aegean); font-size: 9px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
-.progression-tier > header h3 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: 16px; font-weight: 500; }
-.progression-job { display: grid; gap: 7px; }
-.progression-job h4 { margin: 4px 0 0; color: var(--faint); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.prog-item { display: grid; grid-template-columns: minmax(100px, 0.45fr) minmax(130px, 0.55fr); gap: 5px 12px; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; color: var(--text); transition: all var(--t-fast) var(--ease); }
+.prog-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+.progression-tier { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.progression-tier > header { display: flex; align-items: baseline; gap: var(--sp-2); }
+.progression-tier > header span { color: var(--aegean); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.progression-tier > header h3 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: var(--fs-title); font-weight: 500; }
+.progression-job { display: grid; gap: var(--sp-2); }
+.progression-job h4 { margin: var(--sp-1) 0 0; color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.prog-item { display: grid; grid-template-columns: minmax(100px, 0.45fr) minmax(130px, 0.55fr); gap: var(--sp-1) var(--sp-3); min-height: var(--h-control); text-align: left; background: transparent; border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3); color: var(--text); transition: all var(--t-fast) var(--ease); }
 .prog-item:hover { border-color: var(--line-strong); background: var(--panel2); }
 .prog-item.active { border-color: var(--terracotta); background: var(--terracotta-soft); }
-.prog-function { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
-.prog-function b { font-family: var(--font-display); font-size: 15px; font-weight: 500; }
-.prog-function i { color: var(--faint); font-size: 9px; font-style: normal; letter-spacing: 0.07em; text-transform: uppercase; }
-.prog-symbols { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: 12px; text-align: right; }
-.prog-why { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.prog-function { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.prog-function b { font-family: var(--font-display); font-size: var(--fs-body); font-weight: 500; }
+.prog-function i { color: var(--faint); font-size: var(--fs-micro); font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; }
+.prog-symbols { color: var(--terracotta-bright); font-family: var(--font-mono); font-size: var(--fs-sec); text-align: right; }
+/* A tier too small to earn a heading hands its layer/job caption to the card. */
+.prog-layer { grid-column: 1 / -1; color: var(--aegean); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.prog-why { grid-column: 1 / -1; font-size: var(--fs-label); color: var(--muted); line-height: 1.45; max-width: 65ch; }
 
 /* dromos chord map */
 .chord-map-panel { gap: 20px; }
@@ -2520,3 +2524,25 @@ body.chrome-single .workbench { grid-template-columns: minmax(0, 1fr); }
 .today-card.done > i { color: var(--turquoise); }
 .today-card.up-next { border-color: var(--terracotta); background: var(--terracotta-soft); }
 .today-card .up-next-tag { position: absolute; top: 8px; right: 10px; color: var(--terracotta-bright); font-size: var(--fs-micro); font-style: normal; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* ---- Song Map: the strip leads, one mode control (redesign PR 7) ---- */
+/* The strip is this page's answer object, so it gets panel weight and sits
+   above the fretboard; #progStrip only, so Comp's strip is untouched. */
+#progStrip {
+  gap: var(--sp-2); padding: var(--sp-3);
+  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised);
+}
+.seg-modes button {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--sp-1); min-height: 52px; padding: var(--sp-2) var(--sp-1);
+}
+.seg-modes b { font-size: var(--fs-label); font-weight: 600; line-height: 1.15; }
+.seg-modes small { color: var(--faint); font-family: var(--font-mono); font-size: var(--fs-micro); }
+.seg-modes button.active small { color: rgba(20, 17, 15, 0.78); }
+/* One line, and only about the dromos you just chose. */
+.mode-note { margin: var(--sp-2) 0 0; max-width: 65ch; color: var(--faint); font-size: var(--fs-micro); line-height: 1.45; }
+
+@media (pointer: coarse) {
+  .pchip, .pchip-tail, .prog-item, .seg-modes button { min-height: 44px; }
+  #progStrip { gap: var(--sp-2); }
+}
