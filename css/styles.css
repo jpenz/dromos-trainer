@@ -2524,3 +2524,29 @@ body.chrome-single .workbench { grid-template-columns: minmax(0, 1fr); }
   :root { --dur-1: 0ms; --dur-2: 0ms; --dur-3: 0ms; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---- motion kit (blueprint 1.3): View Transitions + discrete-display ---- */
+@supports (animation-timing-function: linear(0, 1)) {
+  :root { --ease-spring: linear(0, 0.013 1%, 0.44 8%, 0.85 15%, 1.06 22%, 1.03 30%, 0.99 39%, 1.005 52%, 1); }
+}
+#stage { view-transition-name: stage; }
+.transport-bar:not(.picking-transport) { view-transition-name: transport; }
+.picking-transport { view-transition-name: picking-transport; }
+::view-transition-old(root) { animation-duration: var(--dur-3); animation-timing-function: var(--ease-in); }
+::view-transition-new(root) { animation-duration: var(--dur-3); animation-timing-function: var(--ease-out); }
+::view-transition-group(stage), ::view-transition-group(transport), ::view-transition-group(picking-transport) {
+  animation-duration: var(--dur-3); animation-timing-function: var(--ease-out);
+}
+
+/* details open/close animate where the engine supports keyword sizes */
+@supports (interpolate-size: allow-keywords) {
+  :root { interpolate-size: allow-keywords; }
+  details::details-content {
+    height: 0; overflow: clip;
+    transition: height var(--dur-2) var(--ease-out), content-visibility var(--dur-2) allow-discrete;
+  }
+  details[open]::details-content { height: auto; }
+}
+
+/* the pivot banner enters on the spring */
+.pivot-banner.show { transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring), height var(--dur-2) var(--ease-out), padding var(--dur-2) var(--ease-out); }
