@@ -200,7 +200,7 @@
       purpose: "Explain music you are studying",
       answer: "Enter a chord map or MusicXML score you own, then turn the analysis into one specific practice decision.",
       result: "The analyzer explains written harmony and notes; it does not claim to transcribe recordings or judge every outside note as wrong.",
-      steps: ["Choose Home and dromos, then type chord symbols such as Dm Gm A7 Dm—or import MusicXML with chord symbols.", "Optionally type each chord followed by its melody notes after a colon.", "Press Analyze chord map, read the strong targets, and take one recommendation to Triads or Solo."],
+      steps: ["Type chord symbols such as Dm Gm A7 Dm, tap a try: starter, or import MusicXML with chord symbols.", "Press Analyze chord map; open Setup to change Key or dromos, or to add a chord-aligned line.", "Read the strong targets and take one recommendation to Triads or Solo."],
       done: "You can state the home, each chord's function, and one strong target note for the next practice pass.",
       why: "Analysis is useful when it reduces a real passage to an audible question you can test, not when it produces labels without practice.",
       terms: [["MusicXML", "A notation-file format exported by many score-writing apps; it is not a PDF or audio file."], ["Chord symbol", "A short name such as Dm or A7."], ["Outside note", "A note outside the selected scale or chord; it may still work as intentional tension or approach."]],
