@@ -417,8 +417,8 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "tetrachord road colouring rides the dot classes");
   // Timing grammar: a drill that declares its own subdivision must win on
   // selection, and an evolve run must return the lab to where it started.
-  assert.match(app, /if \(exercise\.subdivision\) state\.picking\.subdivision = exercise\.subdivision;/,
-    "triplet drills must not open as straight eighths");
+  assert.match(app, /state\.picking\.subdivision = exercise\.subdivision \|\| state\.picking\.userSubdivision \|\| 2;/,
+    "triplet drills must not open as straight eighths, and a drill without its own grid returns to the player's");
   assert.match(app, /state\.picking\.runHome = \{ tonic: state\.tonic, position: state\.lab\.position \};/,
     "an evolve run records home before it travels");
   assert.match(app, /state\.lab\.position = state\.picking\.runHome\.position;/,
@@ -497,6 +497,41 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
     "re-rendered collections enter, they do not pop");
   assert.match(read("js/fretboard.js"), /gg\.style\.animationDelay = /,
     "fretboard dots cascade in");
+});
+
+test("the stylesheet's braces balance, so no rule is swallowed by an unclosed block", () => {
+  // Two redesign merges each dropped the closing brace of a touch-only
+  // @media block; every rule after them silently applied on touch screens
+  // only. Section comments must sit at the top level, and the file must close.
+  const css = read("css/styles.css").replace(/\/\*[\s\S]*?\*\//g, (comment) =>
+    comment.startsWith("/* ----") || comment.startsWith("/* ====") ? "\u0000" : "");
+  let depth = 0;
+  for (const ch of css) {
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; assert.ok(depth >= 0, "a closing brace has no opener"); }
+    else if (ch === "\u0000") assert.equal(depth, 0, "a section comment sits inside an unclosed block");
+  }
+  assert.equal(depth, 0, "every block in styles.css must close");
+});
+
+test("picking loops obey the loop law and the workbench is wired in", () => {
+  const app = read("js/app.js");
+  const html = read("index.html");
+  // No dead air: every session lands and rings to the bar line.
+  assert.match(app, /PK\.fillToBars\(nodes, sub, barBeats\);/, "every picking session must fill whole bars");
+  // Short loops repeat before landing; long lines just land.
+  assert.match(app, /passBeats < 2 \* barBeats && restFor\(1\) > barBeats \/ 3/, "only short loops repeat before the landing");
+  // Generic lines go up AND back.
+  assert.match(app, /updown: true\n\s*\}\);/, "generic picking lines must be closed up-and-back paths");
+  // Two ways in, one control per state variable.
+  assert.match(html, /data-lab-mode="plan"[\s\S]{0,200}data-lab-mode="workbench"/, "guided plan and phrase workbench are the two ways in");
+  ["wbCell", "wbDirection", "wbRoute", "wbPattern", "wbStart", "wbPosition", "workbenchPresets"].forEach((id) =>
+    assert.match(html, new RegExp(`id="${id}"`), `${id} must exist`));
+  assert.match(app, /function pickingWorkbenchPool\(context\)/, "the workbench builds its pool from the chosen route");
+  // A drill without its own grid returns to the player's grid.
+  assert.match(app, /state\.picking\.userSubdivision = state\.picking\.subdivision/, "the player's own grid is remembered");
+  // Long lines render as a moving window, not a wall of tiles.
+  assert.match(app, /const RAIL_WINDOW = 16;/, "the event rail is a window that follows the playhead");
 });
 
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {

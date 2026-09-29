@@ -267,7 +267,7 @@
       id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
       answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change — every course of the instrument, both crossing directions.",
       gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recorded take.",
-      exerciseIds: ["traversal-countdown", "course-target", "outside-pairs", "mixed-crossings", "crossing-flip-stops", "skip-thirds", "degree-window", "full-neck-ladder"]
+      exerciseIds: ["traversal-countdown", "course-target", "outside-pairs", "mixed-crossings", "crossing-flip-stops", "skip-thirds", "degree-window", "full-neck-ladder", "phrase-workbench"]
     },
     {
       id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",
