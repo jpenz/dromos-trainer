@@ -74,6 +74,22 @@
       route: "Pair the pulse with the song's dromos and a local triad path; the meter tells you where the phrase breathes."
     },
     {
+      id: "syrtos",
+      tempoBand: { low: null, high: null, strength: "qualitative",
+        note: "Only qualitative descriptions located (slower and more stately than the kalamatianos). No number ships - set tempo from a reference recording you trust.",
+        sourceUrl: "https://en.wikipedia.org/wiki/Syrtos" },
+      title: "Syrtos",
+      greek: "Συρτός",
+      meter: "4/4",
+      beats: 4,
+      groups: [2, 1, 1],
+      pulse: "2 + 1 + 1",
+      character: "Slow-quick-quick inside an even 4/4: one long step, then two short ones - the same step family as the kalamatianos, slower and more stately.",
+      comp: "Hold the long first step with a bass anchor, then answer the two quick steps with short chord responses.",
+      phrase: "Let the phrase lean on the long first step and move through the two quick ones toward the next bar.",
+      route: "Pair the pulse with the song's dromos and a local triad path; the meter tells you where the phrase breathes."
+    },
+    {
       id: "hasapiko",
       tempoBand: { low: null, high: null, strength: "qualitative",
         note: "Only qualitative descriptions located (slow varys 4/4 versus fast 2/4). No number ships — set tempo from a reference recording you trust.",
@@ -167,6 +183,11 @@
       accent: [1, 4],
       pattern: { units: 8, groups: [3, 3, 2], hits: { 1: "bass", 4: "chord", 7: "chord" } },
       level2: "Move from the sparse 1-and-4 stress to a separate eight-subdivision 3 + 3 + 2 study. Do not hear them as the same pattern."
+    },
+    syrtos: {
+      accent: [1, 3, 4],
+      pattern: { units: 4, groups: [2, 1, 1], hits: { 1: "bass", 2: "chord", 3: "bass", 4: "chord" } },
+      level2: "Anchor the long first step with the bass, then place one compact chord on each quick step."
     },
     kalamatianos: {
       accent: [1, 4, 6],

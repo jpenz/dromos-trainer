@@ -36,7 +36,7 @@ test("authorised study starters and referenced methods remain clearly bounded", 
 test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority separate", () => {
   const { BouzoukiKnowledge, PickingLab } = loadCore();
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 6, "foundation to lead: six stages");
-  assert.equal(PickingLab.EXERCISES.length, 41, "40 + the Leavitt-anchored skip-thirds line");
+  assert.equal(PickingLab.EXERCISES.length, 42, "41 + the phrase workbench");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -833,4 +833,36 @@ test("mainland laouto supports grips, triads, and scale paths", () => {
   chords.forEach((chord) => assert.ok(Fretboard.findGrip(chord.notes), chord.symbol + " needs a playable grip"));
   assert.ok(Triads.pathThrough(chords).every(Boolean), "every progression chord needs a triad map");
   assert.ok(Practice.buildPath("D", "hijaz", { layout: "3nps", position: 5 }), "a scale path must fit the neck");
+});
+
+test("the phrase workbench generates every combination, closes two-way lines, and fills whole bars", () => {
+  const { PickingLab } = loadCore();
+  const pool = Array.from({ length: 12 }, (_, index) => ({
+    midi: 60 + index, freq: 440, stringIndex: Math.floor(index / 3), fret: index,
+    note: { degree: String((index % 7) + 1), pc: (60 + index) % 12 }
+  }));
+  const meters = {
+    "4/4": [{ first: true }, { first: false }, { first: true }, { first: false }],
+    "7/8": [{ first: true }, { first: false }, { first: false }, { first: true }, { first: false }, { first: true }, { first: false }],
+    "9/4": [{ first: true }, { first: false }, { first: true }, { first: false }, { first: true }, { first: false }, { first: true }, { first: false }, { first: false }]
+  };
+  const W = PickingLab.WORKBENCH;
+  assert.ok(W.presets.every((preset) => ["cell", "direction", "route", "pattern"].every((key) =>
+    W[key === "cell" ? "cells" : key === "direction" ? "directions" : key === "route" ? "routes" : "patterns"].some((item) => item.id === preset[key]))),
+    "every preset must name real options");
+  W.cells.forEach((cell) => W.directions.forEach((direction) => W.patterns.forEach((pattern) => {
+    Object.entries(meters).forEach(([meter, pulse]) => [1, 2, 3, 4].forEach((sub) => {
+      const events = PickingLab.buildSequence("phrase-workbench", pool, pulse, "down", null, sub,
+        { cell: cell.id, direction: direction.id, pattern: pattern.id });
+      const label = `${cell.id}/${direction.id}/${pattern.id}/${meter}/${sub}`;
+      assert.ok(events.length > 0, `${label} generated nothing`);
+      assert.ok(events.every((event) => pool.some((node) => node.midi === event.midi)), `${label} left the route`);
+      PickingLab.fillToBars(events, sub, pulse.length);
+      const beats = events.reduce((sum, event) => sum + (event.durMult > 0 ? event.durMult : 1), 0) / sub;
+      assert.ok(Math.abs(beats / pulse.length - Math.round(beats / pulse.length)) < 1e-6, `${label} must fill whole bars (${beats} beats)`);
+      if (direction.id === "upback" || direction.id === "downback") {
+        assert.ok(Math.abs(events[0].midi - events[events.length - 1].midi) <= 4, `${label} must close on itself`);
+      }
+    }));
+  })));
 });
