@@ -3828,6 +3828,7 @@
     const frets = nodes.map((node) => node.fret);
     return {
       exercise, nodes, pulse, current: base.current, next: base.next, context: resolved,
+      bars: compMode ? base.nodes : null,
       meta: {
         lowFret: frets.length ? Math.min(...frets) : 0,
         highFret: frets.length ? Math.max(...frets) : 0,
@@ -4112,7 +4113,121 @@
     }).join("");
   }
 
+  // The tile rail: a 16-tile window that follows the playhead. Built here so
+  // the per-note playhead update can redraw ONLY the rail when its window
+  // shifts, instead of the whole lesson.
+  function pickingRailMarkup(session, currentIndex) {
+    const courseNames = window.Tuning.names();
+    // The rail is a 16-tile window that follows the playhead: long lines
+    // (a gear shift is 200+ events) used to render as a wall of tiles.
+    const RAIL_WINDOW = 16;
+    const railStart = session.nodes.length <= RAIL_WINDOW || currentIndex == null ? 0
+      : Math.max(0, Math.min(session.nodes.length - RAIL_WINDOW, currentIndex - 3));
+    const railEnd = Math.min(session.nodes.length, railStart + RAIL_WINDOW);
+    const railCount = session.nodes.length > RAIL_WINDOW
+      ? `<small class="picking-rail-count">Events ${railStart + 1}–${railEnd} of ${session.nodes.length} · the window follows the playhead</small>` : "";
+    const tiles = session.nodes.slice(railStart, railEnd).map((node, offset) => {
+      const index = railStart + offset;
+      const note = node.note || {};
+      const detail = node.hold ? `land · ring ${node.hold} ${node.hold === 1 ? "beat" : "beats"}` : node.crossing ? node.crossing : node.burst ? `${node.burst}-stroke burst` : node.phrase || "";
+      const mark = pickingTechniqueMeta(node.technique);
+      const tab = node.stringIndex != null && node.fret != null ? `${courseNames[node.stringIndex] || "?"}${node.fret}` : "";
+      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${node.rhythmFirst ? " on-one" : node.rhythmBeat ? " on-beat" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${tab ? `, ${escapeHtml(tab.replace(/(\D+)(\d+)/, "$1 string fret $2"))}` : ""}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u></strong>${node.rhythmBeat ? `<em class="beat-chip${node.rhythmFirst ? " one" : ""}">${node.rhythmBeat}</em>` : ""}<b>${escapeHtml(note.name || "·")}</b><em class="ev-tab">${escapeHtml(tab)}${tab ? " · " : ""}${escapeHtml(note.roleLabel || note.degree || "·")}</em><small>${escapeHtml(detail)}</small></button>`;
+    }).join("");
+    return {
+      railStart,
+      html: `<div class="picking-event-rail" style="--picking-events:${Math.min(8, Math.max(4, railEnd - railStart))}">${tiles}</div>${railCount}`
+    };
+  }
+
+  // What the playing lesson is showing: the per-note update reads this
+  // instead of rebuilding the session on every note.
+  let pickingView = { session: null, railStart: 0, barIndex: -1 };
+  let pickingStepFrame = 0;
+
+  function requestPickingStep() {
+    if (pickingStepFrame) return;
+    pickingStepFrame = requestAnimationFrame(() => {
+      pickingStepFrame = 0;
+      updatePickingStep(state.picking.pathIndex);
+    });
+  }
+
+  // Per-note playhead: board classes, rail current tile, motion panel text.
+  // The full renderPickingLab runs only on stage changes and config changes,
+  // so Stop, open details panels, and focus survive playback.
+  function updatePickingStep(index) {
+    const session = pickingView.session;
+    if (!session || state.view !== "picking" || index == null) return;
+    const exercise = session.exercise;
+    if (exercise.sequence === "comp") {
+      const barIndex = (session.nodes[index] || {}).barIndex || 0;
+      if (barIndex !== pickingView.barIndex) { pickingView.barIndex = barIndex; renderPickingBoard(session, index); }
+    } else {
+      FB.setPathIndex(svg(), index);
+    }
+    const rail = pickingRailMarkup(session, index);
+    const host = document.querySelector("#pickingLesson .picking-rail-host");
+    if (host && rail.railStart !== pickingView.railStart) {
+      pickingView.railStart = rail.railStart;
+      host.innerHTML = rail.html;
+    } else if (host) {
+      host.querySelectorAll(".picking-event.current").forEach((tile) => tile.classList.remove("current"));
+      const tile = host.querySelector(`[data-picking-step="${index}"]`);
+      if (tile) tile.classList.add("current");
+    }
+    const panel = document.querySelector("#pickingLesson .picking-motion");
+    if (!panel) return;
+    const node = session.nodes[index] || {};
+    const next = session.nodes[(index + 1) % Math.max(1, session.nodes.length)] || {};
+    const motion = pickingTechniqueMeta(node.technique);
+    const nextMotion = pickingTechniqueMeta(next.technique);
+    panel.classList.add("is-playing"); panel.classList.remove("is-ready");
+    panel.setAttribute("aria-live", "off");
+    panel.dataset.motion = motion.direction;
+    const nowBox = panel.querySelector(".picking-motion-now");
+    const nextBox = panel.querySelector(".picking-motion-next");
+    if (nowBox) {
+      nowBox.querySelector("span").textContent = `Now · event ${index + 1}`;
+      nowBox.querySelector("b").innerHTML = `<i>${escapeHtml(motion.glyph)}</i>${escapeHtml(motion.label)}`;
+      nowBox.querySelector("p").textContent = motion.cue;
+    }
+    if (nextBox) {
+      nextBox.querySelector("b").innerHTML = `<i>${escapeHtml(nextMotion.glyph)}</i>${escapeHtml(nextMotion.label)}`;
+      nextBox.querySelector("p").textContent = nextMotion.cue;
+    }
+    const accent = panel.querySelector(".picking-motion-visual > span");
+    if (accent) accent.textContent = node.accent ? "ACCENT" : "EVEN";
+  }
+
+  function renderPickingBoard(session, currentIndex, displayPath) {
+    const exercise = session.exercise;
+    if (exercise.sequence === "comp") {
+      const bars = session.bars || pickingCompBars(session.context);
+      const nowBar = (session.nodes[currentIndex == null ? 0 : currentIndex] || {}).barIndex || 0;
+      const grip = bars[nowBar], nextGrip = bars[(nowBar + 1) % Math.max(1, bars.length)];
+      FB.render(svg(), {
+        grip: grip ? { placements: grip.placements } : null,
+        nextGrip: nextGrip && nextGrip !== grip ? { placements: nextGrip.placements } : null,
+        labelMode: state.labelMode, lefty: state.lefty, largeNeck: true, neckMode: "full",
+        flavourPcs: M.flavourPcs(state.tonic, state.modeId)
+      });
+    } else FB.render(svg(), {
+      path: displayPath, pathIndex: currentIndex,
+      labelMode: "degree", lefty: state.lefty, showStrokes: true, largeNeck: true,
+      // One unbroken neck for picking: the drill lives in one position, and a
+      // split board makes a simple path look like two puzzles. On narrow
+      // screens the board scrolls inside its own container.
+      neckMode: "full",
+      flavourPcs: M.flavourPcs(state.tonic, state.modeId)
+    });
+    svg().setAttribute("aria-label", `${window.Tuning.current().name} ${exercise.title} picking path`);
+  }
+
   function renderPickingLab() {
+    // A full render supersedes any pending playhead frame (one can sit
+    // unfired while the tab is hidden).
+    if (pickingStepFrame) { cancelAnimationFrame(pickingStepFrame); pickingStepFrame = 0; }
     renderPickingSetup();
     renderPickingRunPlan();
     const session = buildPickingSession(state.picking.playing ? state.picking.activeSegment : null);
@@ -4152,26 +4267,7 @@
         : node.note && lowerRoadPcs.has(node.note.pc) ? "lower"
         : node.note ? "upper" : null
     }));
-    if (exercise.sequence === "comp") {
-      const bars = pickingCompBars(session.context);
-      const nowBar = (session.nodes[currentIndex == null ? 0 : currentIndex] || {}).barIndex || 0;
-      const grip = bars[nowBar], nextGrip = bars[(nowBar + 1) % Math.max(1, bars.length)];
-      FB.render(svg(), {
-        grip: grip ? { placements: grip.placements } : null,
-        nextGrip: nextGrip && nextGrip !== grip ? { placements: nextGrip.placements } : null,
-        labelMode: state.labelMode, lefty: state.lefty, largeNeck: true, neckMode: "full",
-        flavourPcs: M.flavourPcs(state.tonic, state.modeId)
-      });
-    } else FB.render(svg(), {
-      path: displayPath, pathIndex: currentIndex,
-      labelMode: "degree", lefty: state.lefty, showStrokes: true, largeNeck: true,
-      // One unbroken neck for picking: the drill lives in one position, and a
-      // split board makes a simple path look like two puzzles. On narrow
-      // screens the board scrolls inside its own container.
-      neckMode: "full",
-      flavourPcs: M.flavourPcs(state.tonic, state.modeId)
-    });
-    svg().setAttribute("aria-label", `${window.Tuning.current().name} ${exercise.title} picking path`);
+    renderPickingBoard(session, currentIndex, displayPath);
 
     const category = PK.CATEGORIES.find((item) => item.id === exercise.category);
     const mastery = BK.phaseForExercise(exercise.id);
@@ -4182,23 +4278,8 @@
     const nextMotionEvent = session.nodes[(motionIndex + 1) % Math.max(1, session.nodes.length)] || {};
     const motion = pickingTechniqueMeta(motionEvent.technique);
     const nextMotion = pickingTechniqueMeta(nextMotionEvent.technique);
-    const courseNames = window.Tuning.names();
-    // The rail is a 16-tile window that follows the playhead: long lines
-    // (a gear shift is 200+ events) used to render as a wall of tiles.
-    const RAIL_WINDOW = 16;
-    const railStart = session.nodes.length <= RAIL_WINDOW || currentIndex == null ? 0
-      : Math.max(0, Math.min(session.nodes.length - RAIL_WINDOW, currentIndex - 3));
-    const railEnd = Math.min(session.nodes.length, railStart + RAIL_WINDOW);
-    const railCount = session.nodes.length > RAIL_WINDOW
-      ? `<small class="picking-rail-count">Events ${railStart + 1}–${railEnd} of ${session.nodes.length} · the window follows the playhead</small>` : "";
-    const rail = session.nodes.slice(railStart, railEnd).map((node, offset) => {
-      const index = railStart + offset;
-      const note = node.note || {};
-      const detail = node.hold ? `land · ring ${node.hold} ${node.hold === 1 ? "beat" : "beats"}` : node.crossing ? node.crossing : node.burst ? `${node.burst}-stroke burst` : node.phrase || "";
-      const mark = pickingTechniqueMeta(node.technique);
-      const tab = node.stringIndex != null && node.fret != null ? `${courseNames[node.stringIndex] || "?"}${node.fret}` : "";
-      return `<button data-picking-step="${index}" class="picking-event${node.accent ? " accent" : ""}${node.rhythmFirst ? " on-one" : node.rhythmBeat ? " on-beat" : ""}${index === currentIndex ? " current" : ""}" aria-label="Step ${index + 1}, ${pickingTechniqueName(node.technique)}, ${escapeHtml(note.name || "note")}${tab ? `, ${escapeHtml(tab.replace(/(\D+)(\d+)/, "$1 string fret $2"))}` : ""}${detail ? `, ${escapeHtml(detail)}` : ""}"><i>${index + 1}</i><strong><u>${escapeHtml(mark.glyph)}</u></strong>${node.rhythmBeat ? `<em class="beat-chip${node.rhythmFirst ? " one" : ""}">${node.rhythmBeat}</em>` : ""}<b>${escapeHtml(note.name || "·")}</b><em class="ev-tab">${escapeHtml(tab)}${tab ? " · " : ""}${escapeHtml(note.roleLabel || note.degree || "·")}</em><small>${escapeHtml(detail)}</small></button>`;
-    }).join("");
+    const railView = pickingRailMarkup(session, currentIndex);
+    pickingView = { session, displayPath, railStart: railView.railStart, barIndex: (session.nodes[currentIndex == null ? 0 : currentIndex] || {}).barIndex || 0 };
     // Stroke key: only the glyphs this session actually uses.
     const usedMarks = [];
     session.nodes.forEach((node) => { const key = node.technique || "hold"; if (!usedMarks.includes(key)) usedMarks.push(key); });
@@ -4222,7 +4303,7 @@
       </div>
       <div class="picking-articulation"><span>${escapeHtml(articulation.mnemonic)}</span><b>${escapeHtml(articulation.label)}</b><p>${escapeHtml(articulation.detail)}</p></div>
       <div class="picking-stroke-key">${strokeKeyChips}${fingerChip}${roadChips}<em>Tap an event to hear it and see the motion.</em></div>
-      <div class="picking-event-rail" style="--picking-events:${Math.min(8, Math.max(4, railEnd - railStart))}">${rail}</div>${railCount}
+      <div class="picking-rail-host">${railView.html}</div>
       <div class="picking-this-pass"><span>This pass</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol><p><b>Listen for:</b> ${escapeHtml(exercise.listen)}</p><p><b>Pass when:</b> ${escapeHtml(exercise.pass)}</p></div>
       <details class="picking-evidence"><summary>Theory · ${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>Theory inside the motion</span><p class="picking-evidence-wide"><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[pickingModeId(session.context)].name)}.</b> ${escapeHtml(exercise.theory)} <i>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</i></p><span>Fingering &amp; layout</span><p class="picking-evidence-wide"><b>1–4</b> is the one-finger-per-fret window (the modern, method-book layout); <b>0</b> is open; <b>⇧</b> is a stretch or small shift, your call. Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen).</p><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
     const motionStart = $("btnPickingMotionStart");
@@ -4230,17 +4311,6 @@
       if (state.picking.playing) { stopPlay(); renderPickingLab(); return; }
       playPickingExercise();
     };
-    $("pickingLesson").querySelectorAll("[data-picking-step]").forEach((button) => button.onclick = () => {
-      stopPlay();
-      const index = +button.getAttribute("data-picking-step");
-      state.picking.pathIndex = index;
-      const voice = pickingReferenceVoice();
-      readyPracticeAudio(voice).then((ready) => {
-        if (!ready) return;
-        AU.playPath([session.nodes[index]], 0.35, { referenceVoice: voice, onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
-      });
-      renderPickingLab();
-    });
 
     // The route seg only shows for drills whose notes actually follow it;
     // layout-locked and fixed-sequence drills would silently ignore it.
@@ -4354,15 +4424,15 @@
       onStep: (index) => {
         if (token === pickingRunToken && state.view === "picking") {
           state.picking.pathIndex = index;
-          if (index % state.picking.subdivision === 0) beatPulse(false, [$("btnPickingPlay")]);
-          renderPickingLab();
+          const stepNode = (pickingView.session || session).nodes[index];
+          if (stepNode && stepNode.rhythmBeat) beatPulse(!!stepNode.rhythmFirst, [$("btnPickingPlay")]);
+          requestPickingStep();
         }
       },
       onLoop: (iteration) => {
         if (token !== pickingRunToken) return;
         state.picking.loopCount = iteration + 1;
-        const play = $("btnPickingPlay");
-        if (play) play.textContent = `■ Stop · loop ${iteration + 1}`;
+        ["btnPickingPlay", "btnPickingMotionStart"].forEach((id) => { if ($(id)) $(id).textContent = `■ Stop · loop ${iteration + 1}`; });
       },
       onDone: looping ? null : () => {
         if (token !== pickingRunToken) return;
@@ -6571,7 +6641,28 @@
       stopPlay(); state.bpm = Math.max(30, Math.min(220, Math.round(+raw) || 84));
       state.picking.cleanPasses = 0; AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab();
     };
-    $("pickingBpm").oninput = (event) => setPickingBpm(event.target.value);
+    // Dragging only updates the readout; the release commits (a full render
+    // and profile save per pointer event made the slider stutter).
+    $("pickingBpm").oninput = (event) => {
+      const bpm = Math.max(30, Math.min(220, Math.round(+event.target.value) || 84));
+      $("pickingBpmVal").textContent = `${bpm} BPM`;
+      if ($("pickingBpmNum")) $("pickingBpmNum").value = String(bpm);
+    };
+    $("pickingBpm").onchange = (event) => setPickingBpm(event.target.value);
+    $("pickingLesson").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-picking-step]");
+      if (!button || !pickingView.session) return;
+      stopPlay();
+      const index = +button.getAttribute("data-picking-step");
+      const node = pickingView.session.nodes[index];
+      state.picking.pathIndex = index;
+      const voice = pickingReferenceVoice();
+      readyPracticeAudio(voice).then((ready) => {
+        if (!ready || !node) return;
+        AU.playPath([node], 0.35, { referenceVoice: voice, onDone: () => { state.picking.pathIndex = null; if (state.view === "picking") renderPickingLab(); } });
+      });
+      renderPickingLab();
+    });
     $("pickingBpmNum").value = String(state.bpm);
     $("pickingBpmNum").onchange = (event) => setPickingBpm(event.target.value);
     $("pickingRepeatsSel").onchange = (event) => {

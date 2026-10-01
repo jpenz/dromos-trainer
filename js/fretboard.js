@@ -156,6 +156,28 @@
   }
 
   // render into svg element. opts: { grip, ghosts, labelMode, keyAcc, lefty }
+  // Move the playhead on an already-rendered path WITHOUT rebuilding the SVG:
+  // toggles current/played on dots, done on links, and resizes only the two
+  // dots whose current state changes. Rebuilding per note restarted every
+  // dot's entrance animation and forced layout between notes.
+  function setPathIndex(svg, index) {
+    if (!svg) return;
+    svg.querySelectorAll(".fb-dot.path[data-i]").forEach((group) => {
+      const i = +group.getAttribute("data-i");
+      const isCur = i === index;
+      const wasCur = group.classList.contains("current");
+      group.classList.toggle("current", isCur);
+      group.classList.toggle("played", index != null && i < index);
+      if (isCur === wasCur) return;
+      const bg = group.querySelector(".dot-bg");
+      if (bg) bg.setAttribute("r", isCur ? 15 : 12);
+      const finger = group.querySelector(".finger-mark");
+      if (finger && bg) finger.setAttribute("y", +bg.getAttribute("cy") + (isCur ? 26 : 23));
+    });
+    svg.querySelectorAll(".path-link[data-i]").forEach((line) =>
+      line.classList.toggle("done", index != null && +line.getAttribute("data-i") <= index));
+  }
+
   function render(svg, opts) {
     const OPEN = open();
     const OPEN_NAMES = openNames();
@@ -357,7 +379,7 @@
         const cls = "path-link" + (b.crossing ? " x-" + b.crossing : "") +
                     (i <= upto ? " done" : "");
         if (fretRow(a.fret) === fretRow(b.fret)) {
-          g.appendChild(el("line", { x1: cx(a), y1: cy(a), x2: cx(b), y2: cy(b), class: cls }));
+          g.appendChild(el("line", { x1: cx(a), y1: cy(a), x2: cx(b), y2: cy(b), class: cls, "data-i": i }));
         }
       }
 
@@ -372,7 +394,8 @@
                  (isNow ? " target-now" : "") + (isNext ? " target-next" : "") +
                  (n.road ? " road-" + n.road : ""),
           "data-group": n.note.colorGroup,
-          "data-pc": n.note.pc
+          "data-pc": n.note.pc,
+          "data-i": i
         });
         if (opts.lefty) gg.setAttribute("transform", `translate(${2 * cx(n)},0) scale(-1,1)`);
         // Canon §4: dots cascade in instead of popping (reduced motion zeroes it).
@@ -534,5 +557,5 @@
     }
   }
 
-  window.Fretboard = { get N_FRETS() { return nFrets(); }, stringSets, findGrip, allTonePositions, neckLayout, render };
+  window.Fretboard = { setPathIndex, get N_FRETS() { return nFrets(); }, stringSets, findGrip, allTonePositions, neckLayout, render };
 })();

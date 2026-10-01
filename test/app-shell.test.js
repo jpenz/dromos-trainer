@@ -489,8 +489,13 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
   // Interaction canon: beat-synced pulses, one focus ring, designed states.
   assert.match(app, /setTimeout\(\(\) => beatPulse\(!!\(pulseBeat && pulseBeat\.first\)\), delay\);/,
     "the interface pulses on the transport's beat, scheduled to the audio clock");
-  assert.match(app, /if \(index % state\.picking\.subdivision === 0\) beatPulse\(false, \[\$\("btnPickingPlay"\)\]\);/,
-    "the picking Start button pulses on the drill's click beats");
+  assert.match(app, /if \(stepNode && stepNode\.rhythmBeat\) beatPulse\(!!stepNode\.rhythmFirst, \[\$\("btnPickingPlay"\)\]\);/,
+    "the picking Start button pulses on the drill's real beats (duration-aware, not note index)");
+  // Per-note playhead: no full re-render of the lab during playback.
+  assert.match(app, /requestPickingStep\(\);/, "onStep schedules the light playhead update");
+  assert.doesNotMatch(app, /onStep: \(index\) => \{\n\s*if \(token === pickingRunToken && state\.view === "picking"\) \{\n\s*state\.picking\.pathIndex = index;\n[^}]*renderPickingLab\(\);/,
+    "onStep must not rebuild the whole Picking Lab");
+  assert.match(read("js/fretboard.js"), /function setPathIndex\(svg, index\)/, "the board moves its playhead without a rebuild");
   assert.match(css, /:focus-visible \{ outline: 2px solid var\(--turquoise\); outline-offset: 2px;/,
     "one focus ring everywhere");
   assert.match(css, /@starting-style \{\n  \.roadmap-chord, \.today-card, \.picking-event \{ opacity: 0;/,
