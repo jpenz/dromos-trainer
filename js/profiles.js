@@ -10,7 +10,7 @@
 
   const STORAGE_KEY = "dromos-trainer-player-profiles-v1";
   const TUNINGS = ["guitar", "bouzouki4", "laouto4", "bouzouki3", "guitarDropD"];
-  const VIEWS = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "analyze", "concepts", "coach", "progress"];
+  const VIEWS = ["today", "cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "examples", "songs", "analyze", "concepts", "coach", "progress"];
   const TONICS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
   const MODES = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
   const CYCLE_MODES = ["full", "iiVI", "pivot"];
@@ -53,10 +53,11 @@
       labelMode: LABELS.includes(raw.labelMode) ? raw.labelMode : DEFAULT_PREFERENCES.labelMode,
       lefty: typeof raw.lefty === "boolean" ? raw.lefty : DEFAULT_PREFERENCES.lefty,
       loop: typeof raw.loop === "boolean" ? raw.loop : DEFAULT_PREFERENCES.loop,
-      ghosts: typeof raw.ghosts === "boolean" ? raw.ghosts : true,
-      scaleOverlay: typeof raw.scaleOverlay === "boolean" ? raw.scaleOverlay : true,
+      // Fallbacks match the page's own checkbox defaults.
+      ghosts: typeof raw.ghosts === "boolean" ? raw.ghosts : false,
+      scaleOverlay: typeof raw.scaleOverlay === "boolean" ? raw.scaleOverlay : false,
       metronome: typeof raw.metronome === "boolean" ? raw.metronome : false,
-      holdI: typeof raw.holdI === "boolean" ? raw.holdI : false
+      holdI: typeof raw.holdI === "boolean" ? raw.holdI : true
     };
   }
 
@@ -230,5 +231,5 @@
     return { ok: results.every((result) => result.pass), results };
   }
 
-  window.PlayerProfiles = Object.assign(store, { createStore, selfTest, DEFAULT_PREFERENCES });
+  window.PlayerProfiles = Object.assign(store, { createStore, selfTest, DEFAULT_PREFERENCES, VIEWS });
 })();

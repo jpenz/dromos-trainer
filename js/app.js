@@ -168,11 +168,10 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   }[character]));
 
-  const PERSISTED_VIEWS = ["cycle", "prog", "chordmap", "ear", "melody", "triads", "solo", "picking", "styles", "video", "examples", "songs", "analyze", "concepts", "coach"];
 
   function stablePreferences() {
     return {
-      tuningId: window.Tuning.currentId(), view: PERSISTED_VIEWS.includes(state.view) ? state.view : "cycle", tonic: state.tonic,
+      tuningId: window.Tuning.currentId(), view: PP && PP.VIEWS && PP.VIEWS.includes(state.view) ? state.view : "today", tonic: state.tonic,
       modeId: state.modeId, progressionId: state.progId, bpm: state.bpm,
       cycleMode: state.cycleMode, cycleZone: state.cycleComping.zone,
       triadZone: state.triads.zone, labelMode: state.labelMode,
@@ -206,6 +205,11 @@
     state.labelMode = preferences.labelMode;
     state.lefty = preferences.lefty;
     state.loop = preferences.loop;
+    if (typeof preferences.ghosts === "boolean") state.ghosts = preferences.ghosts;
+    if (typeof preferences.scaleOverlay === "boolean") state.scaleOverlay = preferences.scaleOverlay;
+    if (typeof preferences.metronome === "boolean") state.metronome = preferences.metronome;
+    if (typeof preferences.holdI === "boolean") state.holdI = preferences.holdI;
+    if (AU && AU.setMetronome) AU.setMetronome(state.metronome);
     state.ear.tonic = preferences.tonic;
     state.ear.score = profile.progress.earColour.correct;
     state.ear.total = profile.progress.earColour.attempts;
@@ -266,6 +270,9 @@
     if ($("tglLefty")) $("tglLefty").checked = state.lefty;
     if ($("tglLoop")) $("tglLoop").checked = state.loop;
     if ($("tglHoldI")) $("tglHoldI").checked = state.holdI;
+    if ($("tglGhost")) $("tglGhost").checked = state.ghosts;
+    if ($("tglScale")) $("tglScale").checked = state.scaleOverlay;
+    if ($("tglMetro")) $("tglMetro").checked = state.metronome;
     if ($("voiceSel")) $("voiceSel").value = state.chordVoice;
     if ($("tglPickup")) $("tglPickup").checked = state.pickupV2;
     syncHarmonyTabs();
@@ -287,7 +294,6 @@
   // melody to harmony, map/comp, then solo. Reference tools follow beneath.
   const NAV_DEFAULT_VIEW = { today: "today", hear: "ear", melody: "melody", harmony: "cycle", matrix: "chordmap", solo: "solo", picking: "picking", repertoire: "songs", learn: "styles", coach: "coach", progress: "progress" };
   const VIEW_NAV = { today: "today", ear: "hear", melody: "melody", cycle: "harmony", prog: "harmony", chordmap: "matrix", triads: "harmony", solo: "solo", picking: "picking", songs: "repertoire", analyze: "repertoire", styles: "learn", video: "learn", examples: "learn", concepts: "learn", coach: "coach", progress: "progress" };
-  const NAV_TITLES = { today: "Today", hear: "Ear", melody: "Melody → Harmony", harmony: "Harmony", matrix: "Harmony Matrix", solo: "Solo", picking: "Picking Lab", repertoire: "Repertoire", learn: "Learn", coach: "Coach", progress: "Progress" };
 
   // One sentence per workspace answering "what is this FOR" — the purposes the
   // pedagogy research settled on, in the player's language.
@@ -331,17 +337,6 @@
     return `${instrument} · ${state.tonic} ${mode ? mode.name : ""}`;
   }
 
-  function focusPageGuideTarget(targetId) {
-    const target = targetId ? $(targetId) : null;
-    if (!target) return;
-    if (!target.matches("button, input, select, textarea, a[href], [tabindex]")) target.setAttribute("tabindex", "-1");
-    target.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
-    target.focus({ preventScroll: true });
-    target.classList.remove("guide-target-pulse");
-    void target.offsetWidth;
-    target.classList.add("guide-target-pulse");
-    window.setTimeout(() => target.classList.remove("guide-target-pulse"), 1800);
-  }
 
   function renderPageGuide() {
     const guide = PG.resolve({
@@ -707,7 +702,6 @@
 
     const metrics = TR.pathMetrics(path, true);
     const move = TR.pathMetrics([previous, cur], false).moves[0];
-    const chordColour = cur.chord.notes.find((note) => note.role === "7" || note.role === "b7");
     const pathStats = $("cyclePathStats");
     pathStats.innerHTML = `<span><b>${path.length}</b> shapes</span><span><b>${metrics.averagePerVoice.toFixed(1)}</b> semitones / voice</span><span><b>${cur.setLabel}</b> fixed strings</span>`;
     const notes = cur.placements.slice().reverse().map((placement, reverseIndex) => {
@@ -3117,7 +3111,6 @@
   // exact event rails are generated here for the selected tuning, key, road,
   // pulse and chord map; they are not copied repertoire or method notation.
   let pickingRunToken = 0;
-  let pickingRunTimer = null;
 
   const PICKING_TREMOLO_FAMILY = {
     "mair-density-ladder": true, "tremolo-ladder": true,
@@ -3129,7 +3122,7 @@
   // Sequences with fixed node builders that never read state.picking.route
   // (open courses, arpeggio circuits, ladders, traversals): the route seg is
   // meaningless for them, so it hides instead of silently doing nothing.
-  const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench"]);
+  const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip"]);
   function pickingExerciseRoutes(exercise) {
     return !ROUTE_LOCKED[exercise.id] && !PICKING_FIXED_SEQUENCES.has(exercise.sequence);
   }
@@ -3190,7 +3183,7 @@
   function pickingArpeggioNodes(context) {
     const tonic = context.tonic;
     const position = context.position;
-    const { chords } = M.buildProgression(tonic, state.modeId, state.progId);
+    const { chords } = M.buildProgression(tonic, pickingModeId(context), state.progId);
     const index = Math.min(state.progStep, chords.length - 1);
     const current = chords[index];
     const next = chords[(index + 1) % chords.length];
@@ -3267,8 +3260,8 @@
     // Home phrase ending ON the pivot (= next band key's tonic), then the
     // destination's lower chunk launched from that pitch.
     const cycle = PK.BAND_KEY_CYCLE;
-    const fromIndex = Math.max(0, cycle.findIndex((stage) =>
-      stage.tonic === context.tonic.charAt(0) || stage.tonic === context.tonic));
+    const quality = ["minor", "harmonicMinor", "ousak"].includes(pickingModeId(context)) ? "minor" : "major";
+    const fromIndex = Math.max(0, cycle.findIndex((stage) => stage.tonic === context.tonic && stage.quality === quality));
     const to = cycle[(fromIndex + 1) % cycle.length];
     const toModeId = bandStageModeId(to.quality);
     const pivotPc = PK.bandPivotPc(fromIndex);
@@ -3352,9 +3345,9 @@
     const run = M.descendingRun(context.tonic, pickingModeId(context));
     const nodes = [];
     let anchor = null;
-    run.forEach((tone, index) => {
+    const scale = M.scaleOf(context.tonic, pickingModeId(context));
+    run.forEach((tone) => {
       const pc = ((tone.midi % 12) + 12) % 12;
-      const scale = M.scaleOf(context.tonic, pickingModeId(context));
       const note = scale.find((entry) => entry.pc === pc) || { pc, name: "·", degree: "·" };
       const placement = nearestPickingPlacement(note, anchor, context.position);
       if (placement) { const n = pickingNode(placement, note); nodes.push(n); anchor = n; }
@@ -3472,7 +3465,7 @@
       pool = path ? path.nodes.map((node) => Object.assign({}, node)) : [];
     }
     // The library rotates (two-way) or trims (one-way) to the start degree.
-    wb.startIndex = Math.max(0, pool.findIndex((node) => node.note && node.note.pc === startNote.pc));
+    pool.startIndex = Math.max(0, pool.findIndex((node) => node.note && node.note.pc === startNote.pc));
     return pool;
   }
 
@@ -3510,7 +3503,12 @@
   function pickingCrossingCellNodes(context) {
     // A two-course cell from the in-position box road: up to three notes on
     // one course, up to two on the course above it - the flip material.
-    const road = pickingScalePathNodes(Object.assign({}, context), 12);
+    // Always the in-position box road: an along-the-string route has one
+    // course and left this drill with nothing to play.
+    const box = P.buildPath(context.tonic, pickingModeId(context), {
+      layout: "box", position: context.position, startDegree: 1, startString: 0, firstStroke: state.picking.firstStroke, updown: false
+    });
+    const road = box ? box.nodes.slice(0, 12) : [];
     const byCourse = {};
     road.forEach((node) => { (byCourse[node.stringIndex] = byCourse[node.stringIndex] || []).push(node); });
     const courses = Object.keys(byCourse).map(Number).sort((a, b) => a - b);
@@ -3779,7 +3777,8 @@
       state.picking.subdivision = pattern.stepsPerUnit;
     }
     let nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke, state.picking.variant,
-      state.picking.subdivision, compMode ? Object.assign({ rhythm: state.groove.styleId }, state.picking.comp) : state.picking.workbench);
+      state.picking.subdivision, compMode ? Object.assign({ rhythm: state.groove.styleId }, state.picking.comp)
+        : Object.assign({}, state.picking.workbench, { startIndex: base.nodes.startIndex || 0 }));
     if (compMode) {
       // Each event remembers its bar's grip so the board can show the shape.
       let barIndex = -1;
@@ -3895,6 +3894,14 @@
     }
     state.picking.pathIndex = null;
     state.picking.cleanPasses = 0;
+    // Ceilings belong to one drill: clear the last drill's, then restore this
+    // drill's if it was banked today.
+    state.picking.rungHistory = [];
+    state.picking.ceilingBpm = null;
+    try {
+      const banked = JSON.parse(localStorage.getItem("dromos-picking-ceilings") || "{}")[`${exercise.id}:${state.picking.variant}`];
+      if (banked && banked.date === todayStamp()) state.picking.ceilingBpm = banked.bpm;
+    } catch (error) { /* storage unavailable */ }
     renderPickingLab();
     renderPageGuide();
   }
@@ -4114,7 +4121,7 @@
     // The board reads as intervals; the tiles below carry note names and tab.
     // Each dot: interval inside, stroke above, suggested finger below, and a
     // ring colour for its chunk of the dromos (lower/upper tetrachord road).
-    const roadMap = M.tetrachordsOf(session.context.tonic, state.modeId);
+    const roadMap = M.tetrachordsOf(session.context.tonic, pickingModeId(session.context));
     const lowerRoadPcs = new Set(roadMap.lower.map((note) => note.pc));
     const tonicRoadPc = roadMap.scale[0].pc;
     // Finger base is PER SEGMENT: a position shift moves the whole hand, so
@@ -4204,7 +4211,7 @@
     const fingerChip = hasFingerNumbers ? `<span><b>1–4</b> finger · <b>0</b> open · <b>⇧</b> stretch</span>` : "";
     const roadChips = hasRoadDots ? `<span class="road-key lower"><b>●</b> lower chunk</span><span class="road-key upper"><b>●</b> upper chunk</span><span class="road-key tonic"><b>●</b> tonic</span>` : "";
     const startLabel = state.picking.playing
-      ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.repeats}`)
+      ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.runLength || state.picking.repeats}`)
       : "▶ Start";
     $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · stage ${mastery.step} · ${escapeHtml(mastery.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.id === "phrase-workbench" ? PK.workbenchLabel(state.picking.workbench) : exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i></div></header>
       <div class="picking-motion ${currentIndex == null ? "is-ready" : "is-playing"}" data-motion="${escapeHtml(motion.direction)}" aria-live="polite">
@@ -4217,7 +4224,7 @@
       <div class="picking-stroke-key">${strokeKeyChips}${fingerChip}${roadChips}<em>Tap an event to hear it and see the motion.</em></div>
       <div class="picking-event-rail" style="--picking-events:${Math.min(8, Math.max(4, railEnd - railStart))}">${rail}</div>${railCount}
       <div class="picking-this-pass"><span>This pass</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol><p><b>Listen for:</b> ${escapeHtml(exercise.listen)}</p><p><b>Pass when:</b> ${escapeHtml(exercise.pass)}</p></div>
-      <details class="picking-evidence"><summary>Theory · ${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>Theory inside the motion</span><p class="picking-evidence-wide"><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[state.modeId].name)}.</b> ${escapeHtml(exercise.theory)} <i>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</i></p><span>Fingering &amp; layout</span><p class="picking-evidence-wide"><b>1–4</b> is the one-finger-per-fret window (the modern, method-book layout); <b>0</b> is open; <b>⇧</b> is a stretch or small shift, your call. Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen).</p><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
+      <details class="picking-evidence"><summary>Theory · ${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>Theory inside the motion</span><p class="picking-evidence-wide"><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[pickingModeId(session.context)].name)}.</b> ${escapeHtml(exercise.theory)} <i>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</i></p><span>Fingering &amp; layout</span><p class="picking-evidence-wide"><b>1–4</b> is the one-finger-per-fret window (the modern, method-book layout); <b>0</b> is open; <b>⇧</b> is a stretch or small shift, your call. Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen).</p><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
     const motionStart = $("btnPickingMotionStart");
     if (motionStart) motionStart.onclick = () => {
       if (state.picking.playing) { stopPlay(); renderPickingLab(); return; }
@@ -4252,8 +4259,11 @@
       stopPlay(); state.picking.variant = button.getAttribute("data-picking-variant"); state.picking.cleanPasses = 0; renderPickingLab();
     });
     $("btnPickingStroke").textContent = `Start · ${state.picking.firstStroke === "down" ? "↓ downstroke" : "↑ upstroke"}`;
+    $("btnPickingStroke").parentElement.classList.toggle("hidden", exercise.sequence === "comp");
+    const gridSeg = document.querySelector(".picking-transport .transport-sub");
+    if (gridSeg) gridSeg.classList.toggle("hidden", exercise.sequence === "comp");
     $("btnPickingPlay").textContent = state.picking.playing
-      ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.repeats}`)
+      ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.runLength || state.picking.repeats}`)
       : "▶ Start";
     $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3);
     const band = S.byId(state.groove.styleId).tempoBand;
@@ -4369,6 +4379,7 @@
     if (!await readyPracticeAudio(pickingReferenceVoice())) return;
     const plan = pickingRunPlan();
     if (!plan.length) return;
+    state.picking.runLength = plan.length;
     const token = ++pickingRunToken;
     state.picking.playing = true;
     state.picking.runIndex = 0;
@@ -4409,7 +4420,7 @@
         try {
           const store = JSON.parse(localStorage.getItem("dromos-picking-ceilings") || "{}");
           store[`${state.picking.exerciseId}:${state.picking.variant}`] =
-            { bpm: state.picking.ceilingBpm, date: new Date().toISOString().slice(0, 10) };
+            { bpm: state.picking.ceilingBpm, date: todayStamp() };
           localStorage.setItem("dromos-picking-ceilings", JSON.stringify(store));
         } catch { /* private mode */ }
       }
@@ -5676,7 +5687,10 @@
   // ======================= shared chord readout ==========================
   // ============================ TODAY VIEW ===============================
   const TODAY_LOG_KEY = "dromos-today-visits";
-  function todayStamp() { return new Date().toISOString().slice(0, 10); }
+  function todayStamp() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }
   function todayVisits() {
     try {
       const raw = JSON.parse(localStorage.getItem(TODAY_LOG_KEY) || "{}");
@@ -5910,7 +5924,7 @@
       pb = { kind: "comping", chords, len: chords.length, pos: state.cycleComping.step, barsLeft: 0, started: false };
     } else if (state.view === "cycle") {
       const seq = gymSequence(state.index);
-      pb = { kind: "cycle", seq, route: cycleTriadPath(), pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
+      pb = { kind: "cycle", seq, pos: Math.max(0, seq.indexOf(state.index)), barsLeft: 0, started: false };
     } else if (state.view === "triads") {
       const { chords } = currentProgression();
       pb = { kind: "triads", len: chords.length, pos: state.triads.step, barsLeft: 0, started: false };
@@ -6013,7 +6027,6 @@
   function stopPlay() {
     playbackStartRequest++; melodyPlaybackRequest++; tacticalPlaybackRequest++; playbackLoading = false;
     pickingRunToken++;
-    if (pickingRunTimer) { clearTimeout(pickingRunTimer); pickingRunTimer = null; }
     state.picking.playing = false; state.picking.pathIndex = null; state.picking.runIndex = null; state.picking.activeSegment = null;
     AU.stopAll(); setPlayingUI(false);
   }
@@ -6487,12 +6500,12 @@
     };
 
     $("tglLabel").onchange = (e) => { state.labelMode = e.target.checked ? "note" : "interval"; persistPreferences(); rerender(); };
-    $("tglGhost").onchange = (e) => { state.ghosts = e.target.checked; rerender(); };
+    $("tglGhost").onchange = (e) => { state.ghosts = e.target.checked; persistPreferences(); rerender(); };
     $("tglLefty").onchange = (e) => { state.lefty = e.target.checked; persistPreferences(); rerender(); };
-    $("tglScale").onchange = (e) => { state.scaleOverlay = e.target.checked; rerender(); };
-    $("tglMetro").onchange = (e) => { state.metronome = e.target.checked; AU.setMetronome(state.metronome); };
+    $("tglScale").onchange = (e) => { state.scaleOverlay = e.target.checked; persistPreferences(); rerender(); };
+    $("tglMetro").onchange = (e) => { state.metronome = e.target.checked; AU.setMetronome(state.metronome); persistPreferences(); };
     $("tglLoop").onchange = (e) => { state.loop = e.target.checked; persistPreferences(); rerender(); };
-    $("tglHoldI").onchange = (e) => { state.holdI = e.target.checked; };
+    $("tglHoldI").onchange = (e) => { state.holdI = e.target.checked; persistPreferences(); };
 
     $("bpm").oninput = (e) => {
       state.bpm = +e.target.value; $("bpmVal").textContent = state.bpm; AU.setBpm(state.bpm); persistPreferences();
@@ -6723,7 +6736,9 @@
     wire();
     syncPersistentControls();
     renderPlayerProfiles(false);
-    showTestBadge();
+    // 25 self-test suites take ~400 ms; run them when the browser is idle so
+    // they never delay the first screen (npm test runs them on every change).
+    (window.requestIdleCallback || ((fn) => window.setTimeout(fn, 300)))(() => showTestBadge());
     showReleaseIdentity();
     updateAudioReadyStatus(AU.audioStatus());
     $("bpm").value = state.bpm; $("bpmVal").textContent = state.bpm;

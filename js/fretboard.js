@@ -504,7 +504,7 @@
     }
 
     if (opts.ghosts && opts.allPositions) {
-      const active = new Set(opts.grip.placements.map((p) => p.stringIndex + ":" + p.fret));
+      const active = new Set((opts.grip ? opts.grip.placements : []).map((p) => p.stringIndex + ":" + p.fret));
       opts.allPositions.forEach((p) => {
         if (active.has(p.stringIndex + ":" + p.fret)) return;
         g.appendChild(dot(p, "ghost"));
