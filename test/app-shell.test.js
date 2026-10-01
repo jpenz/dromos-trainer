@@ -551,6 +551,26 @@ test("rhythm comp strums real chords on every instrument", () => {
   assert.match(app, /state\.picking\.subdivision = pattern\.stepsPerUnit;/, "the comp pattern sets the subdivision");
 });
 
+test("audit regressions stay fixed: landing, saved toggles, local dates, band hops, crossing flip", () => {
+  const app = read("js/app.js");
+  const profiles = read("js/profiles.js");
+  // Today stays the landing: one restorable-view list, owned by profiles.js.
+  assert.doesNotMatch(app, /PERSISTED_VIEWS/, "a second, drifting view list must not return");
+  assert.match(app, /PP\.VIEWS\.includes\(state\.view\) \? state\.view : "today"/, "unknown views fall back to Today");
+  assert.match(profiles, /"examples", "songs"/, "songs and examples are restorable views");
+  // The four drawer toggles restore, not just save.
+  ["ghosts", "scaleOverlay", "metronome", "holdI"].forEach((key) =>
+    assert.match(app, new RegExp(`if \\(typeof preferences\\.${key} === "boolean"\\) state\\.${key} = preferences\\.${key};`), `${key} must be restored`));
+  // Local calendar day, not UTC: evening practice in the Americas is still today.
+  assert.doesNotMatch(app, /toISOString\(\)\.slice\(0, 10\)/, "dates for the player must be local");
+  // Band-key pivot matches tonic AND quality (Dm is not D major).
+  assert.match(app, /stage\.tonic === context\.tonic && stage\.quality === quality/, "pivot hop must match quality");
+  // Crossing flip always builds from the in-position box.
+  assert.match(app, /function pickingCrossingCellNodes\(context\) \{[\s\S]{0,400}layout: "box"/, "crossing flip needs two courses");
+  // Self-tests never block first paint.
+  assert.match(app, /requestIdleCallback \|\| \(\(fn\) => window\.setTimeout\(fn, 300\)\)\)\(\(\) => showTestBadge\(\)\)/, "badge runs when idle");
+});
+
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
   const app = read("js/app.js");
   const toolkit = read("js/toolkit.js");

@@ -1311,7 +1311,7 @@
       };
       pushBlock(cellA, small ? "cell A · 1+1" : "cell A · 3+1");
       pushBlock(cellB, small ? "cell B · one note added" : "cell B · one note removed");
-      pushBlock(cellA, small ? "cell A again" : "cell A again");
+      pushBlock(cellA, "cell A again");
       pushBlock(cellB, small ? "cell B again" : "cell B again");
       return alternate(nodes, (index) => !!nodes[index].blockStart, firstStroke);
     }
