@@ -445,9 +445,9 @@
     }
   ];
 
-  // Nine categories in practical order (FR-78): stroke, pulse, sync,
-  // crossing, speed, tremolo, chords, fretboard, phrasing. Each drill sits
-  // in exactly one; the Guided plan walks them top to bottom.
+  // Ten categories in practical order (FR-79): stroke, pulse, sync, scales,
+  // crossing, arpeggios, speed, tremolo, comp, phrasing. Each drill sits in
+  // exactly one; the Guided plan walks them top to bottom.
   const MASTERY_PHASES = [
     {
       id: "setup", step: 1, label: "Setup and stroke", short: "loose grip, even down-up",
@@ -468,37 +468,43 @@
       exerciseIds: ["finger-pair-chromatic", "picked-dromos-line", "sync-cells", "seam-loop"]
     },
     {
-      id: "crossing", step: 4, label: "String crossing", short: "the clock survives the course change",
-      answer: "Course changes are the hardest part of alternate picking. Keep the clock through inside, outside and mixed crossings in both directions, and choose each phrase's crossing solution by its clean tempo.",
-      gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recording.",
-      exerciseIds: ["course-target", "traversal-countdown", "outside-pairs", "crossing-flip-stops", "mixed-crossings", "crossing-bakeoff", "degree-window", "skip-thirds"]
+      id: "scales", step: 4, label: "Scales up the neck", short: "the dromos everywhere, with the hand moves",
+      answer: "Know each dromos two ways: along one course with its hand moves, and across the courses in boxes that connect. Then break the line into windows and thirds, and use the notes below the tonic.",
+      gate: "Self-scored: each of the five dromoi along the melody course and through three connected positions, with no audible gap at any hand move.",
+      exerciseIds: ["dromos-one-course", "position-snake", "full-neck-ladder", "degree-window", "skip-thirds", "below-the-tonic"]
     },
     {
-      id: "speed", step: 5, label: "Speed and glide", short: "speed under the blur rule",
-      answer: "Speed comes only after time, sync and crossing: a fixed-click density ladder, glide economy, bursts on known ground, then work at the edge, always stopping when notes start to smear.",
+      id: "crossing", step: 5, label: "String crossing", short: "the clock survives the course change",
+      answer: "Course changes are the hardest part of alternate picking. Keep the clock through inside, outside and mixed crossings in both directions, and choose each phrase's crossing solution by its clean tempo.",
+      gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recording.",
+      exerciseIds: ["course-target", "traversal-countdown", "outside-pairs", "crossing-flip-stops", "mixed-crossings", "crossing-bakeoff"]
+    },
+    {
+      id: "arpeggios", step: 6, label: "Triads and four-note arpeggios", short: "the chords inside the dromos",
+      answer: "Every degree of the dromos carries a chord. Play the triads and the four-note arpeggios in order up the neck, then one chord through its inversions, then the chords of a progression with each change landing on time.",
+      gate: "Self-scored: triads and four-note arpeggios up and back in each of the five dromoi, naming every chord, and the arpeggio circuit through the band keys at one steady tempo.",
+      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
+    },
+    {
+      id: "speed", step: 7, label: "Speed and glide", short: "speed under the blur rule",
+      answer: "Speed comes only after time, sync, scales and crossing: a fixed-click density ladder, glide economy, bursts on known ground, then work at the edge, always stopping when notes start to smear.",
       gate: "Self-scored: a banked ceiling that holds three clean passes, and no tempo raised on a day the notes blur.",
       exerciseIds: ["mair-density-ladder", "triplet-drive", "triplet-grammar", "sextolet-glide", "spot-run-sprint", "double-pick-edge"]
     },
     {
-      id: "tremolo", step: 6, label: "Tremolo and dynamics", short: "tremolo is a choice",
+      id: "tremolo", step: 8, label: "Tremolo and dynamics", short: "tremolo is a choice",
       answer: "Even, counted alternate strokes first; then tremolo bursts, counted groupings, clean entries and exits, and tremolo on two courses with volume control.",
       gate: "Self-scored: a recorded tremolo entry shows no hiccup, its exit lands with the click, and the 3rds tremolo stays even on both courses.",
       exerciseIds: ["tremolo-ladder", "counted-tremolo-groupings", "tremolo-entry-exit", "double-stop-tremolo-thirds"]
     },
     {
-      id: "chords", step: 7, label: "Chords, comp and arpeggios", short: "the right hand keeps the dance",
-      answer: "Rhythm comp can start in week 2; the rest needs secure crossing. Bass, strum and chop patterns, rolls on the meter, triad arpeggios through the progression, then the band key cycle.",
-      gate: "Self-scored: three loops of the progression with every chord change on the downbeat, and the arpeggio circuit through the band key cycle at one steady tempo.",
-      exerciseIds: ["rhythm-comp", "meter-roll", "arpeggio-arrival", "arp-chunks", "triad-ladder", "band-key-arpeggio-circuit"]
+      id: "comp", step: 9, label: "Rhythm comp and tone", short: "the right hand keeps the dance",
+      answer: "Bass, strum and chop patterns for each Greek rhythm, then the same phrase in different places and registers so the sound is a choice too.",
+      gate: "Self-scored: three loops of the progression with every chord change on the downbeat, and one phrase played in two registers that sound deliberately different.",
+      exerciseIds: ["rhythm-comp", "tactile-ab", "timbre-echo", "era-register-contrast"]
     },
     {
-      id: "fretboard", step: 8, label: "Fretboard and register", short: "the same phrase, more places",
-      answer: "Once the hands are reliable, put the same phrase in more places and more sounds: the whole neck, along versus across the strings, timbre echoes, below the tonic, and era register.",
-      gate: "Self-scored: one phrase played in three places on the neck, and 8 bars in each zone around the tonic without a forbidden note.",
-      exerciseIds: ["full-neck-ladder", "tactile-ab", "timbre-echo", "below-the-tonic", "era-register-contrast"]
-    },
-    {
-      id: "phrasing", step: 9, label: "Phrasing, ornaments and key moves", short: "vocabulary under pressure",
+      id: "phrasing", step: 10, label: "Phrasing, ornaments and key moves", short: "vocabulary under pressure",
       answer: "The payoff layer: left-hand legato, ornaments, phrase cells, skeleton and fill, the Hiotis close, sequences, chunks and pivots through the band keys, instant transposition, and the open workbench.",
       gate: "Self-scored exam in one sitting: a sequence ladder that keeps its rhythm, one instant transpose landed first time, and three clean pickup closes.",
       exerciseIds: ["pick-legato", "irish-treble", "mode-phrase-cell", "skeleton-then-fill", "pickup-close", "skeleton-descent", "sequence-ladder", "chunk-builder", "ghammaz-pivot", "instant-transpose", "phrase-workbench"]

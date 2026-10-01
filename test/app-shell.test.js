@@ -382,8 +382,8 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "loop mode goes to the audio engine, not a setTimeout restart");
   assert.doesNotMatch(app, /setTimeout\(\(\) => playPickingStage/,
     "no JS-timer restarts between picking repeats");
-  assert.match(app, /neckMode: "full",\n\s*flavourPcs: M\.flavourPcs\(state\.tonic, state\.modeId\)\n\s*\}\);\n\s*svg\(\)\.setAttribute\("aria-label", `\$\{window\.Tuning\.current\(\)\.name\} \$\{exercise\.title\} picking path`\);/,
-    "the picking board is one unbroken neck");
+  assert.match(app, /\} else PV\.renderNeck\(svg\(\), Object\.assign\(\{\}, pickingView\.view, \{ index: currentIndex \}\)\);/,
+    "the picking board is one zoomed neck that covers the whole line");
   assert.match(app, /const ROUTE_LOCKED = \{ "outside-pairs": true, "mixed-crossings": true, "triplet-grammar": true, "sextolet-glide": true, "full-neck-ladder": true \};/,
     "the route toggle applies everywhere except drills whose mechanics fix a layout");
   assert.match(app, /if \(state\.picking\.playing\) \{ stopPlay\(\); renderPickingLab\(\); return; \}/,
@@ -399,7 +399,7 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "evolve\/stage\/voice options fold away from the first-time player");
   // Setup is four dropdowns, with the exercise select grouped by mastery stage.
   assert.match(app, /\$\("pickingExerciseSel"\)\.innerHTML = BK\.MASTERY_PHASES\.map/,
-    "the exercise dropdown is built from the nine-category plan, not a card rail");
+    "the exercise dropdown is built from the category plan, not a card rail");
   assert.doesNotMatch(html, /pickingExerciseRail|pickingCategories|data-picking-mode/,
     "the card rail, category nav, and mode seg are gone — dropdowns replaced them");
   // Placement ergonomics: cross-course jumps are cost-gated and chunks come
@@ -408,13 +408,11 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "multi-course jumps must be heavily penalised in placement scoring");
   assert.match(app, /function pickingChunkNodes\(context\) \{[\s\S]{0,1200}pickingScalePathNodes\(context, 8\)/,
     "chunk-builder routes through the position-true path builder");
-  // Board reads as intervals with stroke above, finger below, chunk ring.
-  assert.match(app, /labelMode: "degree", lefty: state\.lefty, showStrokes: true, largeNeck: true,/,
-    "the picking board shows intervals; note names live in the event tiles");
-  assert.match(read("js/fretboard.js"), /class: "finger-mark"/,
-    "suggested finger renders under each path dot");
-  assert.match(read("js/fretboard.js"), /\(n\.road \? " road-" \+ n\.road : ""\)/,
-    "tetrachord road colouring rides the dot classes");
+  // The neck shows the FINGER in every dot and the hand's four-fret box;
+  // degrees and note names live in the strip under it.
+  assert.match(read("js/picking-view.js"), /function drawHand\(pv, base, next, current\)/, "the neck draws where the hand sits and where it moves next");
+  assert.match(app, /fingers: PK\.assignFingers\(PK\.markShapes\(session\.nodes\)\),/, "every picking session is fingered by one rule");
+  assert.match(read("js/picking-lab.js"), /function assignFingers\(events\)/, "the fingering rule lives in the tested library");
   // Timing grammar: a drill that declares its own subdivision must win on
   // selection, and an evolve run must return the lab to where it started.
   assert.match(app, /: exercise\.subdivision \|\| state\.picking\.userSubdivision \|\| 2;/,
@@ -423,13 +421,16 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "an evolve run records home before it travels");
   assert.match(app, /state\.lab\.position = state\.picking\.runHome\.position;/,
     "an evolve run restores home when it finishes");
-  // Finger honesty: past the four-fret window the mark is a stretch flag,
-  // never a fabricated finger number — and a traveling line (segment wider
-  // than a hand) shows no numbers at all.
-  assert.match(app, /: "⇧",/,
-    "out-of-window notes must show the stretch flag, not finger 4 again");
-  assert.match(app, /return span > 5 \? null : Math\.min\.apply\(null, fretted\);/,
-    "segments wider than a hand must suppress finger numbers entirely");
+  // Finger clarity (James, 2026-10-01): every fretted note shows a finger.
+  // A traveling line gets hand moves, not blank numbers; a note one fret
+  // outside the four-fret box is flagged as a stretch; anything further is
+  // a hand move. The rule is the library's and is labelled a suggestion.
+  assert.match(read("js/picking-lab.js"), /slot\.stretch = item\.fret > 0 && \(item\.fret === base - 1 \|\| item\.fret === base \+ 4\);/,
+    "a note one fret outside the hand box is flagged as a stretch");
+  assert.match(read("js/picking-lab.js"), /slot\.shift = k > 0 && bases\[k - 1\] !== base;/,
+    "a change of hand position is marked as a hand move");
+  assert.match(app, /it is not copied from a method/,
+    "the fingering is labelled as the app's own suggestion");
   assert.match(app, /const startString = layout === "horizontal" \? window\.Tuning\.open\(\)\.length - 1 : state\.lab\.startString;/,
     "along-the-string lines live on the top course, where melody lives");
   assert.match(html, /id="pickingPositionSel"/,
@@ -496,9 +497,17 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
   assert.doesNotMatch(app, /onStep: \(index\) => \{\n\s*if \(token === pickingRunToken && state\.view === "picking"\) \{\n\s*state\.picking\.pathIndex = index;\n[^}]*renderPickingLab\(\);/,
     "onStep must not rebuild the whole Picking Lab");
   assert.match(read("js/fretboard.js"), /function setPathIndex\(svg, index\)/, "the board moves its playhead without a rebuild");
+  assert.match(app, /PV\.setNeckIndex\(svg\(\), index\);\n    \}\n    PV\.updateTab\(/, "per note, the picking neck redraws only its live layer and the strip toggles classes");
+  assert.match(html, /id="pickingScore"/, "the now-and-next strip sits directly under the neck");
+  // Neck travel: a position-bound loop tours neighbouring hand positions.
+  assert.match(app, /travel: true,/, "drills travel the neck by default");
+  assert.match(app, /const stops = pickingTourStops\(first\.context, first\.nodes\.length > 40\);/, "a looping drill is rebuilt at each tour stop");
+  assert.match(app, /if \(!passes\.some\(\(pass\) => pass\.nodes\.length && signature\(pass\.nodes\) !== home\)\) return first;/,
+    "a drill that does not follow the position (open courses, fixed routes) is left alone");
+  assert.match(html, /data-picking-travel="off">Stay in one position</, "the player can switch travel off");
   assert.match(css, /:focus-visible \{ outline: 2px solid var\(--turquoise\); outline-offset: 2px;/,
     "one focus ring everywhere");
-  assert.match(css, /@starting-style \{\n  \.roadmap-chord, \.today-card, \.picking-event \{ opacity: 0;/,
+  assert.match(css, /@starting-style \{\n  \.roadmap-chord, \.today-card, \.ptab-bar \{ opacity: 0;/,
     "re-rendered collections enter, they do not pop");
   assert.match(read("js/fretboard.js"), /gg\.style\.animationDelay = /,
     "fretboard dots cascade in");
@@ -536,7 +545,7 @@ test("picking loops obey the loop law and the workbench is wired in", () => {
   // A drill without its own grid returns to the player's grid.
   assert.match(app, /state\.picking\.userSubdivision = state\.picking\.subdivision/, "the player's own grid is remembered");
   // Long lines render as a moving window, not a wall of tiles.
-  assert.match(app, /const RAIL_WINDOW = 16;/, "the event rail is a window that follows the playhead");
+  assert.match(read("js/picking-view.js"), /function tabBars\(time, index\)/, "the strip is a window of bars that follows the playhead");
 });
 
 test("rhythm comp strums real chords on every instrument", () => {

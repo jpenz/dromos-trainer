@@ -10,14 +10,14 @@ const source = (file) => readFileSync(path.join(root, file), "utf8");
 
 function loadCore() {
   const context = vm.createContext({ console, window: {} });
-  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/bouzouki-knowledge.js", "js/picking-lab.js", "js/toolkit.js", "js/songs.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
+  ["js/tuning.js", "js/profiles.js", "js/theory.js", "js/harmony-journey.js", "js/modes.js", "js/chord-map.js", "js/chord-path.js", "js/melody-harmony.js", "js/pitch-lab.js", "js/ear-drills.js", "js/styles.js", "js/analysis.js", "js/studies.js", "js/musicxml.js", "js/resources.js", "js/video.js", "js/coach.js", "js/practice.js", "js/bouzouki-knowledge.js", "js/picking-lab.js", "js/picking-view.js", "js/toolkit.js", "js/songs.js", "js/tactical-examples.js", "js/triads.js", "js/fretboard.js", "js/guitar-voicings.js", "js/audio.js", "js/page-guides.js"]
     .forEach((file) => vm.runInContext(source(file), context, { filename: file }));
   return context.window;
 }
 
 test("music invariants pass outside the browser", () => {
   const app = loadCore();
-  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.BouzoukiKnowledge.selfTest(), app.PickingLab.selfTest(), app.SoloToolkit.selfTest(), app.SongLibrary.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
+  const suites = [app.Theory.selfTest(), app.HarmonyJourney.selfTest(), app.PlayerProfiles.selfTest(), app.Modes.selfTest(), app.ChordMap.selfTest(), app.ChordPath.selfTest(), app.MelodyHarmony.selfTest(), app.PitchLab.selfTest(), app.EarDrills.selfTest(), app.StyleLibrary.selfTest(), app.AnalysisEngine.selfTest(), app.StudyLibrary.selfTest(), app.MusicXmlImport.selfTest(), app.ResourceLibrary.selfTest(), app.VideoStudy.selfTest(), app.PracticeCoach.selfTest(), app.Practice.selfTest(), app.BouzoukiKnowledge.selfTest(), app.PickingLab.selfTest(), app.PickingView.selfTest(), app.SoloToolkit.selfTest(), app.SongLibrary.selfTest(), app.TacticalExamples.selfTest(), app.Triads.selfTest(), app.GuitarVoicings.selfTest(), app.AudioEngine.selfTest(), app.PageGuides.selfTest()];
   const failures = suites.flatMap((suite) => suite.results.filter((result) => !result.pass));
   assert.equal(failures.length, 0, JSON.stringify(failures, null, 2));
 });
@@ -35,10 +35,10 @@ test("authorised study starters and referenced methods remain clearly bounded", 
 
 test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority separate", () => {
   const { BouzoukiKnowledge, PickingLab } = loadCore();
-  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 9, "nine categories in practical order, stroke first, phrasing last");
+  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 10, "ten categories in practical order, stroke first, phrasing last");
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.map((phase) => phase.id).join(" "),
-    "setup pulse sync crossing speed tremolo chords fretboard phrasing", "practical order: stroke first, phrasing last");
-  assert.equal(PickingLab.EXERCISES.length, 56, "43 + 13 video-sourced drills");
+    "setup pulse sync scales crossing arpeggios speed tremolo comp phrasing", "practical order: stroke first, phrasing last");
+  assert.equal(PickingLab.EXERCISES.length, 60, "43 + 13 video-sourced drills + 4 traveling studies");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -98,6 +98,11 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
       return [0, 1, 2].map((index) => ({ lower: notes[index], upper: notes[index + 2], label: "1-3" }));
     }
     if (exercise.sequence === "equator") return Object.assign(flagged(), { tonicIndex: 6 });
+    if (exercise.sequence === "courseLine") return Object.assign(flagged(), { tonicIndex: 3 });
+    if (exercise.sequence === "diatonic") {
+      const notes = flagged();
+      return [0, 1, 2, 3].map((index) => ({ symbol: "X", numeral: "I", tones: notes.slice(index, index + exercise.chordSize) }));
+    }
     if (exercise.sequence === "crossBakeoff") return flagged((i) => ({ cell: i < 3 ? "lower" : "upper" })).slice(0, 5);
     if (exercise.sequence === "triadLadder") return flagged((i) => ({ inversionStart: i % 3 === 0, inversionLabel: "root position" }));
     if (exercise.sequence === "arpChunks") return flagged((i) => ({ chordStart: i % 4 === 0, chordSymbol: "X", octaveTop: i % 4 === 3 }));
@@ -120,7 +125,7 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
   // All-course coverage is a real requirement, not a vibe.
   assert.ok(PickingLab.EXERCISES.filter((exercise) => exercise.allStrings).length >= 3,
     "at least three exercises must force coverage of every course");
-  // Nine categories, every exercise placed exactly once.
+  // Ten categories, every exercise placed exactly once.
   const placed = BouzoukiKnowledge.MASTERY_PHASES.flatMap((phase) => phase.exerciseIds);
   assert.equal(new Set(placed).size, placed.length, "no exercise may sit in two stages");
   assert.equal(placed.length, PickingLab.EXERCISES.length, "every exercise must sit in exactly one stage");
@@ -922,4 +927,44 @@ test("video-sourced drills keep their documented stroke grammar inside the Greek
   const pairs = PickingLab.buildSequence("finger-pair-chromatic", course, map("hasapiko"), "down", "13", 2, {});
   assert.equal(pairs.slice(0, 4).map((event) => event.fret).join(","), "1,3,2,4");
   assert.ok(pairs.every((event) => event.stringIndex === 3));
+});
+
+test("traveling studies close on themselves and every fretted note gets a finger", () => {
+  const { PickingLab } = loadCore();
+  const pulse = [{ beat: 1, group: 1, first: true }, { beat: 2, group: 1, first: false }, { beat: 3, group: 2, first: true }, { beat: 4, group: 2, first: false }];
+  // Dromos along one course: tonic up to the top, down to the bottom, home.
+  const course = Object.assign([0, 2, 4, 5, 7, 9, 11, 12].map((fret) => ({ stringIndex: 3, fret, midi: 62 + fret, note: { degree: "1" } })), { tonicIndex: 0 });
+  const line = PickingLab.buildSequence("dromos-one-course", course, pulse, "down", "top", 2, {});
+  assert.equal(line.map((event) => event.fret).join(","), "0,2,4,5,7,9,11,12,11,9,7,5,4,2", "up to the top and back, without doubling the tonic at the loop seam");
+  const centred = Object.assign(course.slice(), { tonicIndex: 3 });
+  const around = PickingLab.buildSequence("dromos-one-course", centred, pulse, "down", "top", 2, {}).map((event) => event.fret);
+  assert.equal(around[0], 5, "the line starts on the tonic wherever it sits on the course");
+  assert.equal(Math.abs(around[around.length - 1] - around[0]) <= 2, true, "the loop seam is a step");
+  assert.equal(new Set(around).size, 8, "every note of the course is visited");
+  // Triads of the dromos: up each chord on the way up, down each on the way back.
+  const tone = (stringIndex, fret) => ({ stringIndex, fret, midi: 48 + stringIndex * 5 + fret, note: {} });
+  const chords = [[2, 1, 0], [4, 2, 2], [6, 4, 4], [7, 6, 5]].map((frets, index) => ({ symbol: "C" + index, numeral: "I", tones: frets.map((fret, s) => tone(s, fret)) }));
+  const triads = PickingLab.buildSequence("diatonic-triads", chords, pulse, "down", "up", 3, {});
+  assert.equal(triads.length, 18, "four chords up, two back: the loop restarts on the first chord");
+  assert.equal(triads.slice(0, 3).map((event) => event.fret).join(","), "2,1,0");
+  assert.equal(triads.slice(12, 15).map((event) => event.fret).join(","), "4,4,6", "the way back plays each chord downward");
+  assert.equal(triads.filter((event) => event.chordStart).map((event) => event.chordSymbol).join(" "), "C0 C1 C2 C3 C2 C1");
+  const alternate = PickingLab.buildSequence("diatonic-triads", chords, pulse, "down", "alternate", 3, {});
+  assert.equal(alternate.slice(3, 6).map((event) => event.fret).join(","), "2,2,4", "up one, down the next");
+  // Fingering over the whole line: a finger on every fretted note, never
+  // more than one fret outside the hand, and a marked move between shapes.
+  const fingers = PickingLab.assignFingers(PickingLab.markShapes(triads));
+  triads.forEach((event, index) => {
+    const slot = fingers[index];
+    if (event.fret === 0) { assert.equal(slot.finger, 0); return; }
+    assert.ok(slot.finger >= 1 && slot.finger <= 4, `event ${index} has a finger`);
+    assert.ok(event.fret >= slot.base - 1 && event.fret <= slot.base + 4, `event ${index} is inside the hand's reach`);
+  });
+  assert.ok(fingers.filter((slot) => slot.shift).length >= 3, "the hand moves between chord shapes");
+  const long = PickingLab.assignFingers([1, 3, 5, 6, 8, 10, 12, 13, 15].map((fret) => ({ stringIndex: 0, fret })));
+  assert.ok(long.every((slot) => slot.finger >= 1), "a line that travels 14 frets is fingered end to end");
+  // Bars for the strip.
+  const time = PickingLab.timeline(triads, 3, 4);
+  assert.equal(time.barSlots, 12);
+  assert.equal(time.starts[12].bar, 1, "the thirteenth triplet opens the second bar");
 });

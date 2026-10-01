@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=78" />
+  <link rel="stylesheet" href="css/styles.css?v=79" />
 </head>
 <body>
   <div class="app">
@@ -165,7 +165,7 @@
                 <label for="wbPosition">Neck position<select id="wbPosition"></select></label>
               </div>
             </div>
-            <div id="pickingMasterySpine" class="picking-mastery-spine" aria-label="Six-stage bouzouki mastery path"></div>
+            <div id="pickingMasterySpine" class="picking-mastery-spine" aria-label="Practice categories in order"></div>
           </section>
         </section>
 
@@ -175,6 +175,7 @@
           <div class="fretboard-wrap">
             <svg id="fretboard" role="img" aria-label="instrument fretboard"></svg>
           </div>
+          <section id="pickingScore" class="picking-score hidden" aria-label="What to play now and next"></section>
           <div class="legend">
             <span class="legend-item" data-group="root"><i></i>Root</span>
             <span class="legend-item" data-group="third"><i></i>3rd</span>
@@ -459,6 +460,13 @@
                     <div class="seg">
                       <button data-picking-route="tiered">Across the strings</button>
                       <button data-picking-route="horizontal">Along the string</button>
+                    </div>
+                  </div>
+                  <div id="pickingTravelChoice">
+                    <span class="panel-label">Neck travel</span>
+                    <div class="seg">
+                      <button data-picking-travel="on">Travel the neck</button>
+                      <button data-picking-travel="off">Stay in one position</button>
                     </div>
                   </div>
                   <div>
@@ -777,8 +785,9 @@
   <script src="js/video.js?v=62"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/bouzouki-knowledge.js?v=78"></script>
-  <script src="js/picking-lab.js?v=78"></script>
+  <script src="js/bouzouki-knowledge.js?v=79"></script>
+  <script src="js/picking-lab.js?v=79"></script>
+  <script src="js/picking-view.js?v=79"></script>
   <script src="js/toolkit.js?v=27"></script>
   <script src="js/songs.js?v=60"></script>
   <script src="js/tactical-examples.js?v=27"></script>
@@ -786,8 +795,8 @@
   <script src="js/fretboard.js?v=73"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=77"></script>
-  <script src="js/page-guides.js?v=78"></script>
-  <script src="js/app.js?v=78"></script>
+  <script src="js/page-guides.js?v=79"></script>
+  <script src="js/app.js?v=79"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

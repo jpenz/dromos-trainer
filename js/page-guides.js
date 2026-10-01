@@ -149,7 +149,7 @@
     picking: {
       purpose: "Make the pick serve the music",
       answer: "Loop one exact movement until it is easy; then evolve only the position, key, or both while the attack and pulse stay unchanged.",
-      result: "Two ways in: a guided plan of right-hand and neck drills in nine categories, from stroke and pulse to speed, tremolo, chords and phrasing, or the Phrase workbench, which builds any cell in any direction anywhere on the neck and drives it with the picking pattern and rhythm you choose. Every loop fills whole bars with no dead air.",
+      result: "Two ways in: a guided plan of right-hand and neck drills in ten categories, from stroke and pulse through scales, triads and four-note arpeggios to speed and phrasing, or the Phrase workbench, which builds any cell in any direction anywhere on the neck and drives it with the picking pattern and rhythm you choose. Every loop fills whole bars with no dead air.",
       steps: ["Set Key, Scale / dromos, and Rhythm; then match every ↓ downstroke and ↑ upstroke at a tempo where the hand stays loose.", "Follow the guided plan in order, or tap Phrase workbench and build a phrase - cell, direction, where on the neck, picking pattern - then change one setting at a time.", "Finish with Triad arpeggio → next 3rd, log three clean passes, and raise only 4 BPM."],
       done: "The pulse and note destination remain clear through a course change, accent, tremolo burst, or ornament—and you can stop without tightening.",
       why: "Speed is useful only when attack, time, timbre, and harmonic destination survive. Small measurable drills reveal which part fails before it reaches a song.",
