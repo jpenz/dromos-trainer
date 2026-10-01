@@ -69,7 +69,8 @@
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, rungHistory: [], ceilingBpm: null, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
       runIndex: null, activeSegment: null, voice: "bouzouki",
-      workbench: { cell: "fours", direction: "upback", route: "position", pattern: "alternate", startDegree: 0 }
+      workbench: { cell: "fours", direction: "upback", route: "position", pattern: "alternate", startDegree: 0 },
+      comp: { patternId: null, voicing: "auto" }
     },
     // --- shared ---
     labelMode: "interval",
@@ -3394,6 +3395,50 @@
     return nodes;
   }
 
+  // Rhythm comp voicings: full shapes on guitar, compact four-note grips on
+  // three- and four-course instruments, or triads anywhere. The same pattern
+  // therefore plays on every instrument.
+  function pickingCompVoicings(chord) {
+    if (state.picking.comp.voicing === "triad") {
+      const triadId = TR.TRIAD_OF[chord.quality] || "maj";
+      return TR.allShapes(chord.rootPc, triadId, spellPc).filter((shape) => shape.placements.every((placement) => placement.fret <= 15));
+    }
+    const isGuitar = /^guitar/.test(window.Tuning.currentId());
+    const full = isGuitar && GV ? GV.fullVoicings(chord) : [];
+    return full.length ? full : compactFourVoicings(chord);
+  }
+
+  function pickingCompBars(context) {
+    const modeId = pickingModeId(context);
+    const { chords } = M.buildProgression(context.tonic, modeId, state.progId);
+    const lowOf = (voicing) => {
+      const frets = voicing.placements.map((placement) => placement.fret).filter((fret) => fret > 0);
+      return frets.length ? Math.min.apply(null, frets) : 0;
+    };
+    let anchor = context.position;
+    const bars = [];
+    chords.forEach((chord) => {
+      const voicings = pickingCompVoicings(chord);
+      if (!voicings.length) return;
+      // Voice-lead: the shape nearest the last one (the first nearest the position).
+      const voicing = voicings.slice().sort((left, right) => Math.abs(lowOf(left) - anchor) - Math.abs(lowOf(right) - anchor))[0];
+      anchor = lowOf(voicing);
+      const tones = voicing.placements
+        .map((placement) => pickingNode(placement, Object.assign({ pc: placement.note && placement.note.pc }, placement.note || {})))
+        .sort((left, right) => left.midi - right.midi);
+      const pcOf = (node) => ((node.midi % 12) + 12) % 12;
+      const fifths = chord.notes.filter((note) => String(note.role).includes("5")).map((note) => note.pc);
+      const bass = tones.find((node) => pcOf(node) === chord.rootPc) || tones[0];
+      const alt = tones.find((node) => fifths.includes(pcOf(node))) || bass;
+      const bar = {
+        symbol: chord.symbol, degreeLabel: chord.degreeLabel, tones, placements: voicing.placements,
+        bass, alt, top: tones[tones.length - 1]
+      };
+      for (let count = 0; count < barsFor(chord); count++) bars.push(bar);
+    });
+    return bars;
+  }
+
   // Open courses walked low to high AND back, so a looping course drill never
   // leaps from the top course to the bottom one at the seam.
   function pickingOpenCourseLoop() {
@@ -3671,6 +3716,7 @@
   function pickingBaseNodes(exercise, context) {
     if (exercise.sequence === "arpeggio") return pickingArpeggioNodes(context);
     if (exercise.sequence === "workbench") return { nodes: pickingWorkbenchPool(context), current: null, next: null };
+    if (exercise.sequence === "comp") return { nodes: pickingCompBars(context), current: null, next: null };
     if (exercise.sequence === "openCourses") return { nodes: pickingOpenCourseLoop(), current: null, next: null };
     if (exercise.sequence === "skeletonFill") return { nodes: pickingSkeletonNodes(context), current: null, next: null };
     if (exercise.sequence === "registerContrast") return { nodes: pickingContourNodes(context), current: null, next: null };
@@ -3725,8 +3771,20 @@
     const resolved = Object.assign({ tonic: state.tonic, position: state.lab.position }, context || {});
     const base = pickingBaseNodes(exercise, resolved);
     const pulse = S.beatMap(S.byId(state.groove.styleId));
+    const compMode = exercise.sequence === "comp";
+    if (compMode) {
+      // The pattern owns the grid: its steps per click become the subdivision.
+      const pattern = PK.compPattern(state.groove.styleId, state.picking.comp.patternId);
+      state.picking.comp.patternId = pattern.id;
+      state.picking.subdivision = pattern.stepsPerUnit;
+    }
     let nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke, state.picking.variant,
-      state.picking.subdivision, state.picking.workbench);
+      state.picking.subdivision, compMode ? Object.assign({ rhythm: state.groove.styleId }, state.picking.comp) : state.picking.workbench);
+    if (compMode) {
+      // Each event remembers its bar's grip so the board can show the shape.
+      let barIndex = -1;
+      nodes.forEach((node) => { if (node.barStart) barIndex++; node.barIndex = Math.max(0, barIndex); });
+    }
     // Loop law: a loop fills whole bars of the rhythm. If one pass would leave
     // more than a third of a bar ringing, play two or three passes first so
     // the hand keeps moving; then the landing rings to the bar line.
@@ -3747,7 +3805,7 @@
     let priorPick = state.picking.firstStroke;
     for (let index = 0; index < nodes.length; index++) {
       const node = nodes[index];
-      if (index > 0) node.crossing = P.crossingType(nodes[index - 1].stringIndex, node.stringIndex, priorPick);
+      if (index > 0 && !node.chord && !node.bass && !nodes[index - 1].chord && !nodes[index - 1].bass) node.crossing = P.crossingType(nodes[index - 1].stringIndex, node.stringIndex, priorPick);
       if (node.stroke) priorPick = node.stroke;
     }
     // The notes follow the selected RHYTHM, not just the click: each event
@@ -3829,7 +3887,7 @@
     // A drill's own grid wins while it is open; a drill without one returns
     // to the player's chosen grid (it used to inherit the last drill's).
     state.picking.subdivision = exercise.subdivision || state.picking.userSubdivision || 2;
-    if (exercise.id !== "phrase-workbench") state.picking.lastPlanExerciseId = exercise.id;
+    if (exercise.id !== "phrase-workbench" && exercise.id !== "rhythm-comp") state.picking.lastPlanExerciseId = exercise.id;
     // 32nds (8/click) are measured-tremolo pedagogy (Mair/Calace import) and
     // unlock only inside the tremolo family; leaving it clamps back down.
     if (state.picking.subdivision === 8 && !PICKING_TREMOLO_FAMILY[exercise.id]) {
@@ -3913,6 +3971,29 @@
     });
   }
 
+  function renderCompControls() {
+    const comp = state.picking.comp;
+    const patterns = PK.compPatternsFor(state.groove.styleId);
+    const pattern = PK.compPattern(state.groove.styleId, comp.patternId);
+    $("compPattern").innerHTML = patterns.map((item) =>
+      `<option value="${item.id}"${item.id === pattern.id ? " selected" : ""}>${escapeHtml(item.name)}${item.style !== "general" ? ` · ${escapeHtml(item.style)}` : ""}</option>`).join("");
+    $("compPattern").onchange = (event) => { stopPlay(); comp.patternId = event.target.value; state.picking.cleanPasses = 0; renderPickingLab(); };
+    $("compProgression").innerHTML = M.PROGRESSIONS[state.modeId].map((item) =>
+      `<option value="${item.id}"${item.id === state.progId ? " selected" : ""}>${escapeHtml(item.label)}</option>`).join("");
+    $("compProgression").onchange = (event) => { stopPlay(); state.progId = event.target.value; state.progStep = 0; persistPreferences(); renderPickingLab(); };
+    const isGuitar = /^guitar/.test(window.Tuning.currentId());
+    $("compVoicing").innerHTML = [
+      ["auto", isGuitar ? "Full guitar chord shapes" : "Four-note chord grips"],
+      ["triad", "Triads (three notes)"]
+    ].map(([id, label]) => `<option value="${id}"${id === comp.voicing ? " selected" : ""}>${label}</option>`).join("");
+    $("compVoicing").onchange = (event) => { stopPlay(); comp.voicing = event.target.value === "triad" ? "triad" : "auto"; renderPickingLab(); };
+    const grid = Array.from(pattern.steps).map((step) => ({ B: "B", b: "b", D: "↓", U: "↑", X: "✕", "-": "·" })[step] || step).join(" ");
+    const provenance = pattern.status === "skeleton"
+      ? "The Comp page's trainer skeleton for this rhythm."
+      : `${pattern.status === "documented" ? "Documented" : "Built from a documented principle"}: ${(pattern.sources || []).map((source) => source.name).join("; ")}${pattern.basis ? ` (${pattern.basis})` : ""}.`;
+    $("compCue").innerHTML = `<b class="comp-grid">${escapeHtml(grid)}</b><span>${escapeHtml(pattern.cue)}</span><small>${escapeHtml(provenance)}</small>`;
+  }
+
   function renderPickingSetup() {
     const exercise = pickingExercise();
     const currentPhase = BK.phaseForExercise(exercise.id);
@@ -3928,18 +4009,25 @@
     $("pickingExerciseSel").onchange = (event) => selectPickingExercise(event.target.value);
     // Two ways in: follow the guided plan, or build any phrase in the workbench.
     const workbenchMode = exercise.id === "phrase-workbench";
+    const compMode = exercise.id === "rhythm-comp";
+    const labMode = workbenchMode ? "workbench" : compMode ? "comp" : "plan";
     document.querySelectorAll("[data-lab-mode]").forEach((button) => {
-      const on = button.getAttribute("data-lab-mode") === (workbenchMode ? "workbench" : "plan");
+      const target = button.getAttribute("data-lab-mode");
+      const on = target === labMode;
       button.classList.toggle("active", on);
       button.setAttribute("aria-pressed", String(on));
       button.onclick = () => {
-        if (button.getAttribute("data-lab-mode") === "workbench") { if (!workbenchMode) selectPickingExercise("phrase-workbench"); }
-        else if (workbenchMode) selectPickingExercise(state.picking.lastPlanExerciseId || "down-up-clock");
+        if (target === labMode) return;
+        if (target === "workbench") selectPickingExercise("phrase-workbench");
+        else if (target === "comp") selectPickingExercise("rhythm-comp");
+        else selectPickingExercise(state.picking.lastPlanExerciseId || "down-up-clock");
       };
     });
-    $("pickingExerciseField").classList.toggle("hidden", workbenchMode);
-    $("pickingMasterySpine").classList.toggle("hidden", workbenchMode);
+    $("pickingExerciseField").classList.toggle("hidden", labMode !== "plan");
+    $("pickingMasterySpine").classList.toggle("hidden", labMode !== "plan");
     $("pickingWorkbench").classList.toggle("hidden", !workbenchMode);
+    $("pickingComp").classList.toggle("hidden", !compMode);
+    if (compMode) renderCompControls();
     // One visible control per state variable: in the workbench, neck position
     // lives in the workbench row, not in More options.
     if ($("pickingPositionSel")) $("pickingPositionSel").closest("label").classList.toggle("hidden", workbenchMode);
@@ -3963,7 +4051,7 @@
   }
 
   function pickingTechniqueName(mark) {
-    return ({ D: "downstroke", U: "upstroke", DG: "downstroke glide", UG: "upstroke glide", H: "hammer-on", P: "pull-off", SL: "slide" })[mark] || mark || "hold";
+    return ({ D: "downstroke", U: "upstroke", DG: "downstroke glide", UG: "upstroke glide", H: "hammer-on", P: "pull-off", SL: "slide", X: "muted chop" })[mark] || mark || "hold";
   }
 
   function pickingTechniqueMeta(mark) {
@@ -3974,7 +4062,8 @@
       UG: { glyph: "↑↖", short: "GLIDE", label: "Upstroke glide", cue: "Continue the same up motion through the adjacent course; keep it one connected gesture.", direction: "up-glide" },
       H: { glyph: "H", short: "HAMMER", label: "Hammer-on", cue: "Do not pick again. The left hand places the next attack exactly in time.", direction: "legato" },
       P: { glyph: "P", short: "PULL", label: "Pull-off", cue: "Do not pick again. Release sideways enough for the lower note to speak in time.", direction: "legato" },
-      SL: { glyph: "SL", short: "SLIDE", label: "Slide", cue: "Keep finger pressure while the hand connects the two frets as one syllable.", direction: "legato" }
+      SL: { glyph: "SL", short: "SLIDE", label: "Slide", cue: "Keep finger pressure while the hand connects the two frets as one syllable.", direction: "legato" },
+      X: { glyph: "✕", short: "CHOP", label: "Muted chop", cue: "Strum with the fretting hand relaxed on the strings so they click instead of ring.", direction: "down" }
     })[mark] || { glyph: "·", short: "HOLD", label: "Hold", cue: "Let the previous note continue.", direction: "hold" };
   }
 
@@ -4055,7 +4144,17 @@
         : node.note && lowerRoadPcs.has(node.note.pc) ? "lower"
         : node.note ? "upper" : null
     }));
-    FB.render(svg(), {
+    if (exercise.sequence === "comp") {
+      const bars = pickingCompBars(session.context);
+      const nowBar = (session.nodes[currentIndex == null ? 0 : currentIndex] || {}).barIndex || 0;
+      const grip = bars[nowBar], nextGrip = bars[(nowBar + 1) % Math.max(1, bars.length)];
+      FB.render(svg(), {
+        grip: grip ? { placements: grip.placements } : null,
+        nextGrip: nextGrip && nextGrip !== grip ? { placements: nextGrip.placements } : null,
+        labelMode: state.labelMode, lefty: state.lefty, largeNeck: true, neckMode: "full",
+        flavourPcs: M.flavourPcs(state.tonic, state.modeId)
+      });
+    } else FB.render(svg(), {
       path: displayPath, pathIndex: currentIndex,
       labelMode: "degree", lefty: state.lefty, showStrokes: true, largeNeck: true,
       // One unbroken neck for picking: the drill lives in one position, and a
