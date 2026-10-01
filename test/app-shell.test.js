@@ -534,6 +534,23 @@ test("picking loops obey the loop law and the workbench is wired in", () => {
   assert.match(app, /const RAIL_WINDOW = 16;/, "the event rail is a window that follows the playhead");
 });
 
+test("rhythm comp strums real chords on every instrument", () => {
+  const app = read("js/app.js");
+  const html = read("index.html");
+  const audio = read("js/audio.js");
+  assert.match(html, /data-lab-mode="comp"/, "Rhythm comp is the third way into the Picking Lab");
+  ["compPattern", "compProgression", "compVoicing", "compCue"].forEach((id) => assert.match(html, new RegExp(`id="${id}"`), `${id} must exist`));
+  // A strum is every chord tone, staggered by stroke direction; a chop is short.
+  assert.match(audio, /const tones = n\.stroke === "up" \? n\.chord\.slice\(\)\.reverse\(\) : n\.chord;/,
+    "strums order tones by stroke direction");
+  assert.match(audio, /const length = n\.mute \?/, "muted chops are short");
+  // Full shapes on guitar, compact grips or triads on other instruments.
+  assert.match(app, /const full = isGuitar && GV \? GV\.fullVoicings\(chord\) : \[\];\n\s*return full\.length \? full : compactFourVoicings\(chord\);/,
+    "comp voices for whatever instrument is selected");
+  // The pattern owns the grid.
+  assert.match(app, /state\.picking\.subdivision = pattern\.stepsPerUnit;/, "the comp pattern sets the subdivision");
+});
+
 test("Solo Toolkit choices keep keyboard focus and promise only implemented behavior", () => {
   const app = read("js/app.js");
   const toolkit = read("js/toolkit.js");

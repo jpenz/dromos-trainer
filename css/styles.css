@@ -2605,3 +2605,9 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
 .workbench-grid select:disabled { opacity: 0.55; }
 @media (pointer: coarse) { .workbench-presets button, .workbench-grid select, .picking-lab-mode button { min-height: 44px; } }
 .picking-rail-count { display: block; margin-top: var(--sp-1); color: var(--faint); font-size: var(--fs-micro); }
+
+/* ---- Rhythm comp (FR-77) ---- */
+.picking-lab-mode { max-width: 560px; }
+.comp-cue { display: grid; gap: var(--sp-1); margin: 0; color: var(--muted); font-size: var(--fs-sec); line-height: 1.45; }
+.comp-cue .comp-grid { color: var(--text); font-family: var(--font-mono); font-size: var(--fs-title); letter-spacing: 0.08em; }
+.comp-cue small { color: var(--faint); font-size: var(--fs-micro); }

@@ -450,7 +450,19 @@
         const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
         const when = fromTime + offsets[i];
         const dur = sp * (n && n.durMult > 0 ? n.durMult : 1);
-        if (!silent) playNoteAt(n.freq, when, trainingNoteDuration(dur, voice), voiceGain(1, "path"), voice);
+        if (!silent) {
+          if (n && Array.isArray(n.chord) && n.chord.length) {
+            // A strum: every chord tone, staggered low-to-high on a downstroke
+            // and high-to-low on an upstroke; a muted chop is short and quiet.
+            const tones = n.stroke === "up" ? n.chord.slice().reverse() : n.chord;
+            const spread = n.mute ? 0.006 : 0.014;
+            const length = n.mute ? Math.min(0.07, dur * 0.5) : trainingNoteDuration(dur, voice);
+            const level = voiceGain(tones.length, "chord") * (n.mute ? 0.55 : n.accent ? 1.12 : 0.92);
+            tones.forEach((tone, k) => playNoteAt(tone.freq, when + k * spread, length, Math.max(0.1, level - k * 0.006), voice));
+          } else {
+            playNoteAt(n.freq, when, trainingNoteDuration(dur, voice), voiceGain(1, "path") * (n && n.bass ? 1.08 : 1), voice);
+          }
+        }
         if (o.onStep) {
           pathTimers.push(setTimeout(() => o.onStep(i, silent, iteration), Math.max(0, (when - ctx.currentTime) * 1000)));
         }

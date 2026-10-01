@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=69" />
+  <link rel="stylesheet" href="css/styles.css?v=70" />
 </head>
 <body>
   <div class="app">
@@ -140,10 +140,19 @@
             <div class="seg picking-lab-mode" aria-label="Picking Lab mode">
               <button type="button" data-lab-mode="plan" class="active" aria-pressed="true">Guided plan</button>
               <button type="button" data-lab-mode="workbench" aria-pressed="false">Phrase workbench</button>
+              <button type="button" data-lab-mode="comp" aria-pressed="false">Rhythm comp</button>
             </div>
             <div class="picking-context music-context">
               <label for="pickingExerciseSel" id="pickingExerciseField">Exercise<select id="pickingExerciseSel"></select></label>
               <label for="pickingPulseSel">Rhythm<select id="pickingPulseSel"></select></label>
+            </div>
+            <div id="pickingComp" class="picking-workbench hidden" aria-label="Rhythm comp">
+              <div class="workbench-grid">
+                <label for="compPattern">Pattern<select id="compPattern"></select></label>
+                <label for="compProgression">Chords<select id="compProgression"></select></label>
+                <label for="compVoicing">Chord shapes<select id="compVoicing"></select></label>
+              </div>
+              <p id="compCue" class="comp-cue"></p>
             </div>
             <div id="pickingWorkbench" class="picking-workbench hidden" aria-label="Phrase workbench">
               <div id="workbenchPresets" class="workbench-presets" aria-label="Workbench presets"></div>
@@ -768,17 +777,17 @@
   <script src="js/video.js?v=62"></script>
   <script src="js/coach.js?v=14"></script>
   <script src="js/practice.js?v=14"></script>
-  <script src="js/bouzouki-knowledge.js?v=64"></script>
-  <script src="js/picking-lab.js?v=67"></script>
+  <script src="js/bouzouki-knowledge.js?v=70"></script>
+  <script src="js/picking-lab.js?v=70"></script>
   <script src="js/toolkit.js?v=27"></script>
   <script src="js/songs.js?v=60"></script>
   <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/fretboard.js?v=52"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=38"></script>
+  <script src="js/audio.js?v=70"></script>
   <script src="js/page-guides.js?v=68"></script>
-  <script src="js/app.js?v=68"></script>
+  <script src="js/app.js?v=70"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
