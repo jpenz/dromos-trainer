@@ -64,7 +64,7 @@
     },
     // --- dedicated plectrum curriculum ---
     picking: {
-      exerciseId: "down-up-clock", route: "tiered", lastPlanExerciseId: "down-up-clock", userSubdivision: 2,
+      exerciseId: "down-up-clock", route: "tiered", lastPlanExerciseId: "down-up-clock", userSubdivision: 2, seam: null, markedIndex: null,
       variant: "alternate",
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, rungHistory: [], ceilingBpm: null, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
@@ -3114,7 +3114,7 @@
 
   const PICKING_TREMOLO_FAMILY = {
     "mair-density-ladder": true, "tremolo-ladder": true,
-    "counted-tremolo-groupings": true, "tremolo-entry-exit": true
+    "counted-tremolo-groupings": true, "tremolo-entry-exit": true, "double-stop-tremolo-thirds": true
   };
 
   // Drills whose mechanics REQUIRE a layout (crossing grammars) keep their own.
@@ -3122,7 +3122,8 @@
   // Sequences with fixed node builders that never read state.picking.route
   // (open courses, arpeggio circuits, ladders, traversals): the route seg is
   // meaningless for them, so it hides instead of silently doing nothing.
-  const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip"]);
+  const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip",
+    "fingerPairs", "fretCells", "roll", "dyadTremolo", "equator", "crossBakeoff", "depthLadder", "seam"]);
   function pickingExerciseRoutes(exercise) {
     return !ROUTE_LOCKED[exercise.id] && !PICKING_FIXED_SEQUENCES.has(exercise.sequence);
   }
@@ -3439,6 +3440,120 @@
     return open.concat(open.slice(1, -1).reverse());
   }
 
+  // Frets 0..15 of the melody course: the finger-pair and finger-cell drills
+  // walk it by fret, with no scale to think about.
+  function pickingChromaticCourse() {
+    const open = window.Tuning.open();
+    const stringIndex = open.length - 1;
+    const names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
+    return Array.from({ length: 16 }, (_, fret) => {
+      const pc = ((open[stringIndex] + fret) % 12 + 12) % 12;
+      return pickingNode({ stringIndex, fret }, { degree: `fret ${fret}`, name: names[pc], roleLabel: `f${fret}`, colorGroup: "scaledeg", pc });
+    });
+  }
+
+  // Course roll: each progression bar's grip reduced to three ADJACENT
+  // courses (the highest such set), low to high.
+  function pickingRollBars(context) {
+    return pickingCompBars(context).map((bar) => {
+      const byCourse = bar.tones.slice().sort((left, right) => left.stringIndex - right.stringIndex);
+      let trio = null;
+      for (let index = byCourse.length - 3; index >= 0 && !trio; index--) {
+        const set = byCourse.slice(index, index + 3);
+        if (set[1].stringIndex === set[0].stringIndex + 1 && set[2].stringIndex === set[1].stringIndex + 1) trio = set;
+      }
+      return Object.assign({}, bar, { trio: trio || (byCourse.length >= 3 ? byCourse.slice(-3) : null) });
+    }).filter((bar) => bar.trio);
+  }
+
+  // Diatonic 3rds on two adjacent courses: the lower note from the
+  // in-position box road, the upper a 3rd above on the next course up,
+  // inside a three-fret reach. Up the dromos and back.
+  function pickingDyadNodes(context) {
+    const box = P.buildPath(context.tonic, pickingModeId(context), {
+      layout: "box", position: context.position, startDegree: 1, startString: 0, firstStroke: state.picking.firstStroke, updown: false
+    });
+    const road = box ? box.nodes : [];
+    const open = window.Tuning.open();
+    const pairs = [];
+    for (let index = 0; index + 2 < road.length && pairs.length < 7; index++) {
+      const lower = road[index], third = road[index + 2];
+      const course = lower.stringIndex + 1;
+      if (course >= open.length) continue;
+      const fret = third.midi - open[course];
+      if (fret < 0 || fret > 15 || Math.abs(fret - lower.fret) > 3) continue;
+      pairs.push({
+        lower: Object.assign({}, lower),
+        upper: pickingNode({ stringIndex: course, fret }, Object.assign({}, third.note)),
+        label: `${(lower.note && lower.note.degree) || "·"}-${(third.note && third.note.degree) || "·"}`
+      });
+    }
+    return pairs.concat(pairs.slice(1, -1).reverse());
+  }
+
+  // The position's scale notes low to high, with the tonic that has the
+  // most room on both sides marked as the equator.
+  function pickingEquatorPool(context) {
+    const box = P.buildPath(context.tonic, pickingModeId(context), {
+      layout: "box", position: context.position, startDegree: 1, startString: 0, firstStroke: state.picking.firstStroke, updown: false
+    });
+    const seen = new Set();
+    const pool = (box ? box.nodes : []).slice().sort((left, right) => left.midi - right.midi)
+      .filter((node) => !seen.has(node.midi) && seen.add(node.midi)).map((node) => Object.assign({}, node));
+    const tonicPc = M.parseName(context.tonic).pc;
+    let best = 0, room = -1;
+    pool.forEach((node, index) => {
+      const pc = ((node.midi % 12) + 12) % 12;
+      const space = Math.min(index, pool.length - 1 - index);
+      if (pc === tonicPc && space > room) { best = index; room = space; }
+    });
+    pool.tonicIndex = best;
+    return pool;
+  }
+
+  // Go back and get it: the marked spot of another drill, from that note to
+  // the next rhythm-group start (so the landing is part of the fix), with
+  // the strokes it had in the drill. No mark: the picked dromos line's
+  // first course change.
+  function pickingSeamNodes(context) {
+    const seam = state.picking.seam;
+    const sourceId = seam && seam.exerciseId !== "seam-loop" ? seam.exerciseId : "picked-dromos-line";
+    const saved = { exerciseId: state.picking.exerciseId, variant: state.picking.variant };
+    let session = null;
+    try {
+      state.picking.exerciseId = sourceId;
+      state.picking.variant = seam ? seam.variant : "alternate";
+      session = buildPickingSession(context);
+    } finally {
+      state.picking.exerciseId = saved.exerciseId;
+      state.picking.variant = saved.variant;
+    }
+    const nodes = session ? session.nodes : [];
+    if (nodes.length < 2) return [];
+    let start = seam ? Math.min(Math.max(0, seam.index), nodes.length - 2) : 0;
+    if (!seam) {
+      const change = nodes.findIndex((node, index) => index > 0 && node.stringIndex !== nodes[index - 1].stringIndex);
+      start = change > 0 ? change - 1 : 0;
+    }
+    let end = -1;
+    for (let index = start + 2; index < nodes.length && index - start <= 7; index++) {
+      if (nodes[index].rhythmBeat && nodes[index].rhythmGroup !== (nodes[index - 1] || {}).rhythmGroup) { end = index; break; }
+    }
+    if (end < 0) end = Math.min(nodes.length - 1, start + 3);
+    return nodes.slice(start, end + 1).map((node) => {
+      const copy = Object.assign({}, node, { note: Object.assign({}, node.note || {}) });
+      ["rhythmBeat", "rhythmFirst", "rhythmGroup", "crossing", "passRepeat", "order", "hold"].forEach((key) => delete copy[key]);
+      if (copy.durMult > 4) copy.durMult = 1;
+      return copy;
+    });
+  }
+
+  function pickingSeamLabel() {
+    const seam = state.picking.seam;
+    if (!seam) return "No spot marked yet: looping the first course change of the picked dromos line. In any drill, tap the note that broke and press Loop this spot.";
+    return `Looping ${PK.byId(seam.exerciseId).title} from note ${seam.index + 1} to the next group start, with the strokes it had there.`;
+  }
+
   // Phrase workbench pool: the route's scale notes in ascending pitch, each
   // placed on the neck, starting on the chosen degree. The library sequences
   // the pool into cells and drives it with the chosen right-hand pattern.
@@ -3735,6 +3850,13 @@
     if (exercise.sequence === "courseTarget") return { nodes: pickingCourseTargetNodes(), current: null, next: null };
     if (exercise.sequence === "neckLadder") return { nodes: pickingNeckLadderNodes(context), current: null, next: null };
     if (exercise.sequence === "arpChunks") return { nodes: pickingArpChunkNodes(context), current: null, next: null };
+    if (exercise.sequence === "fingerPairs" || exercise.sequence === "fretCells") return { nodes: pickingChromaticCourse(), current: null, next: null };
+    if (exercise.sequence === "roll") return { nodes: pickingRollBars(context), current: null, next: null };
+    if (exercise.sequence === "dyadTremolo") return { nodes: pickingDyadNodes(context), current: null, next: null };
+    if (exercise.sequence === "equator") return { nodes: pickingEquatorPool(context), current: null, next: null };
+    if (exercise.sequence === "crossBakeoff") return { nodes: pickingCrossingCellNodes(context), current: null, next: null };
+    if (exercise.sequence === "depthLadder") return { nodes: pickingOpenCourseNodes().slice(-1), current: null, next: null };
+    if (exercise.sequence === "seam") return { nodes: pickingSeamNodes(context), current: null, next: null };
     // Across the strings = the box window: in-position on every course and it
     // FOLLOWS the position control ("2nps" is one fixed shape per key that
     // ignores position — it parked beginners at fret 14). Along the string =
@@ -3778,7 +3900,7 @@
     }
     let nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke, state.picking.variant,
       state.picking.subdivision, compMode ? Object.assign({ rhythm: state.groove.styleId }, state.picking.comp)
-        : Object.assign({}, state.picking.workbench, { startIndex: base.nodes.startIndex || 0 }));
+        : Object.assign({}, state.picking.workbench, { startIndex: base.nodes.startIndex || 0, grooveId: state.groove.styleId }));
     if (compMode) {
       // Each event remembers its bar's grip so the board can show the shape.
       let barIndex = -1;
@@ -3886,7 +4008,9 @@
     // straight eighths — the drill's own grid wins, the seg still overrides.
     // A drill's own grid wins while it is open; a drill without one returns
     // to the player's chosen grid (it used to inherit the last drill's).
-    state.picking.subdivision = exercise.subdivision || state.picking.userSubdivision || 2;
+    state.picking.subdivision = exercise.id === "seam-loop" && state.picking.seam ? state.picking.seam.subdivision
+      : exercise.subdivision || state.picking.userSubdivision || 2;
+    state.picking.markedIndex = null;
     if (exercise.id !== "phrase-workbench" && exercise.id !== "rhythm-comp") state.picking.lastPlanExerciseId = exercise.id;
     // 32nds (8/click) are measured-tremolo pedagogy (Mair/Calace import) and
     // unlock only inside the tremolo family; leaving it clamps back down.
@@ -4006,11 +4130,11 @@
   function renderPickingSetup() {
     const exercise = pickingExercise();
     const currentPhase = BK.phaseForExercise(exercise.id);
-    // One dropdown per decision: exercise (grouped by mastery stage), key,
+    // One dropdown per decision: exercise (grouped by category), key,
     // scale, pulse. The 30-card rail and category nav collapsed into the
     // exercise select; the stage spine below keeps the plan visible.
     $("pickingExerciseSel").innerHTML = BK.MASTERY_PHASES.map((phase) =>
-      `<optgroup label="Stage ${phase.step} · ${escapeHtml(phase.label)}">${phase.exerciseIds.map((id) => {
+      `<optgroup label="${phase.step} · ${escapeHtml(phase.label)}">${phase.exerciseIds.map((id) => {
         const item = PK.byId(id);
         return `<option value="${item.id}"${item.id === exercise.id ? " selected" : ""}>${item.order}. ${escapeHtml(item.title)}</option>`;
       }).join("")}</optgroup>`
@@ -4052,10 +4176,10 @@
     $("pickingModeSel").onchange = (event) => selectPickingMode(event.target.value);
     $("pickingPulseSel").innerHTML = S.STYLES.map((style) => `<option value="${style.id}"${style.id === state.groove.styleId ? " selected" : ""}>${escapeHtml(style.title)} · ${escapeHtml(style.meter)} · ${escapeHtml(style.pulse)}</option>`).join("");
     $("pickingPulseSel").onchange = (event) => { selectGrooveStyle(event.target.value); renderPickingLab(); renderPageGuide(); };
-    // Six number-dots: the stage labels live in the exercise select's
-    // optgroups; the spine only shows where you are on the six-stage path.
+    // Nine number-dots: the category labels live in the exercise select's
+    // optgroups; the spine only shows where you are on the nine-category path.
     $("pickingMasterySpine").innerHTML = BK.MASTERY_PHASES.map((phase) =>
-      `<span class="${phase.id === currentPhase.id ? "active" : ""}" title="Stage ${phase.step} · ${escapeHtml(phase.label)}"><i>${phase.step}</i><b class="visually-hidden">${escapeHtml(phase.label)}</b></span>`
+      `<span class="${phase.id === currentPhase.id ? "active" : ""}" title="${phase.step} · ${escapeHtml(phase.label)}"><i>${phase.step}</i><b class="visually-hidden">${escapeHtml(phase.label)}</b></span>`
     ).join("");
   }
 
@@ -4294,7 +4418,7 @@
     const startLabel = state.picking.playing
       ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.runLength || state.picking.repeats}`)
       : "▶ Start";
-    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · stage ${mastery.step} · ${escapeHtml(mastery.label)}</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.id === "phrase-workbench" ? PK.workbenchLabel(state.picking.workbench) : exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i></div></header>
+    $("pickingLesson").innerHTML = `<header class="picking-lesson-head"><div><span>${exercise.order} of ${PK.EXERCISES.length} · ${escapeHtml(mastery.label)} (${mastery.step} of ${BK.MASTERY_PHASES.length})</span><h2>${escapeHtml(exercise.title)}</h2><p>${escapeHtml(exercise.id === "phrase-workbench" ? PK.workbenchLabel(state.picking.workbench) : exercise.id === "seam-loop" ? pickingSeamLabel() : exercise.short)}</p></div><div class="picking-head-badges"><i>${escapeHtml(window.Tuning.current().name)}</i></div></header>
       <div class="picking-motion ${currentIndex == null ? "is-ready" : "is-playing"}" data-motion="${escapeHtml(motion.direction)}" aria-live="polite">
         <section class="picking-motion-now"><span>${currentIndex == null ? "Start with" : `Now · event ${motionIndex + 1}`}</span><b><i>${escapeHtml(motion.glyph)}</i>${escapeHtml(motion.label)}</b><p>${escapeHtml(motion.cue)}</p></section>
         <div class="picking-motion-visual" aria-hidden="true"><i class="pick-shape"></i><b></b><b></b><b></b><span>${motionEvent.accent ? "ACCENT" : "EVEN"}</span></div>
@@ -4303,7 +4427,8 @@
       </div>
       <div class="picking-articulation"><span>${escapeHtml(articulation.mnemonic)}</span><b>${escapeHtml(articulation.label)}</b><p>${escapeHtml(articulation.detail)}</p></div>
       <div class="picking-stroke-key">${strokeKeyChips}${fingerChip}${roadChips}<em>Tap an event to hear it and see the motion.</em></div>
-      <div class="picking-rail-host">${railView.html}</div>
+      <div class="picking-rail-host">${railView.html}</div>${!state.picking.playing && state.picking.markedIndex != null && exercise.id !== "seam-loop" && exercise.sequence !== "comp"
+        ? `<button type="button" class="picking-seam-btn" data-picking-seam="${state.picking.markedIndex}">⟲ Loop this spot · note ${state.picking.markedIndex + 1} to the next group start</button>` : ""}
       <div class="picking-this-pass"><span>This pass</span><ol>${exercise.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol><p><b>Listen for:</b> ${escapeHtml(exercise.listen)}</p><p><b>Pass when:</b> ${escapeHtml(exercise.pass)}</p></div>
       <details class="picking-evidence"><summary>Theory · ${evidenceSources.length} evidence source${evidenceSources.length === 1 ? "" : "s"} + what Dromos generated</summary><div><span>Theory inside the motion</span><p class="picking-evidence-wide"><b>Key ${escapeHtml(session.context.tonic)} · ${escapeHtml(M.MODES[pickingModeId(session.context)].name)}.</b> ${escapeHtml(exercise.theory)} <i>${escapeHtml(session.current && session.next ? `${session.current.degreeLabel} ${session.current.symbol} → ${session.next.degreeLabel} ${session.next.symbol}` : "Say every scale degree before you play it.")}</i></p><span>Fingering &amp; layout</span><p class="picking-evidence-wide"><b>1–4</b> is the one-finger-per-fret window (the modern, method-book layout); <b>0</b> is open; <b>⇧</b> is a stretch or small shift, your call. Traveling lines show no numbers: the traditional horizontal layout moves the whole hand with shifts and slides (Pennanen).</p><span>What the source supports</span><p>${escapeHtml(exercise.evidence)}</p><nav>${evidenceSources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer"><i>${escapeHtml(source.authority)}</i>${escapeHtml(source.name)} ↗</a>`).join("")}</nav><small><b>Generated exercise:</b> ${escapeHtml(exercise.boundary)}</small></div></details>`;
     const motionStart = $("btnPickingMotionStart");
@@ -4450,6 +4575,7 @@
     const plan = pickingRunPlan();
     if (!plan.length) return;
     state.picking.runLength = plan.length;
+    state.picking.markedIndex = null;
     const token = ++pickingRunToken;
     state.picking.playing = true;
     state.picking.runIndex = 0;
@@ -6650,10 +6776,21 @@
     };
     $("pickingBpm").onchange = (event) => setPickingBpm(event.target.value);
     $("pickingLesson").addEventListener("click", (event) => {
+      const seamButton = event.target.closest("[data-picking-seam]");
+      if (seamButton) {
+        stopPlay();
+        state.picking.seam = {
+          exerciseId: state.picking.exerciseId, variant: state.picking.variant,
+          subdivision: state.picking.subdivision, index: +seamButton.getAttribute("data-picking-seam")
+        };
+        selectPickingExercise("seam-loop");
+        return;
+      }
       const button = event.target.closest("[data-picking-step]");
       if (!button || !pickingView.session) return;
       stopPlay();
       const index = +button.getAttribute("data-picking-step");
+      state.picking.markedIndex = index;
       const node = pickingView.session.nodes[index];
       state.picking.pathIndex = index;
       const voice = pickingReferenceVoice();
