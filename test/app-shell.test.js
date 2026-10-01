@@ -371,8 +371,8 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "looping drills must pad to whole bars so the click never phase-shifts");
   assert.match(audio, /const iterStart = t0 \+ iteration \* loopSpan;/,
     "each iteration starts at an exact audio-clock offset, never currentTime");
-  assert.match(audio, /iterStart \+ loopSpan - 0\.4/,
-    "the next iteration is queued ahead of the seam, not after it");
+  assert.match(audio, /iterStart \+ loopSpan - 1\.0/,
+    "the next iteration is queued a full second ahead of the seam, so a late timer still lands before it");
   assert.match(audio, /o\.startAt && o\.startAt > ctx\.currentTime \? o\.startAt/,
     "callers can chain segments gaplessly on the audio clock");
   const app = read("js/app.js");
