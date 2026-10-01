@@ -3989,9 +3989,10 @@
     $("compVoicing").onchange = (event) => { stopPlay(); comp.voicing = event.target.value === "triad" ? "triad" : "auto"; renderPickingLab(); };
     const grid = Array.from(pattern.steps).map((step) => ({ B: "B", b: "b", D: "↓", U: "↑", X: "✕", "-": "·" })[step] || step).join(" ");
     const provenance = pattern.status === "skeleton"
-      ? "The Comp page's trainer skeleton for this rhythm."
-      : `${pattern.status === "documented" ? "Documented" : "Built from a documented principle"}: ${(pattern.sources || []).map((source) => source.name).join("; ")}${pattern.basis ? ` (${pattern.basis})` : ""}.`;
-    $("compCue").innerHTML = `<b class="comp-grid">${escapeHtml(grid)}</b><span>${escapeHtml(pattern.cue)}</span><small>${escapeHtml(provenance)}</small>`;
+      ? "The Comp page's trainer skeleton for this rhythm - start here, then move to the documented patterns."
+      : `${pattern.status === "documented" ? "Documented in" : "Built from a documented principle in"}: ${(pattern.sources || []).map((source) =>
+        `<a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(source.name)} ↗</a>`).join(" · ")}`;
+    $("compCue").innerHTML = `<b class="comp-grid">${escapeHtml(grid)}</b><span>${escapeHtml(pattern.cue)}</span><small>${pattern.status === "skeleton" ? escapeHtml(provenance) : provenance}</small>`;
   }
 
   function renderPickingSetup() {
