@@ -9,10 +9,26 @@
   let master = null;
   let compressor = null;
   let output = null;
+  // Notes feed voiceBus -> master -> limiter. Clicks, kick and tick feed
+  // clickBus straight to the output so they never duck the notes.
+  let voiceBus = null;
+  let clickBus = null;
   const bufCache = new Map();
   const studioBuffers = new Map();
-  let activeSources = [];
+  const activeSources = new Set();
   let playbackGeneration = 0;
+  let pluckCounter = 0;
+
+  // A note or click whose start time has already passed by more than this is
+  // dropped. Web Audio would otherwise play every missed event at once.
+  const LATE_TOLERANCE = 0.01;
+  // Stop fades the voice bus over a few milliseconds instead of cutting
+  // ringing notes mid-waveform; sources stop once the fade is complete.
+  const STOP_FADE_TAU = 0.008;
+  const STOP_FADE_END = 0.05;
+  // Decoded studio samples keep only their first seconds: playback never runs
+  // past dur + 1.2 s, and the full 13 s recordings cost about 95 MB decoded.
+  const STUDIO_KEEP_SECONDS = 5;
   let studioLoadPromise = null;
   let studioLoadState = "idle";
   let unlockPromise = null;
@@ -48,23 +64,68 @@
     return "guitar";
   }
 
+  function makeVoiceBus() {
+    const bus = ctx.createGain();
+    bus.gain.value = 1;
+    bus.connect(master);
+    return bus;
+  }
+
+  // Every note voice (plucked, piano, studio, bass) connects here, so stopAll
+  // can fade them together. The bus is replaced after each stop.
+  function voiceOut() {
+    if (!voiceBus) voiceBus = makeVoiceBus();
+    return voiceBus;
+  }
+
   function ensure() {
     if (!ctx) {
+      // iOS treats Web Audio as "ambient" by default, so the ring/silent
+      // switch mutes the app. Safari 16.4+ lets a page ask for playback.
+      try {
+        if (typeof navigator !== "undefined" && navigator.audioSession) navigator.audioSession.type = "playback";
+      } catch { /* older WebKit: keep the default session */ }
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain();
       compressor = ctx.createDynamicsCompressor();
       output = ctx.createGain();
-      master.gain.value = 0.76;
-      compressor.threshold.value = -20;
-      compressor.knee.value = 18;
-      compressor.ratio.value = 4.5;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.18;
-      output.gain.value = 0.68;
-      master.connect(compressor); compressor.connect(output); output.connect(ctx.destination);
+      clickBus = ctx.createGain();
+      master.gain.value = 0.9;
+      // A safety limiter, not a mix compressor: it stays out of the way below
+      // -6 dBFS so accents and decaying tails keep their real level.
+      compressor.threshold.value = -6;
+      compressor.knee.value = 0;
+      compressor.ratio.value = 20;
+      compressor.attack.value = 0.001;
+      compressor.release.value = 0.1;
+      output.gain.value = 0.8;
+      // The limiter adds a fixed makeup gain of about +3.4 dB to everything
+      // below its threshold. 1.3 keeps the click at the note level it had
+      // when it shared the master bus.
+      clickBus.gain.value = 1.3;
+      master.connect(compressor); compressor.connect(output);
+      clickBus.connect(output);
+      output.connect(ctx.destination);
+      voiceBus = makeVoiceBus();
       ctx.addEventListener("statechange", announceAudioState);
     }
     return ctx;
+  }
+
+  function isLateAt(when, now) {
+    return when != null && when < now - LATE_TOLERANCE;
+  }
+
+  function isLate(when) {
+    return !!ctx && isLateAt(when, ctx.currentTime);
+  }
+
+  // Seconds between the audio clock and the speaker. Bluetooth output is
+  // often 0.15-0.25 s, so UI callbacks that mark a sound add this delay.
+  function uiLatency() {
+    if (!ctx) return 0;
+    const latency = Number(ctx.outputLatency) || Number(ctx.baseLatency) || 0;
+    return latency > 0 && Number.isFinite(latency) ? Math.min(0.5, latency) : 0;
   }
 
   // Safari/iPadOS can leave an AudioContext suspended after a tab switch or
@@ -120,45 +181,121 @@
       : Math.max(0.58, Math.min(1.05, sp * 2.15));
   }
 
-  // Build a plucked-string buffer for a frequency (cached by rounded freq).
-  function pluckBuffer(freq, dur, voice) {
-    const key = Math.round(freq) + ":" + dur + ":" + voice;
-    if (bufCache.has(key)) return bufCache.get(key);
-    const sr = ctx.sampleRate;
-    const N = Math.max(2, Math.round(sr / freq));
-    const len = Math.floor(dur * sr);
-    const buf = ctx.createBuffer(1, len, sr);
-    const y = buf.getChannelData(0);
-    const noise = new Float32Array(N);
+  // ---- Plucked string (Karplus-Strong) ------------------------------------
+  // The loop filter is a two-tap average whose weights sum to 1, so the loop
+  // gain is `decay` and always below 1. Brightness belongs to the excitation
+  // and the tone filter, never to the loop weights: weights that summed above
+  // 1 made the guitar loop unstable and the bouzouki loop die in 0.1 s.
+  const KS_SMOOTH = 0.5;
+  const PLUCK_VARIANTS = 4;
+  const PLUCK_CACHE_LIMIT = 160;
+
+  function pluckDecay(voice) {
+    // Longer decay coefficients: a practice chord should still be ringing when
+    // the bar ends, the way a real course does, instead of dying mid-bar.
+    return voice === "bouzouki" ? 0.99735 : voice === "laouto" ? 0.9982 : 0.99845;
+  }
+
+  function pluckLoopGain(voice) {
+    return pluckDecay(voice) * ((1 - KS_SMOOTH) + KS_SMOOTH);
+  }
+
+  // The per-note gain envelope reaches silence by this time; the buffer only
+  // needs to outlast it. A fixed length keeps the cache independent of tempo.
+  function pluckEnvelopeCap(voice) {
+    return voice === "bouzouki" ? 0.72 : 1.15;
+  }
+
+  function pluckBufferSeconds(voice) {
+    return pluckEnvelopeCap(voice) + 0.1;
+  }
+
+  // The averaging loop adds KS_SMOOTH samples of delay, so the true period is
+  // N - KS_SMOOTH. Choosing N this way keeps the playback-rate correction
+  // within half a sample of 1.
+  function pluckPeriod(freq, sampleRate) {
+    return Math.max(2, Math.round(sampleRate / freq + KS_SMOOTH));
+  }
+
+  function pluckRate(freq, N, sampleRate) {
+    return freq * (N - KS_SMOOTH) / sampleRate;
+  }
+
+  function pluckVariant(variant) {
+    return ((Math.floor(variant) || 0) % PLUCK_VARIANTS + PLUCK_VARIANTS) % PLUCK_VARIANTS;
+  }
+
+  function pluckCacheKey(N, voice, variant) {
+    return N + ":" + voice + ":" + pluckVariant(variant);
+  }
+
+  // Fill `y` with one plucked-string excitation and its ringing tail.
+  // Pure (no AudioContext), so selfTest can check it in Node. Returns the
+  // index of the peak before normalising.
+  function synthPluck(y, N, voice, random) {
+    const rnd = random || Math.random;
+    const len = y.length;
     // A short, shaped excitation gives a pick attack instead of the broad,
     // harp-like noise burst produced by the original white-noise-only model.
     let previous = 0;
     const noiseMix = voice === "bouzouki" ? 0.42 : voice === "laouto" ? 0.35 : 0.28;
-    for (let i = 0; i < N; i++) {
-      const white = Math.random() * 2 - 1;
+    const pickLength = Math.max(2, Math.floor(N * 0.16));
+    for (let i = 0; i < Math.min(N, len); i++) {
+      const white = rnd() * 2 - 1;
       previous = previous * (1 - noiseMix) + white * noiseMix;
-      const pick = i < Math.max(2, Math.floor(N * 0.16)) ? 1 : 0.32;
-      noise[i] = previous * pick;
+      y[i] = previous * (i < pickLength ? 1 : 0.32);
     }
-    // Longer decay coefficients: a practice chord should still be ringing when
-    // the bar ends, the way a real course does, instead of dying mid-bar.
-    const decay = voice === "bouzouki" ? 0.99735 : voice === "laouto" ? 0.9982 : 0.99845;
-    const blend = voice === "bouzouki" ? 0.46 : voice === "laouto" ? 0.49 : 0.53;
-    for (let i = 0; i < len; i++) {
-      if (i < N) { y[i] = noise[i]; }
-      else { y[i] = decay * blend * (y[i - N] + y[i - N + 1]); }
-    }
+    const decay = pluckDecay(voice);
+    const a = decay * (1 - KS_SMOOTH);
+    const b = decay * KS_SMOOTH;
+    for (let i = N; i < len; i++) y[i] = a * y[i - N] + b * y[i - N + 1];
     // The recurrence depends on pitch and sample rate. Normalize every cached
     // buffer so a high bouzouki note cannot be much louder than a guitar root.
     let peak = 0;
-    for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(y[i]));
+    let peakAt = 0;
+    for (let i = 0; i < len; i++) {
+      const magnitude = Math.abs(y[i]);
+      if (magnitude > peak) { peak = magnitude; peakAt = i; }
+    }
     const normalise = peak > 0 ? 0.72 / peak : 1;
     for (let i = 0; i < len; i++) y[i] *= normalise;
-    // gentle overall fade so tails don't click
-    const fade = Math.floor(len * 0.22);
-    for (let i = 0; i < fade; i++) y[len - 1 - i] *= i / fade;
-    bufCache.set(key, buf);
-    return buf;
+    return peakAt;
+  }
+
+  // One buffer per (period, voice, variant). Four excitation variants are
+  // handed out round-robin so repeated notes and tremolo are not
+  // bit-identical. Returns the buffer and the playback rate that corrects the
+  // fractional-delay sharpness.
+  function pluckBuffer(freq, voice, variant) {
+    const sr = ctx.sampleRate;
+    const N = pluckPeriod(freq, sr);
+    const key = pluckCacheKey(N, voice, variant);
+    let buf = bufCache.get(key);
+    if (!buf) {
+      const len = Math.floor(pluckBufferSeconds(voice) * sr);
+      buf = ctx.createBuffer(1, len, sr);
+      const y = buf.getChannelData(0);
+      synthPluck(y, N, voice);
+      // The gain envelope is silent well before the end; this short fade only
+      // guarantees the buffer never ends on a step.
+      const fade = Math.min(len, Math.floor(sr * 0.03));
+      for (let i = 0; i < fade; i++) y[len - 1 - i] *= i / fade;
+      bufCache.set(key, buf);
+      if (bufCache.size > PLUCK_CACHE_LIMIT) bufCache.delete(bufCache.keys().next().value);
+    }
+    return { buf, rate: pluckRate(freq, N, sr) };
+  }
+
+  // Shared bookkeeping for every scheduled source: stopAll needs to know
+  // whether a source has started and which bus it feeds.
+  function track(source, start, bus, onEnd) {
+    source._dromosStart = start;
+    source._dromosBus = bus || "voice";
+    activeSources.add(source);
+    source.onended = () => {
+      activeSources.delete(source);
+      if (onEnd) onEnd();
+    };
   }
 
   // A clean, decaying piano-like tone built from a few harmonics. It is a
@@ -175,7 +312,7 @@
     out.gain.setValueAtTime(0.0001, t);
     out.gain.exponentialRampToValueAtTime(level, t + 0.004);
     out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.9, Math.min(dur, 2.4)));
-    out.connect(tone); tone.connect(master);
+    out.connect(tone); tone.connect(voiceOut());
     // Higher notes decay faster, like real strings; slight inharmonic stretch
     // on the upper partials keeps the tone from sounding like an organ.
     const bodyDecay = Math.max(0.6, Math.min(1.8, 1.9 - freq / 700));
@@ -192,8 +329,7 @@
       g.gain.setValueAtTime(partial.level, t);
       g.gain.exponentialRampToValueAtTime(Math.max(0.0001, partial.level * 0.08), t + Math.min(dur, bodyDecay * (1 - index * 0.15)));
       osc.connect(g); g.connect(out);
-      activeSources.push(osc);
-      osc.onended = () => { activeSources = activeSources.filter((source) => source !== osc); };
+      track(osc, t, "voice");
       osc.start(t);
       osc.stop(t + Math.min(dur, 2.4) + 0.05);
     });
@@ -201,9 +337,51 @@
 
   function decodeAudio(arrayBuffer) {
     return new Promise((resolve, reject) => {
-      const result = ctx.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
+      // The fetched bytes are never reused, so decode them in place.
+      const result = ctx.decodeAudioData(arrayBuffer, resolve, reject);
       if (result && typeof result.then === "function") result.then(resolve, reject);
     });
+  }
+
+  // Keep the first STUDIO_KEEP_SECONDS of a decoded sample, starting 1 ms
+  // before its measured onset (first sample above 1% of peak). The files carry
+  // 9-13 ms of near-silence before the hammer, which made studio chords land
+  // behind the click. The channels are a real stereo pair, so both are kept.
+  function trimStudioBuffer(buffer) {
+    try {
+      const sr = buffer.sampleRate;
+      const channels = buffer.numberOfChannels;
+      const data = [];
+      for (let c = 0; c < channels; c++) data.push(buffer.getChannelData(c));
+      let peak = 0;
+      data.forEach((channel) => {
+        for (let i = 0; i < channel.length; i++) {
+          const magnitude = Math.abs(channel[i]);
+          if (magnitude > peak) peak = magnitude;
+        }
+      });
+      if (!(peak > 0)) return buffer;
+      const threshold = peak * 0.01;
+      let onset = 0;
+      search: for (let i = 0; i < buffer.length; i++) {
+        for (let c = 0; c < channels; c++) {
+          if (Math.abs(data[c][i]) > threshold) { onset = i; break search; }
+        }
+      }
+      const start = Math.max(0, onset - Math.round(sr * 0.001));
+      const length = Math.min(buffer.length - start, Math.round(sr * STUDIO_KEEP_SECONDS));
+      if (length <= 0) return buffer;
+      const trimmed = ctx.createBuffer(channels, length, sr);
+      const fade = Math.min(length, Math.floor(sr * 0.03));
+      for (let c = 0; c < channels; c++) {
+        const target = trimmed.getChannelData(c);
+        target.set(data[c].subarray(start, start + length));
+        for (let i = 0; i < fade; i++) target[length - 1 - i] *= i / fade;
+      }
+      return trimmed;
+    } catch {
+      return buffer;
+    }
   }
 
   function nearestStudioSample(midi) {
@@ -224,7 +402,7 @@
       fetch(sample.url).then((response) => {
         if (!response.ok) throw new Error(`Piano sample ${response.status}`);
         return response.arrayBuffer();
-      }).then(decodeAudio).then((buffer) => studioBuffers.set(sample.midi, buffer)).catch(() => null)
+      }).then(decodeAudio).then((buffer) => studioBuffers.set(sample.midi, trimStudioBuffer(buffer))).catch(() => null)
     )).then(() => {
       studioLoadState = studioBuffers.size >= 8 ? "ready" : "fallback";
       return studioLoadState === "ready";
@@ -251,74 +429,100 @@
     const releaseAt = t + Math.max(0.35, Math.min(dur * 0.82, 2.6));
     g.gain.setValueAtTime(level, t);
     g.gain.setTargetAtTime(0.0001, releaseAt, 0.32);
-    src.connect(cleanup); cleanup.connect(g); g.connect(master);
-    activeSources.push(src);
-    src.onended = () => { activeSources = activeSources.filter((source) => source !== src); };
+    src.connect(cleanup); cleanup.connect(g); g.connect(voiceOut());
+    track(src, t, "voice", () => { try { g.disconnect(); } catch { /* already gone */ } });
     src.start(t);
     src.stop(t + Math.min(buffer.duration / rate, dur + 1.2));
   }
 
-  function playNoteAt(freq, when, dur, gain, referenceVoice) {
+  // `art` carries single-note articulation from picking drills:
+  // { accent: true|false, stroke: "down"|"up" }. Accented notes are a little
+  // louder and brighter; upstrokes are a little darker. Absent fields leave
+  // the note as it was.
+  function playNoteAt(freq, when, dur, gain, referenceVoice, art) {
+    if (when == null) when = ctx.currentTime + 0.01;
+    // A late timer must not fire missed notes as one cluster.
+    if (isLate(when)) return;
     const voice = referenceVoice || instrumentVoice();
     if (voice === "studio") { playStudioPianoNoteAt(freq, when, dur, gain); return; }
     if (voice === "piano") { playPianoNoteAt(freq, when, dur, gain); return; }
-    const b = pluckBuffer(freq, dur, voice);
+    const variant = pluckCounter++ % PLUCK_VARIANTS;
+    const main = pluckBuffer(freq, voice, variant);
     const src = ctx.createBufferSource();
-    src.buffer = b;
+    src.buffer = main.buf;
+    src.playbackRate.value = main.rate;
     const paired = voice === "bouzouki" ? ctx.createBufferSource() : null;
     if (paired) {
-      paired.buffer = b;
+      // The second string of the course gets its own excitation, so the two
+      // strings no longer sum into a fixed comb filter.
+      const second = pluckBuffer(freq, voice, variant + 2);
+      paired.buffer = second.buf;
+      paired.playbackRate.value = second.rate;
       // A second slightly sharp course creates the short paired-string bloom
       // of a bouzouki/mandolin attack without reverb or a sustaining drone.
       paired.detune.setValueAtTime(3.8, when);
     }
+    const accent = art ? art.accent : undefined;
+    const stroke = art ? art.stroke : undefined;
+    const accentLevel = accent === true ? 1.18 : accent === false ? 0.9 : 1;
+    // About ±0.5 dB and ±150 Hz per note, so repeated picking breathes.
+    const levelJitter = Math.pow(10, (Math.random() - 0.5) / 20);
+    const baseCutoff = voice === "bouzouki" ? 4300 : voice === "laouto" ? 3300 : 3100;
+    const cutoff = baseCutoff * (accent === true ? 1.2 : 1) * (stroke === "up" ? 0.86 : 1) + (Math.random() - 0.5) * 300;
     const g = ctx.createGain();
     const attackA = ctx.createGain();
     const attackB = paired ? ctx.createGain() : null;
     const tone = ctx.createBiquadFilter();
     const cleanup = ctx.createBiquadFilter();
     const body = ctx.createBiquadFilter();
-    const fundamental = ctx.createOscillator();
-    const fundamentalGain = ctx.createGain();
     cleanup.type = "highpass";
     cleanup.frequency.value = voice === "laouto" ? 62 : 74;
     cleanup.Q.value = 0.5;
     tone.type = "lowpass";
-    tone.frequency.value = voice === "bouzouki" ? 4300 : voice === "laouto" ? 3300 : 3100;
+    tone.frequency.value = Math.min(cutoff, ctx.sampleRate * 0.45);
     tone.Q.value = 0.55;
     body.type = "peaking";
     body.frequency.value = voice === "bouzouki" ? 330 : voice === "laouto" ? 220 : 185;
     body.Q.value = 0.75;
     body.gain.value = 1.6;
-    const level = gain == null ? 0.24 : gain;
+    const level = (gain == null ? 0.24 : gain) * accentLevel * levelJitter;
     g.gain.setValueAtTime(level, when);
-    g.gain.exponentialRampToValueAtTime(0.0001, when + Math.max(0.18, Math.min(dur, voice === "bouzouki" ? 0.72 : 1.15)));
+    g.gain.exponentialRampToValueAtTime(0.0001, when + Math.max(0.18, Math.min(dur, pluckEnvelopeCap(voice))));
     attackA.gain.value = paired ? 0.64 : 1;
     if (attackB) attackB.gain.value = 0.42;
-    // The fundamental oscillator exists to give the pluck its body, NOT to
-    // sustain. Anything longer reads as a synth drone humming under the chord
-    // after the strings have decayed, so it is an attack thump only.
-    const thump = Math.min(dur, 0.075);
-    fundamental.type = "triangle";
-    fundamental.frequency.setValueAtTime(freq, when);
-    fundamentalGain.gain.setValueAtTime(0.0001, when);
-    fundamentalGain.gain.exponentialRampToValueAtTime(voice === "bouzouki" ? 0.0002 : 0.026, when + 0.006);
-    fundamentalGain.gain.exponentialRampToValueAtTime(0.0001, when + thump);
     src.connect(attackA); attackA.connect(cleanup);
     if (paired) { paired.connect(attackB); attackB.connect(cleanup); }
     cleanup.connect(tone); tone.connect(body); body.connect(g);
-    fundamental.connect(fundamentalGain); fundamentalGain.connect(g); g.connect(master);
-    activeSources.push(src, fundamental);
-    if (paired) activeSources.push(paired);
-    const untrack = (item) => { activeSources = activeSources.filter((source) => source !== item); };
-    src.onended = () => untrack(src);
-    fundamental.onended = () => untrack(fundamental);
-    if (paired) paired.onended = () => untrack(paired);
+    g.connect(voiceOut());
+    const release = () => { try { g.disconnect(); } catch { /* already gone */ } };
+    track(src, when, "voice", paired ? null : release);
+    if (paired) track(paired, when, "voice", release);
+    // The fundamental oscillator exists to give the pluck its body, NOT to
+    // sustain. Anything longer reads as a synth drone humming under the chord
+    // after the strings have decayed, so it is an attack thump only. On the
+    // bouzouki it peaked at -74 dB, so that voice no longer builds it.
+    if (voice !== "bouzouki") {
+      const thump = Math.min(dur, 0.075);
+      const fundamental = ctx.createOscillator();
+      const fundamentalGain = ctx.createGain();
+      fundamental.type = "triangle";
+      fundamental.frequency.setValueAtTime(freq, when);
+      fundamentalGain.gain.setValueAtTime(0.0001, when);
+      fundamentalGain.gain.exponentialRampToValueAtTime(0.026, when + 0.006);
+      fundamentalGain.gain.exponentialRampToValueAtTime(0.0001, when + thump);
+      fundamental.connect(fundamentalGain); fundamentalGain.connect(g);
+      track(fundamental, when, "voice");
+      fundamental.start(when);
+      fundamental.stop(when + thump + 0.03);
+    }
     src.start(when);
     src.stop(when + dur + 0.05);
-    if (paired) { paired.start(when + 0.0035); paired.stop(when + dur + 0.055); }
-    fundamental.start(when);
-    fundamental.stop(when + thump + 0.03);
+    if (paired) {
+      // 0.5-1.5 ms between the two strings of the course, varied per note.
+      const offset = 0.0005 + Math.random() * 0.001;
+      paired.start(when + offset);
+      paired.stop(when + dur + 0.055);
+    }
   }
 
   // Strum a chord (array of {freq}). style: "strum" | "arp" | "block".
@@ -407,7 +611,15 @@
 
   // Play a path/cell note-by-note with UI sync. `silentFrom` leaves a gap where
   // the target note would sound — that silence is the audiation drill (FR-23).
-  let pathTimers = [];
+  // Pending path timers. Each removes itself when it fires, so a long loop
+  // never accumulates ids.
+  const pathTimers = new Set();
+  function pathLater(fn, ms) {
+    const id = setTimeout(() => { pathTimers.delete(id); fn(); }, Math.max(0, ms));
+    pathTimers.add(id);
+    return id;
+  }
+
   function playPath(notes, spacing, opts) {
     ensure();
     stopPath();
@@ -435,6 +647,10 @@
     // decides when a sound happens.
     const loopSpan = o.loop ? Math.max(barSpan, Math.ceil(total / barSpan - 1e-9) * barSpan) : total;
     const barBeats = Math.max(1, Math.round(loopSpan / beatSpacing));
+    // A non-chaining onDone ends the run. A highlight delayed by output
+    // latency must not land after it and leave a note lit.
+    const chaining = o.onDoneLead > 0;
+    let finished = false;
 
     function scheduleClicks(fromTime, beatOffset, beatCount) {
       if (!o.metronome) return;
@@ -446,9 +662,13 @@
     }
 
     function scheduleNotes(fromTime, iteration) {
+      const latency = uiLatency();
       notes.forEach((n, i) => {
         const silent = o.silentIndices && o.silentIndices.indexOf(i) >= 0;
         const when = fromTime + offsets[i];
+        // A note whose time has already passed (late timer, busy main thread)
+        // is skipped with its highlight instead of firing in a cluster.
+        if (isLate(when)) return;
         const dur = sp * (n && n.durMult > 0 ? n.durMult : 1);
         if (!silent) {
           if (n && Array.isArray(n.chord) && n.chord.length) {
@@ -460,11 +680,17 @@
             const level = voiceGain(tones.length, "chord") * (n.mute ? 0.55 : n.accent ? 1.12 : 0.92);
             tones.forEach((tone, k) => playNoteAt(tone.freq, when + k * spread, length, Math.max(0.1, level - k * 0.006), voice));
           } else {
-            playNoteAt(n.freq, when, trainingNoteDuration(dur, voice), voiceGain(1, "path") * (n && n.bass ? 1.08 : 1), voice);
+            playNoteAt(n.freq, when, trainingNoteDuration(dur, voice), voiceGain(1, "path") * (n && n.bass ? 1.08 : 1), voice,
+              n ? { accent: n.accent, stroke: n.stroke } : null);
           }
         }
         if (o.onStep) {
-          pathTimers.push(setTimeout(() => o.onStep(i, silent, iteration), Math.max(0, (when - ctx.currentTime) * 1000)));
+          // The highlight follows the sound the player hears, so it waits for
+          // the output latency as well as the audio clock.
+          pathLater(() => {
+            if (finished && !chaining) return;
+            o.onStep(i, silent, iteration);
+          }, (when - ctx.currentTime + latency) * 1000);
         }
       });
     }
@@ -481,12 +707,13 @@
         scheduleClicks(iterStart, iteration * barBeats, barBeats);
         scheduleNotes(iterStart, iteration);
         if (o.onLoop) {
-          pathTimers.push(setTimeout(() => o.onLoop(iteration), Math.max(0, (iterStart - ctx.currentTime) * 1000)));
+          pathLater(() => o.onLoop(iteration), (iterStart - ctx.currentTime + uiLatency()) * 1000);
         }
-        // Queue the next iteration 400ms before this one ends. The audio
+        // Queue the next iteration a full second before this one ends, so a
+        // late or throttled timer still lands ahead of the seam. The audio
         // clock owns the seam; this timer only feeds the scheduler.
-        const queueAt = iterStart + loopSpan - 0.4;
-        pathTimers.push(setTimeout(() => scheduleIteration(iteration + 1), Math.max(0, (queueAt - ctx.currentTime) * 1000)));
+        const queueAt = iterStart + loopSpan - 1.0;
+        pathLater(() => scheduleIteration(iteration + 1), (queueAt - ctx.currentTime) * 1000);
       };
       scheduleIteration(0);
       return Infinity;
@@ -499,44 +726,63 @@
       // chaining caller can schedule its next segment at the returned end
       // time while it is still in the future — the seam stays on the grid.
       const lead = o.onDoneLead > 0 ? o.onDoneLead : 0;
-      pathTimers.push(setTimeout(o.onDone, Math.max(0, (t0 + total - lead - ctx.currentTime) * 1000)));
+      // No latency here: onDone chains audio on the audio clock.
+      pathLater(() => { finished = true; o.onDone(); }, (t0 + total - lead - ctx.currentTime) * 1000);
     }
     return t0 + total;
   }
 
-  function stopPath() { pathTimers.forEach(clearTimeout); pathTimers = []; }
+  function stopPath() { pathTimers.forEach(clearTimeout); pathTimers.clear(); }
 
   // Changing exercise must be decisive: clear scheduled callbacks and stop
   // ringing sample voices as well as the transport. This prevents a previous
   // Solo Road/path prompt from continuing underneath a new page or ear test.
+  // Notes already sounding fade out over a few milliseconds on the old voice
+  // bus instead of being cut mid-waveform (an audible pop); notes and clicks
+  // that have not started yet are cancelled outright, as before.
   function stopAll() {
     playbackGeneration++;
     stopTransport();
     stopPath();
-    activeSources.forEach((source) => { try { source.stop(); } catch { /* already ended */ } });
-    activeSources = [];
+    const now = ctx ? ctx.currentTime : 0;
+    const fading = ctx ? voiceBus : null;
+    if (fading) {
+      fading.gain.cancelScheduledValues(now);
+      fading.gain.setValueAtTime(fading.gain.value, now);
+      fading.gain.setTargetAtTime(0, now, STOP_FADE_TAU);
+    }
+    activeSources.forEach((source) => {
+      try {
+        if (fading && source._dromosBus === "voice" && source._dromosStart <= now) source.stop(now + STOP_FADE_END);
+        else source.stop();
+      } catch { /* already ended */ }
+    });
+    activeSources.clear();
+    if (fading) {
+      // New playback starts on a fresh bus at full level; the old one is
+      // released once its fade and the stopped sources are done.
+      voiceBus = makeVoiceBus();
+      setTimeout(() => { try { fading.disconnect(); } catch { /* already gone */ } }, (STOP_FADE_END + 0.1) * 1000);
+    }
   }
 
   function click(when, accent) {
     const t = when == null ? ctx.currentTime : when;
+    if (isLate(t)) return;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
     o.frequency.value = accent ? 2000 : 1400;
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(accent ? 0.18 : 0.11, t + 0.001);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-    o.connect(g); g.connect(master);
-    track(o);
+    o.connect(g); g.connect(clickBus);
+    track(o, t, "click");
     o.start(t); o.stop(t + 0.08);
   }
 
   // The practice ensemble is intentionally simple: it provides functional
   // root motion and a grouped pulse for timing, rather than claiming to be an
   // authentic recording or drum arrangement for any Greek style.
-  function track(source) {
-    activeSources.push(source);
-    source.onended = () => { activeSources = activeSources.filter((item) => item !== source); };
-  }
 
   function bassMidi(pc) {
     // C2–B2: low enough to establish the root but above the sub-heavy range
@@ -546,6 +792,7 @@
 
   function playBassAt(pc, when, accent) {
     const t = when == null ? ctx.currentTime + 0.01 : when;
+    if (isLate(t)) return;
     const osc = ctx.createOscillator();
     const filter = ctx.createBiquadFilter();
     const gain = ctx.createGain();
@@ -555,12 +802,13 @@
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(accent ? 0.18 : 0.12, t + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
-    osc.connect(filter); filter.connect(gain); gain.connect(master);
-    track(osc); osc.start(t); osc.stop(t + 0.46);
+    osc.connect(filter); filter.connect(gain); gain.connect(voiceOut());
+    track(osc, t, "voice"); osc.start(t); osc.stop(t + 0.46);
   }
 
   function playKickAt(when, accent) {
     const t = when == null ? ctx.currentTime + 0.01 : when;
+    if (isLate(t)) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
@@ -569,12 +817,13 @@
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(accent ? 0.17 : 0.11, t + 0.003);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    osc.connect(gain); gain.connect(master);
-    track(osc); osc.start(t); osc.stop(t + 0.15);
+    osc.connect(gain); gain.connect(clickBus);
+    track(osc, t, "click"); osc.start(t); osc.stop(t + 0.15);
   }
 
   function playTickAt(when, accent) {
     const t = when == null ? ctx.currentTime + 0.01 : when;
+    if (isLate(t)) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = accent ? "square" : "triangle";
@@ -582,8 +831,8 @@
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(accent ? 0.065 : 0.035, t + 0.002);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + (accent ? 0.07 : 0.035));
-    osc.connect(gain); gain.connect(master);
-    track(osc); osc.start(t); osc.stop(t + 0.09);
+    osc.connect(gain); gain.connect(clickBus);
+    track(osc, t, "click"); osc.start(t); osc.stop(t + 0.09);
   }
 
   function playGrooveBeat(groove, event, pulse, beatInBar, when) {
@@ -618,12 +867,27 @@
     let beatInBar = 0;
     let activeEvent = null;
     let nextTime = ctx.currentTime + 0.15;
-    const lookahead = 0.1;      // s
+    const lookahead = 0.2;      // s
     const interval = 25;        // ms timer
 
     function secPerBeat() { return 60 / bpm; }
 
     const timer = setInterval(() => {
+      // The timer woke after the clock passed the next beat (busy main
+      // thread, throttled background tab). Skip the missed beats on the grid
+      // instead of firing them all at once. onBar still runs for a skipped
+      // downbeat so the progression keeps its bar lines; its sounds are not
+      // played.
+      while (nextTime < ctx.currentTime - LATE_TOLERANCE) {
+        if (beatInBar === 0) {
+          const chord = cfg.onBar(bar, nextTime, ctx.currentTime);
+          if (!chord) { stopTransport(); cfg.onStop && cfg.onStop(); return; }
+          if (!chord.hold) activeEvent = chord;
+        }
+        beatInBar++;
+        if (beatInBar >= beatsPerBar) { beatInBar = 0; bar++; }
+        nextTime += secPerBeat();
+      }
       while (nextTime < ctx.currentTime + lookahead) {
         // beat 0 of a bar -> advance chord + strum
         if (beatInBar === 0) {
@@ -676,6 +940,30 @@
       trainingNoteDuration(0.24, "bouzouki") < trainingNoteDuration(0.24, "piano"));
     add("studio samples never repitch more than two semitones in the teaching range", true,
       Array.from({ length: 49 }, (_, index) => 36 + index).every((midi) => Math.abs(nearestStudioSample(midi).midi - midi) <= 2));
+    const voices = ["bouzouki", "laouto", "guitar"];
+    add("every plucked voice has a stable string loop (gain below 1)", true,
+      voices.every((voice) => pluckLoopGain(voice) < 1 && pluckLoopGain(voice) > 0.99));
+    // Seeded noise keeps the check reproducible.
+    let seed = 12345;
+    const seeded = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+    const plucks = [];
+    [44100, 48000].forEach((sampleRate) => voices.forEach((voice) =>
+      [110, 146.83, 440, 1174.66].forEach((freq) => {
+        const N = pluckPeriod(freq, sampleRate);
+        const y = new Float32Array(Math.floor(pluckBufferSeconds(voice) * sampleRate));
+        plucks.push({ N, peakAt: synthPluck(y, N, voice, seeded), rate: pluckRate(freq, N, sampleRate) });
+      })));
+    add("every pluck peaks in its attack, not in a growing tail", true,
+      plucks.every((pluck) => pluck.peakAt < 2 * pluck.N));
+    add("pitch correction never stretches a pluck by more than 1.5%", true,
+      plucks.every((pluck) => Math.abs(pluck.rate - 1) <= 0.015));
+    add("corrected pluck period lands on the requested pitch", true,
+      Math.abs(1200 * Math.log2(48000 / (pluckPeriod(440, 48000) - KS_SMOOTH) * pluckRate(440, pluckPeriod(440, 48000), 48000) / 440)) < 0.01);
+    add("pluck cache key ignores tempo and cycles four excitation variants", true,
+      pluckCacheKey(109, "bouzouki", 4) === pluckCacheKey(109, "bouzouki", 0)
+        && new Set([0, 1, 2, 3].map((variant) => pluckCacheKey(109, "bouzouki", variant))).size === PLUCK_VARIANTS);
+    add("a note more than 10 ms in the past is skipped", true, isLateAt(0.98, 1) && !isLateAt(0.995, 1) && !isLateAt(null, 1));
+    add("UI latency is zero before audio starts", 0, uiLatency());
     return { ok, results };
   }
 
@@ -695,6 +983,9 @@
     // Absolute audio-clock time, for callers that schedule multi-part gestures
     // (e.g. the "hear the lean" demo) with sample-accurate downbeats.
     now: () => { ensure(); return ctx.currentTime; },
+    // Seconds from the audio clock to the speaker. Add it to any UI timer
+    // that marks a sound (highlights, beat pulses), never to audio chaining.
+    uiLatency,
     setBpm: (v) => transport && transport.setBpm(v),
     setMetronome: (v) => transport && transport.setMetronome(v),
     selfTest
