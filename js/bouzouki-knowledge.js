@@ -122,6 +122,27 @@
       boundary: "Supports that a dromos is an interval structure realisable from any tonic; it does not endorse any specific key choice, which carries its own label in Dromos."
     },
     {
+      id: "mystakidis-laiki-kithara", rank: 1, authority: "Method book (forum-hosted copy)",
+      name: "Mystakidis · Η Λαϊκή Κιθάρα (2010), pp. 18-20",
+      href: "https://rembetiko.gr/uploads/default/original/2X/4/45a61d0b42b469532e2d02abbcf2b3bb29771838.pdf",
+      supports: ["laiko guitar accompaniment grids per rhythm", "downstrokes generally preferred", "old and new zeibekiko, karsilamas, kalamatianos, syrtos, hasapiko, tsifteteli patterns"],
+      boundary: "Read from a forum-hosted copy whose provenance is not confirmed; the grids are re-notated, not reproduced as pages."
+    },
+    {
+      id: "krikonis-skarvelis", rank: 1, authority: "Academic thesis",
+      name: "Krikonis 2009 (AUTh) · Skarvelis's rebetiko guitar, pp. 72, 147-154",
+      href: "https://sophia.mus.auth.gr/xmlui/bitstream/handle/123456789/104/AEM_1188.pdf?sequence=3&isAllowed=n",
+      supports: ["bass/chord onsets for hasapiko, karsilamas, zeibekiko, syrtos, kalamatianos", "accented bass against staccato chords", "harmonic rhythm and sparing use of the third"],
+      boundary: "Documents one guitarist's practice; it does not make his grids the only correct accompaniment."
+    },
+    {
+      id: "bolder-greek-drums", rank: 1, authority: "Method book (percussion)",
+      name: "Fred Bolder · Greek Dance Rhythms for Drums (sample)",
+      href: "https://www.dansblad.nl/grdrums/sample.pdf",
+      supports: ["kick/snare onsets for zeibekiko and tsifteteli", "syrtos grouping 3-3-2"],
+      boundary: "A drum method: its onsets corroborate the guitar grids but it does not prescribe guitar strokes."
+    },
+    {
       id: "manolopoulos-thesis", rank: 1, authority: "Academic thesis",
       name: "Manolopoulos 2023 (Univ. of Macedonia) · bouzouki practice progression",
       href: "https://dspace.lib.uom.gr/bitstream/2159/29581/5/ManolopoulosIoannisMsc2023.pdf",
