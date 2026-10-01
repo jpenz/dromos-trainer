@@ -399,7 +399,7 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "evolve\/stage\/voice options fold away from the first-time player");
   // Setup is four dropdowns, with the exercise select grouped by mastery stage.
   assert.match(app, /\$\("pickingExerciseSel"\)\.innerHTML = BK\.MASTERY_PHASES\.map/,
-    "the exercise dropdown is built from the six-stage plan, not a card rail");
+    "the exercise dropdown is built from the nine-category plan, not a card rail");
   assert.doesNotMatch(html, /pickingExerciseRail|pickingCategories|data-picking-mode/,
     "the card rail, category nav, and mode seg are gone — dropdowns replaced them");
   // Placement ergonomics: cross-course jumps are cost-gated and chunks come
@@ -417,7 +417,7 @@ test("picking loops live on the audio clock and the board stays whole", () => {
     "tetrachord road colouring rides the dot classes");
   // Timing grammar: a drill that declares its own subdivision must win on
   // selection, and an evolve run must return the lab to where it started.
-  assert.match(app, /state\.picking\.subdivision = exercise\.subdivision \|\| state\.picking\.userSubdivision \|\| 2;/,
+  assert.match(app, /: exercise\.subdivision \|\| state\.picking\.userSubdivision \|\| 2;/,
     "triplet drills must not open as straight eighths, and a drill without its own grid returns to the player's");
   assert.match(app, /state\.picking\.runHome = \{ tonic: state\.tonic, position: state\.lab\.position \};/,
     "an evolve run records home before it travels");

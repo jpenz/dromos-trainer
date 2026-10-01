@@ -2560,6 +2560,8 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
 .workbench-grid select { width: 100%; min-height: var(--h-control); padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); color-scheme: dark; font-size: var(--fs-sec); text-transform: none; letter-spacing: 0; font-weight: 500; }
 .workbench-grid select:disabled { opacity: 0.55; }
 @media (pointer: coarse) { .workbench-presets button, .workbench-grid select, .picking-lab-mode button { min-height: 44px; } }
+.picking-seam-btn { display: inline-flex; align-items: center; gap: var(--sp-1); margin-top: var(--sp-2); min-height: var(--h-chip); padding: 0 var(--sp-3); border: 1px solid var(--terracotta); border-radius: var(--r-pill); background: var(--terracotta-soft); color: var(--text); font-size: var(--fs-label); cursor: pointer; }
+@media (pointer: coarse) { .picking-seam-btn { min-height: 44px; } }
 .picking-rail-count { display: block; margin-top: var(--sp-1); color: var(--faint); font-size: var(--fs-micro); }
 
 /* ---- Rhythm comp (FR-77) ---- */

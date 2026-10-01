@@ -269,6 +269,174 @@
       boundary: "Community corroboration only; it never establishes a technique rule by itself."
     },
     {
+      id: "tzinellis-metronome", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Thodoris Tzinellis · the most basic metronome exercise (mybouzouki.com)",
+      href: "https://www.youtube.com/watch?v=x8gsNY0TEEo",
+      supports: ["finger pairs on the click", "down on the click, up between", "slow tempo ladder"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "tzinellis-sync", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Thodoris Tzinellis · the secret to fast, clean playing (finger cells)",
+      href: "https://www.youtube.com/watch?v=IaaR-V9yi9M",
+      supports: ["finger cells 1-2-3-2, 1-2-4-2", "15 to 20 reps per position", "stop when notes start to smear"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "tzinellis-tenuto", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Thodoris Tzinellis · pick control exercise (tenuto)",
+      href: "https://www.youtube.com/watch?v=0-jquOUj0yc",
+      supports: ["pick control on held notes", "even strokes"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "krionas-speed", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Giorgos Krionas · bouzouki speed exercise (YouTube Short)",
+      href: "https://www.youtube.com/shorts/F9UhvSRNRkE",
+      supports: ["continuous finger cells", "speed with small pick motion"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "krionas-smart-pick", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Giorgos Krionas · a smart pick exercise for bouzouki",
+      href: "https://www.youtube.com/watch?v=MYYd5-qPs4Q",
+      supports: ["every group starts on a downstroke", "pick direction in odd meters"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "nistikakis-pick", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Mihail Nistikakis · exercises for a strong, flexible pick",
+      href: "https://www.youtube.com/watch?v=PWPmCZ2wlQE",
+      supports: ["double picking each note", "pick strength and agility"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "kosteli-spot", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Konstantina Kosteli · speed exercise: running on the spot",
+      href: "https://www.youtube.com/watch?v=JJF6z27cjo0",
+      supports: ["degree-to-5th cells", "scale sprint", "gradual daily tempo"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "kosteli-stefanakis", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Konstantina Kosteli · Andreas Stefanakis's speed exercise",
+      href: "https://www.youtube.com/watch?v=zl9TCWhqFZE",
+      supports: ["speed exercise over roumba at 100 BPM", "drop tempo when notes blur"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "bouzoukiland-tremolo2", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Nikos Filippatos (Bouzoukiland) · tremolo improvement exercise 2",
+      href: "https://www.youtube.com/watch?v=HIKlFIjk6FU",
+      supports: ["double-stop tremolo through the scale", "counted strokes per note"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "zerlentes-zeibekiko", rank: 2, authority: "YouTube lesson · professional teacher",
+      name: "Thanasis Zerlentes · zeibekiko lesson on three-course bouzouki",
+      href: "https://www.youtube.com/watch?v=Ruz30RY1QaA",
+      supports: ["zeibekiko rhythmic part bar by bar (supporting only)"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "fujita-chromatic", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Tomo Fujita · super simple exercise for clean technique",
+      href: "https://www.youtube.com/watch?v=6RL629uHhmI",
+      supports: ["slow chromatic finger walk", "clean, even notes"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "fujita-accent-muting", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Tomo Fujita · accents with left-hand muting",
+      href: "https://www.youtube.com/watch?v=aZUBZpzuCos",
+      supports: ["right hand keeps moving through muted notes", "accent placement"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "fujita-mayer-teacher", rank: 2, authority: "YouTube interview · professional (guitar import)",
+      name: "Andy Guitar channel · John Mayer's guitar teacher, Tomo Fujita",
+      href: "https://www.youtube.com/watch?v=kbdO34LCJhI",
+      supports: ["slow, perfect repetition", "fixing the weak spot"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "marcel-count", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Lessons With Marcel · learn to count and fix your pick strokes",
+      href: "https://www.youtube.com/watch?v=SxyYnoz9ayA",
+      supports: ["numbers are downs, ands are ups", "air strokes on rests"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "banjo-ben-alternate", rank: 2, authority: "YouTube lesson · professional (bluegrass import)",
+      name: "Banjo Ben Clark · intro to alternate picking for bluegrass guitar",
+      href: "https://www.youtube.com/watch?v=c4nsSwYKaNY",
+      supports: ["constant down-up arm motion", "missing the string on rests"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "mayer-ig-2018", rank: 2, authority: "YouTube · fan upload of a professional's Instagram lesson",
+      name: "John Mayer · Instagram guitar lessons, January 2018 (John Mayer France channel)",
+      href: "https://www.youtube.com/watch?v=0W135SJbP6M",
+      supports: ["keep the right hand moving (about 18:15)", "go back and get the missed spot (about 22:16)"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "mayer-ig-2020", rank: 2, authority: "YouTube · fan upload of a professional's Instagram lesson",
+      name: "John Mayer · Instagram Live guitar lesson, May 2020 (Guitar Music Pro channel)",
+      href: "https://www.youtube.com/watch?v=MXxLR8s4xRQ",
+      supports: ["playing below the root", "leaving the climb-up-from-the-root box"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "tuttle-crosspick-101", rank: 2, authority: "Magazine video lesson · professional (bluegrass import)",
+      name: "Molly Tuttle · Crosspicking 101 (Acoustic Guitar)",
+      href: "https://acousticguitar.com/crosspicking-101-a-private-bluegrass-lesson-with-molly-tuttle-video",
+      supports: ["4-3-2, 4-3-2, 4-2 roll (3 + 3 + 2)", "alternate then down-down-up", "reverse roll", "gradually increase tempo"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "tuttle-crosspick-gg", rank: 2, authority: "YouTube lesson · professional (bluegrass import)",
+      name: "Molly Tuttle · how to crosspick (Guitar Gathering)",
+      href: "https://www.youtube.com/watch?v=6S66aINeabs",
+      supports: ["crosspicking rolls"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "tuttle-right-hand", rank: 2, authority: "Magazine video lesson · professional (bluegrass import)",
+      name: "Molly Tuttle · right-hand techniques (Acoustic Guitar)",
+      href: "https://acousticguitar.com/video-lesson-molly-tuttle-breaks-down-her-deft-right-hand-techniques",
+      supports: ["choose the picking you can play faster and more accurately"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "tuttle-guitarcom", rank: 2, authority: "Magazine interview · professional (bluegrass import)",
+      name: "Molly Tuttle · the secret to playing fast (Guitar.com)",
+      href: "https://guitar.com/news/music-news/molly-tuttle-secret-playing-fast-guitar",
+      supports: ["play a little faster than you can", "slow down the 3 or 4 notes that fail"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "grier-gg", rank: 2, authority: "YouTube interview · professional (bluegrass import)",
+      name: "David Grier · flatpicking guitar mastery (Guitar Gathering)",
+      href: "https://www.youtube.com/watch?v=mXyPPL-Gmvo",
+      supports: ["play lighter when playing fast", "every string the same volume"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "sutton-artistworks", rank: 2, authority: "YouTube lesson · professional (bluegrass import)",
+      name: "Bryan Sutton · rhythm with crosspicking (ArtistWorks)",
+      href: "https://www.youtube.com/watch?v=gaWEjUtloqw",
+      supports: ["crosspicking inside rhythm playing", "long, resonant notes"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
+      id: "nygaard-rice", rank: 2, authority: "Lesson article · professional (bluegrass import)",
+      name: "Tony Rice lessons (Peghead Nation)",
+      href: "https://www.pegheadnation.com/news-reviews/breaking-news/tony-rice-lessons",
+      supports: ["after a downstroke, move toward the higher string"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
+    },
+    {
       id: "reddit-bouzouki", rank: 3, authority: "Community signal",
       name: "r/bouzouki · recurring learner questions",
       href: "https://www.reddit.com/r/bouzouki/",
@@ -277,42 +445,63 @@
     }
   ];
 
+  // Nine categories in practical order (FR-78): stroke, pulse, sync,
+  // crossing, speed, tremolo, chords, fretboard, phrasing. Each drill sits
+  // in exactly one; the Guided plan walks them top to bottom.
   const MASTERY_PHASES = [
     {
-      id: "attack", step: 1, label: "Ta–ka clock", short: "↓ ta · ↑ ka",
-      answer: "Build an even down–up engine on open courses first, then carry it onto one-position dromos lines with beat-one weight as the first accent vocabulary.",
-      gate: "Self-scored: upstrokes match downstrokes in time, volume, and clarity — confirm on a phone recording before tempo rises.",
-      exerciseIds: ["open-course-penies", "down-up-clock", "through-stroke-landings", "monopenies-passes", "loose-hand-ladder", "picked-dromos-line", "grouped-accents"]
+      id: "setup", step: 1, label: "Setup and stroke", short: "loose grip, even down-up",
+      answer: "Every later drill depends on a loose grip and an even down-up from the wrist, with the fretting hand still. Open courses first, then lighter strokes as the tempo rises.",
+      gate: "Self-scored: on a phone recording, upstrokes match downstrokes in time, volume and clarity before the tempo rises.",
+      exerciseIds: ["open-course-penies", "down-up-clock", "through-stroke-landings", "monopenies-passes", "loose-hand-ladder", "shallow-pick-ladder"]
     },
     {
-      id: "coordination", step: 2, label: "Courses & crossings", short: "clock survives the neck",
-      answer: "Keep the ta–ka clock intact while courses, scale windows, and left-hand order change — every course of the instrument, both crossing directions.",
-      gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recorded take.",
-      exerciseIds: ["traversal-countdown", "course-target", "outside-pairs", "mixed-crossings", "crossing-flip-stops", "skip-thirds", "degree-window", "full-neck-ladder", "phrase-workbench"]
+      id: "pulse", step: 2, label: "Time and Greek pulse", short: "the rhythm decides the stroke",
+      answer: "Pulse and stroke direction on the click come before notes: one pitch, then the group rules, then air strokes through rests, then subdivision, then a click that thins out until your hand keeps the dance alone.",
+      gate: "Self-scored: from one repeated pitch a listener can name the rhythm, and the first note after every rest has the right stroke direction.",
+      exerciseIds: ["grouped-accents", "group-reset-downstroke", "ghost-stroke-rests", "pulse-accent-map", "rhythm-formation-ladder", "gap-click-pulse"]
     },
     {
-      id: "drive", step: 3, label: "Accent & drive", short: "same notes, new excitement",
-      answer: "Note excitement is a trainable layer: the same generated line cycles rhythm formations, pulse-mapped accents, glide triplet families, and skeleton-versus-fill density.",
-      gate: "Self-scored: from a single repeated pitch, your recording makes the active grouping and the accent map identifiable without being told.",
-      exerciseIds: ["rhythm-formation-ladder", "pulse-accent-map", "rhythm-comp", "skeleton-then-fill", "triplet-drive", "triplet-grammar", "sextolet-glide", "tactile-ab", "timbre-echo"]
+      id: "sync", step: 3, label: "Hand sync and accuracy", short: "both hands land together",
+      answer: "The fretting finger lands exactly when the pick strikes: finger pairs, then the dromos line, then finger cells. Go back and get it is the repair method for every later category.",
+      gate: "Self-scored: finger cells clean at the same tempo as the open-course clock, and every flubbed spot looped clean before the tempo rises.",
+      exerciseIds: ["finger-pair-chromatic", "picked-dromos-line", "sync-cells", "seam-loop"]
     },
     {
-      id: "voice", step: 4, label: "Articulation voice", short: "tremolo is a choice",
-      answer: "Tremolo, legato, ornament and register are deliberate expressive choices: counted tremolo graduates to free tremolo with clean mid-line entries and exits.",
-      gate: "Self-scored: a recorded tremolo entry shows no hiccup, its exit lands with the click, and the sparse and dense registers are audibly different takes of the same phrase.",
-      exerciseIds: ["mair-density-ladder", "tremolo-ladder", "counted-tremolo-groupings", "tremolo-entry-exit", "pick-legato", "mode-phrase-cell", "irish-treble", "era-register-contrast"]
+      id: "crossing", step: 4, label: "String crossing", short: "the clock survives the course change",
+      answer: "Course changes are the hardest part of alternate picking. Keep the clock through inside, outside and mixed crossings in both directions, and choose each phrase's crossing solution by its clean tempo.",
+      gate: "Self-scored: a crossing drill started on either stroke shows no volume dip or hesitation at any course change on a recording.",
+      exerciseIds: ["course-target", "traversal-countdown", "outside-pairs", "crossing-flip-stops", "mixed-crossings", "crossing-bakeoff", "degree-window", "skip-thirds"]
     },
     {
-      id: "harmony-keys", step: 5, label: "Harmony & key moves", short: "chunks travel",
-      answer: "Triad arpeggios run through the active progression, and key change becomes physical: dromoi assembled from named tetrachord chunks, moved around the band cycle on pivot notes.",
-      gate: "Self-scored: the arpeggio circuit completes the band key cycle at one steady tempo, and each key change lands on its pivot note without a stumble.",
-      exerciseIds: ["arpeggio-arrival", "arp-chunks", "triad-ladder", "chunk-builder", "ghammaz-pivot", "band-key-arpeggio-circuit"]
+      id: "speed", step: 5, label: "Speed and glide", short: "speed under the blur rule",
+      answer: "Speed comes only after time, sync and crossing: a fixed-click density ladder, glide economy, bursts on known ground, then work at the edge, always stopping when notes start to smear.",
+      gate: "Self-scored: a banked ceiling that holds three clean passes, and no tempo raised on a day the notes blur.",
+      exerciseIds: ["mair-density-ladder", "triplet-drive", "triplet-grammar", "sextolet-glide", "spot-run-sprint", "double-pick-edge"]
     },
     {
-      id: "lead", step: 6, label: "Lead & taximi", short: "vocabulary under pressure",
-      answer: "The documented lead devices as generated families: imitation chains, descending minore skeletons, instant transposition on a cue chord, and time that survives a thinning click.",
-      gate: "Self-scored exam in one sitting: a gap-click take with clean re-entry, a sequence ladder that keeps its rhythm through every restatement, and one instant transpose landed on the first attempt.",
-      exerciseIds: ["sequence-ladder", "skeleton-descent", "instant-transpose", "gap-click-pulse"]
+      id: "tremolo", step: 6, label: "Tremolo and dynamics", short: "tremolo is a choice",
+      answer: "Even, counted alternate strokes first; then tremolo bursts, counted groupings, clean entries and exits, and tremolo on two courses with volume control.",
+      gate: "Self-scored: a recorded tremolo entry shows no hiccup, its exit lands with the click, and the 3rds tremolo stays even on both courses.",
+      exerciseIds: ["tremolo-ladder", "counted-tremolo-groupings", "tremolo-entry-exit", "double-stop-tremolo-thirds"]
+    },
+    {
+      id: "chords", step: 7, label: "Chords, comp and arpeggios", short: "the right hand keeps the dance",
+      answer: "Rhythm comp can start in week 2; the rest needs secure crossing. Bass, strum and chop patterns, rolls on the meter, triad arpeggios through the progression, then the band key cycle.",
+      gate: "Self-scored: three loops of the progression with every chord change on the downbeat, and the arpeggio circuit through the band key cycle at one steady tempo.",
+      exerciseIds: ["rhythm-comp", "meter-roll", "arpeggio-arrival", "arp-chunks", "triad-ladder", "band-key-arpeggio-circuit"]
+    },
+    {
+      id: "fretboard", step: 8, label: "Fretboard and register", short: "the same phrase, more places",
+      answer: "Once the hands are reliable, put the same phrase in more places and more sounds: the whole neck, along versus across the strings, timbre echoes, below the tonic, and era register.",
+      gate: "Self-scored: one phrase played in three places on the neck, and 8 bars in each zone around the tonic without a forbidden note.",
+      exerciseIds: ["full-neck-ladder", "tactile-ab", "timbre-echo", "below-the-tonic", "era-register-contrast"]
+    },
+    {
+      id: "phrasing", step: 9, label: "Phrasing, ornaments and key moves", short: "vocabulary under pressure",
+      answer: "The payoff layer: left-hand legato, ornaments, phrase cells, skeleton and fill, the Hiotis close, sequences, chunks and pivots through the band keys, instant transposition, and the open workbench.",
+      gate: "Self-scored exam in one sitting: a sequence ladder that keeps its rhythm, one instant transpose landed first time, and three clean pickup closes.",
+      exerciseIds: ["pick-legato", "irish-treble", "mode-phrase-cell", "skeleton-then-fill", "pickup-close", "skeleton-descent", "sequence-ladder", "chunk-builder", "ghammaz-pivot", "instant-transpose", "phrase-workbench"]
     }
   ];
 

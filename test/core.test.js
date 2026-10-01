@@ -35,8 +35,10 @@ test("authorised study starters and referenced methods remain clearly bounded", 
 
 test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority separate", () => {
   const { BouzoukiKnowledge, PickingLab } = loadCore();
-  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 6, "foundation to lead: six stages");
-  assert.equal(PickingLab.EXERCISES.length, 43, "41 + the phrase workbench + rhythm comp");
+  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 9, "nine categories in practical order, stroke first, phrasing last");
+  assert.equal(BouzoukiKnowledge.MASTERY_PHASES.map((phase) => phase.id).join(" "),
+    "setup pulse sync crossing speed tremolo chords fretboard phrasing", "practical order: stroke first, phrasing last");
+  assert.equal(PickingLab.EXERCISES.length, 56, "43 + 13 video-sourced drills");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -84,6 +86,19 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
       const tones = flagged().slice(0, 3);
       return [{ symbol: "G", degreeLabel: "I", tones, bass: tones[0], alt: tones[2], top: tones[2] }];
     }
+    if (exercise.sequence === "fingerPairs" || exercise.sequence === "fretCells") {
+      return Array.from({ length: 16 }, (_, fret) => ({ midi: 62 + fret, freq: 440, stringIndex: 3, fret, note: { degree: `fret ${fret}` } }));
+    }
+    if (exercise.sequence === "roll") {
+      const trio = flagged().slice(0, 3).map((node, index) => Object.assign(node, { stringIndex: index }));
+      return [{ symbol: "G", degreeLabel: "I", tones: trio, trio }];
+    }
+    if (exercise.sequence === "dyadTremolo") {
+      const notes = flagged();
+      return [0, 1, 2].map((index) => ({ lower: notes[index], upper: notes[index + 2], label: "1-3" }));
+    }
+    if (exercise.sequence === "equator") return Object.assign(flagged(), { tonicIndex: 6 });
+    if (exercise.sequence === "crossBakeoff") return flagged((i) => ({ cell: i < 3 ? "lower" : "upper" })).slice(0, 5);
     if (exercise.sequence === "triadLadder") return flagged((i) => ({ inversionStart: i % 3 === 0, inversionLabel: "root position" }));
     if (exercise.sequence === "arpChunks") return flagged((i) => ({ chordStart: i % 4 === 0, chordSymbol: "X", octaveTop: i % 4 === 3 }));
     return flagged();
@@ -105,7 +120,7 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
   // All-course coverage is a real requirement, not a vibe.
   assert.ok(PickingLab.EXERCISES.filter((exercise) => exercise.allStrings).length >= 3,
     "at least three exercises must force coverage of every course");
-  // Six stages, every exercise placed exactly once.
+  // Nine categories, every exercise placed exactly once.
   const placed = BouzoukiKnowledge.MASTERY_PHASES.flatMap((phase) => phase.exerciseIds);
   assert.equal(new Set(placed).size, placed.length, "no exercise may sit in two stages");
   assert.equal(placed.length, PickingLab.EXERCISES.length, "every exercise must sit in exactly one stage");
@@ -869,4 +884,42 @@ test("the phrase workbench generates every combination, closes two-way lines, an
       }
     }));
   })));
+});
+
+test("video-sourced drills keep their documented stroke grammar inside the Greek rhythms", () => {
+  const { PickingLab, StyleLibrary } = loadCore();
+  const map = (id) => StyleLibrary.beatMap(StyleLibrary.byId(id));
+  const line = Array.from({ length: 15 }, (_, index) => ({ midi: 62 + [0, 2, 4, 5, 7, 9, 11, 12, 11, 9, 7, 5, 4, 2, 0][index], freq: 440, stringIndex: 0, fret: index, note: { degree: "1" } }));
+  const strokes = (events) => events.map((event) => event.silent ? "." : (event.technique || "-")).join("");
+  // Every group starts down: kalamatianos 3+2+2 at one note per click.
+  const reset = PickingLab.buildSequence("group-reset-downstroke", line, map("kalamatianos"), "down", "reset", 1, { grooveId: "kalamatianos" });
+  assert.equal(strokes(reset).slice(0, 7), "DUDDUDU", "the odd 3-group ends down and the next group re-picks down");
+  // Tsifteteli eighths fall 3+3+2: ghost strokes sound only on slots 1, 4, 7 in bar 2.
+  const ghost = PickingLab.buildSequence("ghost-stroke-rests", line, map("tsifteteli"), "down", "groups", 2, { grooveId: "tsifteteli" });
+  assert.equal(ghost.slice(8).map((event) => event.silent ? "." : "x").join(""), "x..x..x.");
+  assert.equal(ghost.map((event) => event.stroke).join(",").includes("down,down"), false, "air strokes keep strict alternation");
+  // Hiotis close: every held close and every beat 1 is a down; the even pickup re-picks.
+  const close = PickingLab.buildSequence("pickup-close", line, map("zeibekiko"), "down", undefined, 2, {});
+  const closes = close.filter((event) => /held close/.test(event.phrase || ""));
+  assert.equal(closes.length, 3);
+  assert.ok(closes.every((event) => event.stroke === "down" && event.accent));
+  assert.ok(close.filter((event) => event.barStart).every((event) => event.stroke === "down" && event.accent));
+  assert.equal(close.reduce((sum, event) => sum + event.durMult, 0) % 18, 0, "each close fills whole zeibekiko bars");
+  // Course roll follows the meter: 3+3+2 in tsifteteli.
+  const trio = [0, 1, 2].map((stringIndex) => ({ midi: 55 + stringIndex * 4, freq: 440, stringIndex, fret: 0, note: {} }));
+  const roll = PickingLab.buildSequence("meter-roll", [{ symbol: "G", trio }], map("tsifteteli"), "down", "glide", 2, { grooveId: "tsifteteli" });
+  assert.equal(roll.map((event) => event.stringIndex).join(""), "01201202");
+  assert.equal(strokes(roll), "DDGUDDGUDU");
+  // Crossing bake-off: under alternation the first crossing is an upstroke; B re-picks it down.
+  const cell = [0, 1, 2].map((fret) => ({ midi: 60 + fret, freq: 440, stringIndex: 0, fret, cell: "lower", note: {} }))
+    .concat([0, 1].map((fret) => ({ midi: 65 + fret, freq: 440, stringIndex: 1, fret, cell: "upper", note: {} })));
+  assert.equal(PickingLab.buildSequence("crossing-bakeoff", cell, map("hasaposerviko"), "down", "alternate", 2, {})[3].stroke, "up");
+  assert.equal(PickingLab.buildSequence("crossing-bakeoff", cell, map("hasaposerviko"), "down", "repick", 2, {})[3].stroke, "down");
+  assert.equal(PickingLab.buildSequence("crossing-bakeoff", cell, map("hasaposerviko"), "down", "directional", 2, {})[3].technique, "DG",
+    "after a down toward the higher course the stroke carries through");
+  // Finger cells walk one course by fret with the chosen fingers.
+  const course = Array.from({ length: 16 }, (_, fret) => ({ midi: 62 + fret, freq: 440, stringIndex: 3, fret, note: {} }));
+  const pairs = PickingLab.buildSequence("finger-pair-chromatic", course, map("hasapiko"), "down", "13", 2, {});
+  assert.equal(pairs.slice(0, 4).map((event) => event.fret).join(","), "1,3,2,4");
+  assert.ok(pairs.every((event) => event.stringIndex === 3));
 });
