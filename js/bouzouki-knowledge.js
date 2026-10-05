@@ -388,6 +388,13 @@
       boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
     },
     {
+      id: "marbin-speed", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · Speed Practice For Jazz Guitar",
+      href: "https://www.youtube.com/watch?v=8C56xRK2SB4",
+      supports: ["triads as one note on the lower string and two on the upper, picked down-down-up", "wide upstroke that clears the low string (circular motion)", "double-time cell: down, up, down, sweep, big up, pull-off, down, up", "move a cell by thirds, not steps, so no note repeats", "six-note cell: four picks and two pull-offs, pick returns during the pull-offs", "forward pick slant, rest-stroke downs, palm-edge muting"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video or from Joe Pass."
+    },
+    {
       id: "tuttle-crosspick-101", rank: 2, authority: "Magazine video lesson · professional (bluegrass import)",
       name: "Molly Tuttle · Crosspicking 101 (Acoustic Guitar)",
       href: "https://acousticguitar.com/crosspicking-101-a-private-bluegrass-lesson-with-molly-tuttle-video",
@@ -483,13 +490,13 @@
       id: "arpeggios", step: 6, label: "Triads and four-note arpeggios", short: "the chords inside the dromos",
       answer: "Every degree of the dromos carries a chord. Play the triads and the four-note arpeggios in order up the neck, then one chord through its inversions, then the chords of a progression with each change landing on time.",
       gate: "Self-scored: triads and four-note arpeggios up and back in each of the five dromoi, naming every chord, and the arpeggio circuit through the band keys at one steady tempo.",
-      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "chord-picking", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
+      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "chord-picking", "pair-triads-ddu", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
     },
     {
       id: "speed", step: 7, label: "Speed and glide", short: "speed under the blur rule",
       answer: "Speed comes only after time, sync, scales and crossing: a fixed-click density ladder, glide economy, bursts on known ground, then work at the edge, always stopping when notes start to smear.",
       gate: "Self-scored: a banked ceiling that holds three clean passes, and no tempo raised on a day the notes blur.",
-      exerciseIds: ["mair-density-ladder", "triplet-drive", "triplet-grammar", "sextolet-glide", "spot-run-sprint", "double-pick-edge"]
+      exerciseIds: ["mair-density-ladder", "triplet-drive", "triplet-grammar", "sextolet-glide", "double-time-cell", "six-note-cell", "spot-run-sprint", "double-pick-edge"]
     },
     {
       id: "tremolo", step: 8, label: "Tremolo and dynamics", short: "tremolo is a choice",

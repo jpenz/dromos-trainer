@@ -3125,9 +3125,9 @@
   // meaningless for them, so it hides instead of silently doing nothing.
   const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip",
     "fingerPairs", "fretCells", "roll", "dyadTremolo", "equator", "crossBakeoff", "depthLadder", "seam",
-    "courseLine", "line", "diatonic", "roads", "chordPick"]);
+    "courseLine", "line", "diatonic", "roads", "chordPick", "pairTriads", "doubleCell", "sixCell"]);
   // Drills that already travel, or own their route: no position tour on top.
-  const PICKING_NO_TOUR = new Set(["comp", "roads", "chordPick", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
+  const PICKING_NO_TOUR = new Set(["comp", "roads", "chordPick", "pairTriads", "doubleCell", "sixCell", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
   function pickingExerciseRoutes(exercise) {
     return !ROUTE_LOCKED[exercise.id] && !PICKING_FIXED_SEQUENCES.has(exercise.sequence);
   }
@@ -3864,6 +3864,9 @@
     if (exercise.sequence === "courseLine") return { nodes: pickingCourseLineNodes(context), current: null, next: null };
     if (exercise.sequence === "roads") return { nodes: pickingRoadNodes(context), current: null, next: null };
     if (exercise.sequence === "chordPick") return { nodes: pickingChordPickBars(context), current: null, next: null };
+    if (exercise.sequence === "pairTriads") return { nodes: pickingPairTriads(context), current: null, next: null };
+    if (exercise.sequence === "doubleCell") return { nodes: pickingPairCells(context, 3, 2), current: null, next: null };
+    if (exercise.sequence === "sixCell") return { nodes: pickingPairCells(context, 1, 3), current: null, next: null };
     if (exercise.sequence === "line") return { nodes: pickingSnakeNodes(context), current: null, next: null };
     if (exercise.sequence === "diatonic") return { nodes: pickingDiatonicChords(context, exercise.chordSize || 3, state.picking.variant === "seventh"), current: null, next: null };
     // Across the strings = the box window: in-position on every course and it
@@ -4114,6 +4117,91 @@
   // the top, back through it to the bottom, and around - so no loop sits in
   // one box. The first stop is always the selected position. Long drills
   // tour one side only so a loop stays a practical length.
+  // ---- Pair cells (FR-82): two adjacent strings, from the Marbin speed lesson.
+  // The pair is the top two courses unless the variant names the middle pair.
+  function pickingPairStrings(variant) {
+    const top = window.Tuning.open().length - 1;
+    const upper = /middle/.test(variant || "") ? Math.max(1, top - 1) : top;
+    return [upper - 1, upper];
+  }
+
+  // The dromos's degree `step` (0 = tonic, 7 = the octave) placed on one
+  // string, climbing from the tonic's lowest fret on that string.
+  function pickingDegreeMidi(scale, tonicMidi, step) {
+    return tonicMidi + 12 * Math.floor(step / 7) + scale[((step % 7) + 7) % 7].off;
+  }
+
+  function pickingTriadName(scale, degree) {
+    const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
+    const semis = (skip) => (((scale[(degree + skip) % 7].off - scale[degree].off) % 12) + 12) % 12;
+    const third = semis(2), fifth = semis(4);
+    const minor = third === 3;
+    const quality = minor ? (fifth === 6 ? "dim" : fifth === 8 ? "m(♯5)" : "m") : (fifth === 8 ? "aug" : fifth === 6 ? "(♭5)" : "");
+    const accidental = String(scale[degree].degree).replace(/[0-9]/g, "");
+    return { symbol: scale[degree].name + quality, numeral: accidental + (minor ? NUMERALS[degree].toLowerCase() : NUMERALS[degree]) + (fifth === 6 && minor ? "°" : fifth === 8 && !minor ? "+" : "") };
+  }
+
+  // Triads as 1 + 2: the lowest tone on the lower string, the other two on
+  // the upper. Inversion picks which chord tone is lowest. "cross" runs the
+  // root-position triads that fit the hand position on every string pair.
+  function pickingPairTriads(context) {
+    const modeId = pickingModeId(context);
+    const scale = M.scaleOf(context.tonic, modeId);
+    const open = window.Tuning.open();
+    const variant = state.picking.variant;
+    const offsets = variant === "fifth" ? [4, 7, 9] : variant === "third" ? [2, 4, 7] : [0, 2, 4];   // scale steps above the chord root
+    const buildOn = (lower, upper, fretWindow) => {
+      const tonicLow = open[lower] + (((scale[0].pc - open[lower]) % 12) + 12) % 12;
+      const list = [];
+      for (let degree = 0; degree <= 7; degree++) {
+        const pitches = offsets.map((offset) => pickingDegreeMidi(scale, tonicLow, degree + offset));
+        const lowFret = pitches[0] - open[lower];
+        const upperFrets = pitches.slice(1).map((midi) => midi - open[upper]);
+        if (lowFret < 0 || lowFret > 15 || upperFrets.some((fret) => fret < 0 || fret > 17)) continue;
+        if (fretWindow && (lowFret < fretWindow[0] || lowFret > fretWindow[1])) continue;
+        const name = pickingTriadName(scale, degree % 7);
+        const roles = offsets.map((offset) => ["R", "3", "5", "", "", "", "", "R"][offset % 7] || (offset % 7 === 2 ? "3" : "5"));
+        const tones = pitches.map((midi, index) => pickingNode({ stringIndex: index ? upper : lower, fret: index ? upperFrets[index - 1] : lowFret },
+          Object.assign({}, scale[(degree + offsets[index]) % 7], { roleLabel: index === 0 ? ["R", "3", "5"][[0, 2, 4].indexOf(offsets[0])] : ["R", "3", "5"][[0, 2, 4].indexOf(offsets[index] % 7)] || "R", colorGroup: "root" })));
+        list.push({ symbol: name.symbol, numeral: name.numeral, label: `${name.numeral} ${name.symbol}`, tones });
+      }
+      return list;
+    };
+    if (variant !== "cross") { const [lower, upper] = pickingPairStrings(variant); return buildOn(lower, upper); }
+    const window_ = [Math.max(0, context.position - 1), context.position + 5];
+    const cells = [];
+    for (let lower = 0; lower + 1 < open.length; lower++) {
+      buildOn(lower, lower + 1, window_).forEach((cell) => cells.push(Object.assign(cell, { label: `${cell.numeral} ${cell.symbol} · pair ${window.Tuning.names()[lower]}-${window.Tuning.names()[lower + 1]}` })));
+    }
+    return cells;
+  }
+
+  // Scale cells on a string pair: `lowerCount` consecutive degrees on the
+  // lower string, the next `upperCount` on the upper. Cells start on degrees
+  // 1, 3, 5, 7, ... (thirds), so one cell's last note never opens the next.
+  function pickingPairCells(context, lowerCount, upperCount) {
+    const modeId = pickingModeId(context);
+    const scale = M.scaleOf(context.tonic, modeId);
+    const open = window.Tuning.open();
+    const [lower, upper] = pickingPairStrings(state.picking.variant);
+    const tonicLow = open[lower] + (((scale[0].pc - open[lower]) % 12) + 12) % 12;
+    const cells = [];
+    for (let start = 0; start <= 14; start += 2) {
+      const tones = [];
+      let ok = true;
+      for (let step = 0; step < lowerCount + upperCount; step++) {
+        const stringIndex = step < lowerCount ? lower : upper;
+        const midi = pickingDegreeMidi(scale, tonicLow, start + step);
+        const fret = midi - open[stringIndex];
+        if (fret < 0 || fret > 17) { ok = false; break; }
+        tones.push(pickingNode({ stringIndex, fret }, Object.assign({}, scale[(start + step) % 7])));
+      }
+      if (!ok) break;
+      cells.push({ label: `from degree ${scale[start % 7].degree}`, tones });
+    }
+    return cells;
+  }
+
   // Scale roads (FR-80): the same dromos along five routes, one after the
   // other. The box sits at the selected position; the slanted and narrow
   // shapes take the start degree that lands them nearest to it.
@@ -4631,6 +4719,7 @@
       }
     }
     if (slot.shift) bits.push(`move the hand to fret ${slot.base}`);
+    if (node.cue) bits.push(node.cue);
     return { title, detail: bits.join(" · "), direction: meta.direction, accent: !!node.accent };
   }
 

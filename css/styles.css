@@ -2603,6 +2603,8 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
 .ptab-ev > .pt-deg.flavour { color: var(--flavour); font-weight: 700; }
 .ptab-ev > .pt-deg.tonic { color: var(--amber); font-weight: 700; }
 .ptab-ev.road-start { border-left: 2px solid var(--turquoise); }
+.ptab-ev.cued > .pt-flag { color: var(--amber); }
+.ptab-ev.cued > .pt-stroke { color: var(--amber); }
 .pscore-key i { font-style: normal; font-weight: 700; }
 .pscore-key .key-lower { color: #8FB3DA; }
 .pscore-key .key-upper { color: #B3A6D6; }
