@@ -70,7 +70,8 @@
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
       runIndex: null, activeSegment: null, voice: "bouzouki",
       workbench: { cell: "fours", direction: "upback", route: "position", pattern: "alternate", startDegree: 0 },
-      comp: { patternId: null, voicing: "auto" }
+      comp: { patternId: null, voicing: "auto" },
+      chordPick: { patternId: "house", voicing: "written" }
     },
     // --- shared ---
     labelMode: "interval",
@@ -3124,9 +3125,9 @@
   // meaningless for them, so it hides instead of silently doing nothing.
   const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip",
     "fingerPairs", "fretCells", "roll", "dyadTremolo", "equator", "crossBakeoff", "depthLadder", "seam",
-    "courseLine", "line", "diatonic", "roads"]);
+    "courseLine", "line", "diatonic", "roads", "chordPick"]);
   // Drills that already travel, or own their route: no position tour on top.
-  const PICKING_NO_TOUR = new Set(["comp", "roads", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
+  const PICKING_NO_TOUR = new Set(["comp", "roads", "chordPick", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
   function pickingExerciseRoutes(exercise) {
     return !ROUTE_LOCKED[exercise.id] && !PICKING_FIXED_SEQUENCES.has(exercise.sequence);
   }
@@ -3395,8 +3396,8 @@
   // Rhythm comp voicings: full shapes on guitar, compact four-note grips on
   // three- and four-course instruments, or triads anywhere. The same pattern
   // therefore plays on every instrument.
-  function pickingCompVoicings(chord) {
-    if (state.picking.comp.voicing === "triad") {
+  function pickingCompVoicings(chord, fullOnly) {
+    if (state.picking.comp.voicing === "triad" && !fullOnly) {
       const triadId = TR.TRIAD_OF[chord.quality] || "maj";
       return TR.allShapes(chord.rootPc, triadId, spellPc).filter((shape) => shape.placements.every((placement) => placement.fret <= 15));
     }
@@ -3862,6 +3863,7 @@
     if (exercise.sequence === "seam") return { nodes: pickingSeamNodes(context), current: null, next: null };
     if (exercise.sequence === "courseLine") return { nodes: pickingCourseLineNodes(context), current: null, next: null };
     if (exercise.sequence === "roads") return { nodes: pickingRoadNodes(context), current: null, next: null };
+    if (exercise.sequence === "chordPick") return { nodes: pickingChordPickBars(context), current: null, next: null };
     if (exercise.sequence === "line") return { nodes: pickingSnakeNodes(context), current: null, next: null };
     if (exercise.sequence === "diatonic") return { nodes: pickingDiatonicChords(context, exercise.chordSize || 3, state.picking.variant === "seventh"), current: null, next: null };
     // Across the strings = the box window: in-position on every course and it
@@ -4034,6 +4036,79 @@
     return chords;
   }
 
+  // Chord picking (FR-81): one voiced chord per bar of the progression.
+  // Chord type: the progression's own chords (the practical default), plain
+  // triads, or the dromos's seventh stacked on every chord (a theory map).
+  function pickingChordPickBars(context) {
+    const modeId = pickingModeId(context);
+    const { chords } = M.buildProgression(context.tonic, modeId, state.progId);
+    const mode = state.picking.chordPick.voicing;
+    const scale = M.scaleOf(context.tonic, modeId);
+    const lowOf = (voicing) => {
+      const frets = voicing.placements.map((placement) => placement.fret).filter((fret) => fret > 0);
+      return frets.length ? Math.min.apply(null, frets) : 0;
+    };
+    let anchor = context.position;
+    const bars = [];
+    chords.forEach((chord) => {
+      let shaped = chord;
+      if (mode === "seventh" && chord.notes.length < 4) {
+        const degreeIndex = scale.findIndex((note) => note.pc === chord.rootPc);
+        if (degreeIndex >= 0) {
+          const third = scale[(degreeIndex + 2) % 7], fifth = scale[(degreeIndex + 4) % 7], seventh = scale[(degreeIndex + 6) % 7];
+          const offsets = [third, fifth, seventh].map((note) => (((note.pc - chord.rootPc) % 12) + 12) % 12).join(",");
+          const quality = ({ "4,7,11": "maj7", "4,7,10": "dom7", "3,7,10": "m7", "3,6,10": "m7b5", "3,6,9": "dim7", "3,7,11": "mMaj7", "4,8,11": "maj7sharp5" })[offsets];
+          if (quality) shaped = Object.assign({}, M.buildChord(context.tonic, modeId, (((chord.rootPc - M.parseName(context.tonic).pc) % 12) + 12) % 12, quality, null), { degreeLabel: chord.degreeLabel, fn: chord.fn, durationBars: chord.durationBars });
+        }
+      }
+      const voicings = mode === "triad" ? pickingTriadVoicings(shaped) : pickingCompVoicings(shaped, true);
+      if (!voicings.length) return;
+      // Nearest shape to the last one; a triad also prefers the top strings,
+      // where a picked triad rings instead of rumbling.
+      const top = window.Tuning.open().length - 1;
+      const cost = (voicing) => Math.abs(lowOf(voicing) - anchor)
+        + (mode === "triad" ? 3 * (top - Math.max.apply(null, voicing.placements.map((placement) => placement.stringIndex))) : 0);
+      const voicing = voicings.slice().sort((left, right) => cost(left) - cost(right))[0];
+      anchor = lowOf(voicing);
+      const tones = voicing.placements
+        .map((placement) => pickingNode(placement, Object.assign({ pc: placement.note && placement.note.pc }, placement.note || {})))
+        .sort((left, right) => left.midi - right.midi);
+      const bar = { symbol: shaped.symbol, degreeLabel: shaped.degreeLabel, tones, placements: voicing.placements };
+      for (let count = 0; count < barsFor(shaped); count++) bars.push(bar);
+    });
+    return bars;
+  }
+
+  function pickingTriadVoicings(chord) {
+    const triadId = TR.TRIAD_OF[chord.quality] || "maj";
+    return TR.allShapes(chord.rootPc, triadId, spellPc).filter((shape) => shape.placements.every((placement) => placement.fret <= 15));
+  }
+
+  function renderChordPickControls() {
+    const settings = state.picking.chordPick;
+    const pattern = PK.chordPickPattern(settings.patternId);
+    settings.patternId = pattern.id;
+    const best = settings.voicing === "triad" ? "triad" : "four";
+    $("cpPattern").innerHTML = PK.CHORD_PICK_PATTERNS.map((item) =>
+      `<option value="${item.id}"${item.id === pattern.id ? " selected" : ""}>${escapeHtml(item.name)}${item.best === best ? " · recommended" : ""}</option>`).join("");
+    $("cpPattern").onchange = (event) => { stopPlay(); settings.patternId = event.target.value; state.picking.cleanPasses = 0; renderPickingLab(); };
+    $("cpProgression").innerHTML = M.PROGRESSIONS[state.modeId].map((item) =>
+      `<option value="${item.id}"${item.id === state.progId ? " selected" : ""}>${escapeHtml(item.label)}${item.tier ? ` · ${escapeHtml(item.tier)}` : ""}</option>`).join("");
+    $("cpProgression").onchange = (event) => { stopPlay(); state.progId = event.target.value; state.progStep = 0; persistPreferences(); renderPickingLab(); };
+    $("cpVoicing").innerHTML = [
+      ["written", "The progression's own chords (recommended)"],
+      ["triad", "Triads (three notes)"],
+      ["seventh", "The dromos's seventh on every chord"]
+    ].map(([id, label]) => `<option value="${id}"${id === settings.voicing ? " selected" : ""}>${label}</option>`).join("");
+    $("cpVoicing").onchange = (event) => { stopPlay(); settings.voicing = ["triad", "seventh"].includes(event.target.value) ? event.target.value : "written"; renderPickingLab(); };
+    const grid = pattern.steps.split(/\s+/).map((step) => { const [where, stroke] = step.split("/"); return `${where === "B" ? "bass" : where === "A" ? "alt" : where}${stroke === "U" ? "↑" : "↓"}`; }).join("  ");
+    const sources = (pattern.sourceIds || []).map((id) => BK.sourceById(id)).filter(Boolean);
+    const provenance = pattern.status === "documented" && sources.length
+      ? `Documented in: ${sources.map((source) => `<a href="${escapeHtml(source.href)}" target="_blank" rel="noreferrer">${escapeHtml(source.name)} ↗</a>`).join(" · ")}`
+      : "A Dromos pattern: a string order with marked strokes, not a transcription.";
+    $("cpCue").innerHTML = `<b class="comp-grid">${escapeHtml(grid)}</b><span>${escapeHtml(pattern.cue)} Strings are counted from the chord: bass is its lowest string, 1 its highest.</span><small>${provenance}</small>`;
+  }
+
   // Neck travel (FR-79): a position-bound drill loops as a tour of hand
   // positions about three frets apart - up from the selected position to
   // the top, back through it to the bottom, and around - so no loop sits in
@@ -4141,7 +4216,7 @@
     }
     let nodes = PK.buildSequence(exercise.id, base.nodes, pulse, state.picking.firstStroke, state.picking.variant,
       state.picking.subdivision, compMode ? Object.assign({ rhythm: state.groove.styleId }, state.picking.comp)
-        : Object.assign({}, state.picking.workbench, { startIndex: base.nodes.startIndex || 0, grooveId: state.groove.styleId }));
+        : Object.assign({}, state.picking.workbench, { startIndex: base.nodes.startIndex || 0, grooveId: state.groove.styleId, chordPick: state.picking.chordPick }));
     if (compMode) {
       // Each event remembers its bar's grip so the board can show the shape.
       let barIndex = -1;
@@ -4402,6 +4477,9 @@
     $("pickingWorkbench").classList.toggle("hidden", !workbenchMode);
     $("pickingComp").classList.toggle("hidden", !compMode);
     if (compMode) renderCompControls();
+    const chordPickMode = exercise.id === "chord-picking";
+    $("pickingChordPick").classList.toggle("hidden", !chordPickMode);
+    if (chordPickMode) renderChordPickControls();
     // One visible control per state variable: in the workbench, neck position
     // lives in the workbench row, not in More options.
     if ($("pickingPositionSel")) $("pickingPositionSel").closest("label").classList.toggle("hidden", workbenchMode);
