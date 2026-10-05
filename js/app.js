@@ -64,7 +64,7 @@
     },
     // --- dedicated plectrum curriculum ---
     picking: {
-      exerciseId: "down-up-clock", route: "tiered", lastPlanExerciseId: "down-up-clock", userSubdivision: 2, seam: null, markedIndex: null, travel: true,
+      exerciseId: "scale-roads", route: "tiered", lastPlanExerciseId: "scale-roads", userSubdivision: 2, seam: null, markedIndex: null, travel: true,
       variant: "alternate",
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, rungHistory: [], ceilingBpm: null, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
@@ -3124,9 +3124,9 @@
   // meaningless for them, so it hides instead of silently doing nothing.
   const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip",
     "fingerPairs", "fretCells", "roll", "dyadTremolo", "equator", "crossBakeoff", "depthLadder", "seam",
-    "courseLine", "line", "diatonic"]);
+    "courseLine", "line", "diatonic", "roads"]);
   // Drills that already travel, or own their route: no position tour on top.
-  const PICKING_NO_TOUR = new Set(["comp", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
+  const PICKING_NO_TOUR = new Set(["comp", "roads", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
   function pickingExerciseRoutes(exercise) {
     return !ROUTE_LOCKED[exercise.id] && !PICKING_FIXED_SEQUENCES.has(exercise.sequence);
   }
@@ -3861,6 +3861,7 @@
     if (exercise.sequence === "depthLadder") return { nodes: pickingOpenCourseNodes().slice(-1), current: null, next: null };
     if (exercise.sequence === "seam") return { nodes: pickingSeamNodes(context), current: null, next: null };
     if (exercise.sequence === "courseLine") return { nodes: pickingCourseLineNodes(context), current: null, next: null };
+    if (exercise.sequence === "roads") return { nodes: pickingRoadNodes(context), current: null, next: null };
     if (exercise.sequence === "line") return { nodes: pickingSnakeNodes(context), current: null, next: null };
     if (exercise.sequence === "diatonic") return { nodes: pickingDiatonicChords(context, exercise.chordSize || 3, state.picking.variant === "seventh"), current: null, next: null };
     // Across the strings = the box window: in-position on every course and it
@@ -4038,6 +4039,50 @@
   // the top, back through it to the bottom, and around - so no loop sits in
   // one box. The first stop is always the selected position. Long drills
   // tour one side only so a loop stays a practical length.
+  // Scale roads (FR-80): the same dromos along five routes, one after the
+  // other. The box sits at the selected position; the slanted and narrow
+  // shapes take the start degree that lands them nearest to it.
+  const SCALE_ROADS = [
+    { id: "box", label: "Box · in position, low course to high", short: "Box", layout: "box", degrees: [1] },
+    { id: "3nps", label: "Three notes per string", short: "3 per string", layout: "3nps", degrees: [1] },
+    { id: "diagonal", label: "Diagonal · down, then up", short: "Diagonal", layout: "3nps", degrees: [3, 5, 2, 4, 6, 7], descendFirst: true },
+    { id: "2nps", label: "Two notes per string", short: "2 per string", layout: "2nps", degrees: [1, 2, 3, 4, 5, 6, 7] },
+    { id: "course", label: "Along one course", short: "One course", layout: "horizontal", degrees: [1] }
+  ];
+
+  function pickingRoadNodes(context) {
+    const modeId = pickingModeId(context);
+    const top = window.Tuning.open().length - 1;
+    const used = new Set();
+    const signature = (nodes) => nodes.map((node) => `${node.stringIndex}:${node.fret}`).sort().join(" ");
+    const roads = [];
+    SCALE_ROADS.forEach((road) => {
+      let best = null;
+      road.degrees.forEach((startDegree) => {
+        const path = P.buildPath(context.tonic, modeId, {
+          layout: road.layout, position: context.position, startDegree,
+          startString: road.layout === "horizontal" ? top : 0, firstStroke: state.picking.firstStroke, updown: true
+        });
+        if (!path || path.nodes.length < 3) return;
+        const key = signature(path.nodes);
+        if (used.has(key)) return;
+        const distance = Math.abs(path.meta.lowFret - context.position);
+        if (!best || distance < best.distance) best = { path, distance, key };
+      });
+      if (!best) return;
+      used.add(best.key);
+      let nodes = best.path.nodes.map((node) => Object.assign({}, node));
+      if (road.descendFirst) {
+        // The path is up-and-back; turn it into down-and-back from the top.
+        const ascending = nodes.slice(0, Math.ceil(nodes.length / 2) + (nodes.length % 2 ? 0 : 1));
+        const top_ = ascending.length - 1;
+        nodes = ascending.slice().reverse().concat(ascending.slice(1, top_));
+      }
+      roads.push({ id: road.id, label: road.label, short: road.short, nodes });
+    });
+    return roads;
+  }
+
   function pickingTourStops(context, long) {
     const options = { layout: "box", startDegree: 1, firstStroke: state.picking.firstStroke, updown: false };
     const all = P.positionsFor(context.tonic, pickingModeId(context), options, context.position)
@@ -4437,7 +4482,7 @@
 
   // What the playing lesson is showing: the per-note update reads this
   // instead of rebuilding the session on every note.
-  let pickingView = { session: null, view: null, barIndex: -1 };
+  let pickingView = { session: null, view: null, barIndex: -1, road: null };
   let pickingStepFrame = 0;
 
   function requestPickingStep() {
@@ -4453,12 +4498,26 @@
   // One fingered timeline feeds both pictures (neck and tab strip).
   function pickingScoreView(session) {
     const names = window.Tuning.names();
+    // The scale's own colours, the same on every page: lower half blue,
+    // upper half purple, tonic gold, a ring on the notes that identify the
+    // dromos (its flavour notes, such as the major third).
+    const roadMap = M.tetrachordsOf(session.context.tonic, pickingModeId(session.context));
+    const lowerPcs = new Set(roadMap.lower.map((note) => note.pc));
+    const tonicPc = M.parseName(session.context.tonic).pc;
+    const flavour = new Set(M.flavourPcs(session.context.tonic, pickingModeId(session.context)));
+    const colour = (tone) => {
+      const pc = tone && tone.note && tone.note.pc != null ? tone.note.pc : tone && tone.midi != null ? ((tone.midi % 12) + 12) % 12 : null;
+      if (pc == null) return "";
+      return (pc === tonicPc ? "tonic" : lowerPcs.has(pc) ? "half-lower" : "half-upper") + (flavour.has(pc) ? " flavour" : "");
+    };
     return {
+      colour,
+      roadIndex: null,
       nodes: session.nodes,
       fingers: PK.assignFingers(PK.markShapes(session.nodes)),
       time: PK.timeline(session.nodes, state.picking.subdivision, session.pulse.length),
       names, lefty: state.lefty, maxFret: window.Tuning.frets(),
-      tonicPc: M.parseName(session.context.tonic).pc,
+      tonicPc,
       escape: escapeHtml,
       glyph: (node) => pickingTechniqueMeta(node.technique).glyph,
       label: (node, index, slot) => {
@@ -4512,8 +4571,9 @@
       cell.querySelector("em").textContent = parts.detail;
       cell.classList.toggle("accent", parts.accent);
     };
-    fill(host.querySelector(".pnow-cell.now"), index == null ? "Start with" : `Now · note ${nowIndex + 1} of ${count}`, now);
-    fill(host.querySelector(".pnow-cell.next"), "Next", next);
+    const roadOf = (i) => { const node = view.nodes[i] || {}; return node.roadShort ? ` · ${node.roadShort}` : ""; };
+    fill(host.querySelector(".pnow-cell.now"), (index == null ? "Start with" : `Now · note ${nowIndex + 1} of ${count}`) + roadOf(nowIndex), now);
+    fill(host.querySelector(".pnow-cell.next"), "Next" + roadOf((nowIndex + 1) % count), next);
   }
 
   function renderPickingScore(session, currentIndex) {
@@ -4528,15 +4588,45 @@
       ? `<p class="pscore-travel"><b>Travels the neck:</b> hand near fret ${session.travel.stops.join(" → ")}, then around again.</p>` : "";
     const seam = !state.picking.playing && state.picking.markedIndex != null && session.exercise.id !== "seam-loop" && !comp
       ? `<button type="button" class="picking-seam-btn" data-picking-seam="${state.picking.markedIndex}">⟲ Loop this spot · note ${state.picking.markedIndex + 1} to the next group start</button>` : "";
+    const roads = pickingRoadList(session);
+    const roadStrip = roads.length ? `<ol class="proads" aria-label="Roads in this loop">${roads.map((road, index) =>
+      `<li data-road="${index}"><i>${index + 1}</i><b>${escapeHtml(road.short)}</b><small>${escapeHtml(road.count)} notes</small></li>`).join("")}</ol>` : "";
     host.innerHTML = `<div class="pnow">
         <section class="pnow-cell now"><span></span><b></b><em></em></section>
         <section class="pnow-cell next"><span></span><b></b><em></em></section>
         <button id="btnPickingMotionStart" class="deck-start picking-motion-start" type="button">${escapeHtml(startLabel)}</button>
-      </div>${travel}
+      </div>${roadStrip}${travel}
       <div class="ptab-host"></div>
-      <p class="pscore-key">${comp ? "The neck shows this bar's chord shape and the next one." : "<b>Neck:</b> the number in each dot is the finger (0 = open). The shaded box is where the hand sits; a dashed box is where it moves next."} <b>Strip:</b> pick stroke, fret on its ${pickingCourseWord()}, finger, note, count. <b>⇢7</b> = move the hand so finger 1 sits at fret 7. Tap any note to hear it.</p>${seam}`;
+      <p class="pscore-key">${comp ? "The neck shows this bar's chord shape and the next one." : "<b>Neck:</b> the number in each dot is the finger (0 = open). The shaded box is where the hand sits; a dashed box is where it moves next. <i class=\"key-lower\">Blue</i> = lower half of the scale, <i class=\"key-upper\">purple</i> = upper half, <i class=\"key-tonic\">gold</i> = tonic, <i class=\"key-flavour\">ring</i> = a note that identifies this dromos."} <b>Strip:</b> pick stroke, fret on its ${pickingCourseWord()}, finger, note, count. <b>⇢7</b> = move the hand so finger 1 sits at fret 7. Tap any note to hear it.</p>${seam}`;
     PV.updateTab(host.querySelector(".ptab-host"), view, currentIndex);
     pickingSetReadout(view, currentIndex);
+    pickingSetRoad(session, currentIndex);
+  }
+
+  function pickingRoadList(session) {
+    const roads = [];
+    session.nodes.forEach((node) => {
+      if (node.roadStart) roads.push({ short: node.roadShort || node.roadLabel || `Road ${roads.length + 1}`, count: 0 });
+      if (roads.length && node.roadIndex === roads.length - 1) roads[roads.length - 1].count++;
+    });
+    return roads;
+  }
+
+  // Which road the playhead is on: light it in the strip and let the neck
+  // show only that road's notes (the ghost map), so five shapes never pile up.
+  function pickingSetRoad(session, index) {
+    const node = session.nodes[index == null ? 0 : index] || {};
+    const road = node.roadIndex == null ? null : node.roadIndex;
+    document.querySelectorAll("#pickingScore .proads li").forEach((item) => {
+      const at = +item.getAttribute("data-road");
+      item.classList.toggle("active", at === road);
+      item.classList.toggle("next", road != null && at === (road + 1) % Math.max(1, document.querySelectorAll("#pickingScore .proads li").length));
+    });
+    if (road !== pickingView.road) {
+      pickingView.road = road;
+      pickingView.view.roadIndex = road;
+      if (session.exercise.sequence !== "comp") renderPickingBoard(session, index);
+    }
   }
 
   // Per-note playhead: the neck's live layer, the strip's current note, and
@@ -4553,6 +4643,7 @@
     }
     PV.updateTab(document.querySelector("#pickingScore .ptab-host"), pickingView.view, index);
     pickingSetReadout(pickingView.view, index);
+    pickingSetRoad(session, index);
   }
 
   function renderPickingBoard(session, currentIndex) {
@@ -4583,9 +4674,12 @@
     // The practice surface: a zoomed neck (hand box, now, next three) and a
     // tab strip (this bar and the next), both drawn from one fingered timeline.
     pickingView = {
-      session, view: pickingScoreView(session),
+      session, view: pickingScoreView(session), road: undefined,
       barIndex: (session.nodes[currentIndex == null ? 0 : currentIndex] || {}).barIndex || 0
     };
+    const roadNow = session.nodes[currentIndex == null ? 0 : currentIndex] || {};
+    pickingView.road = roadNow.roadIndex == null ? null : roadNow.roadIndex;
+    pickingView.view.roadIndex = pickingView.road;
     renderPickingBoard(session, currentIndex);
     renderPickingScore(session, currentIndex);
     $("pickingTravelChoice").classList.toggle("hidden", !(session.travel && session.travel.eligible));

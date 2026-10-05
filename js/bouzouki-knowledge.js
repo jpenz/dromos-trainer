@@ -471,7 +471,7 @@
       id: "scales", step: 4, label: "Scales up the neck", short: "the dromos everywhere, with the hand moves",
       answer: "Know each dromos two ways: along one course with its hand moves, and across the courses in boxes that connect. Then break the line into windows and thirds, and use the notes below the tonic.",
       gate: "Self-scored: each of the five dromoi along the melody course and through three connected positions, with no audible gap at any hand move.",
-      exerciseIds: ["dromos-one-course", "position-snake", "full-neck-ladder", "degree-window", "skip-thirds", "below-the-tonic"]
+      exerciseIds: ["scale-roads", "dromos-one-course", "position-snake", "full-neck-ladder", "degree-window", "skip-thirds", "below-the-tonic"]
     },
     {
       id: "crossing", step: 5, label: "String crossing", short: "the clock survives the course change",
