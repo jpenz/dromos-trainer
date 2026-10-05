@@ -88,17 +88,19 @@
       }));
       g.appendChild(el("text", { x: flip(18), y: sy(stringIndex) + 5, "text-anchor": "middle", class: "pv-course" }, name));
     });
-    view.nodes.forEach((node) => tonesOf(node).forEach((tone) => {
+    // The ghost map: every note of the line, or of the current road only.
+    const mapped = view.roadIndex == null ? view.nodes : view.nodes.filter((node) => node.roadIndex === view.roadIndex);
+    view.nodes.forEach((node) => tonesOf(node).forEach((tone) => { if (tone.fret <= 0) hasOpen = true; }));
+    mapped.forEach((node) => tonesOf(node).forEach((tone) => {
       if (tone.fret == null || tone.stringIndex == null) return;
       const key = tone.stringIndex + ":" + tone.fret;
       if (seen.has(key)) return;
       seen.add(key);
-      if (tone.fret <= 0) hasOpen = true;
-      const pc = tone.note && tone.note.pc != null ? tone.note.pc : null;
-      g.appendChild(el("circle", {
-        cx: fx(tone.fret), cy: sy(tone.stringIndex), r: 6,
-        class: "pv-ghost" + (pc != null && pc === view.tonicPc ? " tonic" : "")
-      }));
+      const tint = view.colour ? view.colour(tone) : "";
+      const ghost = el("g", { class: "pv-ghost " + tint });
+      if (/flavour/.test(tint)) ghost.appendChild(el("circle", { cx: fx(tone.fret), cy: sy(tone.stringIndex), r: 11, class: "pv-ghost-ring" }));
+      ghost.appendChild(el("circle", { cx: fx(tone.fret), cy: sy(tone.stringIndex), r: 7 }));
+      g.appendChild(ghost);
     }));
     if (hasOpen) g.appendChild(el("text", { x: fx(0), y: H - 12, "text-anchor": "middle", class: "pv-fretnum" }, "open"));
     const live = el("g", { class: "pv-live" });
@@ -171,7 +173,9 @@
         const key = cls + ":" + tone.stringIndex + ":" + tone.fret;
         if (drawn.has(key)) return;
         drawn.add(key);
-        const group = el("g", { class: "pv-dot " + cls + (node.silent ? " silent" : "") });
+        const tint = view.colour ? view.colour(tone) : "";
+        const group = el("g", { class: "pv-dot " + cls + (node.silent ? " silent" : "") + (tint ? " " + tint : "") });
+        if (/flavour/.test(tint)) group.appendChild(el("circle", { cx: pv.fx(tone.fret), cy: pv.sy(tone.stringIndex), r: radius + 6, class: "pv-flavour-ring" }));
         group.appendChild(el("circle", { cx: pv.fx(tone.fret), cy: pv.sy(tone.stringIndex), r: radius }));
         group.appendChild(el("text", { x: pv.fx(tone.fret), y: pv.sy(tone.stringIndex) + radius * 0.36, "text-anchor": "middle" }, dotLabel(view, i, toneIndex)));
         live.appendChild(group);
@@ -220,14 +224,17 @@
     const strum = node.chord && node.chord.length > 2;
     const rest = node.silent && !node.stroke;
     const byCourse = {};
-    tonesOf(node).forEach((tone) => { if (tone.stringIndex != null) byCourse[tone.stringIndex] = tone.fret; });
+    tonesOf(node).forEach((tone) => { if (tone.stringIndex != null) byCourse[tone.stringIndex] = tone; });
     let rows = "";
     for (let row = 0; row < N; row++) {
-      const fret = byCourse[N - 1 - row];
-      rows += `<span class="pt-str">${fret != null && !rest ? `<b>${node.mute ? "x" : fret}</b>` : ""}</span>`;
+      const tone = byCourse[N - 1 - row];
+      const tint = tone && view.colour && !strum ? view.colour(tone) : "";
+      rows += `<span class="pt-str">${tone && !rest ? `<b class="${tint}">${node.mute ? "x" : tone.fret}</b>` : ""}</span>`;
     }
+    const tint = !strum && !rest && view.colour ? view.colour(node) : "";
     const finger = slot.fingers ? slot.fingers.slice().reverse().join("·") : slot.finger != null && !rest ? String(slot.finger) : "";
     const flags = [];
+    if (node.roadStart && node.roadShort) flags.push(esc(node.roadShort));
     if ((node.chordStart || node.barStart) && node.chordSymbol) flags.push(esc(node.chordSymbol));
     if (slot.shift) flags.push(`⇢${slot.base}`);
     const note = node.note || {};
@@ -235,13 +242,13 @@
     const grow = Math.max(0.25, Math.min(start.dur, view.time.barSlots - start.slot));
     const cls = "ptab-ev" + (node.accent ? " accent" : "") + (node.rhythmFirst ? " on-one" : node.rhythmBeat ? " on-beat" : "")
       + (i === index ? " current" : "") + (index != null && start.bar === nowBar && i < index ? " played" : "")
-      + (node.silent ? " silent" : "") + (slot.shift ? " shift" : "") + (slot.stretch ? " stretch" : "");
+      + (node.silent ? " silent" : "") + (slot.shift ? " shift" : "") + (slot.stretch ? " stretch" : "") + (node.roadStart ? " road-start" : "");
     return `<button type="button" data-picking-step="${i}" class="${cls}" style="flex:${grow} 1 0" aria-label="${esc(view.label(node, i, slot))}">`
       + `<span class="pt-flag">${flags.join(" ")}</span>`
       + `<span class="pt-stroke${node.stroke ? " s-" + node.stroke : ""}">${rest ? "rest" : esc(view.glyph(node))}</span>`
       + rows
       + `<span class="pt-finger">${esc(finger)}</span>`
-      + `<span class="pt-deg">${role}</span>`
+      + `<span class="pt-deg ${tint}">${role}</span>`
       + `<span class="pt-count${node.rhythmFirst ? " one" : ""}">${node.rhythmBeat ? node.rhythmBeat : "·"}</span>`
       + `</button>`;
   }

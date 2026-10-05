@@ -38,7 +38,7 @@ test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority se
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 10, "ten categories in practical order, stroke first, phrasing last");
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.map((phase) => phase.id).join(" "),
     "setup pulse sync scales crossing arpeggios speed tremolo comp phrasing", "practical order: stroke first, phrasing last");
-  assert.equal(PickingLab.EXERCISES.length, 60, "43 + 13 video-sourced drills + 4 traveling studies");
+  assert.equal(PickingLab.EXERCISES.length, 61, "43 + 13 video-sourced drills + 4 traveling studies + scale roads");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -99,6 +99,7 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
     }
     if (exercise.sequence === "equator") return Object.assign(flagged(), { tonicIndex: 6 });
     if (exercise.sequence === "courseLine") return Object.assign(flagged(), { tonicIndex: 3 });
+    if (exercise.sequence === "roads") return [{ id: "box", label: "Box", short: "Box", nodes: flagged() }, { id: "3nps", label: "Three", short: "3", nodes: flagged().reverse() }];
     if (exercise.sequence === "diatonic") {
       const notes = flagged();
       return [0, 1, 2, 3].map((index) => ({ symbol: "X", numeral: "I", tones: notes.slice(index, index + exercise.chordSize) }));
@@ -967,4 +968,18 @@ test("traveling studies close on themselves and every fretted note gets a finger
   const time = PickingLab.timeline(triads, 3, 4);
   assert.equal(time.barSlots, 12);
   assert.equal(time.starts[12].bar, 1, "the thirteenth triplet opens the second bar");
+});
+
+test("scale roads hand over on beat one and each note carries its road", () => {
+  const { PickingLab } = loadCore();
+  const pulse = [{ beat: 1, group: 1, first: true }, { beat: 2, group: 1, first: false }, { beat: 3, group: 2, first: true }, { beat: 4, group: 2, first: false }];
+  const notes = (count) => Array.from({ length: count }, (_, index) => ({ stringIndex: index % 4, fret: index + 1, midi: 50 + index, note: { pc: (50 + index) % 12 } }));
+  const roads = [{ id: "box", label: "Box", short: "Box", nodes: notes(7) }, { id: "3nps", label: "Three per string", short: "3 per string", nodes: notes(9) }];
+  const events = PickingLab.buildSequence("scale-roads", roads, pulse, "down", undefined, 2, {});
+  assert.equal(events.filter((event) => event.roadStart).length, 2, "each road starts once");
+  const slots = (list) => list.reduce((sum, event) => sum + (event.durMult > 0 ? event.durMult : 1), 0);
+  assert.equal(slots(events.filter((event) => event.roadIndex === 0)) % 8, 0, "the box fills whole bars before the next road starts");
+  assert.equal(events.find((event) => event.roadIndex === 1).stroke, "down", "every road restarts on the chosen first stroke");
+  assert.equal(events.filter((event) => event.roadIndex === 1).length, 9);
+  assert.ok(events.every((event) => event.roadShort), "every note names its road for the strip and the readout");
 });
