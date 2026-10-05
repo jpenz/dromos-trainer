@@ -483,7 +483,7 @@
       id: "arpeggios", step: 6, label: "Triads and four-note arpeggios", short: "the chords inside the dromos",
       answer: "Every degree of the dromos carries a chord. Play the triads and the four-note arpeggios in order up the neck, then one chord through its inversions, then the chords of a progression with each change landing on time.",
       gate: "Self-scored: triads and four-note arpeggios up and back in each of the five dromoi, naming every chord, and the arpeggio circuit through the band keys at one steady tempo.",
-      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
+      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "chord-picking", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
     },
     {
       id: "speed", step: 7, label: "Speed and glide", short: "speed under the blur rule",

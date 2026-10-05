@@ -38,7 +38,7 @@ test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority se
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 10, "ten categories in practical order, stroke first, phrasing last");
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.map((phase) => phase.id).join(" "),
     "setup pulse sync scales crossing arpeggios speed tremolo comp phrasing", "practical order: stroke first, phrasing last");
-  assert.equal(PickingLab.EXERCISES.length, 61, "43 + 13 video-sourced drills + 4 traveling studies + scale roads");
+  assert.equal(PickingLab.EXERCISES.length, 62, "43 + 13 video-sourced drills + 4 traveling studies + scale roads + chord picking");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -99,6 +99,7 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
     }
     if (exercise.sequence === "equator") return Object.assign(flagged(), { tonicIndex: 6 });
     if (exercise.sequence === "courseLine") return Object.assign(flagged(), { tonicIndex: 3 });
+    if (exercise.sequence === "chordPick") return [{ symbol: "G", degreeLabel: "I", tones: flagged().slice(0, 4) }];
     if (exercise.sequence === "roads") return [{ id: "box", label: "Box", short: "Box", nodes: flagged() }, { id: "3nps", label: "Three", short: "3", nodes: flagged().reverse() }];
     if (exercise.sequence === "diatonic") {
       const notes = flagged();

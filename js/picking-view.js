@@ -235,7 +235,7 @@
     const finger = slot.fingers ? slot.fingers.slice().reverse().join("·") : slot.finger != null && !rest ? String(slot.finger) : "";
     const flags = [];
     if (node.roadStart && node.roadShort) flags.push(esc(node.roadShort));
-    if ((node.chordStart || node.barStart) && node.chordSymbol) flags.push(esc(node.chordSymbol));
+    if ((node.chordStart || node.barStart) && node.chordSymbol && node.chordSymbol !== node.roadShort) flags.push(esc(node.chordSymbol));
     if (slot.shift) flags.push(`⇢${slot.base}`);
     const note = node.note || {};
     const role = strum || rest ? "" : esc(note.roleLabel || note.degree || "");
