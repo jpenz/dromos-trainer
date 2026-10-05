@@ -237,12 +237,13 @@
     if (node.roadStart && node.roadShort) flags.push(esc(node.roadShort));
     if ((node.chordStart || node.barStart) && node.chordSymbol && node.chordSymbol !== node.roadShort) flags.push(esc(node.chordSymbol));
     if (slot.shift) flags.push(`⇢${slot.base}`);
+    if (node.cueShort) flags.push(esc(node.cueShort));
     const note = node.note || {};
     const role = strum || rest ? "" : esc(note.roleLabel || note.degree || "");
     const grow = Math.max(0.25, Math.min(start.dur, view.time.barSlots - start.slot));
     const cls = "ptab-ev" + (node.accent ? " accent" : "") + (node.rhythmFirst ? " on-one" : node.rhythmBeat ? " on-beat" : "")
       + (i === index ? " current" : "") + (index != null && start.bar === nowBar && i < index ? " played" : "")
-      + (node.silent ? " silent" : "") + (slot.shift ? " shift" : "") + (slot.stretch ? " stretch" : "") + (node.roadStart ? " road-start" : "");
+      + (node.silent ? " silent" : "") + (slot.shift ? " shift" : "") + (slot.stretch ? " stretch" : "") + (node.roadStart ? " road-start" : "") + (node.cue ? " cued" : "");
     return `<button type="button" data-picking-step="${i}" class="${cls}" style="flex:${grow} 1 0" aria-label="${esc(view.label(node, i, slot))}">`
       + `<span class="pt-flag">${flags.join(" ")}</span>`
       + `<span class="pt-stroke${node.stroke ? " s-" + node.stroke : ""}">${rest ? "rest" : esc(view.glyph(node))}</span>`
