@@ -388,6 +388,76 @@
       boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drill is not a copy of the video."
     },
     {
+      id: "marbin-caged", rank: 2, authority: "YouTube interview lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) with Pow Music · How to Solo Over ANY Chord Progression, CAGED masterclass",
+      href: "https://www.youtube.com/watch?v=_emqqJv2hVI",
+      supports: ["root motion in one area, then the chords, then the chord tones as lines", "nearest note at every chord change, never a jump", "eighth-note etudes through the changes expose the holes", "mode per chord: the dominant on the third degree takes Phrygian dominant (harmonic minor)"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-painful", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · The Painful Practice You're Not Doing (Barry Harris arpeggios)",
+      href: "https://www.youtube.com/watch?v=omjeZgrwJgA",
+      supports: ["four-note arpeggio chunks, intervals said aloud", "tension diminished built on the target's 2, 4, ♭6 and 7", "think from where you are going, not where you are"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-diminished", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · Barry Harris Theory vs. Reality: Diminished Explained",
+      href: "https://www.youtube.com/watch?v=g9OAxfy1eGA",
+      supports: ["the dominant's moving notes are 3, 5, ♭7 and ♭9: the rootless dominant is a diminished seventh", "the top is the centre, the bottom prepares", "harmonic minor and harmonic major supply the ♭2 and ♭4 tensions"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-boring", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · This BORING Practice Routine Will Teach You Harmony in WEEKS",
+      href: "https://www.youtube.com/watch?v=4ifrANK6u4s",
+      supports: ["CAGED tracks the root motion of a tune in one area", "split six-string shapes into low, middle and top four strings; the parts voice-lead themselves", "learning is out of time, practising is in time"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-pompe", rank: 2, authority: "YouTube lesson · professional (gypsy jazz import)",
+      name: "Marbin (Dani Rabin) · Gypsy Jazz Rhythm Guitar, How To La Pompe",
+      href: "https://www.youtube.com/watch?v=XaNcyB41Fvg",
+      supports: ["the rhythm player generates the pulse, felt in the body", "bass strokes through the low strings, chord strokes through all strings, cut short", "boom chick-ka: the eighth upstroke before the bass", "voice-lead the top note between five-, four- and three-string voicings"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-articulation", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · Jazz Articulation: Make Your Jazz Solos Come to Life",
+      href: "https://www.youtube.com/watch?v=eMvlkJY0xSY",
+      supports: ["four-note cells with two attacks: down, pull, pull then up, down, pull, pull", "the accent falls on the attack before the beat", "split the mode three and one per string: down, up, pull, pull descending; down, down, hammer, hammer ascending"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-passing", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · Bebop Scales BAD, Passing Tone Scales GOOD",
+      href: "https://www.youtube.com/watch?v=EHjKEDir4wE",
+      supports: ["add the ♭6 to a mode with a major 6 so the six chord lands on the beats", "add the major 7 to a mode with a ♭7 so the seventh chord lands on the beats", "forward motion: weak beats lead to strong ones; every harmony owns the eighth note before it"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-enclosures", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · The #1 Bebop Guitar Concept Nobody Teaches Right (enclosures)",
+      href: "https://www.youtube.com/watch?v=8VBzpzCqb1s",
+      supports: ["enclosure: neighbour above from the scale, approach a half step below, target", "bebop enclosure adds a tucked-in chromatic neighbour; chromatic pickups in front", "keep the targets on the beat; picking for the five-note setup: up, hammer, down, pull, up, down"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-metronome", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · Metronome Essentials: How You Should Practice Jazz",
+      href: "https://www.youtube.com/watch?v=MTVbhE3nqJ4",
+      supports: ["drummers keep the click on every beat; if you can hear the click you are not with it", "octaves of time: ground a fast tempo on 1 and 3", "judge a click placement by whether it makes the job easier"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-time", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Marbin (Dani Rabin) · The Method for Better Jazz Guitar Time (pulse)",
+      href: "https://www.youtube.com/watch?v=PFxE6d6AMdQ",
+      supports: ["the pulse comes from the body, not the feet", "transmit your own pulse from the first bar to the last", "half-time feel for fast tempos, internal double time for ballads"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
       id: "marbin-speed", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
       name: "Marbin (Dani Rabin) · Speed Practice For Jazz Guitar",
       href: "https://www.youtube.com/watch?v=8C56xRK2SB4",
@@ -488,9 +558,9 @@
     },
     {
       id: "arpeggios", step: 6, label: "Triads and four-note arpeggios", short: "the chords inside the dromos",
-      answer: "Every degree of the dromos carries a chord. Play the triads and the four-note arpeggios in order up the neck, then one chord through its inversions, then the chords of a progression with each change landing on time.",
+      answer: "Every degree of the dromos carries a chord. Play the triads and the four-note arpeggios in order up the neck, then one chord through its inversions, pick through the chords, walk the chord tones through the changes without a leap, and set tension against home.",
       gate: "Self-scored: triads and four-note arpeggios up and back in each of the five dromoi, naming every chord, and the arpeggio circuit through the band keys at one steady tempo.",
-      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "chord-picking", "pair-triads-ddu", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
+      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "chord-picking", "pair-triads-ddu", "changes-etude", "tension-home", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
     },
     {
       id: "speed", step: 7, label: "Speed and glide", short: "speed under the blur rule",
@@ -512,9 +582,9 @@
     },
     {
       id: "phrasing", step: 10, label: "Phrasing, ornaments and key moves", short: "vocabulary under pressure",
-      answer: "The payoff layer: left-hand legato, ornaments, phrase cells, skeleton and fill, the Hiotis close, sequences, chunks and pivots through the band keys, instant transposition, and the open workbench.",
+      answer: "The payoff layer: left-hand legato, ornaments, articulation cells, enclosures, passing-tone scales, phrase cells, skeleton and fill, the Hiotis close, sequences, chunks and pivots through the band keys, instant transposition, and the open workbench.",
       gate: "Self-scored exam in one sitting: a sequence ladder that keeps its rhythm, one instant transpose landed first time, and three clean pickup closes.",
-      exerciseIds: ["pick-legato", "irish-treble", "mode-phrase-cell", "skeleton-then-fill", "pickup-close", "skeleton-descent", "sequence-ladder", "chunk-builder", "ghammaz-pivot", "instant-transpose", "phrase-workbench"]
+      exerciseIds: ["pick-legato", "irish-treble", "articulation-cells", "enclosure-cells", "passing-tone-scale", "mode-phrase-cell", "skeleton-then-fill", "pickup-close", "skeleton-descent", "sequence-ladder", "chunk-builder", "ghammaz-pivot", "instant-transpose", "phrase-workbench"]
     }
   ];
 

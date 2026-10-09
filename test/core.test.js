@@ -38,7 +38,7 @@ test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority se
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 10, "ten categories in practical order, stroke first, phrasing last");
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.map((phase) => phase.id).join(" "),
     "setup pulse sync scales crossing arpeggios speed tremolo comp phrasing", "practical order: stroke first, phrasing last");
-  assert.equal(PickingLab.EXERCISES.length, 65, "43 + 13 video-sourced drills + 4 traveling studies + scale roads + chord picking + 3 Marbin pair cells");
+  assert.equal(PickingLab.EXERCISES.length, 70, "43 + 13 video-sourced + 4 traveling + scale roads + chord picking + 3 pair cells + 5 Marbin channel drills");
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");
   assert.equal(PickingLab.byId("tremolo-ladder").articulation, "tremolo-sustain");
   assert.ok(PickingLab.EXERCISES.every((exercise) => BouzoukiKnowledge.phaseForExercise(exercise.id)));
@@ -99,6 +99,8 @@ test("the band key cycle pivots on notes both keys own, and every exercise gener
     }
     if (exercise.sequence === "equator") return Object.assign(flagged(), { tonicIndex: 6 });
     if (exercise.sequence === "courseLine") return Object.assign(flagged(), { tonicIndex: 3 });
+    if (exercise.sequence === "artic") return [{ ascending: false, tones: flagged().slice(0, 4) }, { ascending: true, tones: flagged().slice(4, 8) }];
+    if (exercise.sequence === "offsetLine") return [{ rest: true, durMult: 1, stringIndex: 0, fret: 0, midi: 60, note: {} }].concat(flagged((i) => ({ target: i % 3 === 2 })));
     if (exercise.sequence === "pairTriads") return [0, 1, 2].map((index) => ({ symbol: "X", label: "x", tones: flagged().slice(index, index + 3) }));
     if (exercise.sequence === "doubleCell") return [0, 1, 2].map((index) => ({ label: "x", tones: flagged().slice(index, index + 5) }));
     if (exercise.sequence === "sixCell") return [0, 1, 2].map((index) => ({ label: "x", tones: flagged().slice(index, index + 4) }));
