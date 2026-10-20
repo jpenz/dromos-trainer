@@ -282,3 +282,11 @@ test("the video lab leads with the library and survives a player that never load
   assert.match(read("js/app.js"), /Set A and Set B mark the loop/,
     "the Video view needs its own keyboard hint instead of the false Space/arrows line");
 });
+
+test("the lit neck reaches every fretboard and the harmony roadmap keeps its styles", () => {
+  const fb = readFileSync(path.join(root, "js/fretboard.js"), "utf8");
+  const css = readFileSync(path.join(root, "css/styles.css"), "utf8");
+  assert.match(fb, /HDR\.defs\("fb"\)/, "fretboard.js paints the shared NeckHDR gradients");
+  assert.match(css, /svg\.fb-lit \.fb-fret \{ fill: url\(#fbFret\)/, "frets use the nickel gradient");
+  assert.match(css, /\n\.roadmap-chord \{ display: grid;/, "the roadmap chips have a base style (lost once in PR 3)");
+});

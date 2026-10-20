@@ -221,6 +221,12 @@
     svg.setAttribute("data-neck-layout", fold ? "folded" : "continuous");
     svg.setAttribute("data-neck-emphasis", opts.largeNeck ? "large" : "standard");
 
+    // The lit neck (FR-85): shared gradients and filters, once per board.
+    const HDR = typeof window !== "undefined" && window.NeckHDR;
+    if (HDR) svg.insertAdjacentHTML("afterbegin", HDR.defs("fb"));
+    const grainURL = HDR ? HDR.grain() : "";
+    svg.classList.toggle("fb-lit", !!HDR);
+
     const g = el("g", {});
     if (opts.lefty) g.setAttribute("transform", `translate(${width},0) scale(-1,1)`);
     svg.appendChild(g);
@@ -230,11 +236,14 @@
       const last = Math.min(N_FRETS, first + FRETS_PER_ROW - 1);
       const count = last - first + 1;
       const top = rowTop(row);
-      g.appendChild(el("rect", {
-        x: GEO.padL + GEO.nutW, y: top + PAD_T - 7,
-        width: count * GEO.fretW, height: LAST * STRING_GAP + 14,
-        rx: 4, class: "fb-face"
-      }));
+      const faceAttrs = { x: GEO.padL + GEO.nutW, y: top + PAD_T - 7, width: count * GEO.fretW, height: LAST * STRING_GAP + 14 };
+      if (HDR) g.appendChild(el("rect", Object.assign({}, faceAttrs, { y: faceAttrs.y + 5, rx: 6, class: "fb-board-shadow", filter: "url(#fbShadow)" })));
+      g.appendChild(el("rect", Object.assign({}, faceAttrs, { rx: 4, class: "fb-face" })));
+      if (grainURL) {
+        const grain = el("image", Object.assign({}, faceAttrs, { preserveAspectRatio: "none", class: "fb-grain" }));
+        grain.setAttribute("href", grainURL);
+        g.appendChild(grain);
+      }
       MARKERS.filter((f) => f >= first && f <= last).forEach((f) => {
         g.appendChild(el("circle", { cx: xForFret(f), cy: yForString((NSTR - 1) / 2, f), r: 6, class: "fb-inlay" }));
       });
@@ -249,16 +258,22 @@
         }));
       }
       for (let f = first; f <= last; f++) {
-        g.appendChild(el("line", {
-          x1: xForLine(f), y1: top + PAD_T - 7, x2: xForLine(f), y2: top + PAD_T + LAST * STRING_GAP + 7, class: "fb-fret"
-        }));
+        // Frets and strings are thin rects, not lines: a gradient on a
+        // zero-width line box does not paint.
+        if (HDR) g.appendChild(el("rect", { x: xForLine(f) - 1.6, y: top + PAD_T - 7, width: 3.2, height: LAST * STRING_GAP + 14, class: "fb-fret" }));
+        else g.appendChild(el("line", { x1: xForLine(f), y1: top + PAD_T - 7, x2: xForLine(f), y2: top + PAD_T + LAST * STRING_GAP + 7, class: "fb-fret" }));
       }
       for (let i = 0; i < NSTR; i++) {
         const sIdx = LAST - i;
-        g.appendChild(el("line", {
-          x1: GEO.padL, y1: yForString(i, first), x2: GEO.padL + GEO.nutW + count * GEO.fretW, y2: yForString(i, first),
-          class: "fb-string", "stroke-width": 1 + (LAST - sIdx) * 0.25
-        }));
+        const x1 = GEO.padL, x2 = GEO.padL + GEO.nutW + count * GEO.fretW, y = yForString(i, first);
+        const thick = 1 + (LAST - sIdx) * 0.25;
+        if (HDR) {
+          const gauge = 1.2 + (LAST - sIdx) * 0.42;
+          g.appendChild(el("rect", { x: x1, y: y + 1.6, width: x2 - x1, height: gauge, class: "fb-string-shadow" }));
+          g.appendChild(el("rect", { x: x1, y: y - gauge / 2, width: x2 - x1, height: gauge, class: "fb-string" }));
+        } else {
+          g.appendChild(el("line", { x1, y1: y, x2, y2: y, class: "fb-string", "stroke-width": thick }));
+        }
       }
     }
 
@@ -341,6 +356,7 @@
       } else if (isNext && kind !== "ghost") {
         gg.appendChild(diamond(cx, cy, r + 9, "dot-next-ring"));
       }
+      if (HDR && (kind === "path" || kind === "grip" || kind === "next-shape" || isNow)) gg.appendChild(el("circle", { cx, cy, r: r + 3, class: "dot-halo" }));
       gg.appendChild(el("circle", { cx, cy, r, class: "dot-bg" }));
       let label = p.note.roleLabel || p.note.degree;
       if (opts.labelMode === "note") label = p.note.name;
@@ -404,6 +420,7 @@
         if (isTarget) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-target-ring" }));
         if (isNow) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 23 : 20, class: "dot-now-ring" }));
         else if (isNext) gg.appendChild(diamond(cx(n), cy(n), isCur ? 25 : 22, "dot-next-ring"));
+        if (HDR) gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: 18, class: "dot-halo" }));
         gg.appendChild(el("circle", { cx: cx(n), cy: cy(n), r: isCur ? 15 : 12, class: "dot-bg" }));
         const label = opts.labelMode === "note" ? n.note.name : n.note.degree;
         gg.appendChild(el("text", { x: cx(n), y: cy(n) + 4, "text-anchor": "middle", class: "dot-label" }, label));
