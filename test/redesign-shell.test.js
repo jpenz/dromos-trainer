@@ -298,3 +298,14 @@ test("stage first: Harmony's look-ahead and Solo's toolbar sit under the neck", 
   assert.match(css, /body\[data-view="solo"\] #stage \.solo-layer-row \{ order: 2;/, "Solo's layer toolbar is ordered after the neck");
   assert.match(css, /\.solo-progression-roadmap, body\[data-view="solo"\] #stage \.solo-layer-row \{ flex: none; \}/, "the column layout never stretches the Solo blocks");
 });
+
+test("mic scoring hears the loop on the playback clock and never plays the mic", () => {
+  const audio = readFileSync(path.join(root, "js/audio.js"), "utf8");
+  const app = readFileSync(path.join(root, "js/app.js"), "utf8");
+  const listener = readFileSync(path.join(root, "js/onset-listener.js"), "utf8");
+  assert.match(audio, /if \(o\.onSchedule\) o\.onSchedule\(i, when, silent, iteration\);/, "every scheduled note reports its audio-clock time");
+  assert.match(audio, /if \(!silent && !o\.muteNotes\)/, "guide notes can be muted while the mic listens on speakers");
+  assert.match(listener, /source\.connect\(node\); \/\/ never to the destination/, "the microphone never reaches the speakers");
+  assert.match(app, /OL\.scoreLoop\(heard, expected,/, "a loop is scored from what the mic heard");
+  assert.match(app, /clickFilter: onSpeakers \? \(\) => false : clickFilter/, "on speakers only the count-in clicks, so the mic hears the player");
+});

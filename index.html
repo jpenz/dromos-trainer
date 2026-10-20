@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=84" />
-  <link rel="stylesheet" href="css/styles.css?v=90" />
+  <link rel="stylesheet" href="css/styles.css?v=91" />
 </head>
 <body>
   <div class="app">
@@ -781,6 +781,7 @@
           <button type="button" class="ap-tog" id="apTempo" aria-pressed="true"><i></i>Ladder</button>
           <button type="button" class="ap-tog" id="apFade" aria-pressed="true"><i></i>Fade map</button>
           <button type="button" class="ap-tog" id="apMix" aria-pressed="false"><i></i>Mix keys</button>
+          <button type="button" class="ap-tog" id="apMic" aria-pressed="false" title="The microphone hears each loop and scores it Clean or Missed"><i></i>Mic scores</button>
         </div>
         <div class="ap-score">
           <button id="btnPickingClean" class="ap-clean" type="button" title="The loop was clean (C)">Clean</button>
@@ -818,11 +819,12 @@
   <script src="js/triads.js?v=17"></script>
   <script src="js/neck-hdr.js?v=86"></script>
   <script src="js/practice-engine.js?v=88"></script>
+  <script src="js/onset-listener.js?v=91"></script>
   <script src="js/fretboard.js?v=89"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=77"></script>
+  <script src="js/audio.js?v=91"></script>
   <script src="js/page-guides.js?v=86"></script>
-  <script src="js/app.js?v=88"></script>
+  <script src="js/app.js?v=91"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
