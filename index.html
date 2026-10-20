@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=84" />
-  <link rel="stylesheet" href="css/styles.css?v=89" />
+  <link rel="stylesheet" href="css/styles.css?v=90" />
 </head>
 <body>
   <div class="app">
@@ -139,7 +139,6 @@
           <div id="progStrip" class="prog-strip hidden" aria-label="Song map, one chip per bar"></div>
           <section id="changeGuide" class="change-guide" aria-label="Current and next chord" aria-live="off"></section>
           <div id="journeyAnnouncement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
-          <section id="cycleRoadmap" class="cycle-roadmap hidden" aria-label="Six-chord look-ahead"></section>
           <div id="pivotBanner" class="pivot-banner"></div>
           <div id="triadStrip" class="prog-strip hidden"></div>
           <section id="pickingSetup" class="picking-setup hidden" aria-label="Picking Lab setup">
@@ -200,6 +199,8 @@
             <span class="legend-item next-shape-key"><i></i>next shape</span>
             <span class="legend-note">moved voices glow &amp; carry a ↓</span>
           </div>
+          <!-- The look-ahead sits under the neck: eyes on the hands first. -->
+          <section id="cycleRoadmap" class="cycle-roadmap hidden" aria-label="Six-chord look-ahead"></section>
           <div id="scaleStrip" class="scale-strip hidden"></div>
         </section>
 
