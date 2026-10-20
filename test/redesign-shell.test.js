@@ -290,3 +290,11 @@ test("the lit neck reaches every fretboard and the harmony roadmap keeps its sty
   assert.match(css, /svg\.fb-lit \.fb-fret \{ fill: url\(#fbFret\)/, "frets use the nickel gradient");
   assert.match(css, /\n\.roadmap-chord \{ display: grid;/, "the roadmap chips have a base style (lost once in PR 3)");
 });
+
+test("stage first: Harmony's look-ahead and Solo's toolbar sit under the neck", () => {
+  const html = readFileSync(path.join(root, "index.html"), "utf8");
+  const css = readFileSync(path.join(root, "css/styles.css"), "utf8");
+  assert.ok(html.indexOf('id="cycleRoadmap"') > html.indexOf('id="fretboard"'), "the chord roadmap renders below the neck");
+  assert.match(css, /body\[data-view="solo"\] #stage \.solo-layer-row \{ order: 2;/, "Solo's layer toolbar is ordered after the neck");
+  assert.match(css, /\.solo-progression-roadmap, body\[data-view="solo"\] #stage \.solo-layer-row \{ flex: none; \}/, "the column layout never stretches the Solo blocks");
+});

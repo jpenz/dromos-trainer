@@ -2807,3 +2807,19 @@ svg.fb-lit .fb-dot.grip .dot-halo { fill: var(--turquoise); opacity: calc(var(--
 .roadmap-chord.now > span, .roadmap-chord.now > strong { color: var(--terracotta); }
 .roadmap-chord.next { border-color: color-mix(in oklab, var(--turquoise) 55%, transparent); border-style: dashed; }
 .roadmap-chord.next > span, .roadmap-chord.next > strong { color: var(--turquoise); }
+
+/* ---- Stage first (FR-85 step 5): Harmony's look-ahead moved under the
+   neck; the Changes Gym card is one compact band above it. ---- */
+#stage .cycle-roadmap { margin: var(--sp-3) 0 0; }
+body[data-view="cycle"] .change-guide { padding: 10px 18px; gap: 12px; }
+body[data-view="cycle"] .change-guide .hear-think, body[data-view="cycle"] .change-guide [class*="think"] { margin-top: 4px; padding-top: 6px; }
+/* Solo: the now/next roadmap stays above the neck; the layer toolbar
+   (scales, triads, neck, isolate) moves under it. */
+body[data-view="solo"] #stage { display: flex; flex-direction: column; }
+body[data-view="solo"] #stageLayers { display: contents; }
+body[data-view="solo"] #stage .fretboard-wrap { order: 1; }
+body[data-view="solo"] #stage .solo-layer-row { order: 2; margin-top: 10px; }
+body[data-view="solo"] #stage .legend { order: 3; }
+body[data-view="solo"] #stage .scale-strip { order: 4; }
+body[data-view="solo"] #stage .solo-progression-roadmap { margin-bottom: 10px; }
+body[data-view="solo"] #stage .solo-progression-roadmap, body[data-view="solo"] #stage .solo-layer-row { flex: none; }
