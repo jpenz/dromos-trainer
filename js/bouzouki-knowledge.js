@@ -430,6 +430,41 @@
       boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
     },
     {
+      id: "billy-playback-practice", rank: 2, authority: "YouTube interview · professional (Billy Strings with his teacher Robb Cappelletto, Sonora Guitar Intensive)",
+      name: "Playback · Billy Strings Shares His Practice Method for Progress",
+      href: "https://www.youtube.com/watch?v=uUOumetrhL4",
+      supports: ["shell voicings let him play a whole tune inside about four frets instead of jumping", "after Donna Lee his lines started wrapping around the chord changes", "the Escanaba riff came from a diatonic arpeggio exercise his teacher gave him"],
+      boundary: "Linked interview only: Dromos does not download, transcribe, restream or imply endorsement; the drills are built from the dromos, and the notes Billy plays in the video are not in them."
+    },
+    {
+      id: "billy-playback-fishscale", rank: 2, authority: "YouTube interview · professional (Billy Strings and Robb Cappelletto)",
+      name: "Playback · Billy Strings vs The Hardest Bluegrass Tune Ever Written (Fishscale, Tony Rice)",
+      href: "https://www.youtube.com/watch?v=qIHAxGvIwsg",
+      supports: ["at a change keep the position and change only the notes that must move; do not reset to the root", "foreshadow the next chord so you seem to arrive early", "playing lighter on Tony Rice's guitar brought out tone and speed; pencil pressure on the pick"],
+      boundary: "Linked interview only: Dromos does not download, transcribe, restream or imply endorsement; the drills are built from the dromos, and the notes Billy plays in the video are not in them."
+    },
+    {
+      id: "billy-beato", rank: 2, authority: "YouTube interview · professional (Rick Beato with Billy Strings)",
+      name: "Rick Beato · Billy Strings: Face Melting Acoustic Guitar Shred",
+      href: "https://www.youtube.com/watch?v=mlzuPGQNahc",
+      supports: ["after Donna Lee he learned seventh-chord arpeggios up and down the neck", "licks must follow the chords and the melody", "dig in but stay relaxed; down up down up, from Doc Watson"],
+      boundary: "Linked interview only: Dromos does not download, transcribe, restream or imply endorsement; the drills are built from the dromos, and the notes Billy plays in the video are not in them."
+    },
+    {
+      id: "sonora-billy-habits", rank: 2, authority: "YouTube interview · professional (Sonora Guitar Intensive, online mentorship where Billy studies)",
+      name: "Sonora Guitar Intensive · Billy Strings' Practice Habits That Changed Everything",
+      href: "https://www.youtube.com/watch?v=yLbnfEOsnEg",
+      supports: ["the Escanaba exercise: ninth arpeggios with directional picking, picked or swept, all over the neck", "he records a take up to about twenty times before sending it", "short daily sessions; two days off and the old habits come back"],
+      boundary: "Linked interview only: Dromos does not download, transcribe, restream or imply endorsement; the drills are built from the dromos, and the notes Billy plays in the video are not in them."
+    },
+    {
+      id: "playback-two-tempos", rank: 2, authority: "YouTube interview · professional (Robb Cappelletto on teaching Billy Strings)",
+      name: "Playback · The 8% Rule Billy Strings Uses To Practice",
+      href: "https://www.youtube.com/watch?v=yOItYtQRqhE",
+      supports: ["practise at no tempo or near full tempo, not one BPM at a time", "a warm-up is something you can play on a good day, played until the mistakes stop", "slow a recording down until you can hear every note"],
+      boundary: "Linked interview only: Dromos does not download, transcribe, restream or imply endorsement; the drills are built from the dromos, and the notes Billy plays in the video are not in them."
+    },
+    {
       id: "beato-spread-practice", rank: 2, authority: "YouTube lesson · professional (guitar import)",
       name: "Rick Beato · Spread Triad Practicing On The Guitar (live stream)",
       href: "https://www.youtube.com/watch?v=c6FHWRgq7Wo",
@@ -572,7 +607,7 @@
       id: "setup", step: 1, label: "Setup and stroke", short: "loose grip, even down-up",
       answer: "Every later drill depends on a loose grip and an even down-up from the wrist, with the fretting hand still. Open courses first, then lighter strokes as the tempo rises.",
       gate: "Self-scored: on a phone recording, upstrokes match downstrokes in time, volume and clarity before the tempo rises.",
-      exerciseIds: ["open-course-penies", "down-up-clock", "through-stroke-landings", "monopenies-passes", "loose-hand-ladder", "shallow-pick-ladder"]
+      exerciseIds: ["open-course-penies", "down-up-clock", "through-stroke-landings", "monopenies-passes", "loose-hand-ladder", "light-touch", "shallow-pick-ladder"]
     },
     {
       id: "pulse", step: 2, label: "Time and Greek pulse", short: "the rhythm decides the stroke",
@@ -602,7 +637,7 @@
       id: "arpeggios", step: 6, label: "Triads and four-note arpeggios", short: "the chords inside the dromos",
       answer: "Every degree of the dromos carries a chord. Play the triads and the four-note arpeggios in order up the neck, then one chord through its inversions, pick through the chords, walk the chord tones through the changes without a leap, and set tension against home.",
       gate: "Self-scored: triads and four-note arpeggios up and back in each of the five dromoi, naming every chord, and the arpeggio circuit through the band keys at one steady tempo.",
-      exerciseIds: ["diatonic-triads", "spread-triad-ladder", "spread-diatonic", "spread-chain-etude", "spread-progression-route", "spread-approach-tones", "spread-colour-triads", "triad-ladder", "diatonic-arps", "chord-picking", "pair-triads-ddu", "changes-etude", "tension-home", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
+      exerciseIds: ["diatonic-triads", "spread-triad-ladder", "spread-diatonic", "spread-chain-etude", "spread-progression-route", "spread-approach-tones", "spread-colour-triads", "wrap-the-change", "same-lick-next-chord", "arrive-early", "ninth-arpeggios", "triad-ladder", "diatonic-arps", "chord-picking", "pair-triads-ddu", "changes-etude", "tension-home", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
     },
     {
       id: "speed", step: 7, label: "Speed and glide", short: "speed under the blur rule",

@@ -309,3 +309,17 @@ test("mic scoring hears the loop on the playback clock and never plays the mic",
   assert.match(app, /OL\.scoreLoop\(heard, expected,/, "a loop is scored from what the mic heard");
   assert.match(app, /clickFilter: onSpeakers \? \(\) => false : clickFilter/, "on speakers only the count-in clicks, so the mic hears the player");
 });
+
+test("Billy Strings drills: changes, chords and touch", () => {
+  const app = readFileSync(path.join(root, "js/app.js"), "utf8");
+  const lab = readFileSync(path.join(root, "js/picking-lab.js"), "utf8");
+  const modes = readFileSync(path.join(root, "js/modes.js"), "utf8");
+  ["wrap-the-change", "same-lick-next-chord", "arrive-early", "ninth-arpeggios", "light-touch"].forEach((id) =>
+    assert.match(lab, new RegExp(`id: "${id}"`), `${id} ships`));
+  assert.match(app, /wrapChange: \(context\) => pickingEtudeNodes\(context, \{ tones: "sevenths", lean: true \}\)/, "seventh cells lean into the next chord");
+  assert.match(app, /arriveEarly: \(context\) => pickingEtudeNodes\(context, \{ tones: "written", early: true \}\)/, "the last two notes belong to the next chord");
+  assert.match(app, /\["shell", "Shells: root, 3rd, 7th \(Billy Strings\)"\]/, "chord picking offers shells");
+  assert.match(app, /const PICKING_AREAS = \{ free: null, low: \[1, 5\], mid: \[5, 9\], high: \[9, 13\] \}/, "chord picking can stay in one area");
+  assert.match(app, /if \(ap\.two\) \{/, "Autopilot has a two-tempo mode");
+  assert.match(modes, /m6: \{ offsets: \[0, 3, 7, 9\]/, "the laiko m6 tonic exists");
+});

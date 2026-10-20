@@ -2824,3 +2824,5 @@ body[data-view="solo"] #stage .scale-strip { order: 4; }
 body[data-view="solo"] #stage .solo-progression-roadmap { margin-bottom: 10px; }
 body[data-view="solo"] #stage .solo-progression-roadmap, body[data-view="solo"] #stage .solo-layer-row { flex: none; }
 .ps-pill.mic { color: var(--laurel); border-color: color-mix(in oklab, var(--laurel) 45%, transparent); }
+/* Eyes closed (FR-87): the neck and strip hide; the count and the ears stay. */
+#stage.eyes-closed .fretboard-wrap, #stage.eyes-closed .ptab-host, #stage.eyes-closed .pnow { visibility: hidden; }

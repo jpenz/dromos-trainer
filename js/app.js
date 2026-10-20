@@ -4340,7 +4340,12 @@
     spreadChain: (context) => pickingSpreadChainNodes(context),
     spreadRoute: (context) => pickingSpreadRouteNodes(context),
     spreadApproach: (context) => pickingSpreadApproachNodes(context),
-    spreadColour: (context) => pickingSpreadColourNodes(context)
+    spreadColour: (context) => pickingSpreadColourNodes(context),
+    wrapChange: (context) => pickingEtudeNodes(context, { tones: "sevenths", lean: true }),
+    arriveEarly: (context) => pickingEtudeNodes(context, { tones: "written", early: true }),
+    sameLick: (context) => pickingSameLickNodes(context),
+    ninthArps: (context) => pickingNinthArpNodes(context),
+    lightTouch: (context) => pickingLightTouchNodes(context)
   };
 
   function pickingBaseNodes(exercise, context) {
@@ -4566,28 +4571,28 @@
       return frets.length ? Math.min.apply(null, frets) : 0;
     };
     let anchor = context.position;
+    let previousPlacements = null;
     const bars = [];
     chords.forEach((chord) => {
-      let shaped = chord;
-      if (mode === "seventh" && chord.notes.length < 4) {
-        const degreeIndex = scale.findIndex((note) => note.pc === chord.rootPc);
-        if (degreeIndex >= 0) {
-          const third = scale[(degreeIndex + 2) % 7], fifth = scale[(degreeIndex + 4) % 7], seventh = scale[(degreeIndex + 6) % 7];
-          const offsets = [third, fifth, seventh].map((note) => (((note.pc - chord.rootPc) % 12) + 12) % 12).join(",");
-          const quality = ({ "4,7,11": "maj7", "4,7,10": "dom7", "3,7,10": "m7", "3,6,10": "m7b5", "3,6,9": "dim7", "3,7,11": "mMaj7", "4,8,11": "maj7sharp5" })[offsets];
-          if (quality) shaped = Object.assign({}, M.buildChord(context.tonic, modeId, (((chord.rootPc - M.parseName(context.tonic).pc) % 12) + 12) % 12, quality, null), { degreeLabel: chord.degreeLabel, fn: chord.fn, durationBars: chord.durationBars });
-        }
-      }
+      const shaped = mode === "seventh" || mode === "shell" ? pickingSeventhChord(chord, context, modeId) : chord;
       const cut = PICKING_STRING_SETS.includes(mode) ? pickingStringSetVoicings(shaped, mode) : [];
-      const voicings = mode === "triad" ? pickingTriadVoicings(shaped) : cut.length ? cut : pickingCompVoicings(shaped, true);
+      const all = mode === "triad" ? pickingTriadVoicings(shaped) : mode === "shell" ? pickingShellVoicings(shaped) : cut.length ? cut : pickingCompVoicings(shaped, true);
+      // Stay in one area (Billy Strings: the whole tune inside four frets):
+      // only shapes inside the chosen window, unless none fits.
+      const area = PICKING_AREAS[state.picking.chordPick.area || "free"];
+      const inArea = area ? all.filter((voicing) => voicing.placements.every((placement) => placement.fret === 0 || (placement.fret >= area[0] && placement.fret <= area[1]))) : [];
+      const voicings = inArea.length ? inArea : all;
       if (!voicings.length) return;
       // Nearest shape to the last one; a triad also prefers the top strings,
       // where a picked triad rings instead of rumbling.
       const top = window.Tuning.open().length - 1;
-      const cost = (voicing) => Math.abs(lowOf(voicing) - anchor)
+      // In an area the nearest shape is the one whose notes move least.
+      const motion = (voicing) => previousPlacements ? voicing.placements.reduce((sum, placement) => sum + Math.min.apply(null, previousPlacements.map((old) => Math.abs((window.Tuning.open()[placement.stringIndex] + placement.fret) - (window.Tuning.open()[old.stringIndex] + old.fret)))), 0) : 0;
+      const cost = (voicing) => (area ? motion(voicing) : Math.abs(lowOf(voicing) - anchor))
         + (mode === "triad" ? 3 * (top - Math.max.apply(null, voicing.placements.map((placement) => placement.stringIndex))) : 0);
       const voicing = voicings.slice().sort((left, right) => cost(left) - cost(right))[0];
       anchor = lowOf(voicing);
+      previousPlacements = voicing.placements;
       const tones = voicing.placements
         .map((placement) => pickingNode(placement, Object.assign({ pc: placement.note && placement.note.pc }, placement.note || {})))
         .sort((left, right) => left.midi - right.midi);
@@ -4595,6 +4600,42 @@
       for (let count = 0; count < barsFor(shaped); count++) bars.push(bar);
     });
     return bars;
+  }
+
+  const PICKING_AREAS = { free: null, low: [1, 5], mid: [5, 9], high: [9, 13] };
+  // Shell chords: root in the bass, then the 3rd and the 7th (the 6th on a
+  // minor-major tonic, the m6 sound laiko uses), one note per string, within
+  // four frets. Built from the tuning, so every instrument gets them.
+  function pickingShellVoicings(chord) {
+    const open = window.Tuning.open();
+    const third = chord.notes.find((note) => /^b?3$/.test(String(note.role)));
+    let seventh = chord.notes.find((note) => /7/.test(String(note.role))) || chord.notes.find((note) => String(note.role) === "6");
+    const root = chord.notes.find((note) => note.role === "R");
+    if (!root || !third) return [];
+    if (seventh && /^7$/.test(String(seventh.role)) && /^b3$/.test(String(third.role))) {
+      seventh = { pc: (root.pc + 9) % 12, role: "6", name: spellPc((root.pc + 9) % 12), roleLabel: "6" };
+    }
+    const tones = [root, third].concat(seventh ? [seventh] : [chord.notes.find((note) => /5/.test(String(note.role)))]).filter(Boolean);
+    if (tones.length < 3) return [];
+    const out = [];
+    for (let bass = 0; bass < open.length - 2; bass++) for (let fret = 0; fret <= 13; fret++) {
+      if ((((open[bass] + fret) % 12) + 12) % 12 !== root.pc) continue;
+      for (let s1 = bass + 1; s1 < open.length - 1; s1++) for (let s2 = s1 + 1; s2 < open.length && s2 <= bass + 3; s2++) {
+        [[tones[1], tones[2]], [tones[2], tones[1]]].forEach(([low, high]) => {
+          const f1 = (((low.pc - open[s1]) % 12) + 12) % 12, f2 = (((high.pc - open[s2]) % 12) + 12) % 12;
+          const options1 = [f1, f1 + 12].filter((value) => value <= 15), options2 = [f2, f2 + 12].filter((value) => value <= 15);
+          options1.forEach((a1) => options2.forEach((a2) => {
+            const midis = [open[bass] + fret, open[s1] + a1, open[s2] + a2];
+            if (!(midis[0] < midis[1] && midis[1] < midis[2]) || midis[2] - midis[0] > 19) return;
+            const fretted = [fret, a1, a2].filter((value) => value > 0);
+            if (fretted.length && Math.max.apply(null, fretted) - Math.min.apply(null, fretted) > 4) return;
+            const make = (stringIndex, value, note) => ({ stringIndex, fret: value, note: Object.assign({}, note, { roleLabel: pickingRoleLabel(note.role === "R" ? "1" : note.role), colorGroup: note.role === "R" ? "root" : /3/.test(String(note.role)) ? "third" : "seventh" }) });
+            out.push({ placements: [make(bass, fret, root), make(s1, a1, low), make(s2, a2, high)] });
+          }));
+        });
+      }
+    }
+    return out;
   }
 
   function pickingTriadVoicings(chord) {
@@ -4616,11 +4657,15 @@
     const guitar = /^guitar/.test(window.Tuning.currentId());
     $("cpVoicing").innerHTML = [
       ["written", "The progression's own chords (recommended)"],
+      ["shell", "Shells: root, 3rd, 7th (Billy Strings)"],
       ["triad", "Triads (three notes)"],
       ["seventh", "The dromos's seventh on every chord"]
     ].concat(guitar ? [["top4", "Top four strings, voice-led"], ["mid4", "Middle four strings, voice-led"], ["low4", "Low four strings, voice-led"]] : [])
       .map(([id, label]) => `<option value="${id}"${id === settings.voicing ? " selected" : ""}>${label}</option>`).join("");
-    $("cpVoicing").onchange = (event) => { stopPlay(); settings.voicing = ["triad", "seventh"].concat(PICKING_STRING_SETS).includes(event.target.value) ? event.target.value : "written"; renderPickingLab(); };
+    $("cpVoicing").onchange = (event) => { stopPlay(); settings.voicing = ["triad", "seventh", "shell"].concat(PICKING_STRING_SETS).includes(event.target.value) ? event.target.value : "written"; renderPickingLab(); };
+    $("cpArea").innerHTML = [["free", "Anywhere: nearest shape"], ["low", "Stay in frets 1 to 5"], ["mid", "Stay in frets 5 to 9"], ["high", "Stay in frets 9 to 13"]]
+      .map(([id, label]) => `<option value="${id}"${id === (settings.area || "free") ? " selected" : ""}>${label}</option>`).join("");
+    $("cpArea").onchange = (event) => { stopPlay(); settings.area = PICKING_AREAS.hasOwnProperty(event.target.value) ? event.target.value : "free"; renderPickingLab(); };
     const grid = pattern.steps.split(/\s+/).map((step) => { const [where, stroke] = step.split("/"); return `${where === "B" ? "bass" : where === "A" ? "alt" : where}${stroke === "U" ? "↑" : "↓"}`; }).join("  ");
     const sources = (pattern.sourceIds || []).map((id) => BK.sourceById(id)).filter(Boolean);
     const provenance = pattern.status === "documented" && sources.length
@@ -4659,55 +4704,263 @@
   // Changes etude: eighth notes through the progression, chord tones only,
   // inside one hand position; at each change the nearest tone of the next
   // chord, up or down, never a leap. Each chord fills its own bars.
-  function pickingEtudeNodes(context) {
+  // Chord tones of one chord inside a hand area, low to high, one per pitch.
+  function pickingAreaTones(chord, context, width, triadsOnly) {
+    const open = window.Tuning.open();
+    const notes = chord.notes.filter((note) => !triadsOnly || /^(R|b?3|#?b?5)$/.test(String(note.role)));
+    const lo = Math.max(0, context.position - width), hi = context.position + 4 + width;
+    const list = [];
+    FB.allTonePositions(notes).forEach((placement) => {
+      if (placement.fret > 15 || (placement.fret > 0 && (placement.fret < lo || placement.fret > hi))) return;
+      if (placement.fret === 0 && context.position > 4) return;
+      list.push({ stringIndex: placement.stringIndex, fret: placement.fret, midi: open[placement.stringIndex] + placement.fret, note: placement.note });
+    });
+    list.sort((left, right) => left.midi - right.midi || right.stringIndex - left.stringIndex);
+    const seen = new Set();
+    return list.filter((tone) => !seen.has(tone.midi) && seen.add(tone.midi));
+  }
+  function pickingAreaTonesWide(chord, context, triadsOnly) {
+    const tones = pickingAreaTones(chord, context, 1, triadsOnly);
+    return tones.length >= 3 ? tones : pickingAreaTones(chord, context, 3, triadsOnly);
+  }
+  // The dromos's own seventh chord on a progression chord; a chord that
+  // already carries a seventh keeps it.
+  function pickingSeventhChord(chord, context, modeId) {
+    if (chord.notes.length >= 4) return chord;
+    const scale = M.scaleOf(context.tonic, modeId);
+    const degreeIndex = scale.findIndex((note) => note.pc === chord.rootPc);
+    if (degreeIndex < 0) return chord;
+    const third = scale[(degreeIndex + 2) % 7], fifth = scale[(degreeIndex + 4) % 7], seventh = scale[(degreeIndex + 6) % 7];
+    const offsets = [third, fifth, seventh].map((note) => (((note.pc - chord.rootPc) % 12) + 12) % 12).join(",");
+    // The harmonic-minor tonic takes the sixth (m6), the colour laiko uses,
+    // rather than the minor-major seventh.
+    const quality = ({ "4,7,11": "maj7", "4,7,10": "dom7", "3,7,10": "m7", "3,6,10": "m7b5", "3,6,9": "dim7", "3,7,11": "m6", "4,8,11": "maj7sharp5" })[offsets];
+    if (!quality) return chord;
+    return Object.assign({}, M.buildChord(context.tonic, modeId, (((chord.rootPc - M.parseName(context.tonic).pc) % 12) + 12) % 12, quality, null), { degreeLabel: chord.degreeLabel, fn: chord.fn, durationBars: chord.durationBars });
+  }
+
+  // Changes etude: eighth notes through the progression, chord tones only,
+  // inside one hand position; at each change the nearest tone of the next
+  // chord, up or down, never a leap. Each chord fills its own bars.
+  // options.tones: triads | written | sevenths. options.lean: the last four
+  // notes of a chord turn so the last one sits next to the coming chord
+  // (Billy Strings: lines that wrap around the changes). options.early: the
+  // last two notes of a chord already belong to the next one (arrive early).
+  function pickingEtudeNodes(context, options) {
+    const opts = options || { tones: state.picking.variant === "written" ? "written" : "triads" };
+    const modeId = pickingModeId(context);
+    const built = M.buildProgression(context.tonic, modeId, state.progId).chords;
+    const chords = opts.tones === "sevenths" ? built.map((chord) => pickingSeventhChord(chord, context, modeId)) : built;
+    const pulse = S.beatMap(S.byId(state.groove.styleId));
+    const sub = Math.max(1, state.picking.subdivision || 2);
+    const triadsOnly = opts.tones === "triads";
+    const toneSets = chords.map((chord) => pickingAreaTonesWide(chord, context, triadsOnly));
+    const nodes = [];
+    let current = null, direction = 1;
+    const nearestIndex = (tones, from, avoidSame) => tones.map((tone, at) => ({ at, gap: Math.abs(tone.midi - from.midi), same: tone.midi === from.midi, ahead: Math.sign(tone.midi - from.midi) === direction }))
+      .sort((left, right) => (avoidSame ? (left.same - right.same) : 0) || (left.gap - right.gap) || (right.ahead - left.ahead))[0].at;
+    const stepFrom = (tones, index, dir) => {
+      let next = dir;
+      if (index + next < 0 || index + next >= tones.length) next = -next;
+      return { index: tones.length > 1 ? index + next : index, dir: next };
+    };
+    chords.forEach((chord, chordIndex) => {
+      let tones = toneSets[chordIndex];
+      if (!tones.length) return;
+      const nextChord = chords[(chordIndex + 1) % chords.length];
+      const nextTones = toneSets[(chordIndex + 1) % chords.length];
+      let index = current ? nearestIndex(tones, current, true) : 0;
+      const slots = barsFor(chord) * pulse.length * sub;
+      let early = false;
+      for (let slot = 0; slot < slots; slot++) {
+        if (opts.lean && slot === slots - 4 && nextTones.length && slots >= 8) {
+          // Try both turns; keep the one whose fourth note lands nearest the next chord.
+          const ends = [1, -1].map((dir) => {
+            let at = index, d = dir;
+            for (let k = 0; k < 3; k++) { const step = stepFrom(tones, at, d); at = step.index; d = step.dir; }
+            const gap = Math.min.apply(null, nextTones.map((tone) => Math.abs(tone.midi - tones[at].midi) || 99));
+            return { dir, gap };
+          }).sort((left, right) => left.gap - right.gap);
+          direction = ends[0].dir;
+        }
+        if (opts.early && slot === slots - 2 && nextTones.length && chords.length > 1) {
+          tones = nextTones; early = true;
+          index = nearestIndex(tones, current || tones[0], true);
+        }
+        const tone = tones[index];
+        const arrival = slot === 0 && chordIndex >= 0;
+        const role = pickingRoleLabel(tone.note.role);
+        nodes.push(Object.assign(pickingNode({ stringIndex: tone.stringIndex, fret: tone.fret }, Object.assign({}, tone.note, { roleLabel: role, colorGroup: early ? "target" : tone.note.role === "R" ? "root" : arrival && (opts.lean || opts.early) ? "third" : "scaledeg" })), {
+          roadIndex: chordIndex, roadShort: chord.symbol, roadLabel: `${chord.degreeLabel} ${chord.symbol}`, roadStart: slot === 0, chordStart: slot === 0, chordSymbol: chord.symbol,
+          cue: early && slot === slots - 2 ? `early: ${role} of ${nextChord.symbol} before the band gets there` : arrival && (opts.lean || opts.early) ? `land the ${role} of ${chord.symbol} on the one` : null,
+          cueShort: early && slot === slots - 2 ? "early" : null,
+          phrase: `${early ? nextChord.symbol : chord.symbol} · ${role}`
+        }));
+        current = tone;
+        const step = stepFrom(tones, index, direction);
+        index = step.index; direction = step.dir;
+      }
+    });
+    return nodes;
+  }
+
+  // ---- Billy Strings drills (FR-87) -------------------------------------
+  // Same lick, next chord (Rob Cappelletto and Billy on Fishscale): a four-
+  // note motif stays in one place; at each change only the notes that are
+  // not in the new chord move, to the nearest tone of it.
+  function pickingSameLickNodes(context) {
     const modeId = pickingModeId(context);
     const { chords } = M.buildProgression(context.tonic, modeId, state.progId);
     const pulse = S.beatMap(S.byId(state.groove.styleId));
     const sub = Math.max(1, state.picking.subdivision || 2);
-    const open = window.Tuning.open();
-    const triadsOnly = state.picking.variant !== "written";
-    const tonesFor = (chord, width) => {
-      const notes = chord.notes.filter((note) => !triadsOnly || /^(R|b?3|#?b?5)$/.test(String(note.role)));
-      const lo = Math.max(0, context.position - width), hi = context.position + 4 + width;
-      const list = [];
-      FB.allTonePositions(notes).forEach((placement) => {
-        if (placement.fret > 15 || (placement.fret > 0 && (placement.fret < lo || placement.fret > hi))) return;
-        if (placement.fret === 0 && context.position > 4) return;
-        list.push({ stringIndex: placement.stringIndex, fret: placement.fret, midi: open[placement.stringIndex] + placement.fret, note: placement.note });
-      });
-      list.sort((left, right) => left.midi - right.midi || right.stringIndex - left.stringIndex);
-      const seen = new Set();
-      return list.filter((tone) => !seen.has(tone.midi) && seen.add(tone.midi));
-    };
+    const first = pickingAreaTonesWide(chords[0], context, false);
+    if (first.length < 3) return [];
+    const centre = context.position + 2;
+    let k = first.reduce((best, tone, at) => Math.abs(tone.fret - centre) < Math.abs(first[best].fret - centre) ? at : best, 0);
+    k = Math.max(0, Math.min(k, first.length - 3));
+    let motif = [first[k], first[k + 1], first[k + 2], first[k + 1]].map((tone) => Object.assign({}, tone, { moved: false }));
     const nodes = [];
-    let current = null, direction = 1;
     chords.forEach((chord, chordIndex) => {
-      let tones = tonesFor(chord, 1);
-      if (tones.length < 3) tones = tonesFor(chord, 3);
+      const tones = pickingAreaTonesWide(chord, context, false);
       if (!tones.length) return;
-      let index;
-      if (!current) index = 0;
-      else {
-        // The nearest tone of the new chord, never the same pitch again if
-        // the chord offers another; ties follow the line's direction.
-        const ranked = tones.map((tone, at) => ({ at, gap: Math.abs(tone.midi - current.midi), same: tone.midi === current.midi, ahead: Math.sign(tone.midi - current.midi) === direction }))
-          .sort((left, right) => (left.same - right.same) || (left.gap - right.gap) || (right.ahead - left.ahead));
-        index = ranked[0].at;
+      if (chordIndex > 0) {
+        // Each distinct pitch of the lick finds a home in the new chord: kept
+        // if it belongs, otherwise one of its three nearest chord tones. The
+        // lick keeps distinct notes, with the least total movement.
+        const pitches = Array.from(new Set(motif.map((tone) => tone.midi)));
+        const choices = pitches.map((midi) => {
+          const kept = chord.notes.some((note) => note.pc === ((midi % 12) + 12) % 12);
+          const near = tones.slice().sort((left, right) => Math.abs(left.midi - midi) - Math.abs(right.midi - midi)).slice(0, 3);
+          return kept ? [{ midi, keep: true }] : near.map((tone) => ({ midi: tone.midi, tone }));
+        });
+        let best = null;
+        const walk = (at, picked, cost) => {
+          if (at === pitches.length) { if (!best || cost < best.cost) best = { cost, picked: picked.slice() }; return; }
+          choices[at].forEach((choice) => {
+            if (picked.some((other) => other.midi === choice.midi)) return;
+            picked.push(choice); walk(at + 1, picked, cost + Math.abs(choice.midi - pitches[at])); picked.pop();
+          });
+        };
+        walk(0, [], 0);
+        const mapping = new Map(pitches.map((midi, at) => [midi, best ? best.picked[at] : { midi, keep: true }]));
+        motif = motif.map((tone) => {
+          const target = mapping.get(tone.midi);
+          if (target.keep) {
+            const note = chord.notes.find((candidate) => candidate.pc === ((tone.midi % 12) + 12) % 12) || tone.note;
+            return Object.assign({}, tone, { note, moved: false });
+          }
+          return Object.assign({}, target.tone, { moved: true, from: tone.midi });
+        });
       }
       const slots = barsFor(chord) * pulse.length * sub;
       for (let slot = 0; slot < slots; slot++) {
-        const tone = tones[index];
-        nodes.push(Object.assign(pickingNode({ stringIndex: tone.stringIndex, fret: tone.fret }, Object.assign({}, tone.note, { roleLabel: pickingRoleLabel(tone.note.role), colorGroup: tone.note.role === "R" ? "root" : "scaledeg" })), {
+        const tone = motif[slot % motif.length];
+        const role = pickingRoleLabel(tone.note.role);
+        nodes.push(Object.assign(pickingNode({ stringIndex: tone.stringIndex, fret: tone.fret }, Object.assign({}, tone.note, { roleLabel: role, colorGroup: tone.moved ? "target" : "scaledeg" })), {
           roadIndex: chordIndex, roadShort: chord.symbol, roadLabel: `${chord.degreeLabel} ${chord.symbol}`, roadStart: slot === 0, chordStart: slot === 0, chordSymbol: chord.symbol,
-          phrase: `${chord.symbol} · ${pickingRoleLabel(tone.note.role)}`
+          cue: slot < motif.length && tone.moved ? `moves: ${role} of ${chord.symbol}` : slot === 0 ? (chordIndex === 0 ? `${chord.symbol}: the lick` : `${chord.symbol}: same lick, the held notes stay`) : null,
+          cueShort: slot < motif.length && tone.moved ? "moves" : null,
+          phrase: `${chord.symbol} · ${tone.moved ? "moved" : "held"} ${role}`
         }));
-        current = tone;
-        if (tones.length > 1) {
-          if (index + direction < 0 || index + direction >= tones.length) direction = -direction;
-          index += direction;
-        }
       }
     });
+    return nodes;
+  }
+
+  // Directional picking: down when the next note is on a higher string, up
+  // when it is on a lower one, a hammer or pull when it stays on the string.
+  function pickingDirectional(nodes) {
+    let previous = null;
+    nodes.forEach((node) => {
+      let technique;
+      if (!previous) technique = "D";
+      else if (node.stringIndex === previous.stringIndex) technique = node.midi > previous.midi ? "H" : node.midi < previous.midi ? "P" : (previous.presetTechnique === "D" ? "U" : "D");
+      else technique = node.stringIndex > previous.stringIndex ? "D" : "U";
+      node.presetTechnique = technique;
+      previous = node;
+    });
+    return nodes;
+  }
+
+  // Ninth arpeggios with directional picking (the exercise behind Escanaba,
+  // as Billy describes it): 1-3-5-7-9 up and 7-5-3 down on every degree of
+  // the dromos, the hand moving up the neck degree by degree.
+  function pickingNinthArpNodes(context) {
+    const scale = M.scaleOf(context.tonic, pickingModeId(context));
+    const open = window.Tuning.open();
+    const rootString = open.length >= 6 ? 1 : 0;
+    let fret = ((scale[0].pc - open[rootString]) % 12 + 12) % 12;
+    while (fret < context.position - 2 && fret + 12 <= 9) fret += 12;
+    const tonicMidi = open[rootString] + fret;
+    const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "I"];
+    const ROLES = ["1", "3", "5", "7", "9", "7", "5", "3"];
+    const nodes = [];
+    for (let degree = 0; degree <= 7; degree++) {
+      const steps = [0, 2, 4, 6, 8, 6, 4, 2].map((step) => degree + step);
+      const rootMidi = pickingDegreeMidi(scale, tonicMidi, degree);
+      const rootFret = rootMidi - open[rootString];
+      if (rootFret > 15) break;
+      const triad = spreadDegreeTriad(scale, degree);
+      // Up: each note on the next string up when it fits the hand (one fret
+      // below the root to four above); a hammer only when it does not.
+      // Down: the same places in reverse.
+      const up = [{ stringIndex: rootString, fret: rootFret }];
+      [2, 4, 6, 8].forEach((step) => {
+        const midi = pickingDegreeMidi(scale, tonicMidi, degree + step);
+        const previous = up[up.length - 1];
+        const candidates = [];
+        open.forEach((openMidi, stringIndex) => {
+          const value = midi - openMidi;
+          if (value < 0 || value > 17 || stringIndex < previous.stringIndex) return;
+          const inHand = value === 0 || (value >= rootFret - 1 && value <= rootFret + 4);
+          candidates.push({ stringIndex, fret: value, score: (inHand ? 0 : 6 + Math.abs(value - rootFret)) + (stringIndex === previous.stringIndex ? 1.5 : 0) + Math.max(0, stringIndex - previous.stringIndex - 1) * 4 });
+        });
+        candidates.sort((left, right) => left.score - right.score);
+        up.push(candidates[0] || previous);
+      });
+      const places = up.concat([up[3], up[2], up[1]]);
+      steps.forEach((step, at) => {
+        const midi = pickingDegreeMidi(scale, tonicMidi, step);
+        const placement = places[at];
+        const pc = ((midi % 12) + 12) % 12;
+        const scaleNote = scale.find((note) => note.pc === pc) || {};
+        nodes.push(Object.assign(pickingNode(placement, { pc, degree: ROLES[at], name: scaleNote.name || spellPc(pc), roleLabel: ROLES[at], colorGroup: at === 0 ? "root" : ROLES[at] === "3" ? "third" : ROLES[at] === "9" ? "target" : "scaledeg" }), {
+          roadIndex: degree, roadShort: NUMERALS[degree], roadLabel: `${NUMERALS[degree]} ${triad.symbol} · 1-3-5-7-9`, roadStart: at === 0, chordStart: at === 0, chordSymbol: triad.symbol,
+          cue: at === 0 ? `${NUMERALS[degree]} ${triad.symbol}: up 1-3-5-7-9, back 7-5-3. Down going up, up coming down.` : at === 4 ? "the 9: turn here, the pick is already on its way back" : null,
+          cueShort: at === 4 ? "turn" : null,
+          phrase: `${NUMERALS[degree]} · ${ROLES[at]}`
+        }));
+      });
+    }
+    return pickingDirectional(nodes);
+  }
+
+  // Light touch (Billy on playing Tony Rice's guitar; Bryan Sutton's pencil
+  // pressure): the same line twice at one tempo, the second pass half as hard.
+  function pickingLightTouchNodes(context) {
+    const scale = M.scaleOf(context.tonic, pickingModeId(context));
+    const open = window.Tuning.open();
+    const top = open.length - 1;
+    const string = Math.max(0, top - 1);
+    let tonic = open[string] + ((scale[0].pc - open[string]) % 12 + 12) % 12;
+    if (tonic - open[string] < context.position - 3) tonic += 12;
+    const line = [];
+    for (let step = 0; step <= 7; step++) line.push(step);
+    for (let step = 6; step >= 1; step--) line.push(step);
+    const nodes = [];
+    let anchor = { stringIndex: string, fret: tonic - open[string] };
+    [0, 1].forEach((pass) => line.forEach((step, at) => {
+      const midi = pickingDegreeMidi(scale, tonic, step);
+      const placement = pickingPlaceMidi(midi, anchor, Math.max(1, tonic - open[string] - 1)) || anchor;
+      anchor = placement;
+      const note = scale[step % 7];
+      nodes.push(Object.assign(pickingNode(placement, Object.assign({}, note, { roleLabel: note.degree, colorGroup: step % 7 === 0 ? "root" : "scaledeg" })), {
+        presetTechnique: at % 2 === 0 ? "D" : "U",
+        roadIndex: pass, roadShort: pass ? "Half as hard" : "Normal", roadLabel: pass ? "Pass 2 · half as hard" : "Pass 1 · your normal touch", roadStart: at === 0, chordStart: at === 0,
+        cue: at === 0 ? (pass ? "Half as hard: pencil pressure, same time, let the string do the work" : "Your normal touch. Listen to the tone.") : null,
+        phrase: pass ? "half as hard" : "normal touch"
+      }));
+    }));
     return nodes;
   }
 
@@ -5135,14 +5388,17 @@
   // ---- Autopilot (FR-85): tempo ladder, fading map, mixed keys --------------
   function loadAutopilot() {
     // The mic always starts off: it needs permission each visit.
-    try { return Object.assign({ tempo: true, fade: true, mix: false }, JSON.parse(localStorage.getItem("dromos-autopilot") || "{}"), { mic: false }); }
-    catch (error) { return { tempo: true, fade: true, mix: false, mic: false }; }
+    try { return Object.assign({ tempo: true, two: false, fade: true, mix: false }, JSON.parse(localStorage.getItem("dromos-autopilot") || "{}"), { mic: false }); }
+    catch (error) { return { tempo: true, two: false, fade: true, mix: false, mic: false }; }
   }
   function saveAutopilot() {
     try { localStorage.setItem("dromos-autopilot", JSON.stringify(state.picking.autopilot)); } catch (error) { /* storage unavailable */ }
   }
   function pickingMapLevel() {
     if (state.picking.reveal || !state.picking.autopilot.fade) return "full";
+    // A fourth level past memory: eyes closed (Billy practised like Doc
+    // Watson, without looking): neck and strip hidden, count and ears only.
+    if (state.picking.fadePasses >= 3) return "eyes";
     return PE ? PE.fadeLevel(state.picking.fadePasses) : "full";
   }
   // The ladder starts where the drill starts and climbs toward the rhythm's
@@ -5174,10 +5430,12 @@
 
   function renderPickingAutopilot() {
     const ap = state.picking.autopilot;
-    [["apTempo", ap.tempo], ["apFade", ap.fade], ["apMix", ap.mix], ["apMic", ap.mic]].forEach(([id, on]) => {
+    const level = pickingMapLevel();
+    [["apTempo", ap.tempo], ["apTwo", ap.two], ["apFade", ap.fade], ["apMix", ap.mix], ["apMic", ap.mic]].forEach(([id, on]) => {
       $(id).setAttribute("aria-pressed", String(on));
       $(id).classList.toggle("active", on);
     });
+    $("stage").classList.toggle("eyes-closed", state.view === "picking" && level === "eyes");
     const ladder = pickingLadder();
     const steps = [];
     for (let bpm = ladder.start; bpm <= ladder.goal; bpm += 4) steps.push(bpm);
@@ -5187,16 +5445,15 @@
       const done = bpm < state.bpm;
       return `<rect x="${(index * width + 1).toFixed(1)}" y="${here ? 2 : 8}" width="${Math.max(1, width - 2).toFixed(1)}" height="${here ? 18 : 12}" rx="2" class="${here ? "here" : done ? "done" : ""}"/>`;
     }).join("");
-    $("pickingLadderText").textContent = ap.tempo ? `${ladder.start} to ${ladder.goal} · +4 after 3 clean` : "Ladder off";
+    $("pickingLadderText").textContent = ap.two ? `Two tempos · ${state.picking.twoPhase === "free" ? "free pass" : `near tempo ${Math.round(ladder.goal * 0.85)}`}` : ap.tempo ? `${ladder.start} to ${ladder.goal} · +4 after 3 clean` : "Ladder off";
     $("pickingCleanDots").innerHTML = [0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "ok" : ""}"></i>`).join("");
-    const level = pickingMapLevel();
     const segment = state.picking.activeSegment;
     const nowTonic = segment && segment.tonic ? segment.tonic : state.tonic;
     const ring = pickingMixRing();
     const next = ring[(Math.max(0, ring.indexOf(nowTonic)) + 1) % ring.length];
     const modeName = (M.MODES[state.modeId] || M.MODES.major).name.toLowerCase();
     const pills = [
-      `<span class="ps-pill strong">${level === "full" ? "Map: full" : level === "hints" ? "Map: next note only" : "Map: hidden · from memory"}${level === "memory" ? ` <button type="button" id="btnPickingReveal">Show</button>` : ""}</span>`,
+      `<span class="ps-pill strong">${level === "full" ? "Map: full" : level === "hints" ? "Map: next note only" : level === "eyes" ? "Eyes closed · count and listen" : "Map: hidden · from memory"}${level === "memory" || level === "eyes" ? ` <button type="button" id="btnPickingReveal">Show</button>` : ""}</span>`,
       `<span class="ps-pill">Clean ${state.picking.cleanPasses} of 3 at ${state.bpm}</span>`
     ];
     const todayIndex = PE ? todayActiveStep() : null;
@@ -5321,7 +5578,31 @@
     const before = state.bpm;
     if (clean) state.picking.fadePasses += 1; else state.picking.fadePasses = 0;
     let message;
-    if (ap.tempo && PE) {
+    if (ap.two) {
+      // Two tempos (Rob Cappelletto): a free pass with no click to check the
+      // fingering and picking, then near full tempo. No 1 BPM creep.
+      const goal = pickingLadder().goal;
+      if (state.picking.twoPhase === "free") {
+        if (clean) {
+          state.picking.twoPhase = "near"; state.picking.metronome = state.picking.twoClick !== false;
+          state.bpm = Math.round(goal * 0.85); state.picking.cleanPasses = 0; state.picking.fadePasses = 0;
+          message = `Free pass clean. Now near tempo: ${state.bpm}.`;
+        } else message = "Free pass again: slower is fine, the click is off.";
+      } else if (clean) {
+        state.picking.cleanPasses = Math.min(3, state.picking.cleanPasses + 1);
+        message = "Clean near tempo.";
+        if (state.picking.cleanPasses >= 3) {
+          const held = state.bpm;
+          state.picking.ladder.goal = Math.min(240, goal + 4); state.picking.cleanPasses = 0; state.picking.fadePasses = 0;
+          state.bpm = Math.round(state.picking.ladder.goal * 0.85);
+          message = `Three clean near tempo at ${held}. Goal up 4: near tempo is now ${state.bpm}.`;
+        }
+      } else {
+        state.picking.twoPhase = "free"; state.picking.twoClick = state.picking.metronome; state.picking.metronome = false;
+        state.bpm = Math.max(40, Math.round(goal * 0.6)); state.picking.cleanPasses = 0;
+        message = "Missed: one free pass, no click, slow. Check every finger and every stroke.";
+      }
+    } else if (ap.tempo && PE) {
       const ladder = pickingLadder();
       const step = PE.ladderStep({ tempo: state.bpm, cleans: state.picking.cleanPasses, need: 3, step: 4, start: ladder.start, goal: ladder.goal }, clean);
       state.picking.cleanPasses = step.ladder.cleans;
@@ -5671,7 +5952,7 @@
     };
     return {
       colour,
-      mapLevel: pickingMapLevel(),
+      mapLevel: pickingMapLevel() === "eyes" ? "memory" : pickingMapLevel(),
       roadIndex: null,
       nodes: session.nodes,
       fingers: PK.assignFingers(PK.markShapes(session.nodes)),
@@ -8422,7 +8703,20 @@
       playPickingExercise();
     };
     $("btnPickingClean").onclick = logPickingPass;
-    $("apTempo").onclick = () => { state.picking.autopilot.tempo = !state.picking.autopilot.tempo; state.picking.ladder = null; saveAutopilot(); renderPickingLab(); };
+    $("apTempo").onclick = () => { state.picking.autopilot.tempo = !state.picking.autopilot.tempo; if (state.picking.autopilot.tempo) state.picking.autopilot.two = false; state.picking.ladder = null; saveAutopilot(); renderPickingLab(); };
+    $("apTwo").onclick = () => {
+      stopPlay();
+      const ap = state.picking.autopilot;
+      ap.two = !ap.two;
+      if (ap.two) {
+        ap.tempo = false; state.picking.ladder = null;
+        const goal = pickingLadder().goal;
+        state.picking.twoPhase = "near"; state.bpm = Math.round(goal * 0.85); AU.setBpm(state.bpm);
+        persistPreferences(); syncPersistentControls();
+        toast(`Two tempos: near full tempo (${state.bpm}) and, after a miss, one free pass with no click.`);
+      } else if (state.picking.twoPhase === "free") { state.picking.metronome = state.picking.twoClick !== false; state.picking.twoPhase = "near"; }
+      saveAutopilot(); renderPickingLab();
+    };
     $("apFade").onclick = () => { state.picking.autopilot.fade = !state.picking.autopilot.fade; state.picking.fadePasses = 0; saveAutopilot(); renderPickingLab(); };
     $("apMix").onclick = () => { stopPlay(); state.picking.autopilot.mix = !state.picking.autopilot.mix; saveAutopilot(); renderPickingLab(); };
     $("apMic").onclick = () => setMicScoring(!state.picking.autopilot.mic);
