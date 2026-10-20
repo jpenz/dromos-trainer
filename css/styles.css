@@ -2719,3 +2719,15 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
   .transport-bar.picking-transport { gap: 12px; flex-wrap: nowrap; }
   .transport-bar.picking-transport .picking-tempo { flex: 1 1 160px; min-width: 150px; max-width: 230px; }
 }
+@media (max-width: 900px) {
+  /* Phones and narrow panes: Autopilot shrinks to one row of toggles beside
+     Clean / Missed; the ladder picture is dropped (the status pill says it). */
+  .picking-transport .ap-ladder, .picking-transport .ap-dots, .ap-group .panel-label { display: none; }
+  .picking-transport .ap-group { flex: 1 1 auto; padding: 2px; flex-wrap: nowrap; }
+  .picking-transport .ap-tog { min-height: 38px; padding: 0 8px; }
+  .picking-transport .ap-score { margin-left: 0; }
+  .picking-transport .ap-score button { min-height: 40px; padding: 0 12px; }
+  .picking-transport .deck-start { width: auto; }
+  .picking-transport .ap-group { flex: 1 1 0; min-width: 0; }
+  .picking-transport .ap-tog { flex: 1 1 auto; justify-content: center; padding: 0 6px; font-size: var(--fs-micro); }
+}

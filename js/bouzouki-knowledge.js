@@ -430,6 +430,48 @@
       boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
     },
     {
+      id: "beato-spread-practice", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Rick Beato · Spread Triad Practicing On The Guitar (live stream)",
+      href: "https://www.youtube.com/watch?v=c6FHWRgq7Wo",
+      supports: ["held grip first, every note fingered and clear, then single notes slowly, then descending", "a half step leading into each triad, a neighbour tone at the end, then the V chord into the i", "for each chord take the closest available position; sus4 and the Phrygian triad 1, b2, 5 by the same method"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "beato-spread-pros", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Rick Beato · What the Pros Know About Spread Triads",
+      href: "https://www.youtube.com/watch?v=GXBnuhXc2aU",
+      supports: ["four spreads in one position: 1-5-3, 3-1-5, 5-3-1 and 1-5-3 an octave up", "major, minor, diminished, augmented and sus4 spreads; finger each note, no barre", "down, down, up when ascending; vary the order"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "marbin-open-triads", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Marbin (Dani Rabin) · Open Triads Are Easy If You Learn Them This Way",
+      href: "https://www.youtube.com/watch?v=q8hhEpfnMC8",
+      supports: ["an open triad is a close triad with the middle voice moved up an octave", "metronome on half notes, switch between the shapes in one area and back", "three voice-leading routes through a progression in one area, one from each inversion"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "jared-spread-etude", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Sound Guitar Lessons with Jared · Spread Triads Guitar Etude",
+      href: "https://www.youtube.com/watch?v=EoCkiaF00Go",
+      supports: ["each change moves one voice by a step and the chord moves up a third in the key", "the moving voice goes bottom, top, middle; every chord and inversion appears", "from memory: name the bass tone, predict the next chord and the moving voice"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "jens-open-triads", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
+      name: "Jens Larsen · Open Triads in solos, Spread Triad Guitar Lesson",
+      href: "https://www.youtube.com/watch?v=FkXA0Xeto48",
+      supports: ["play the root-position open triads of the key along the entire neck", "keep one fingering type so the string skip stays in the same place", "big string skips make the right hand work"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
+      id: "ry-naylor-spread", rank: 2, authority: "YouTube lesson · professional (guitar import)",
+      name: "Ry Naylor Guitar · INSTANT beautiful guitar chords with spread triads",
+      href: "https://www.youtube.com/watch?v=CGKlk3ed_BU",
+      supports: ["up and down the inversions on each string set", "chord scales: the seven diatonic triads up and down on one string set", "chord pairs back and forth through the inversions"],
+      boundary: "Linked lesson only: Dromos does not download, transcribe, restream or imply endorsement, and the generated drills are built from the dromos, not copied from the video."
+    },
+    {
       id: "marbin-passing", rank: 2, authority: "YouTube lesson · professional (jazz guitar import)",
       name: "Marbin (Dani Rabin) · Bebop Scales BAD, Passing Tone Scales GOOD",
       href: "https://www.youtube.com/watch?v=EHjKEDir4wE",
@@ -560,7 +602,7 @@
       id: "arpeggios", step: 6, label: "Triads and four-note arpeggios", short: "the chords inside the dromos",
       answer: "Every degree of the dromos carries a chord. Play the triads and the four-note arpeggios in order up the neck, then one chord through its inversions, pick through the chords, walk the chord tones through the changes without a leap, and set tension against home.",
       gate: "Self-scored: triads and four-note arpeggios up and back in each of the five dromoi, naming every chord, and the arpeggio circuit through the band keys at one steady tempo.",
-      exerciseIds: ["diatonic-triads", "triad-ladder", "diatonic-arps", "chord-picking", "pair-triads-ddu", "changes-etude", "tension-home", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
+      exerciseIds: ["diatonic-triads", "spread-triad-ladder", "spread-diatonic", "spread-chain-etude", "spread-progression-route", "spread-approach-tones", "spread-colour-triads", "triad-ladder", "diatonic-arps", "chord-picking", "pair-triads-ddu", "changes-etude", "tension-home", "arpeggio-arrival", "arp-chunks", "band-key-arpeggio-circuit", "meter-roll"]
     },
     {
       id: "speed", step: 7, label: "Speed and glide", short: "speed under the blur rule",

@@ -3223,11 +3223,11 @@
   // Sequences with fixed node builders that never read state.picking.route
   // (open courses, arpeggio circuits, ladders, traversals): the route seg is
   // meaningless for them, so it hides instead of silently doing nothing.
-  const PICKING_FIXED_SEQUENCES = new Set(["arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip",
+  const PICKING_FIXED_SEQUENCES = new Set(["spread", "arpeggio", "openCourses", "arpCircuit", "skeletonDescent", "featherTouch", "throughStroke", "mairLadder", "traversalCountdown", "monopenies", "triadLadder", "courseTarget", "neckLadder", "arpChunks", "workbench", "comp", "crossingFlip",
     "fingerPairs", "fretCells", "roll", "dyadTremolo", "equator", "crossBakeoff", "depthLadder", "seam",
     "courseLine", "line", "diatonic", "roads", "chordPick", "pairTriads", "doubleCell", "sixCell", "offsetLine", "artic"]);
   // Drills that already travel, or own their route: no position tour on top.
-  const PICKING_NO_TOUR = new Set(["comp", "roads", "chordPick", "pairTriads", "doubleCell", "sixCell", "offsetLine", "artic", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
+  const PICKING_NO_TOUR = new Set(["spread", "comp", "roads", "chordPick", "pairTriads", "doubleCell", "sixCell", "offsetLine", "artic", "seam", "neckLadder", "fingerPairs", "fretCells", "courseLine", "line", "diatonic", "triadLadder", "arpChunks"]);
   function pickingExerciseRoutes(exercise) {
     return !ROUTE_LOCKED[exercise.id] && !PICKING_FIXED_SEQUENCES.has(exercise.sequence);
   }
@@ -3935,12 +3935,381 @@
     return pickingScalePathNodes(context, 8);
   }
 
+  // ---- Spread triads (FR-86) ---------------------------------------------
+  // A spread (open) triad is a close triad with its middle voice moved up an
+  // octave: 1-5-3, 3-1-5, 5-3-1. One note per string with a string skipped,
+  // so the shape suits any instrument tuned in fourths (guitar strings 4 to 1
+  // and tetrachordo C F A D share the same fret pattern).
+  const SPREAD_MAX_FRET = 17;
+  const spreadMod = (value) => ((value % 12) + 12) % 12;
+  const spreadUp = (from, pc) => from + (spreadMod(pc - from) || 12);
+  // The four-string group a drill works in: the top four by default; the
+  // guitar can also use the middle and low groups. Three-course instruments
+  // use all three courses (no course to skip).
+  function spreadGroup(kind) {
+    const count = window.Tuning.open().length;
+    if (count < 4) return [0, count - 1];
+    if (kind === "middle" && count >= 5) return [count - 5, count - 2];
+    if (kind === "low" && count >= 6) return [count - 6, count - 3];
+    return [count - 4, count - 1];
+  }
+  // The triad on one degree of the dromos, as close root-position tones.
+  function spreadDegreeTriad(scale, degree) {
+    const root = scale[degree % 7], third = scale[(degree + 2) % 7], fifth = scale[(degree + 4) % 7];
+    const i3 = spreadMod(third.off - root.off), i5 = spreadMod(fifth.off - root.off);
+    const quality = i3 === 4 ? (i5 === 8 ? "aug" : "maj") : (i5 === 6 ? "dim" : "min");
+    return {
+      degree, quality, symbol: root.name + { maj: "", min: "m", dim: "°", aug: "+" }[quality],
+      tones: [{ pc: root.pc, role: "1", name: root.name }, { pc: third.pc, role: i3 === 4 ? "3" : "♭3", name: third.name }, { pc: fifth.pc, role: i5 === 7 ? "5" : i5 === 6 ? "♭5" : "♯5", name: fifth.name }]
+    };
+  }
+  // Voice order of a spread from its close inversion: the middle voice goes up.
+  function spreadOrder(tones, inversion) {
+    const close = [tones[inversion % 3], tones[(inversion + 1) % 3], tones[(inversion + 2) % 3]];
+    return [close[0], close[2], close[1]];
+  }
+  function spreadOnStrings(order, bassMidi, strings) {
+    const open = window.Tuning.open();
+    const mid = spreadUp(bassMidi, order[1].pc), top = spreadUp(mid, order[2].pc);
+    const midis = [bassMidi, mid, top];
+    const frets = midis.map((midi, index) => midi - open[strings[index]]);
+    if (frets.some((fret) => fret < 0 || fret > SPREAD_MAX_FRET)) return null;
+    const fretted = frets.filter((fret) => fret > 0);
+    const stretch = fretted.length ? Math.max.apply(null, fretted) - Math.min.apply(null, fretted) : 0;
+    return { strings: strings.slice(), frets, midis, stretch, order };
+  }
+  // Every playable spread of a triad inside a string group, one per bass
+  // pitch and inversion, on its narrowest string set. bassString pins the
+  // bass to one string (the ladder); otherwise any string of the group.
+  function spreadVoicings(tones, group, options) {
+    const opts = options || {};
+    const open = window.Tuning.open();
+    const [low, high] = group;
+    const needSkip = high - low >= 3;
+    const out = [];
+    const inversions = opts.inversions || [0, 1, 2];
+    inversions.forEach((inversion) => {
+      const order = spreadOrder(tones, inversion);
+      for (let bass = low; bass <= high - 2; bass++) {
+        if (opts.bassString != null && bass !== opts.bassString) continue;
+        for (let fret = 0; fret <= SPREAD_MAX_FRET; fret++) {
+          const bassMidi = open[bass] + fret;
+          if (spreadMod(bassMidi) !== order[0].pc) continue;
+          let best = null;
+          for (let mid = bass + 1; mid <= high - 1; mid++) {
+            for (let top = mid + 1; top <= high; top++) {
+              if (needSkip && top - bass < 3) continue;
+              const voicing = spreadOnStrings(order, bassMidi, [bass, mid, top]);
+              if (!voicing || voicing.stretch > (opts.maxStretch || 4)) continue;
+              const mean = voicing.frets.reduce((sum, value) => sum + value, 0) / 3;
+              if (!best || voicing.stretch < best.stretch || (voicing.stretch === best.stretch && mean < best.mean)) best = Object.assign(voicing, { mean });
+            }
+          }
+          if (best) out.push(Object.assign(best, { inversion }));
+        }
+      }
+    });
+    return out.sort((left, right) => left.mean - right.mean || left.midis[0] - right.midis[0]);
+  }
+  const SPREAD_INVERSION_NAME = ["root in the bass", "3rd in the bass", "5th in the bass"];
+  const spreadShapeName = (voicing) => voicing.order.map((tone) => tone.role).join("-");
+  const spreadMean = (voicing) => voicing.frets.reduce((sum, value) => sum + value, 0) / 3;
+  // The voicing that moves least from the last one: pitch motion first, then
+  // the hand's travel along the neck.
+  function spreadNearest(voicings, previous, position) {
+    if (!voicings.length) return null;
+    const cost = (voicing) => previous
+      ? voicing.midis.reduce((sum, midi, index) => sum + Math.abs(midi - previous.midis[index]), 0) + 0.6 * Math.abs(spreadMean(voicing) - spreadMean(previous)) + 0.4 * voicing.stretch
+      : Math.abs(spreadMean(voicing) - position) + 0.4 * voicing.stretch;
+    return voicings.slice().sort((left, right) => cost(left) - cost(right))[0];
+  }
+  // One grip as three events. Ascending grips are down, down, up (Beato);
+  // a descending grip alternates on from the stroke before it, so the pick
+  // never takes two upstrokes in a row on the top string.
+  function spreadGrip(voicing, info, strokes) {
+    const descending = info.direction === "down";
+    const indexes = descending ? [2, 1, 0] : [0, 1, 2];
+    return indexes.map((voice, step) => {
+      const tone = voicing.order[voice];
+      let technique;
+      if (!descending && info.pattern !== "alternate") technique = ["D", "D", "U"][step];
+      else technique = strokes.last === "D" ? "U" : "D";
+      strokes.last = technique;
+      const node = pickingNode({ stringIndex: voicing.strings[voice], fret: voicing.frets[voice] }, {
+        pc: tone.pc, degree: tone.role, name: tone.name || spellPc(tone.pc), roleLabel: tone.role,
+        colorGroup: info.moving === voice || (info.colour && voice !== 0 && !/5/.test(tone.role) && tone.role !== "1") ? "target" : tone.role === "1" ? "root" : /3/.test(tone.role) ? "third" : "scaledeg"
+      });
+      return Object.assign(node, {
+        presetTechnique: technique, chordStart: step === 0, chordSymbol: info.symbol,
+        roadIndex: info.road, roadShort: info.roadShort || info.symbol, roadLabel: info.roadLabel || info.symbol, roadStart: step === 0 && info.roadStart !== false,
+        moving: info.moving === voice,
+        cue: step === 0 ? info.cue || `${info.symbol} · ${spreadShapeName(voicing)} · ${SPREAD_INVERSION_NAME[voicing.inversion]}` : step === 2 && technique === "U" && !descending ? "upstroke on the top note: the pick is already on its way back to the bass" : null,
+        cueShort: step === 0 ? spreadShapeName(voicing) : null,
+        phrase: `${info.symbol} · ${spreadShapeName(voicing)}`
+      });
+    });
+  }
+
+  // Drill 1: one chord's spreads up the neck on one bass string and back.
+  function pickingSpreadLadderNodes(context) {
+    const scale = M.scaleOf(context.tonic, pickingModeId(context));
+    const triad = spreadDegreeTriad(scale, 0);
+    const group = spreadGroup(state.picking.variant);
+    const ladder = spreadVoicings(triad.tones, group, { bassString: group[0], maxStretch: 4 })
+      .filter((voicing) => voicing.frets.every((fret) => fret <= 16))
+      .sort((left, right) => left.midis[0] - right.midis[0]);
+    if (ladder.length < 2) return [];
+    const nodes = [], strokes = { last: "U" };
+    const plan = ladder.map((voicing) => ({ voicing, direction: "up" })).concat(ladder.slice(1, -1).reverse().map((voicing) => ({ voicing, direction: "down" })));
+    plan.forEach((step, index) => spreadGrip(step.voicing, {
+      symbol: triad.symbol, road: index, roadShort: spreadShapeName(step.voicing), roadLabel: `${triad.symbol} ${spreadShapeName(step.voicing)}`, direction: step.direction,
+      cue: `${triad.symbol} · ${spreadShapeName(step.voicing)}: ${SPREAD_INVERSION_NAME[step.voicing.inversion]}. ${step.direction === "up" ? "Hold the grip, then down, down, up." : "Coming back down: alternate."}`
+    }, strokes).forEach((node) => nodes.push(node)));
+    return nodes;
+  }
+
+  // Drill 2: the seven triads of the dromos on one string set, one shape
+  // type the whole way, up the neck and back (Jens Larsen: keep the skip).
+  function pickingSpreadDiatonicNodes(context) {
+    const scale = M.scaleOf(context.tonic, pickingModeId(context));
+    const inversion = Number(state.picking.variant) || 0;
+    const group = spreadGroup("top");
+    const tonic = spreadDegreeTriad(scale, 0);
+    const first = spreadVoicings(tonic.tones, group, { bassString: group[0], inversions: [inversion], maxStretch: 4 })
+      .sort((left, right) => left.frets[0] - right.frets[0])[0];
+    if (!first) return [];
+    const chords = [];
+    let bassMidi = first.midis[0];
+    for (let degree = 0; degree <= 7; degree++) {
+      const triad = spreadDegreeTriad(scale, degree);
+      const order = spreadOrder(triad.tones, inversion);
+      if (degree > 0) bassMidi = spreadUp(bassMidi, order[0].pc);
+      const voicing = spreadOnStrings(order, bassMidi, first.strings);
+      if (!voicing) break;
+      chords.push({ triad, voicing: Object.assign(voicing, { inversion }) });
+    }
+    if (chords.length < 3) return [];
+    const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "I"];
+    const plan = chords.concat(chords.slice(1, -1).reverse());
+    const nodes = [], strokes = { last: "U" };
+    plan.forEach((chord, index) => spreadGrip(chord.voicing, {
+      symbol: chord.triad.symbol, road: index, roadShort: chord.triad.symbol, roadLabel: `${NUMERALS[chord.triad.degree % 7]} ${chord.triad.symbol}`,
+      cue: `${NUMERALS[chord.triad.degree % 7]} ${chord.triad.symbol} (${chord.triad.quality === "maj" ? "major" : chord.triad.quality === "min" ? "minor" : chord.triad.quality === "dim" ? "diminished" : "augmented"}): same shape, the top note decides the quality`
+    }, strokes).forEach((node) => nodes.push(node)));
+    return nodes;
+  }
+
+  // Drill 3: one voice moves (Jared's etude). Start on the tonic spread high
+  // on the neck; each chord moves one voice down one step of the dromos,
+  // bottom, top, middle, which lands on the triad a third higher. Down the
+  // chain and back up it.
+  function pickingSpreadChainNodes(context) {
+    const scale = M.scaleOf(context.tonic, pickingModeId(context));
+    const open = window.Tuning.open();
+    if (open.length < 4) {
+      // Three courses: the chain needs six-fret grips, so play the dromos's
+      // spreads instead and say why.
+      const fallback = pickingSpreadDiatonicNodes(context);
+      if (fallback.length) fallback[0].cue = "Three-course bouzouki: the one-voice chain needs six-fret grips, so this plays the dromos's spreads. Use tetrachordo, guitar or laouto for the chain.";
+      return fallback;
+    }
+    const group = spreadGroup("top");
+    const [bassString, topString] = [group[0], group[1]];
+    const midStrings = [];
+    for (let string = bassString + 1; string < topString; string++) midStrings.push(string);
+    const tonicPc = scale[0].pc;
+    const fretOf = (low, high) => { for (let fret = low; fret <= high; fret++) if (spreadMod(open[bassString] + fret) === tonicPc) return fret; return null; };
+    const startFret = fretOf(12, 16) != null ? fretOf(12, 16) : fretOf(5, 11);
+    const tonicMidi = open[bassString] + startFret;
+    const steps = [0, 4, 9];
+    const chain = [];
+    const VOICE_NAME = ["bass", "middle", "top"];
+    const place = (midis, previous) => {
+      let best = null;
+      (midStrings.length ? midStrings : [bassString + 1]).forEach((mid) => {
+        const strings = [bassString, mid, topString];
+        const frets = midis.map((midi, index) => midi - open[strings[index]]);
+        if (frets.some((fret) => fret < 0 || fret > SPREAD_MAX_FRET)) return;
+        const fretted = frets.filter((fret) => fret > 0);
+        const stretch = fretted.length ? Math.max.apply(null, fretted) - Math.min.apply(null, fretted) : 0;
+        const travel = previous ? Math.abs(frets[1] - previous.frets[1]) : 0;
+        if (!best || stretch + 0.2 * travel < best.score) best = { strings, frets, midis, stretch, score: stretch + 0.2 * travel };
+      });
+      return best;
+    };
+    const describe = (voices) => {
+      // The chord is the degree whose triad these three scale steps spell.
+      const classes = voices.map((step) => ((step % 7) + 7) % 7);
+      const root = [0, 1, 2, 3, 4, 5, 6].find((degree) => classes.every((value) => [degree, (degree + 2) % 7, (degree + 4) % 7].includes(value)));
+      const triad = spreadDegreeTriad(scale, root);
+      const roleOf = (value) => triad.tones[[root, (root + 2) % 7, (root + 4) % 7].indexOf(value)];
+      return { triad, order: classes.map(roleOf), inversion: [0, 1, 2].find((index) => classes[0] === [root, (root + 2) % 7, (root + 4) % 7][index]) };
+    };
+    let previous = null;
+    for (let move = 0; move <= 21; move++) {
+      if (move > 0) steps[[0, 2, 1][(move - 1) % 3]] -= 1;
+      const midis = steps.map((step) => pickingDegreeMidi(scale, tonicMidi, step));
+      const voicing = place(midis, previous);
+      if (!voicing) break;
+      const info = describe(steps);
+      chain.push(Object.assign(voicing, { order: info.order, inversion: info.inversion, triad: info.triad, moving: move > 0 ? [0, 2, 1][(move - 1) % 3] : null }));
+      previous = voicing;
+    }
+    // Stop on the last tonic in range (moves 7, 14 or 21), then climb back.
+    const ends = [21, 14, 7].filter((end) => end < chain.length);
+    if (!ends.length) return [];
+    const down = chain.slice(0, ends[0] + 1);
+    const plan = down.map((item) => ({ item, moving: item.moving })).concat(down.slice(0, -1).reverse().map((item, index, list) => ({ item, moving: down[down.length - 1 - index].moving })));
+    const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
+    const nodes = [], strokes = { last: "U" };
+    plan.forEach((step, index) => spreadGrip(step.item, {
+      symbol: step.item.triad.symbol, road: index, roadShort: step.item.triad.symbol, roadLabel: `${NUMERALS[step.item.triad.degree]} ${step.item.triad.symbol}`,
+      moving: step.moving,
+      cue: index === 0 ? `${step.item.triad.symbol}: the tonic, high on the neck. Each chord moves one voice by one step.` : `${step.item.triad.symbol}: the ${VOICE_NAME[step.moving]} voice moves${index >= down.length ? " back up" : ""}; say the chord before you play it`
+    }, strokes).forEach((node) => nodes.push(node)));
+    return nodes;
+  }
+
+  // Drill 4: spread triads through the progression in one area, each chord
+  // on the spread nearest the last (Marbin's three routes; Beato's closest
+  // position). One ascending grip per beat.
+  function pickingSpreadRouteNodes(context) {
+    const modeId = pickingModeId(context);
+    const { chords } = M.buildProgression(context.tonic, modeId, state.progId);
+    const pulse = S.beatMap(S.byId(state.groove.styleId));
+    const variant = state.picking.variant || "route1";
+    const group = spreadGroup("top");
+    const nodes = [], strokes = { last: "U" };
+    let previous = null;
+    chords.forEach((chord, chordIndex) => {
+      const pick = (pattern) => chord.notes.find((note) => pattern.test(String(note.role)));
+      const tones = [pick(/^R$/), pick(/^b?3$/) || pick(/^(sus)?4$/) || pick(/^b?2$/), pick(/^(#|b)?5$/)];
+      if (tones.some((tone) => !tone)) return;
+      const triadTones = tones.map((note, index) => ({ pc: note.pc, role: index === 0 ? "1" : pickingRoleLabel(note.role), name: note.name }));
+      const inversions = variant === "roots" ? [0] : !previous ? [{ route1: 0, route2: 1, route3: 2 }[variant] || 0] : [0, 1, 2];
+      const voicing = spreadNearest(spreadVoicings(triadTones, group, { inversions, maxStretch: 4 }), previous, context.position);
+      if (!voicing) return;
+      const beats = barsFor(chord) * pulse.length;
+      for (let beat = 0; beat < beats; beat++) spreadGrip(voicing, {
+        symbol: chord.symbol, road: chordIndex, roadShort: chord.symbol, roadLabel: `${chord.degreeLabel} ${chord.symbol}`, roadStart: beat === 0,
+        cue: beat === 0 ? `${chord.symbol}: ${spreadShapeName(voicing)}, ${previous ? "the nearest spread to the last chord" : "the route starts here"}` : null
+      }, strokes).forEach((node, step) => nodes.push(Object.assign(node, beat > 0 ? { chordStart: false, cue: step === 2 ? node.cue : null, cueShort: null } : {})));
+      previous = voicing;
+    });
+    return nodes;
+  }
+
+  // The tonic triad's spreads nearest the hand position, low to high: the
+  // working set for the approach and colour drills.
+  function spreadAreaGrips(tones, context) {
+    const group = spreadGroup("top");
+    const all = spreadVoicings(tones, group, { bassString: group[0], maxStretch: 4 }).sort((left, right) => left.midis[0] - right.midis[0]);
+    if (!all.length) return [];
+    let start = 0;
+    all.forEach((voicing, index) => { if (Math.abs(spreadMean(voicing) - context.position - 2) < Math.abs(spreadMean(all[start]) - context.position - 2)) start = index; });
+    start = Math.max(0, Math.min(start - 1, all.length - 3));
+    return all.slice(start, start + 3);
+  }
+
+  // Drill 5: a lead-in note into each spread (Beato): a half step below the
+  // bass, or the dromos's own neighbour, or a neighbour after the top note,
+  // or the leading chord (V, or ♭II in ousak and hijaz) before the tonic.
+  function pickingSpreadApproachNodes(context) {
+    const modeId = pickingModeId(context);
+    const scale = M.scaleOf(context.tonic, modeId);
+    const offs = scale.map((note) => note.off);
+    const triad = spreadDegreeTriad(scale, 0);
+    const grips = spreadAreaGrips(triad.tones, context);
+    if (!grips.length) return [];
+    const variant = state.picking.variant || "chromatic";
+    const open = window.Tuning.open();
+    const nodes = [], strokes = { last: "U" };
+    const lead = spreadDegreeTriad(scale, offs.includes(1) ? 1 : 4);
+    const leadName = offs.includes(1) ? "♭II" : "V";
+    const extra = (midi, stringIndex, label, cue) => {
+      let fret = midi - open[stringIndex];
+      let placement = fret >= 0 && fret <= SPREAD_MAX_FRET ? { stringIndex, fret } : pickingPlaceMidi(midi, { stringIndex, fret: Math.max(0, fret) }, context.position);
+      const pc = spreadMod(midi);
+      const scaleNote = scale.find((note) => note.pc === pc);
+      const technique = strokes.last === "D" ? "U" : "D";
+      strokes.last = technique;
+      return Object.assign(pickingNode(placement, { pc, degree: label, name: scaleNote ? scaleNote.name : spellPc(pc), roleLabel: label, colorGroup: "target" }), { presetTechnique: technique, cue, cueShort: label });
+    };
+    const plan = grips.concat(grips.slice(0, -1).reverse());
+    plan.forEach((voicing, index) => {
+      const info = { symbol: triad.symbol, road: index, roadShort: spreadShapeName(voicing), roadLabel: `${triad.symbol} ${spreadShapeName(voicing)}`, pattern: "alternate" };
+      if (variant === "lead") {
+        const before = spreadNearest(spreadVoicings(lead.tones, spreadGroup("top"), { maxStretch: 4 }), voicing, context.position);
+        if (before) spreadGrip(before, Object.assign({}, info, { symbol: lead.symbol, roadStart: true, cue: `${leadName} ${lead.symbol} leads in: pick the shape nearest the tonic grip` }), strokes).forEach((node) => nodes.push(node));
+        spreadGrip(voicing, Object.assign({}, info, { roadStart: false, cue: `${triad.symbol}: the leading chord resolves here` }), strokes).forEach((node) => nodes.push(node));
+        return;
+      }
+      if (variant === "neighbour") {
+        spreadGrip(voicing, info, strokes).forEach((node) => nodes.push(node));
+        const top = voicing.midis[2];
+        let above = top + 1;
+        while (!scale.some((note) => note.pc === spreadMod(above))) above++;
+        nodes.push(extra(above, voicing.strings[2], "N", "neighbour: the next dromos note above the top, then let it go"));
+        return;
+      }
+      const bass = voicing.midis[0];
+      let approach = bass - 1, label = "½", cue = "lead-in a half step below the bass: it resolves up into the grip";
+      if (variant === "dromos") {
+        const tonicBass = spreadMod(bass) === scale[0].pc;
+        if (tonicBass && offs.includes(1)) { approach = bass + 1; label = "♭2"; cue = "the ♭2 above the tonic falls into it: the sound of ousak and hijaz"; }
+        else { approach = bass - 1; while (!scale.some((note) => note.pc === spreadMod(approach))) approach--; label = "↗"; cue = "lead-in from the dromos note below the bass"; }
+      }
+      const first = extra(approach, voicing.strings[0], label, cue);
+      nodes.push(Object.assign(first, { chordStart: true, roadIndex: index, roadShort: info.roadShort, roadLabel: info.roadLabel, roadStart: true }));
+      spreadGrip(voicing, Object.assign({}, info, { roadStart: false }), strokes).forEach((node, step) => nodes.push(Object.assign(node, step === 0 ? { chordStart: false } : {})));
+    });
+    return nodes;
+  }
+
+  // Drill 6: colour spreads against the tonic: sus4 (1-4-5) in every dromos,
+  // 1-♭2-5 in ousak and hijaz. Each colour grip twice, then its tonic grip
+  // twice, in the same inversion.
+  function pickingSpreadColourNodes(context) {
+    const modeId = pickingModeId(context);
+    const scale = M.scaleOf(context.tonic, modeId);
+    const offs = scale.map((note) => note.off);
+    const triad = spreadDegreeTriad(scale, 0);
+    const phrygian = state.picking.variant === "phrygian";
+    const colourPc = phrygian ? spreadMod(scale[0].pc + 1) : scale[3].pc;
+    const colourRole = phrygian ? "♭2" : "4";
+    const colour = { symbol: phrygian ? `${scale[0].name}(♭2)` : `${scale[0].name}sus4`, tones: [triad.tones[0], { pc: colourPc, role: colourRole, name: phrygian && !offs.includes(1) ? spellPc(colourPc) : (scale.find((note) => note.pc === colourPc) || {}).name }, triad.tones[2]] };
+    const grips = spreadAreaGrips(triad.tones, context);
+    if (!grips.length) return [];
+    const group = spreadGroup("top");
+    const nodes = [], strokes = { last: "U" };
+    const borrowed = phrygian && !offs.includes(1);
+    grips.forEach((voicing, index) => {
+      const shade = spreadNearest(spreadVoicings(colour.tones, group, { inversions: [voicing.inversion], maxStretch: 4 }), voicing, context.position);
+      if (!shade) return;
+      [0, 1].forEach((rep) => spreadGrip(shade, {
+        symbol: colour.symbol, road: index, roadShort: spreadShapeName(voicing), roadLabel: `${colour.symbol} → ${triad.symbol}`, roadStart: rep === 0, colour: true,
+        cue: rep === 0 ? `${colour.symbol}: the ${colourRole} wants to fall to ${phrygian ? "1" : triad.tones[1].role}${borrowed ? " (♭2 borrowed: this dromos has a natural 2)" : ""}` : null
+      }, strokes).forEach((node) => nodes.push(rep ? Object.assign(node, { chordStart: false, cueShort: null }) : node)));
+      [0, 1].forEach((rep) => spreadGrip(voicing, {
+        symbol: triad.symbol, road: index, roadShort: spreadShapeName(voicing), roadLabel: `${colour.symbol} → ${triad.symbol}`, roadStart: false,
+        cue: rep === 0 ? `${triad.symbol}: home. Which note moved?` : null
+      }, strokes).forEach((node) => nodes.push(rep ? Object.assign(node, { chordStart: false, cueShort: null }) : node)));
+    });
+    return nodes;
+  }
+
   const PICKING_BUILDERS = {
     etude: (context) => pickingEtudeNodes(context),
     tensionHome: (context) => pickingTensionHomeNodes(context),
     passing: (context) => pickingPassingNodes(context),
     enclosures: (context) => pickingEnclosureNodes(context),
-    artic: (context) => pickingArticNodes(context)
+    artic: (context) => pickingArticNodes(context),
+    spreadLadder: (context) => pickingSpreadLadderNodes(context),
+    spreadDiatonic: (context) => pickingSpreadDiatonicNodes(context),
+    spreadChain: (context) => pickingSpreadChainNodes(context),
+    spreadRoute: (context) => pickingSpreadRouteNodes(context),
+    spreadApproach: (context) => pickingSpreadApproachNodes(context),
+    spreadColour: (context) => pickingSpreadColourNodes(context)
   };
 
   function pickingBaseNodes(exercise, context) {
