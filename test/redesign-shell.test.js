@@ -136,10 +136,19 @@ test("Melody leads with Start plus the seven degrees and stages everything else"
 
 test("the design system defines the redesigned tokens", () => {
   const css = read("css/styles.css");
-  assert.match(css, /--terracotta: #F19A55/);
-  assert.match(css, /--turquoise: #43C7C2/);
-  assert.match(css, /--aegean: #65A7E8/);
-  assert.match(css, /--font-display: "Fraunces"/);
+  // Shell v2 (FR-84): amber now, sky next, Aegean and laurel for the two
+  // halves of the dromos, pearl tonic; Greek-designed text face, Didot display.
+  assert.match(css, /--terracotta: #F5B743/);
+  assert.match(css, /--turquoise: #7FC8EE/);
+  assert.match(css, /--aegean: #3F8FD2/);
+  assert.match(css, /--laurel: #8DB35C/);
+  assert.match(css, /--pearl: #F6F0E4/);
+  assert.match(css, /--font-display: "GFS Didot"/);
+  assert.match(css, /--font-text: "Commissioner"/);
+  assert.match(css, /@supports \(color: color\(display-p3 1 1 1\)\)/, "wide-gamut colour on P3 screens");
+  assert.match(css, /@media \(dynamic-range: high\)/, "brighter light on HDR screens");
+  assert.match(read("index.html"), /id="coachDrawer"[\s\S]*id="pageGuide"/, "the page guide lives in the Coach drawer");
+  assert.match(read("index.html"), /id="chipKey"[\s\S]*id="chipMode"[\s\S]*id="chipRhythm"/, "key, dromos and rhythm are context chips");
   assert.match(css, /env\(safe-area-inset-bottom\)/, "safe areas must be respected");
   assert.match(css, /prefers-reduced-motion: reduce/);
 });

@@ -335,10 +335,11 @@ test("Harmony progression workout transposes verified modal routes", () => {
 
 test("focus colours retain labels, shape cues, and readable secondary text", () => {
   const css = read("css/styles.css");
-  assert.match(css, /--bg: #0F1418/);
-  assert.match(css, /--text: #F7F4EC/);
-  assert.match(css, /--muted: rgba\(247, 244, 236, 0\.78\)/);
-  assert.match(css, /--faint: rgba\(247, 244, 236, 0\.64\)/);
+  // The stage palette (FR-84): warm graphite ground, readable secondary text.
+  assert.match(css, /--bg: #0D0E11/);
+  assert.match(css, /--text: #F1ECE3/);
+  assert.match(css, /--muted: rgba\(241, 236, 227, 0\.78\)/);
+  assert.match(css, /--faint: rgba\(241, 236, 227, 0\.62\)/);
   assert.match(css, /\.dot-next-ring[^}]*stroke-dasharray/,
     "Next must remain dashed so timing is not encoded by colour alone");
 });
@@ -466,7 +467,7 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
   assert.match(app, /\["position", "key", "band", "both"\]/,
     "the movement whitelist must include band");
   // Compact nav: 6 primary destinations + a More sheet.
-  assert.match(html, /id="navMore"[\s\S]{0,200}id="navSecondary"/,
+  assert.match(html, /id="navMore"[\s\S]{0,600}id="navSecondary"/,
     "the reference group folds behind More on compact screens");
   // Motion + layout tokens exist and reduced motion zeroes them.
   assert.match(css, /--h-primary: 48px; --h-control: 40px; --h-chip: 32px;/,

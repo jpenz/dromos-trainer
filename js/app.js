@@ -184,6 +184,8 @@
 
   function persistPreferences(patch) {
     if (PP) PP.updatePreferences(Object.assign(stablePreferences(), patch || {}));
+    // Every setting change passes through here: keep the context bar honest.
+    if (typeof renderContextBar === "function" && state.view) renderContextBar();
   }
 
   function applyPlayerProfile(profile) {
@@ -338,6 +340,103 @@
     return `${instrument} · ${state.tonic} ${mode ? mode.name : ""}`;
   }
 
+
+  // ---- Shell v2 (FR-84): context bar, Coach drawer, Focus mode ----------
+  const VIEW_TITLE = {
+    today: "Today", ear: "Ear", melody: "Melody", cycle: "Changes Gym", prog: "Song Map", triads: "Comp",
+    chordmap: "Matrix", solo: "Solo", picking: "Picking", songs: "Songs", analyze: "Analyze", styles: "Greek Pulse",
+    video: "Video Study", examples: "Tactical Examples", concepts: "Concepts", coach: "Practice Coach", progress: "Progress"
+  };
+  // Pages whose music follows the global key and dromos, and the ones that
+  // play in a rhythm. Everything else hides those chips.
+  const CTX_KEY_VIEWS = new Set(["cycle", "prog", "triads", "chordmap", "solo", "picking", "melody"]);
+  const CTX_RHYTHM_VIEWS = new Set(["cycle", "prog", "triads", "picking"]);
+
+  function renderContextBar() {
+    if (!$("ctxPage")) return;
+    const view = state.view || "today";
+    const keyed = CTX_KEY_VIEWS.has(view);
+    const mode = M.MODES[state.modeId] || M.MODES.major;
+    const style = S.byId(state.groove.styleId);
+    $("ctxPage").textContent = VIEW_TITLE[view] || "Dromos";
+    $("ctxKey").textContent = keyed ? `${state.tonic} ${mode.name}` : "";
+    $("chipKeyVal").textContent = state.tonic;
+    $("chipModeVal").textContent = mode.name;
+    $("chipRhythmVal").textContent = style ? style.title : "";
+    $("chipKey").classList.toggle("hidden", !keyed);
+    $("chipMode").classList.toggle("hidden", !keyed);
+    $("chipRhythm").classList.toggle("hidden", !CTX_RHYTHM_VIEWS.has(view));
+    const seen = guidesSeen();
+    const key = $("pageGuide").querySelector("[data-guide-key]");
+    $("coachDot").classList.toggle("hidden", !key || seen.has(key.getAttribute("data-guide-key")));
+  }
+
+  function guidesSeen() {
+    try { return new Set(JSON.parse(localStorage.getItem("dromos-guides-seen") || "[]")); } catch (error) { return new Set(); }
+  }
+
+  function markGuideSeen() {
+    const key = $("pageGuide").querySelector("[data-guide-key]");
+    if (!key) return;
+    const seen = guidesSeen();
+    seen.add(key.getAttribute("data-guide-key"));
+    try { localStorage.setItem("dromos-guides-seen", JSON.stringify([...seen])); } catch (error) { /* storage unavailable */ }
+    $("coachDot").classList.add("hidden");
+  }
+
+  function setCoachDrawer(open) {
+    const drawer = $("coachDrawer");
+    if (!drawer) return;
+    drawer.hidden = !open;
+    $("btnCoachDrawer").setAttribute("aria-expanded", String(open));
+    $("btnCoachDrawer").classList.toggle("active", open);
+    if (open) { markGuideSeen(); $("coachDrawerClose").focus(); }
+  }
+
+  function setFocusMode(on) {
+    document.body.classList.toggle("focus-mode", on);
+    $("btnFocus").setAttribute("aria-pressed", String(on));
+    $("btnFocus").classList.toggle("active", on);
+    try { sessionStorage.setItem("dromos-focus", on ? "1" : "0"); } catch (error) { /* storage unavailable */ }
+  }
+
+  // One choice per chip: a key, a dromos, or a rhythm. The page re-renders
+  // from the shared state, so every practice area follows the same home.
+  function openContextChoice(kind, anchor) {
+    const pop = $("ctxPop");
+    let html = "";
+    if (kind === "key") {
+      html = `<h4>Key · the note that feels like home</h4><div class="ctx-keys">${M.TONICS.map((name) =>
+        `<button type="button" data-ctx-value="${escapeHtml(name)}" class="${name === state.tonic ? "active" : ""}">${escapeHtml(name)}</button>`).join("")}</div>`;
+    } else if (kind === "mode") {
+      html = `<h4>Dromos</h4><div class="ctx-opts">${M.MODE_ORDER.map((id) => {
+        const mode = M.MODES[id];
+        const degrees = mode.scale.map((offset) => M.DEGREE_LABEL[offset]).join("  ");
+        return `<button type="button" data-ctx-value="${id}" class="${id === state.modeId ? "active" : ""}"><b>${escapeHtml(mode.name)}</b><small>${escapeHtml(degrees)}</small></button>`;
+      }).join("")}</div>`;
+    } else {
+      html = `<h4>Rhythm</h4><div class="ctx-opts">${S.STYLES.map((style) =>
+        `<button type="button" data-ctx-value="${style.id}" class="${style.id === state.groove.styleId ? "active" : ""}"><b>${escapeHtml(style.title)}</b><small>${escapeHtml(style.meter)} · ${escapeHtml(style.pulse)}</small></button>`).join("")}</div>`;
+    }
+    pop.innerHTML = html;
+    pop.hidden = false;
+    const box = anchor.getBoundingClientRect();
+    pop.style.left = `${Math.max(12, Math.min(window.innerWidth - pop.offsetWidth - 12, box.left))}px`;
+    pop.style.top = `${box.bottom + 8}px`;
+    pop.querySelectorAll("[data-ctx-value]").forEach((button) => button.onclick = () => {
+      const value = button.getAttribute("data-ctx-value");
+      pop.hidden = true;
+      stopPlay();
+      if (kind === "key") { state.tonic = value; state.progStep = 0; }
+      else if (kind === "mode") { state.modeId = value; state.progId = M.PROGRESSIONS[value][0].id; state.progStep = 0; }
+      else selectGrooveStyle(value);
+      if (state.picking) state.picking.cleanPasses = 0;
+      persistPreferences();
+      applyView(state.view);
+    });
+    const first = pop.querySelector(".active") || pop.querySelector("button");
+    if (first) first.focus();
+  }
 
   function renderPageGuide() {
     const guide = PG.resolve({
@@ -7096,6 +7195,7 @@
     // view only needs the strip cleared (chordmap manages stageLayers itself).
     if (v !== "solo") renderSoloLayerChips();
     renderPageGuide();
+    renderContextBar();
     // The view table owns the keyboard promise; pages without one keep the
     // legacy chain until their own PR derives it.
     $("keyboardHint").textContent = chrome.hint || (v === "melody"
@@ -7583,6 +7683,28 @@
       document.addEventListener("keydown", (e) => { if (e.key === "Escape" && drawer.open) drawer.open = false; });
       document.addEventListener("click", (e) => { if (drawer.open && !drawer.contains(e.target)) drawer.open = false; });
     }
+    // Shell v2 wiring: chips, Coach drawer, Focus, and closing popovers.
+    if ($("chipKey")) $("chipKey").onclick = (event) => { event.stopPropagation(); openContextChoice("key", $("chipKey")); };
+    if ($("chipMode")) $("chipMode").onclick = (event) => { event.stopPropagation(); openContextChoice("mode", $("chipMode")); };
+    if ($("chipRhythm")) $("chipRhythm").onclick = (event) => { event.stopPropagation(); openContextChoice("rhythm", $("chipRhythm")); };
+    if ($("btnCoachDrawer")) $("btnCoachDrawer").onclick = () => setCoachDrawer($("coachDrawer").hidden);
+    if ($("coachDrawerClose")) $("coachDrawerClose").onclick = () => { setCoachDrawer(false); $("btnCoachDrawer").focus(); };
+    if ($("btnFocus")) $("btnFocus").onclick = () => setFocusMode(!document.body.classList.contains("focus-mode"));
+    try { if (sessionStorage.getItem("dromos-focus") === "1") setFocusMode(true); } catch (error) { /* storage unavailable */ }
+    document.addEventListener("click", (event) => {
+      const pop = $("ctxPop");
+      if (pop && !pop.hidden && !pop.contains(event.target)) pop.hidden = true;
+      const nav = document.querySelector(".app-nav");
+      if (nav && nav.classList.contains("nav-open") && !nav.contains(event.target)) {
+        nav.classList.remove("nav-open");
+        $("navMore").setAttribute("aria-expanded", "false");
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if ($("ctxPop") && !$("ctxPop").hidden) $("ctxPop").hidden = true;
+      else if ($("coachDrawer") && !$("coachDrawer").hidden) setCoachDrawer(false);
+    });
     if ($("navMore")) {
       $("navMore").onclick = () => {
         const open = document.querySelector(".app-nav").classList.toggle("nav-open");
@@ -7630,6 +7752,8 @@
       else if (e.key === "9") setView("coach");
       else if (e.key === "0") setView("progress");
       else if (e.key.toLowerCase() === "r" && state.view === "solo" && state.solo.section === "cell") $("btnReveal").click();
+      else if (e.key.toLowerCase() === "f" && !e.metaKey && !e.ctrlKey) setFocusMode(!document.body.classList.contains("focus-mode"));
+      else if (e.key === "?") setCoachDrawer($("coachDrawer").hidden);
     });
   }
 
