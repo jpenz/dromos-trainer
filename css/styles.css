@@ -2823,3 +2823,4 @@ body[data-view="solo"] #stage .legend { order: 3; }
 body[data-view="solo"] #stage .scale-strip { order: 4; }
 body[data-view="solo"] #stage .solo-progression-roadmap { margin-bottom: 10px; }
 body[data-view="solo"] #stage .solo-progression-roadmap, body[data-view="solo"] #stage .solo-layer-row { flex: none; }
+.ps-pill.mic { color: var(--laurel); border-color: color-mix(in oklab, var(--laurel) 45%, transparent); }

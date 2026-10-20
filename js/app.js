@@ -6,7 +6,7 @@
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
     PP = window.PlayerProfiles, HJ = window.HarmonyJourney, SL = window.SongLibrary, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
-    PG = window.PageGuides, TE = window.TacticalExamples, BK = window.BouzoukiKnowledge, PK = window.PickingLab, PV = window.PickingView, PE = window.PracticeEngine;
+    PG = window.PageGuides, TE = window.TacticalExamples, BK = window.BouzoukiKnowledge, PK = window.PickingLab, PV = window.PickingView, PE = window.PracticeEngine, OL = window.OnsetListener;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -5134,8 +5134,9 @@
 
   // ---- Autopilot (FR-85): tempo ladder, fading map, mixed keys --------------
   function loadAutopilot() {
-    try { return Object.assign({ tempo: true, fade: true, mix: false }, JSON.parse(localStorage.getItem("dromos-autopilot") || "{}")); }
-    catch (error) { return { tempo: true, fade: true, mix: false }; }
+    // The mic always starts off: it needs permission each visit.
+    try { return Object.assign({ tempo: true, fade: true, mix: false }, JSON.parse(localStorage.getItem("dromos-autopilot") || "{}"), { mic: false }); }
+    catch (error) { return { tempo: true, fade: true, mix: false, mic: false }; }
   }
   function saveAutopilot() {
     try { localStorage.setItem("dromos-autopilot", JSON.stringify(state.picking.autopilot)); } catch (error) { /* storage unavailable */ }
@@ -5173,7 +5174,7 @@
 
   function renderPickingAutopilot() {
     const ap = state.picking.autopilot;
-    [["apTempo", ap.tempo], ["apFade", ap.fade], ["apMix", ap.mix]].forEach(([id, on]) => {
+    [["apTempo", ap.tempo], ["apFade", ap.fade], ["apMix", ap.mix], ["apMic", ap.mic]].forEach(([id, on]) => {
       $(id).setAttribute("aria-pressed", String(on));
       $(id).classList.toggle("active", on);
     });
@@ -5207,8 +5208,14 @@
         pills.push(`<span class="ps-pill today">Today ${todayIndex + 1} of ${plan.length} · ${TODAY_KIND[step.kind]}${done ? ` · done <button type="button" id="btnTodayNext">${todayIndex + 1 < plan.length ? "Next step" : "Finish"}</button>` : ""}</span>`);
       }
     }
+    if (micStatus) {
+      const last = state.picking.micLast;
+      pills.push(`<span class="ps-pill mic">🎙 ${escapeHtml(micStatus)}${last && ap.mic ? ` · last loop ${last.hits}/${last.expected}, spread ${last.spreadMs} ms` : ""}${ap.mic && micCalibration() ? ` <button type="button" id="btnMicRecal">Recalibrate</button>` : ""}</span>`);
+    }
     if (ap.mix) pills.push(`<span class="ps-pill">${state.picking.playing ? `Now in ${nowTonic} · next ${next}` : `Mixes ${ring.join(" ")}`} ${escapeHtml(modeName)}</span>`);
     $("pickingStatus").innerHTML = pills.join("");
+    const recal = $("btnMicRecal");
+    if (recal) recal.onclick = micRecalibrate;
     const todayNext = $("btnTodayNext");
     if (todayNext) todayNext.onclick = () => startTodayStep(todayIndex + 1);
     const reveal = $("btnPickingReveal");
@@ -5218,9 +5225,87 @@
     };
   }
 
+  // ---- Mic scoring (FR-85, step 6) ------------------------------------------
+  // The microphone hears each loop on the playback clock; the loop scores
+  // itself Clean or Missed through the same path as the buttons. On speakers
+  // the guide notes are muted and the click plays only the count-in, so the
+  // mic hears the player and not the app (calibration finds out which).
+  let pickMic = null;
+  const micExpected = new Map();
+  let micStatus = "";
+  function micCalibration() {
+    try { return JSON.parse(localStorage.getItem("dromos-mic-cal") || "null"); } catch (error) { return null; }
+  }
+  const micListening = () => !!(state.picking.autopilot.mic && pickMic && pickMic.active() && micCalibration());
+  const waitMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  async function micClicks(count, gap) {
+    const start = AU.now() + 0.6;
+    const times = [];
+    for (let k = 0; k < count; k++) { const time = start + k * gap; AU.click(time, k === 0); times.push(time); }
+    await waitMs((count * gap + 0.9) * 1000);
+    return { times, heard: pickMic.between(start - 0.1, start + count * gap + 0.5, 0) };
+  }
+  async function micCalibrate() {
+    micStatus = "Calibrating · stay silent for eight clicks"; renderPickingAutopilot();
+    const silent = await micClicks(8, 0.5);
+    let latency = OL.calibrate(silent.times, silent.heard);
+    let speakers = latency != null;
+    if (!speakers) {
+      micStatus = "Headphones · now pick an open string on each of eight clicks"; renderPickingAutopilot();
+      await waitMs(900);
+      const played = await micClicks(8, 0.6);
+      latency = OL.calibrate(played.times, played.heard);
+    }
+    if (latency == null) throw new Error("calibration");
+    const calibration = { latency, speakers, at: PE ? PE.dayStamp() : "" };
+    try { localStorage.setItem("dromos-mic-cal", JSON.stringify(calibration)); } catch (error) { /* storage unavailable */ }
+    return calibration;
+  }
+  async function setMicScoring(on) {
+    stopPlay();
+    if (!on) {
+      state.picking.autopilot.mic = false;
+      if (pickMic) pickMic.stop();
+      micStatus = ""; renderPickingLab(); return;
+    }
+    if (!OL || !navigator.mediaDevices) { toast("This browser cannot listen. Use current Chrome, Safari or Edge."); return; }
+    state.picking.autopilot.mic = true;
+    micStatus = "Asking for the microphone · audio stays in this page"; renderPickingAutopilot();
+    try {
+      if (!await readyPracticeAudio(pickingReferenceVoice())) throw new Error("audio");
+      pickMic = pickMic || OL.createMic();
+      if (!pickMic.active()) await pickMic.start(AU.context());
+      if (!micCalibration()) await micCalibrate();
+      const cal = micCalibration();
+      micStatus = `Listening · ${cal.speakers ? "speakers: guide notes off, click on the count-in only" : "headphones"} · ${Math.round(cal.latency * 1000)} ms`;
+    } catch (error) {
+      state.picking.autopilot.mic = false;
+      if (pickMic) pickMic.stop();
+      micStatus = "";
+      toast(error && error.message === "calibration" ? "Could not hear the clicks or the string. Move closer to the mic and try again." : "No microphone. Allow it in the browser and try again.");
+    }
+    renderPickingLab();
+  }
+  function micRecalibrate() {
+    try { localStorage.removeItem("dromos-mic-cal"); } catch (error) { /* storage unavailable */ }
+    setMicScoring(true);
+  }
+  // Score one finished loop from what the mic heard.
+  function scoreMicLoop(iteration, spacing) {
+    const expected = micExpected.get(iteration);
+    micExpected.delete(iteration);
+    if (!expected || !expected.length || !micListening()) return;
+    const cal = micCalibration();
+    const heard = pickMic.between(expected[0] - 0.12, expected[expected.length - 1] + 0.12, cal.latency);
+    const result = OL.scoreLoop(heard, expected, { tolerance: Math.min(0.07, spacing * 0.45), spreadLimit: Math.max(0.015, spacing * 0.12) });
+    state.picking.micLast = result;
+    const late = result.meanMs > 0 ? `${result.meanMs} ms late` : result.meanMs < 0 ? `${-result.meanMs} ms early` : "on the beat";
+    scorePickingLoop(result.clean, ` Heard ${result.hits} of ${result.expected}, ${late} on average${result.clean ? "" : ` · ${result.reason}`}.`);
+  }
+
   // One scoring tap. Records the card for spaced review, climbs or drops the
   // ladder, fades or restores the map, and says what changed.
-  function scorePickingLoop(clean) {
+  function scorePickingLoop(clean, heardNote) {
     const ap = state.picking.autopilot;
     const segment = state.picking.activeSegment;
     const tonic = segment && segment.tonic ? segment.tonic : state.tonic;
@@ -5251,11 +5336,12 @@
       else { state.picking.cleanPasses = 0; state.bpm = Math.max(30, state.bpm - 4); recordRung(state.bpm); }
       message = clean ? "Clean." : `Missed · ${state.bpm} BPM.`;
     }
-    toast(message + note);
+    toast(message + (heardNote || "") + note);
     if (state.bpm !== before) {
       AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls();
       // A new tempo restarts the loop at the new speed, without a count-in.
-      if (state.picking.playing) { state.picking.skipCountIn = true; playPickingExercise(); return; }
+      // On speakers with the mic on, the count-in is the only click, so keep it.
+      if (state.picking.playing) { state.picking.skipCountIn = !(micListening() && micCalibration().speakers); playPickingExercise(); return; }
     }
     renderPickingLab();
   }
@@ -5898,12 +5984,21 @@
       : null;
     const silentIndices = [];
     session.nodes.forEach((node, index) => { if (node.silent) silentIndices.push(index); });
+    const listening = looping && micListening();
+    const onSpeakers = listening && micCalibration().speakers;
+    if (stageIndex === 0) micExpected.clear();
     const stageEnd = AU.playPath(session.nodes, noteSpacing, {
+      muteNotes: onSpeakers,
+      onSchedule: listening ? (index, when, silent, iteration) => {
+        if (silent || token !== pickingRunToken) return;
+        if (!micExpected.has(iteration)) micExpected.set(iteration, []);
+        micExpected.get(iteration).push(when);
+      } : null,
       referenceVoice: pickingReferenceVoice(),
       silentIndices,
       metronome: state.picking.metronome,
       beatSpacing,
-      clickFilter,
+      clickFilter: onSpeakers ? () => false : clickFilter,
       loop: looping,
       startAt,
       onDoneLead: 0.35,
@@ -5919,6 +6014,8 @@
       },
       onLoop: (iteration) => {
         if (token !== pickingRunToken) return;
+        // The loop that just ended is scored once its last notes have reached the mic.
+        if (listening && iteration > 0) setTimeout(() => { if (token === pickingRunToken) scoreMicLoop(iteration - 1, noteSpacing); }, 250);
         state.picking.loopCount = iteration + 1;
         ["btnPickingPlay", "btnPickingMotionStart"].forEach((id) => { if ($(id)) $(id).textContent = `■ Stop · loop ${iteration + 1}`; });
       },
@@ -8328,6 +8425,7 @@
     $("apTempo").onclick = () => { state.picking.autopilot.tempo = !state.picking.autopilot.tempo; state.picking.ladder = null; saveAutopilot(); renderPickingLab(); };
     $("apFade").onclick = () => { state.picking.autopilot.fade = !state.picking.autopilot.fade; state.picking.fadePasses = 0; saveAutopilot(); renderPickingLab(); };
     $("apMix").onclick = () => { stopPlay(); state.picking.autopilot.mix = !state.picking.autopilot.mix; saveAutopilot(); renderPickingLab(); };
+    $("apMic").onclick = () => setMicScoring(!state.picking.autopilot.mic);
     $("btnPickingTempoUp").onclick = raisePickingTempo;
     $("btnPickingMiss").onclick = missPickingPass;
 

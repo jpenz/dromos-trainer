@@ -669,8 +669,10 @@
         // A note whose time has already passed (late timer, busy main thread)
         // is skipped with its highlight instead of firing in a cluster.
         if (isLate(when)) return;
+        // The mic listener needs the audio-clock time of every note it will hear.
+        if (o.onSchedule) o.onSchedule(i, when, silent, iteration);
         const dur = sp * (n && n.durMult > 0 ? n.durMult : 1);
-        if (!silent) {
+        if (!silent && !o.muteNotes) {
           if (n && Array.isArray(n.chord) && n.chord.length) {
             // A strum: every chord tone, staggered low-to-high on a downstroke
             // and high-to-low on an upstroke; a muted chop is short and quiet.
@@ -983,6 +985,8 @@
     // Absolute audio-clock time, for callers that schedule multi-part gestures
     // (e.g. the "hear the lean" demo) with sample-accurate downbeats.
     now: () => { ensure(); return ctx.currentTime; },
+    // The playback context, so the microphone can share its clock.
+    context: () => { ensure(); return ctx; },
     // Seconds from the audio clock to the speaker. Add it to any UI timer
     // that marks a sound (highlights, beat pulses), never to audio chaining.
     uiLatency,
