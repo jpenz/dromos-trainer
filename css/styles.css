@@ -2775,3 +2775,35 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
   .today-hero { grid-template-columns: 1fr; }
   .today-plan li { grid-template-columns: 30px 1fr auto; gap: 10px; }
 }
+
+/* ---- The lit neck on every page (FR-85, step 4) ---- */
+svg.fb-lit .fb-face { fill: #1B120C; stroke: rgba(0, 0, 0, .6); }
+svg.fb-lit .fb-grain { opacity: .95; pointer-events: none; }
+svg.fb-lit .fb-board-shadow { fill: #000; opacity: .55; }
+svg.fb-lit .fb-nut { fill: url(#fbNut); }
+svg.fb-lit .fb-fret { fill: url(#fbFret); stroke: none; }
+svg.fb-lit .fb-string { fill: url(#fbStr); stroke: none; opacity: .95; }
+svg.fb-lit .fb-string-shadow { fill: #000; opacity: .38; }
+svg.fb-lit .fb-inlay { fill: url(#fbPearl); opacity: .9; }
+svg.fb-lit .fb-dot .dot-bg { filter: url(#fbDotShadow); }
+svg.fb-lit .fb-dot .dot-halo { fill: var(--terracotta); opacity: 0; filter: url(#fbGlow); }
+svg.fb-lit .fb-dot.path.current .dot-halo, svg.fb-lit .fb-dot.target-now .dot-halo { opacity: calc(var(--glow) * .9); }
+svg.fb-lit .fb-dot.grip .dot-halo { fill: var(--turquoise); opacity: calc(var(--glow) * .35); }
+
+/* ---- Harmony chord roadmap (styles lost in redesign PR 3; restored) ---- */
+.cycle-roadmap { display: grid; gap: 10px; margin-bottom: var(--sp-3); }
+.cycle-roadmap > header { display: flex; align-items: end; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.cycle-roadmap > header > div:first-child { display: grid; gap: 2px; }
+.cycle-roadmap > header span { color: var(--aegean); font-size: var(--fs-micro); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.cycle-roadmap > header b { color: var(--text); font-size: var(--fs-label); }
+.roadmap-keys { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--fs-label); }
+.cycle-roadmap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.roadmap-chord { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 2px 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); color: var(--text); text-align: left; cursor: pointer; }
+.roadmap-chord > span { grid-column: 1 / -1; color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.roadmap-chord > strong { color: var(--muted); font-family: var(--font-display); font-size: 18px; }
+.roadmap-chord > b { font-family: var(--font-mono); font-size: var(--fs-body); }
+.roadmap-chord > small { grid-column: 1 / -1; color: var(--faint); font-size: var(--fs-micro); }
+.roadmap-chord.now { border-color: var(--terracotta); background: color-mix(in oklab, var(--terracotta) 12%, var(--panel)); }
+.roadmap-chord.now > span, .roadmap-chord.now > strong { color: var(--terracotta); }
+.roadmap-chord.next { border-color: color-mix(in oklab, var(--turquoise) 55%, transparent); border-style: dashed; }
+.roadmap-chord.next > span, .roadmap-chord.next > strong { color: var(--turquoise); }
