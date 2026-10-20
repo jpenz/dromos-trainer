@@ -49,8 +49,8 @@ test("the installable app shell links its offline assets", () => {
   assert.match(read("js/picking-lab.js"), /Alternate ↔ glide triplets/);
   assert.match(read("js/picking-lab.js"), /D–D–U.*U–D–D/,
     "Pennanen's documented glide families need an explicit, source-bounded comparison");
-  assert.match(html, /id="pickingTonicSel"[^>]*aria-describedby="pickingKeyHelp"/,
-    "Picking must expose Key as an explained first-screen control");
+  assert.match(html, /id="chipKey"[\s\S]{0,200}id="chipMode"/,
+    "Picking's key and scale live in the always-visible context chips");
   assert.match(read("js/app.js"), /glyph: "↓"[^\n]*label: "Ta · downstroke"/);
   assert.match(read("js/app.js"), /glyph: "↑"[^\n]*label: "Ka · upstroke"/);
   assert.match(read("js/picking-lab.js"), /Every note picked/);
@@ -392,8 +392,10 @@ test("picking loops live on the audio clock and the board stays whole", () => {
   const html = read("index.html");
   assert.match(html, /class="transport-bar picking-transport"[\s\S]{0,400}class="deck-start">▶ Start</,
     "start, speed, key and scale live in one always-visible transport bar");
-  assert.match(html, /picking-transport[\s\S]{0,1600}id="pickingTonicSel"[\s\S]{0,400}id="pickingModeSel"/,
-    "key and scale selection are consistent, in the transport");
+  assert.match(html, /picking-transport[\s\S]{0,2400}id="apTempo"[\s\S]{0,300}id="apFade"[\s\S]{0,300}id="apMix"[\s\S]{0,600}id="btnPickingClean"[\s\S]{0,200}id="btnPickingMiss"/,
+    "the dock carries Autopilot and one-tap Clean / Missed scoring");
+  assert.match(app, /PE\.record\(store, \{ drill: state\.picking\.exerciseId/,
+    "every scored loop lands in the spaced-review store");
   assert.match(html, /Loops smoothly until you press stop/,
     "the deck says in plain words what Start does");
   assert.match(html, /<details class="deck-advanced">/,

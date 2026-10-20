@@ -58,21 +58,31 @@
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     svg.setAttribute("data-neck-layout", "focus");
     svg.setAttribute("data-neck-emphasis", "large");
+    const HDR = window.NeckHDR;
+    if (HDR) svg.insertAdjacentHTML("beforeend", HDR.defs("pv"));
     const g = el("g", { class: "pv" });
-    g.appendChild(el("rect", {
-      x: Math.min(edge(first), edge(last + 1)), y: top - 13, width: (last - first + 1) * colW,
-      height: (N - 1) * gap + 26, rx: 4, class: "fb-face"
-    }));
+    // The lit board: a soft shadow under it, ebony grain, pearl inlays,
+    // nickel-silver frets with a highlight, and a bone nut.
+    const boardX = Math.min(edge(first), edge(last + 1)), boardW = (last - first + 1) * colW;
+    const boardY = top - 15, boardH = (N - 1) * gap + 30;
+    g.appendChild(el("rect", { x: boardX, y: boardY + 6, width: boardW, height: boardH, rx: 6, class: "pv-board-shadow", filter: "url(#pvShadow)" }));
+    const clip = el("clipPath", { id: "pvBoardClip" });
+    clip.appendChild(el("rect", { x: boardX, y: boardY, width: boardW, height: boardH, rx: 6 }));
+    g.appendChild(clip);
+    g.appendChild(el("rect", { x: boardX, y: boardY, width: boardW, height: boardH, rx: 6, class: "fb-face" }));
+    const grainURL = HDR ? HDR.grain() : "";
+    if (grainURL) g.appendChild(el("image", { href: grainURL, x: boardX, y: boardY, width: boardW, height: boardH, preserveAspectRatio: "none", "clip-path": "url(#pvBoardClip)" }));
     MARKERS.filter((fret) => fret >= first && fret <= last).forEach((fret) =>
-      g.appendChild(el("circle", { cx: fx(fret), cy: (top + bottom) / 2, r: 6, class: "fb-inlay" })));
+      g.appendChild(el("circle", { cx: fx(fret), cy: (top + bottom) / 2, r: 6.5, class: "fb-inlay pv-inlay" })));
     DOUBLE_MARKERS.filter((fret) => fret >= first && fret <= last).forEach((fret) => {
-      g.appendChild(el("circle", { cx: fx(fret), cy: top + gap / 2, r: 6, class: "fb-inlay" }));
-      g.appendChild(el("circle", { cx: fx(fret), cy: bottom - gap / 2, r: 6, class: "fb-inlay" }));
+      g.appendChild(el("circle", { cx: fx(fret), cy: top + gap / 2, r: 6.5, class: "fb-inlay pv-inlay" }));
+      g.appendChild(el("circle", { cx: fx(fret), cy: bottom - gap / 2, r: 6.5, class: "fb-inlay pv-inlay" }));
     });
     for (let fret = first; fret <= last + 1; fret++) {
-      g.appendChild(el("line", {
-        x1: edge(fret), y1: top - 13, x2: edge(fret), y2: bottom + 13,
-        class: fret === 1 && first === 1 ? "fb-fret pv-nut" : "fb-fret"
+      const nut = fret === 1 && first === 1;
+      g.appendChild(el("rect", {
+        x: edge(fret) - (nut ? 5 : 2.5), y: boardY, width: nut ? 10 : 5, height: boardH, rx: 2,
+        class: nut ? "fb-fret pv-nut" : "fb-fret pv-fret"
       }));
     }
     for (let fret = first; fret <= last; fret++) {
@@ -82,14 +92,18 @@
     let hasOpen = false;
     const seen = new Set();
     names.forEach((name, stringIndex) => {
-      g.appendChild(el("line", {
-        x1: flip(padL - 44), y1: sy(stringIndex), x2: flip(W - padR), y2: sy(stringIndex),
-        class: "fb-string", "stroke-width": (1.1 + (N - 1 - stringIndex) * 0.45).toFixed(2)
-      }));
+      // Wound strings: a metal highlight and a shadow cast on the wood.
+      const thick = 1.3 + (N - 1 - stringIndex) * 0.55;
+      const x0 = Math.min(flip(padL - 44), flip(W - padR)), x1 = Math.max(flip(padL - 44), flip(W - padR));
+      g.appendChild(el("rect", { x: x0, y: sy(stringIndex) + 2.5, width: x1 - x0, height: thick, class: "pv-string-shadow", filter: "url(#pvShadow)" }));
+      g.appendChild(el("rect", { x: x0, y: sy(stringIndex) - thick / 2, width: x1 - x0, height: thick, class: "fb-string pv-string" }));
       g.appendChild(el("text", { x: flip(18), y: sy(stringIndex) + 5, "text-anchor": "middle", class: "pv-course" }, name));
     });
     // The ghost map: every note of the line, or of the current road only.
-    const mapped = view.roadIndex == null ? view.nodes : view.nodes.filter((node) => node.roadIndex === view.roadIndex);
+    // It fades with the map: from the second clean loop on, the hand works
+    // from memory and the board shows only the hand box.
+    const level = view.mapLevel || "full";
+    const mapped = level !== "full" ? [] : view.roadIndex == null ? view.nodes : view.nodes.filter((node) => node.roadIndex === view.roadIndex);
     view.nodes.forEach((node) => tonesOf(node).forEach((tone) => { if (tone.fret <= 0) hasOpen = true; }));
     mapped.forEach((node) => tonesOf(node).forEach((tone) => {
       if (tone.fret == null || tone.stringIndex == null) return;
@@ -155,16 +169,24 @@
     const wrap = (value) => ((value % count) + count) % count;
     const anchor = index == null ? 0 : wrap(index);
     const hand = (view.fingers[anchor] || {}).base;
+    const level = view.mapLevel || "full";
     if (hand) drawHand(pv, hand, false);
+    // From memory: only the hand box, pulsing with the playhead.
+    if (level === "memory") {
+      const box = live.querySelector(".pv-hand");
+      if (box && index != null) box.classList.add("pv-memory");
+      return;
+    }
     for (let step = 1; step <= 8 && step < count; step++) {
       const slot = view.fingers[wrap(anchor + step)] || {};
       if (slot.base && hand && slot.base !== hand) { drawHand(pv, slot.base, true, hand); break; }
     }
     const ahead = [];
-    for (let step = index == null ? 0 : 1; ahead.length < Math.min(AHEAD + (index == null ? 1 : 0), count - (index == null ? 0 : 1)); step++) ahead.push(wrap(anchor + step));
+    const lookahead = level === "hints" ? 1 : AHEAD;
+    for (let step = index == null ? 0 : 1; ahead.length < Math.min(lookahead + (index == null ? 1 : 0), count - (index == null ? 0 : 1)); step++) ahead.push(wrap(anchor + step));
     const centre = (i) => { const node = view.nodes[i]; return { x: pv.fx(node.fret), y: pv.sy(node.stringIndex) }; };
     const thread = (index == null ? [] : [anchor]).concat(ahead).map((i) => { const point = centre(i); return `${point.x.toFixed(1)},${point.y.toFixed(1)}`; });
-    if (thread.length > 1) live.appendChild(el("polyline", { points: thread.join(" "), class: "pv-thread" }));
+    if (thread.length > 1 && level === "full") live.appendChild(el("polyline", { points: thread.join(" "), class: "pv-thread" }));
     const drawn = new Set();
     const drawDot = (i, cls, radius) => {
       const node = view.nodes[i];
@@ -173,11 +195,15 @@
         const key = cls + ":" + tone.stringIndex + ":" + tone.fret;
         if (drawn.has(key)) return;
         drawn.add(key);
-        const tint = view.colour ? view.colour(tone) : "";
-        const group = el("g", { class: "pv-dot " + cls + (node.silent ? " silent" : "") + (tint ? " " + tint : "") });
-        if (/flavour/.test(tint)) group.appendChild(el("circle", { cx: pv.fx(tone.fret), cy: pv.sy(tone.stringIndex), r: radius + 6, class: "pv-flavour-ring" }));
-        group.appendChild(el("circle", { cx: pv.fx(tone.fret), cy: pv.sy(tone.stringIndex), r: radius }));
-        group.appendChild(el("text", { x: pv.fx(tone.fret), y: pv.sy(tone.stringIndex) + radius * 0.36, "text-anchor": "middle" }, dotLabel(view, i, toneIndex)));
+        // Hints: the next note is an empty ring, so the hand has to find it.
+        const blank = level === "hints" && /\bup\b/.test(cls);
+        const tint = view.colour && !blank ? view.colour(tone) : "";
+        const group = el("g", { class: "pv-dot " + cls + (node.silent ? " silent" : "") + (tint ? " " + tint : "") + (blank ? " blank" : "") });
+        const cx = pv.fx(tone.fret), cy = pv.sy(tone.stringIndex);
+        if (/\bnow\b/.test(cls)) group.appendChild(el("circle", { cx, cy, r: radius + 9, class: "pv-halo", filter: "url(#pvGlow)" }));
+        if (/flavour/.test(tint)) group.appendChild(el("circle", { cx, cy, r: radius + 6, class: "pv-flavour-ring" }));
+        group.appendChild(el("circle", { cx, cy, r: radius, class: "pv-body", filter: blank ? "" : "url(#pvDotShadow)" }));
+        if (!blank) group.appendChild(el("text", { x: cx, y: cy + radius * 0.36, "text-anchor": "middle" }, dotLabel(view, i, toneIndex)));
         live.appendChild(group);
       });
     };
@@ -215,7 +241,7 @@
     return Array.from({ length: count }, (_, offset) => (bar + offset) % time.barCount);
   }
 
-  function eventCell(view, i, index, nowBar) {
+  function eventCell(view, i, index, nowBar, hide) {
     const esc = view.escape;
     const node = view.nodes[i];
     const start = view.time.starts[i];
@@ -229,7 +255,7 @@
     for (let row = 0; row < N; row++) {
       const tone = byCourse[N - 1 - row];
       const tint = tone && view.colour && !strum ? view.colour(tone) : "";
-      rows += `<span class="pt-str">${tone && !rest ? `<b class="${tint}">${node.mute ? "x" : tone.fret}</b>` : ""}</span>`;
+      rows += `<span class="pt-str">${tone && !rest ? (hide ? `<b class="hidden-fret">?</b>` : `<b class="${tint}">${node.mute ? "x" : tone.fret}</b>`) : ""}</span>`;
     }
     const tint = !strum && !rest && view.colour ? view.colour(node) : "";
     const finger = slot.fingers ? slot.fingers.slice().reverse().join("·") : slot.finger != null && !rest ? String(slot.finger) : "";
@@ -248,8 +274,8 @@
       + `<span class="pt-flag">${flags.join(" ")}</span>`
       + `<span class="pt-stroke${node.stroke ? " s-" + node.stroke : ""}">${rest ? "rest" : esc(view.glyph(node))}</span>`
       + rows
-      + `<span class="pt-finger">${esc(finger)}</span>`
-      + `<span class="pt-deg ${tint}">${role}</span>`
+      + `<span class="pt-finger">${hide ? "" : esc(finger)}</span>`
+      + `<span class="pt-deg ${hide ? "" : tint}">${hide ? "" : role}</span>`
       + `<span class="pt-count${node.rhythmFirst ? " one" : ""}">${node.rhythmBeat ? node.rhythmBeat : "·"}</span>`
       + `</button>`;
   }
@@ -265,7 +291,9 @@
       const ids = time.bars[bar];
       const lead = ids.length ? time.starts[ids[0]].slot : time.barSlots;
       let cells = lead > 1e-6 ? `<span class="ptab-ring" style="flex:${lead} 1 0">let it ring</span>` : "";
-      ids.forEach((i) => { cells += eventCell(view, i, index, bars[0]); });
+      const level = view.mapLevel || "full";
+      const hide = level === "memory" || (level === "hints" && offset > 0);
+      ids.forEach((i) => { cells += eventCell(view, i, index, bars[0], hide); });
       const tag = offset === 0 ? (index == null ? "Start" : "Now") : offset === 1 ? "Next" : "Then";
       return `<section class="ptab-bar${offset === 0 ? " now" : ""}" data-bar="${bar}" style="--slots:${time.barSlots}">`
         + `<header class="pt-head"><b>${tag}</b> bar ${bar + 1} of ${time.barCount}</header><div class="ptab-cells">${cells}</div></section>`;

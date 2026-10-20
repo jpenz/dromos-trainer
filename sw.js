@@ -1,9 +1,9 @@
-const CACHE = "dromos-trainer-v85";
+const CACHE = "dromos-trainer-v86";
 const APP_SHELL = [
-  "./", "./index.html", "./manifest.webmanifest", "./css/styles.css?v=85", "./css/fonts.css?v=84",
+  "./", "./index.html", "./manifest.webmanifest", "./css/styles.css?v=86", "./css/fonts.css?v=84",
   "./assets/fonts/commissioner-400-700-latin.woff2", "./assets/fonts/commissioner-400-700-latin-ext.woff2", "./assets/fonts/commissioner-400-700-greek.woff2", "./assets/fonts/gfs-didot-400-latin.woff2", "./assets/fonts/gfs-didot-400-greek.woff2", "./assets/fonts/jetbrains-mono-500-700-latin.woff2", "./assets/fonts/jetbrains-mono-500-700-latin-ext.woff2", "./assets/fonts/jetbrains-mono-500-700-greek.woff2",
-  "./js/tuning.js?v=14", "./js/profiles.js?v=72", "./js/theory.js?v=14", "./js/harmony-journey.js?v=15", "./js/modes.js?v=34", "./js/chord-map.js?v=17", "./js/chord-path.js?v=25", "./js/melody-harmony.js?v=27", "./js/pitch-lab.js?v=23", "./js/ear-drills.js?v=53", "./js/styles.js?v=64", "./js/analysis.js?v=59", "./js/studies.js?v=14", "./js/musicxml.js?v=14", "./js/resources.js?v=32", "./js/video.js?v=62", "./js/coach.js?v=14", "./js/practice.js?v=14", "./js/bouzouki-knowledge.js?v=83", "./js/picking-lab.js?v=83", "./js/picking-view.js?v=82", "./js/toolkit.js?v=27", "./js/songs.js?v=60", "./js/tactical-examples.js?v=27",
-  "./js/triads.js?v=17", "./js/fretboard.js?v=73", "./js/guitar-voicings.js?v=14", "./js/audio.js?v=77", "./js/page-guides.js?v=79", "./js/app.js?v=84",
+  "./js/tuning.js?v=14", "./js/profiles.js?v=72", "./js/theory.js?v=14", "./js/harmony-journey.js?v=15", "./js/modes.js?v=34", "./js/chord-map.js?v=17", "./js/chord-path.js?v=25", "./js/melody-harmony.js?v=27", "./js/pitch-lab.js?v=23", "./js/ear-drills.js?v=53", "./js/styles.js?v=64", "./js/analysis.js?v=59", "./js/studies.js?v=14", "./js/musicxml.js?v=14", "./js/resources.js?v=32", "./js/video.js?v=62", "./js/coach.js?v=14", "./js/practice.js?v=14", "./js/bouzouki-knowledge.js?v=83", "./js/picking-lab.js?v=83", "./js/picking-view.js?v=86", "./js/neck-hdr.js?v=86", "./js/practice-engine.js?v=86", "./js/toolkit.js?v=27", "./js/songs.js?v=60", "./js/tactical-examples.js?v=27",
+  "./js/triads.js?v=17", "./js/fretboard.js?v=73", "./js/guitar-voicings.js?v=14", "./js/audio.js?v=77", "./js/page-guides.js?v=86", "./js/app.js?v=86",
   "./assets/dromos-mark.svg",
   "./assets/audio/salamander/C2.mp3", "./assets/audio/salamander/Ds2.mp3", "./assets/audio/salamander/Fs2.mp3", "./assets/audio/salamander/A2.mp3",
   "./assets/audio/salamander/C3.mp3", "./assets/audio/salamander/Ds3.mp3", "./assets/audio/salamander/Fs3.mp3", "./assets/audio/salamander/A3.mp3",
