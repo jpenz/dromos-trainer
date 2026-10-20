@@ -7,35 +7,33 @@
   <meta name="description" content="A serious ear-training and fretboard curriculum for Greek modal harmony on guitar, bouzouki, and laouto." />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
-  <link rel="stylesheet" href="css/fonts.css?v=14" />
-  <link rel="stylesheet" href="css/styles.css?v=83" />
+  <link rel="stylesheet" href="css/fonts.css?v=84" />
+  <link rel="stylesheet" href="css/styles.css?v=85" />
 </head>
 <body>
   <div class="app">
+    <aside id="coachDrawer" class="coach-drawer" hidden aria-label="Coach for this page">
+      <div class="coach-drawer-head"><span>Coach</span><button type="button" id="coachDrawerClose" class="drawer-close" aria-label="Close the coach">✕</button></div>
+      <div id="pageGuide" class="page-guide" aria-live="polite"></div>
+    </aside>
+    <div id="ctxPop" class="ctx-pop" hidden role="dialog" aria-label="Choose"></div>
     <!-- ================= Primary navigation ================= -->
     <aside class="app-nav" aria-label="Primary navigation">
-      <div class="nav-brand">
-        <svg class="nav-mark" viewBox="0 0 22 22" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path d="M3 19 V6 h13 v9 h-8 v-5 h4"></path>
-        </svg>
-        <span class="nav-wordmark">Dromos</span>
-      </div>
+      <div class="nav-brand" aria-hidden="true"><span class="nav-mark">Δ</span><span class="nav-wordmark">Dromos</span></div>
       <nav class="nav-list" aria-label="Practice areas">
-        <span class="nav-group-label">Practice</span>
-        <button data-nav="today">Today</button>
-        <button data-nav="hear">Ear</button>
-        <button data-nav="melody">Melody</button>
-        <button data-nav="harmony">Harmony</button>
-        <button data-nav="solo">Solo</button>
-        <button data-nav="picking">Picking</button>
-        <button id="navMore" class="nav-more" type="button" aria-expanded="false" aria-controls="navSecondary">More</button>
+        <button data-nav="today"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg><span>Today</span></button>
+        <button data-nav="hear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 18c0 2 3 3 4 1 1-2 5-4 5-9a5 5 0 0 0-10 0"/><path d="M10 10a2 2 0 1 1 4 0c0 2-2 2-2 4"/></svg><span>Ear</span></button>
+        <button data-nav="melody"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span>Melody</span></button>
+        <button data-nav="harmony"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="4" height="14" rx="1"/><rect x="10" y="9" width="4" height="10" rx="1"/><rect x="16" y="3" width="4" height="16" rx="1"/></svg><span>Harmony</span></button>
+        <button data-nav="solo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"/></svg><span>Solo</span></button>
+        <button data-nav="picking"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 0 7 2 7 5 0 4-4 10-7 13-3-3-7-9-7-13 0-3 3-5 7-5z"/></svg><span>Picking</span></button>
+        <button id="navMore" class="nav-more" type="button" aria-expanded="false" aria-controls="navSecondary"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>More</span></button>
         <div id="navSecondary" class="nav-secondary">
-          <span class="nav-group-label">Reference &amp; support</span>
-          <button data-nav="matrix">Matrix</button>
-          <button data-nav="repertoire">Repertoire</button>
-          <button data-nav="learn">Learn</button>
-          <button data-nav="coach">Coach</button>
-          <button data-nav="progress">Progress</button>
+          <button data-nav="matrix"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg><span>Matrix</span></button>
+          <button data-nav="repertoire"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h7M9 14h7M9 18h4"/></svg><span>Repertoire</span></button>
+          <button data-nav="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a3 3 0 0 0-3 3"/><path d="M20 5v13h-7"/></svg><span>Learn</span></button>
+          <button data-nav="coach"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H9l-4 4z"/></svg><span>Coach</span></button>
+          <button data-nav="progress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg><span>Progress</span></button>
         </div>
       </nav>
       <div class="nav-foot">
@@ -46,12 +44,20 @@
     <div class="app-main">
       <!-- ================= Top bar ================= -->
       <header class="topbar">
-        <div class="top-right">
-          <div class="top-instrument">
-            <label for="tuningSel">Instrument</label>
+        <div class="ctx-title"><b id="ctxPage">Today</b><span id="ctxKey"></span></div>
+        <div class="ctx-chips" id="ctxChips">
+          <div class="top-instrument chip">
+            <label for="tuningSel">On</label>
             <select id="tuningSel" aria-describedby="tuningSub"></select>
             <span id="tuningSub" class="tuning-sub"></span>
           </div>
+          <button type="button" class="chip" id="chipKey" aria-haspopup="dialog"><small>Key</small><b id="chipKeyVal">D</b></button>
+          <button type="button" class="chip" id="chipMode" aria-haspopup="dialog"><small>Dromos</small><b id="chipModeVal">Major</b></button>
+          <button type="button" class="chip" id="chipRhythm" aria-haspopup="dialog"><small>Rhythm</small><b id="chipRhythmVal">Hasapiko</b></button>
+        </div>
+        <div class="top-right">
+          <button type="button" class="ctx-btn" id="btnFocus" aria-pressed="false" title="Hide everything except the practice (F)">Focus</button>
+          <button type="button" class="ctx-btn" id="btnCoachDrawer" aria-expanded="false" aria-controls="coachDrawer" title="What to do on this page (?)">Coach<i id="coachDot" class="coach-dot hidden" aria-hidden="true"></i></button>
           <div id="profileApp"></div>
           <details class="settings-drawer" id="settingsDrawer">
             <summary aria-label="All settings">
@@ -97,7 +103,6 @@
       <main>
         <!-- ================= Session header ================= -->
         <section class="lesson-head">
-          <div id="pageGuide" class="page-guide" aria-live="polite"></div>
 
           <nav id="harmonyTabs" class="mode-tabs hidden" aria-label="Harmony workspace mode">
             <button data-harmony-mode="pivot">Changes Gym</button>
@@ -804,7 +809,7 @@
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=77"></script>
   <script src="js/page-guides.js?v=79"></script>
-  <script src="js/app.js?v=83"></script>
+  <script src="js/app.js?v=84"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
