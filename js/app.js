@@ -4070,23 +4070,42 @@
 
   // Drill 2: the seven triads of the dromos on one string set, one shape
   // type the whole way, up the neck and back (Jens Larsen: keep the skip).
+  // Three courses cannot skip a course, so the drills built on one shape
+  // type or a chain fall back to the ladder there and say why.
+  function spreadThreeCourseFallback(context, what) {
+    const nodes = pickingSpreadLadderNodes(context);
+    if (nodes.length) nodes[0].cue = `Three-course bouzouki: ${what} needs grips wider than five frets here, so this plays the ladder. Use tetrachordo, guitar or laouto for it.`;
+    return nodes;
+  }
   function pickingSpreadDiatonicNodes(context) {
+    if (window.Tuning.open().length < 4) return spreadThreeCourseFallback(context, "one shape type through the dromos");
     const scale = M.scaleOf(context.tonic, pickingModeId(context));
     const inversion = Number(state.picking.variant) || 0;
     const group = spreadGroup("top");
-    const tonic = spreadDegreeTriad(scale, 0);
-    const first = spreadVoicings(tonic.tones, group, { bassString: group[0], inversions: [inversion], maxStretch: 4 })
-      .sort((left, right) => left.frets[0] - right.frets[0])[0];
-    if (!first) return [];
-    const chords = [];
-    let bassMidi = first.midis[0];
-    for (let degree = 0; degree <= 7; degree++) {
-      const triad = spreadDegreeTriad(scale, degree);
-      const order = spreadOrder(triad.tones, inversion);
-      if (degree > 0) bassMidi = spreadUp(bassMidi, order[0].pc);
-      const voicing = spreadOnStrings(order, bassMidi, first.strings);
-      if (!voicing) break;
-      chords.push({ triad, voicing: Object.assign(voicing, { inversion }) });
+    // Start on the tonic when the whole run fits the neck; otherwise on the
+    // lowest degree that lets all eight chords fit (the run still covers
+    // every chord of the dromos).
+    const runFrom = (startDegree) => {
+      const start = spreadDegreeTriad(scale, startDegree);
+      const first = spreadVoicings(start.tones, group, { bassString: group[0], inversions: [inversion], maxStretch: 4 })
+        .sort((left, right) => left.frets[0] - right.frets[0])[0];
+      if (!first) return [];
+      const list = [];
+      let bassMidi = first.midis[0];
+      for (let step = 0; step <= 7; step++) {
+        const triad = spreadDegreeTriad(scale, startDegree + step);
+        const order = spreadOrder(triad.tones, inversion);
+        if (step > 0) bassMidi = spreadUp(bassMidi, order[0].pc);
+        const voicing = spreadOnStrings(order, bassMidi, first.strings);
+        if (!voicing) break;
+        list.push({ triad, voicing: Object.assign(voicing, { inversion }) });
+      }
+      return list;
+    };
+    let chords = [];
+    for (let startDegree = 0; startDegree < 7 && chords.length < 8; startDegree++) {
+      const attempt = runFrom(startDegree);
+      if (attempt.length > chords.length) chords = attempt;
     }
     if (chords.length < 3) return [];
     const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "I"];
@@ -4106,23 +4125,12 @@
   function pickingSpreadChainNodes(context) {
     const scale = M.scaleOf(context.tonic, pickingModeId(context));
     const open = window.Tuning.open();
-    if (open.length < 4) {
-      // Three courses: the chain needs six-fret grips, so play the dromos's
-      // spreads instead and say why.
-      const fallback = pickingSpreadDiatonicNodes(context);
-      if (fallback.length) fallback[0].cue = "Three-course bouzouki: the one-voice chain needs six-fret grips, so this plays the dromos's spreads. Use tetrachordo, guitar or laouto for the chain.";
-      return fallback;
-    }
+    if (open.length < 4) return spreadThreeCourseFallback(context, "the one-voice chain");
     const group = spreadGroup("top");
     const [bassString, topString] = [group[0], group[1]];
     const midStrings = [];
     for (let string = bassString + 1; string < topString; string++) midStrings.push(string);
     const tonicPc = scale[0].pc;
-    const fretOf = (low, high) => { for (let fret = low; fret <= high; fret++) if (spreadMod(open[bassString] + fret) === tonicPc) return fret; return null; };
-    const startFret = fretOf(12, 16) != null ? fretOf(12, 16) : fretOf(5, 11);
-    const tonicMidi = open[bassString] + startFret;
-    const steps = [0, 4, 9];
-    const chain = [];
     const VOICE_NAME = ["bass", "middle", "top"];
     const place = (midis, previous) => {
       let best = null;
@@ -4145,20 +4153,34 @@
       const roleOf = (value) => triad.tones[[root, (root + 2) % 7, (root + 4) % 7].indexOf(value)];
       return { triad, order: classes.map(roleOf), inversion: [0, 1, 2].find((index) => classes[0] === [root, (root + 2) % 7, (root + 4) % 7][index]) };
     };
-    let previous = null;
-    for (let move = 0; move <= 21; move++) {
-      if (move > 0) steps[[0, 2, 1][(move - 1) % 3]] -= 1;
-      const midis = steps.map((step) => pickingDegreeMidi(scale, tonicMidi, step));
-      const voicing = place(midis, previous);
-      if (!voicing) break;
-      const info = describe(steps);
-      chain.push(Object.assign(voicing, { order: info.order, inversion: info.inversion, triad: info.triad, moving: move > 0 ? [0, 2, 1][(move - 1) % 3] : null }));
-      previous = voicing;
+    // Start as high as the neck allows; a high tonic that runs off the top
+    // of the neck starts an octave lower and runs part of the chain.
+    const buildChain = (startFret) => {
+      const tonicMidi = open[bassString] + startFret;
+      const steps = [0, 4, 9];
+      const list = [];
+      let previous = null;
+      for (let move = 0; move <= 21; move++) {
+        if (move > 0) steps[[0, 2, 1][(move - 1) % 3]] -= 1;
+        const voicing = place(steps.map((step) => pickingDegreeMidi(scale, tonicMidi, step)), previous);
+        if (!voicing) break;
+        const info = describe(steps);
+        list.push(Object.assign(voicing, { order: info.order, inversion: info.inversion, triad: info.triad, moving: move > 0 ? [0, 2, 1][(move - 1) % 3] : null }));
+        previous = voicing;
+      }
+      return list;
+    };
+    let chain = [];
+    for (let fret = 16; fret >= 0 && chain.length < 22; fret--) {
+      if (spreadMod(open[bassString] + fret) !== tonicPc) continue;
+      const attempt = buildChain(fret);
+      if (attempt.length > chain.length) chain = attempt;
     }
     // Stop on the last tonic in range (moves 7, 14 or 21), then climb back.
     const ends = [21, 14, 7].filter((end) => end < chain.length);
-    if (!ends.length) return [];
-    const down = chain.slice(0, ends[0] + 1);
+    const endAt = ends.length ? ends[0] : chain.length - 1;
+    if (endAt < 3) return pickingSpreadLadderNodes(context);
+    const down = chain.slice(0, endAt + 1);
     const plan = down.map((item) => ({ item, moving: item.moving })).concat(down.slice(0, -1).reverse().map((item, index, list) => ({ item, moving: down[down.length - 1 - index].moving })));
     const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
     const nodes = [], strokes = { last: "U" };
@@ -4187,7 +4209,9 @@
       if (tones.some((tone) => !tone)) return;
       const triadTones = tones.map((note, index) => ({ pc: note.pc, role: index === 0 ? "1" : pickingRoleLabel(note.role), name: note.name }));
       const inversions = variant === "roots" ? [0] : !previous ? [{ route1: 0, route2: 1, route3: 2 }[variant] || 0] : [0, 1, 2];
-      const voicing = spreadNearest(spreadVoicings(triadTones, group, { inversions, maxStretch: 4 }), previous, context.position);
+      let candidates = spreadVoicings(triadTones, group, { inversions, maxStretch: 4 });
+      if (!candidates.length) candidates = spreadVoicings(triadTones, group, { maxStretch: 4 });
+      const voicing = spreadNearest(candidates, previous, context.position);
       if (!voicing) return;
       const beats = barsFor(chord) * pulse.length;
       for (let beat = 0; beat < beats; beat++) spreadGrip(voicing, {
@@ -4228,7 +4252,9 @@
     const leadName = offs.includes(1) ? "♭II" : "V";
     const extra = (midi, stringIndex, label, cue) => {
       let fret = midi - open[stringIndex];
-      let placement = fret >= 0 && fret <= SPREAD_MAX_FRET ? { stringIndex, fret } : pickingPlaceMidi(midi, { stringIndex, fret: Math.max(0, fret) }, context.position);
+      const placement = fret >= 0 && fret <= SPREAD_MAX_FRET ? { stringIndex, fret } : pickingPlaceMidi(midi, { stringIndex, fret: Math.max(0, fret) }, context.position);
+      // Below the lowest open string there is nowhere to put it: skip it.
+      if (!placement) return null;
       const pc = spreadMod(midi);
       const scaleNote = scale.find((note) => note.pc === pc);
       const technique = strokes.last === "D" ? "U" : "D";
@@ -4249,7 +4275,8 @@
         const top = voicing.midis[2];
         let above = top + 1;
         while (!scale.some((note) => note.pc === spreadMod(above))) above++;
-        nodes.push(extra(above, voicing.strings[2], "N", "neighbour: the next dromos note above the top, then let it go"));
+        const neighbour = extra(above, voicing.strings[2], "N", above - top > 1 ? "neighbour a whole step above the top: slide up to it, then let it go" : "neighbour: the next dromos note above the top, then let it go");
+        if (neighbour) nodes.push(neighbour);
         return;
       }
       const bass = voicing.midis[0];
@@ -4257,11 +4284,11 @@
       if (variant === "dromos") {
         const tonicBass = spreadMod(bass) === scale[0].pc;
         if (tonicBass && offs.includes(1)) { approach = bass + 1; label = "♭2"; cue = "the ♭2 above the tonic falls into it: the sound of ousak and hijaz"; }
-        else { approach = bass - 1; while (!scale.some((note) => note.pc === spreadMod(approach))) approach--; label = "↗"; cue = "lead-in from the dromos note below the bass"; }
+        else { approach = bass - 1; while (!scale.some((note) => note.pc === spreadMod(approach))) approach--; label = "↗"; cue = bass - approach > 1 ? "lead-in a whole step below the bass: slide up into it with the same finger" : "lead-in from the dromos note below the bass"; }
       }
       const first = extra(approach, voicing.strings[0], label, cue);
-      nodes.push(Object.assign(first, { chordStart: true, roadIndex: index, roadShort: info.roadShort, roadLabel: info.roadLabel, roadStart: true }));
-      spreadGrip(voicing, Object.assign({}, info, { roadStart: false }), strokes).forEach((node, step) => nodes.push(Object.assign(node, step === 0 ? { chordStart: false } : {})));
+      if (first) nodes.push(Object.assign(first, { chordStart: true, roadIndex: index, roadShort: info.roadShort, roadLabel: info.roadLabel, roadStart: true }));
+      spreadGrip(voicing, Object.assign({}, info, { roadStart: !first }), strokes).forEach((node, step) => nodes.push(Object.assign(node, step === 0 && first ? { chordStart: false } : {})));
     });
     return nodes;
   }
@@ -4298,6 +4325,10 @@
     return nodes;
   }
 
+  // ?debug exposes the drill builders for silent matrix checks in the browser.
+  if (typeof location !== "undefined" && /[?&]debug\b/.test(location.search)) {
+    window.DromosDebug = { state, build: (id, variant) => { state.picking.exerciseId = id; state.picking.variant = variant; return buildPickingPass({ tonic: state.tonic, position: state.lab.position }); } };
+  }
   const PICKING_BUILDERS = {
     etude: (context) => pickingEtudeNodes(context),
     tensionHome: (context) => pickingTensionHomeNodes(context),
@@ -5167,8 +5198,19 @@
       `<span class="ps-pill strong">${level === "full" ? "Map: full" : level === "hints" ? "Map: next note only" : "Map: hidden · from memory"}${level === "memory" ? ` <button type="button" id="btnPickingReveal">Show</button>` : ""}</span>`,
       `<span class="ps-pill">Clean ${state.picking.cleanPasses} of 3 at ${state.bpm}</span>`
     ];
+    const todayIndex = PE ? todayActiveStep() : null;
+    if (todayIndex != null) {
+      const plan = todayPlan();
+      const step = plan[todayIndex];
+      if (step) {
+        const done = todayStepDone(step, PE.load(), PE.dayStamp());
+        pills.push(`<span class="ps-pill today">Today ${todayIndex + 1} of ${plan.length} · ${TODAY_KIND[step.kind]}${done ? ` · done <button type="button" id="btnTodayNext">${todayIndex + 1 < plan.length ? "Next step" : "Finish"}</button>` : ""}</span>`);
+      }
+    }
     if (ap.mix) pills.push(`<span class="ps-pill">${state.picking.playing ? `Now in ${nowTonic} · next ${next}` : `Mixes ${ring.join(" ")}`} ${escapeHtml(modeName)}</span>`);
     $("pickingStatus").innerHTML = pills.join("");
+    const todayNext = $("btnTodayNext");
+    if (todayNext) todayNext.onclick = () => startTodayStep(todayIndex + 1);
     const reveal = $("btnPickingReveal");
     if (reveal) reveal.onclick = () => {
       state.picking.reveal = true; renderPickingLab();
@@ -7213,35 +7255,162 @@
     } catch (error) { /* storage unavailable: cards simply stay unchecked */ }
   }
 
+  // ---- Today (FR-85): the session the practice engine builds --------------
+  const TODAY_KEYS = ["D", "G", "A", "E", "C"];
+  const TODAY_MODES = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
+  const TODAY_STEP_KEY = "dromos-today-step";
+  const TODAY_KIND = { warm: "Warm-up", due: "Review", new: "New", memory: "From memory", play: "Play it" };
+  function todayContext() {
+    return {
+      curriculum: BK.MASTERY_PHASES.flatMap((phase) => phase.exerciseIds).filter((id) => PK.byId(id) && id !== "phrase-workbench" && id !== "rhythm-comp"),
+      tonic: state.tonic, mode: TODAY_MODES.includes(state.modeId) ? state.modeId : "major", modes: TODAY_MODES,
+      tonics: [state.tonic].concat(TODAY_KEYS.filter((tonic) => tonic !== state.tonic)),
+      warmup: "down-up-clock", memoryDrill: "scale-roads"
+    };
+  }
+  function todayPlan() {
+    if (!PE) return [];
+    const date = PE.dayStamp();
+    // The plan is fixed for the day once built, so finishing a step does not
+    // reshuffle the list under the player.
+    try {
+      const saved = JSON.parse(localStorage.getItem("dromos-today-plan") || "null");
+      if (saved && saved.date === date && Array.isArray(saved.plan) && saved.plan.length) return saved.plan;
+    } catch (error) { /* storage unavailable */ }
+    const plan = PE.buildSession(PE.load(), date, todayContext());
+    try { localStorage.setItem("dromos-today-plan", JSON.stringify({ date, plan })); } catch (error) { /* storage unavailable */ }
+    return plan;
+  }
+  function todayStepDone(step, store, date) {
+    if (step.kind === "play") return todayVisits().includes("songs");
+    const card = store.cards[PE.cardId(step.drill, step.tonic, step.mode)];
+    if (!card) return false;
+    return step.kind === "warm" ? card.last === date && card.reps > 0 : card.setDay === date;
+  }
+  function todayActiveStep() {
+    try {
+      const raw = JSON.parse(sessionStorage.getItem(TODAY_STEP_KEY) || "null");
+      return raw && raw.date === PE.dayStamp() ? raw.index : null;
+    } catch (error) { return null; }
+  }
+  function startTodayStep(index) {
+    const plan = todayPlan();
+    const step = plan[index];
+    if (!step) { try { sessionStorage.removeItem(TODAY_STEP_KEY); } catch (error) { /* storage unavailable */ } setView("today"); return; }
+    try { sessionStorage.setItem(TODAY_STEP_KEY, JSON.stringify({ date: PE.dayStamp(), index })); } catch (error) { /* storage unavailable */ }
+    stopPlay();
+    state.tonic = step.tonic;
+    if (state.modeId !== step.mode) { state.modeId = step.mode; state.progId = M.PROGRESSIONS[step.mode][0].id; state.progStep = 0; }
+    if (step.kind === "play") { persistPreferences(); setView("songs"); return; }
+    selectPickingExercise(PK.byId(step.drill) ? step.drill : "scale-roads");
+    if (step.tempo) { state.bpm = step.tempo; AU.setBpm(state.bpm); }
+    state.picking.ladder = null;
+    state.picking.fadePasses = step.fade === "memory" ? 2 : 0;
+    persistPreferences(); syncPersistentControls();
+    setView("picking");
+  }
+  const spark = (values) => {
+    const top = Math.max.apply(null, values), live = values.filter((value) => value > 0);
+    if (!live.length) return `<svg viewBox="0 0 140 30" class="spark"><line x1="0" y1="27" x2="140" y2="27"/></svg>`;
+    const low = Math.min.apply(null, live) - 4;
+    const x = (index) => (index / Math.max(1, values.length - 1)) * 136 + 2;
+    const y = (value) => 27 - ((value - low) / Math.max(1, top - low)) * 22;
+    let path = "", last = null;
+    values.forEach((value, index) => { if (!value) return; path += `${last == null ? "M" : "L"}${x(index).toFixed(1)} ${y(value).toFixed(1)} `; last = index; });
+    return `<svg viewBox="0 0 140 30" class="spark"><path d="${path}"/><circle cx="${x(last).toFixed(1)}" cy="${y(values[last]).toFixed(1)}" r="2.6"/></svg>`;
+  };
+
   function renderToday() {
     const root = $("todayApp");
     if (!root) return;
     const active = PP ? PP.active() : null;
     const name = active ? active.displayName : "Player";
-    const e = state.ear;
-    const pct = e.total ? Math.round((e.score / e.total) * 100) : null;
     const visited = todayVisits();
     let nextMarked = false;
+    const store = PE ? PE.load() : null;
+    const date = PE ? PE.dayStamp() : "";
+    const plan = todayPlan();
+    const doneFlags = plan.map((step) => store ? todayStepDone(step, store, date) : false);
+    const nextIndex = doneFlags.indexOf(false);
+    const minutesToday = store ? Math.round(store.minutes[date] || 0) : 0;
+    const streakDays = store ? PE.streak(store, date) : 0;
+    const week = store ? Math.round(PE.minutesSince(store, date, 7)) : 0;
+    const due = store ? PE.dueCards(store, date) : [];
+    const title = (id) => (PK.byId(id) || { title: id }).title.split(" · ")[0];
+    const modeName = (id) => (M.MODES[id] || { name: id }).name;
+    // Trend lines: the drills played most in the last two weeks.
+    const counts = {};
+    if (store) Object.values(store.cards).forEach((card) => { if (card.hist) counts[card.drill] = (counts[card.drill] || 0) + Object.keys(card.hist).length; });
+    const trending = Object.keys(counts).sort((left, right) => counts[right] - counts[left]).slice(0, 4);
     root.innerHTML = `
-      <div class="today-hero"><span>Today's session</span>
-        <h2>Καλή πρόβα, ${escapeHtml(name)}.</h2>
-        <p>Work the cards in order on the ${escapeHtml(window.Tuning.current().name)}: hear it, name it, find it on the neck. Done cards get a check; start with the first one that has none.</p></div>
+      <div class="today-hero">
+        <div><span>Today's session · ${escapeHtml(window.Tuning.current().name)}</span>
+          <h2>Καλή πρόβα, ${escapeHtml(name)}.</h2>
+          <p>Twenty minutes in five parts: warm up, review what is due, one new drill, one from memory, then play it in a song. Clean or Missed after each loop moves everything along.</p></div>
+        <div class="today-meters">
+          <span><b>${streakDays}</b>day streak</span>
+          <span><b>${minutesToday}</b>min today</span>
+          <span><b>${week}</b>min this week</span>
+        </div>
+        <button type="button" class="deck-start" id="btnTodayStart">${nextIndex < 0 ? "Done for today · go again" : nextIndex === 0 ? "▶ Start today's 20 minutes" : `▶ Continue · step ${nextIndex + 1} of ${plan.length}`}</button>
+      </div>
+      <ol class="today-plan">${plan.map((step, index) => `
+        <li class="${doneFlags[index] ? "done" : ""}${index === nextIndex ? " up-next" : ""}">
+          <i>${doneFlags[index] ? "✓" : index + 1}</i>
+          <div><small>${TODAY_KIND[step.kind] || step.kind} · ${Math.round(step.minutes)} min</small>
+            <b>${step.kind === "play" ? "A song in this dromos" : escapeHtml(title(step.drill))}</b>
+            <span>${escapeHtml(step.tonic)} ${escapeHtml(modeName(step.mode))}${step.tempo ? ` · ${step.tempo} BPM` : ""}${step.fade === "memory" ? " · map hidden" : ""} · ${escapeHtml(step.why)}</span></div>
+          <button type="button" class="mini" data-today-step="${index}">${doneFlags[index] ? "Again" : "Go"}</button>
+        </li>`).join("")}</ol>
+      <div class="today-boards">
+        <section class="today-board"><h3>Strength by key and dromos</h3>
+          <table class="today-heat"><thead><tr><th></th>${TODAY_KEYS.map((tonic) => `<th>${tonic}</th>`).join("")}</tr></thead><tbody>${TODAY_MODES.map((mode) => `
+            <tr><th>${escapeHtml(modeName(mode))}</th>${TODAY_KEYS.map((tonic) => {
+              const value = store ? PE.cellStrength(store, tonic, mode, date) : 0;
+              return `<td><button type="button" data-heat="${tonic}|${mode}" style="--s:${value.toFixed(2)}" title="${tonic} ${escapeHtml(modeName(mode))}: ${value ? Math.round(value * 100) + "%" : "not played yet"}" class="${tonic === state.tonic && mode === state.modeId ? "here" : ""}"></button></td>`;
+            }).join("")}</tr>`).join("")}</tbody></table>
+          <p class="today-note">Brighter = more clean sets, recently. Tap a square to practise there.</p></section>
+        <section class="today-board"><h3>Clean tempo, last 14 days</h3>${trending.length ? trending.map((drill) => {
+            const values = PE.tempoTrend(store, drill, date, 14);
+            const live = values.filter((value) => value > 0);
+            return `<div class="today-trend"><span>${escapeHtml(title(drill))}</span>${spark(values)}<b>${live.length ? live[live.length - 1] : "·"}</b></div>`;
+          }).join("") : `<p class="today-note">Your clean-set tempos appear here after the first sets.</p>`}</section>
+        <section class="today-board"><h3>Due for review${due.length ? ` · ${due.length}` : ""}</h3>${due.length ? `<ul class="today-due">${due.slice(0, 6).map((card) => `
+            <li><span>${escapeHtml(title(card.drill))}</span><small>${escapeHtml(card.tonic)} ${escapeHtml(modeName(card.mode))}${card.ceiling ? ` · best ${card.ceiling}` : ""}</small><button type="button" class="mini" data-due="${escapeHtml(PE.cardId(card.drill, card.tonic, card.mode))}">Go</button></li>`).join("")}</ul>` : `<p class="today-note">Nothing due. Drills come back 1, 3, 7, 16, 35 and 80 days after a clean set.</p>`}</section>
+      </div>
+      <details class="today-more"><summary>Every page</summary>
       <div class="today-grid">${PRACTICE_STEPS.map((step) => {
         const guide = PG.resolve({ view: step.view });
         const done = visited.includes(step.view);
         const upNext = !done && !nextMarked;
         if (upNext) nextMarked = true;
-        return `<button class="today-card${done ? " done" : ""}${upNext ? " up-next" : ""}" data-today-view="${step.view}"><i>${done ? "✓ " : ""}${escapeHtml(step.label)}</i>${upNext ? `<em class="up-next-tag">Start here</em>` : ""}<b>${escapeHtml(guide ? guide.purpose : step.label)}</b><p>${escapeHtml(step.detail)}</p></button>`;
-      }).join("")}</div>
-      <div class="today-stats">
-        <span>Ear colour <b>${e.score}/${e.total}</b>${pct == null ? "" : ` (${pct}%)`}</span>
-        <span>Home + changes <b>${e.map.score}/${e.map.total}</b></span>
-        <span>Sing-back locks <b>${active ? active.progress.singPitch.correct : 0}/${active ? active.progress.singPitch.attempts : 0}</b></span>
-        <span>${state.ear.drill === "map" ? "Map streak" : "Colour streak"} <b>${state.ear.drill === "map" ? e.map.streak : e.streak}</b></span>
-        <span>Instrument <b>${escapeHtml(window.Tuning.current().name)}</b></span>
-      </div>`;
+        return `<button class="today-card${done ? " done" : ""}" data-today-view="${step.view}"><i>${done ? "✓ " : ""}${escapeHtml(step.label)}</i><b>${escapeHtml(guide ? guide.purpose : step.label)}</b><p>${escapeHtml(step.detail)}</p></button>`;
+      }).join("")}</div></details>
+      <p class="today-method">The spacing (1, 3, 7, 16, 35, 80 days), the three-clean-loop set and the five-part session are the app's method, built on spacing, mixing and recall findings in motor-skill research.</p>`;
     root.querySelectorAll("[data-today-view]").forEach((button) => {
       button.onclick = () => setView(button.getAttribute("data-today-view"));
+    });
+    $("btnTodayStart").onclick = () => startTodayStep(nextIndex < 0 ? 0 : nextIndex);
+    root.querySelectorAll("[data-today-step]").forEach((button) => { button.onclick = () => startTodayStep(Number(button.getAttribute("data-today-step"))); });
+    root.querySelectorAll("[data-heat]").forEach((button) => {
+      button.onclick = () => {
+        const [tonic, mode] = button.getAttribute("data-heat").split("|");
+        state.tonic = tonic;
+        if (state.modeId !== mode) { state.modeId = mode; state.progId = M.PROGRESSIONS[mode][0].id; state.progStep = 0; }
+        persistPreferences(); setView("picking");
+      };
+    });
+    root.querySelectorAll("[data-due]").forEach((button) => {
+      button.onclick = () => {
+        const card = store.cards[button.getAttribute("data-due")];
+        if (!card) return;
+        stopPlay();
+        state.tonic = card.tonic;
+        if (state.modeId !== card.mode) { state.modeId = card.mode; state.progId = M.PROGRESSIONS[card.mode][0].id; state.progStep = 0; }
+        selectPickingExercise(PK.byId(card.drill) ? card.drill : "scale-roads");
+        if (card.ceiling) { state.bpm = Math.max(60, card.ceiling - 8); AU.setBpm(state.bpm); state.picking.ladder = null; }
+        persistPreferences(); syncPersistentControls(); setView("picking");
+      };
     });
   }
 

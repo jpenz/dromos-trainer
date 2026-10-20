@@ -488,6 +488,9 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
     "the nav lists Today first, so Today is the default view");
   assert.doesNotMatch(html, /id="practicePath"/,
     "the verbatim duplicate of the Today grid must not return");
+  assert.match(app, /PE\.buildSession\(PE\.load\(\), date, todayContext\(\)\)/,
+    "Today's plan comes from the practice engine's spaced-review session");
+  assert.match(app, /id="btnTodayNext"/, "a finished Today step offers the next one from the Picking page");
   assert.match(app, /const visited = todayVisits\(\);/,
     "Today cards reflect what was actually visited today");
   // Interaction canon: beat-synced pulses, one focus ring, designed states.

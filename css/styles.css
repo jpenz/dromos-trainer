@@ -2731,3 +2731,47 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
   .picking-transport .ap-group { flex: 1 1 0; min-width: 0; }
   .picking-transport .ap-tog { flex: 1 1 auto; justify-content: center; padding: 0 6px; font-size: var(--fs-micro); }
 }
+
+/* ---- Today v2 (FR-85): the engine's session ---- */
+.today-hero { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: var(--sp-4); }
+.today-hero h2 { margin: 4px 0 6px; }
+.today-hero p { margin: 0; max-width: 62ch; color: var(--muted); }
+.today-meters { display: flex; gap: 18px; }
+.today-meters span { display: grid; color: var(--faint); font-size: var(--fs-micro); font-weight: 600; text-align: center; }
+.today-meters b { color: var(--text); font-family: var(--font-mono); font-size: 22px; }
+.today-plan { display: grid; gap: 8px; margin: var(--sp-4) 0; padding: 0; list-style: none; }
+.today-plan li { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.today-plan li > i { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--line-strong); color: var(--muted); font-style: normal; font-weight: 700; }
+.today-plan li.done > i { background: var(--laurel); border-color: var(--laurel); color: #10140b; }
+.today-plan li.up-next { border-color: color-mix(in oklab, var(--terracotta) 60%, transparent); box-shadow: 0 0 calc(var(--glow) * 18px) color-mix(in oklab, var(--terracotta) 22%, transparent); }
+.today-plan li.up-next > i { border-color: var(--terracotta); color: var(--terracotta); }
+.today-plan small { color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.today-plan b { display: block; margin: 2px 0; }
+.today-plan span { color: var(--muted); font-size: var(--fs-label); }
+.today-boards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-3); }
+.today-board { padding: 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+.today-board h3 { margin: 0 0 10px; font-size: var(--fs-label); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.today-heat { border-collapse: separate; border-spacing: 4px; }
+.today-heat th { color: var(--faint); font-size: var(--fs-micro); font-weight: 600; text-align: left; padding-right: 6px; }
+.today-heat thead th { text-align: center; }
+.today-heat button { width: 34px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: color-mix(in oklab, var(--laurel) calc(var(--s) * 100%), var(--panel2)); cursor: pointer; }
+.today-heat button.here { outline: 2px solid var(--terracotta); outline-offset: 1px; }
+.today-note, .today-method { margin: 8px 0 0; color: var(--faint); font-size: var(--fs-micro); }
+.today-method { margin-top: var(--sp-4); max-width: 80ch; }
+.today-trend { display: grid; grid-template-columns: 1fr 140px 36px; align-items: center; gap: 8px; padding: 4px 0; font-size: var(--fs-label); }
+.today-trend b { font-family: var(--font-mono); text-align: right; }
+.spark { width: 140px; height: 30px; }
+.spark path { fill: none; stroke: var(--turquoise); stroke-width: 2; stroke-linejoin: round; }
+.spark circle { fill: var(--terracotta); }
+.spark line { stroke: var(--line); stroke-dasharray: 3 4; }
+.today-due { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.today-due li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.today-due small { grid-column: 1; color: var(--faint); font-size: var(--fs-micro); }
+.today-due button { grid-row: 1 / span 2; grid-column: 2; }
+.today-more { margin-top: var(--sp-4); }
+.today-more > summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+.ps-pill.today { color: var(--turquoise); border-color: color-mix(in oklab, var(--turquoise) 45%, transparent); }
+@media (max-width: 900px) {
+  .today-hero { grid-template-columns: 1fr; }
+  .today-plan li { grid-template-columns: 30px 1fr auto; gap: 10px; }
+}
