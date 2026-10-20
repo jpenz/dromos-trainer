@@ -38,7 +38,7 @@ test("bouzouki mastery keeps articulated ta-ka, tremolo, and source authority se
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.length, 10, "ten categories in practical order, stroke first, phrasing last");
   assert.equal(BouzoukiKnowledge.MASTERY_PHASES.map((phase) => phase.id).join(" "),
     "setup pulse sync scales crossing arpeggios speed tremolo comp phrasing", "practical order: stroke first, phrasing last");
-  assert.equal(PickingLab.EXERCISES.length, 76, "43 + 13 video-sourced + 4 traveling + scale roads + chord picking + 3 pair cells + 5 Marbin channel drills + 6 spread-triad drills");
+  assert.equal(PickingLab.EXERCISES.length, 81, "43 + 13 video-sourced + 4 traveling + scale roads + chord picking + 3 pair cells + 5 Marbin channel drills + 6 spread-triad drills + 5 Billy Strings drills");
   ["spread-triad-ladder", "spread-diatonic", "spread-chain-etude", "spread-progression-route", "spread-approach-tones", "spread-colour-triads"].forEach((id) =>
     assert.equal(PickingLab.byId(id).sequence, "spread", `${id} uses the spread-grip sequence`));
   assert.equal(PickingLab.byId("picked-dromos-line").articulation, "picked-line");

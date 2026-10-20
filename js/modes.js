@@ -64,16 +64,18 @@
     m7b5: { offsets: [0, 3, 6, 10],  steps: [0, 2, 4, 6], sym: "m7♭5",    roles: ["R", "b3", "b5", "b7"] },
     dim7: { offsets: [0, 3, 6, 9],   steps: [0, 2, 4, 6], sym: "°7",           roles: ["R", "b3", "b5", "bb7"] },
     mMaj7: { offsets: [0, 3, 7, 11], steps: [0, 2, 4, 6], sym: "m(maj7)",      roles: ["R", "b3", "5", "7"] },
-    maj7sharp5: { offsets: [0, 4, 8, 11], steps: [0, 2, 4, 6], sym: "maj7♯5", roles: ["R", "3", "#5", "7"] }
+    maj7sharp5: { offsets: [0, 4, 8, 11], steps: [0, 2, 4, 6], sym: "maj7♯5", roles: ["R", "3", "#5", "7"] },
+    // The minor sixth: the laiko colour of the harmonic-minor tonic.
+    m6: { offsets: [0, 3, 7, 9], steps: [0, 2, 4, 5], sym: "m6", roles: ["R", "b3", "5", "6"] }
   };
 
   const ROLE_LABEL = {
     R: "R", b3: "♭3", 3: "3", 5: "5", b5: "♭5", "#5": "♯5",
-    b7: "♭7", bb7: "♭♭7", 7: "7"
+    b7: "♭7", bb7: "♭♭7", 7: "7", 6: "6"
   };
   const ROLE_GROUP = {
     R: "root", b3: "third", 3: "third", 5: "fifth", b5: "fifth", "#5": "fifth",
-    b7: "seventh", bb7: "seventh", 7: "seventh"
+    b7: "seventh", bb7: "seventh", 7: "seventh", 6: "seventh"
   };
 
   // ---- modal and harmonic maps -------------------------------------------
