@@ -67,6 +67,10 @@
       if (card.run % SET_SIZE === 0) {
         result.setDone = true;
         card.ceiling = Math.max(card.ceiling || 0, entry.tempo || 0);
+        // Best clean-set tempo per day, last 30 days kept, for the trend lines.
+        card.hist = card.hist || {};
+        card.hist[date] = Math.max(card.hist[date] || 0, entry.tempo || 0);
+        Object.keys(card.hist).sort().slice(0, -30).forEach((day) => { delete card.hist[day]; });
         // One step out per day: a second clean set the same day is extra
         // practice, not extra spacing.
         if (card.setDay !== date) {
@@ -153,6 +157,8 @@
   // ---- Today ----------------------------------------------------------------
   // ctx: { curriculum: [drill ids in order], tonic, mode, modes: [...], warmup,
   //        memoryDrill, titleOf(id) }
+  function agoText(days) { return days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`; }
+
   function buildSession(store, date, ctx) {
     const plan = [];
     const cards = Object.values(store.cards);
@@ -164,7 +170,7 @@
     reviews.forEach((card) => plan.push({
       kind: "due", minutes: 6 / reviews.length, drill: card.drill, tonic: card.tonic, mode: card.mode,
       tempo: card.ceiling ? Math.max(60, card.ceiling - 8) : 72, fade: "full",
-      why: card.due && card.due <= date ? `Due today · last played ${card.last ? Math.max(0, daysBetween(card.last, date)) + " days ago" : "before"}` : "Your weakest drill right now"
+      why: card.due && card.due <= date ? `Due today · last played ${card.last ? agoText(daysBetween(card.last, date)) : "before"}` : "Your weakest drill right now"
     }));
     const started = new Set(cards.filter((card) => card.mode === ctx.mode).map((card) => card.drill));
     const fresh = ctx.curriculum.find((id) => !started.has(id) && id !== ctx.warmup) || ctx.curriculum[0];
@@ -174,6 +180,25 @@
     plan.push({ kind: "memory", minutes: 3, drill: ctx.memoryDrill, tonic: otherKey, mode: otherMode, tempo: 72, fade: "memory", why: "A key and dromos you have not played today, map hidden" });
     plan.push({ kind: "play", minutes: 2, drill: null, tonic: ctx.tonic, mode: ctx.mode, tempo: null, fade: null, why: "Use it in a song" });
     return plan;
+  }
+
+  // Best clean tempo per day for one drill across its keys, oldest first.
+  function tempoTrend(store, drill, date, days) {
+    const out = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const day = addDays(date, -i);
+      let best = 0;
+      Object.values(store.cards).forEach((card) => { if (card.drill === drill && card.hist && card.hist[day] > best) best = card.hist[day]; });
+      out.push(best);
+    }
+    return out;
+  }
+
+  // Mean strength of the cards in one key and dromos (0 when never played).
+  function cellStrength(store, tonic, mode, date) {
+    const cards = Object.values(store.cards).filter((card) => card.tonic === tonic && card.mode === mode);
+    if (!cards.length) return 0;
+    return cards.reduce((sum, card) => sum + strength(card, date), 0) / cards.length;
   }
 
   function selfTest() {
@@ -194,6 +219,8 @@
     const next = { drill: "scale-roads", tonic: "D", mode: "hijaz", clean: true, tempo: 92, date: "2026-10-20" };
     record(store, next); record(store, next);
     check("next day's set moves it to three days", "2026-10-23", record(store, next).card.due);
+    check("each day's best clean-set tempo feeds the trend", "88,92", tempoTrend(store, "scale-roads", "2026-10-20", 2).join(","));
+    check("a played key and dromos has strength", true, cellStrength(store, "D", "hijaz", "2026-10-20") > 0);
     const cold = record(store, { drill: "pair-triads-ddu", tonic: "G", mode: "major", clean: false, date: "2026-10-20" });
     check("a miss with no clean set that day is a lapse due tomorrow", "2026-10-21", cold.lapsed && cold.card.due);
     check("due cards are found on their day", 1, dueCards(store, "2026-10-21").length);
@@ -214,6 +241,7 @@
   }
 
   window.PracticeEngine = {
+    tempoTrend, cellStrength,
     INTERVALS, SET_SIZE, dayStamp, addDays, daysBetween, emptyStore, load, save, cardId, record, strength,
     dueCards, addMinutes, streak, minutesSince, ladderStep, fadeLevel, buildSession, selfTest
   };
