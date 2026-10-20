@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=84" />
-  <link rel="stylesheet" href="css/styles.css?v=85" />
+  <link rel="stylesheet" href="css/styles.css?v=86" />
 </head>
 <body>
   <div class="app">
@@ -17,6 +17,7 @@
       <div id="pageGuide" class="page-guide" aria-live="polite"></div>
     </aside>
     <div id="ctxPop" class="ctx-pop" hidden role="dialog" aria-label="Choose"></div>
+    <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
     <!-- ================= Primary navigation ================= -->
     <aside class="app-nav" aria-label="Primary navigation">
       <div class="nav-brand" aria-hidden="true"><span class="nav-mark">Δ</span><span class="nav-wordmark">Dromos</span></div>
@@ -149,7 +150,7 @@
             </div>
             <div class="picking-context music-context">
               <label for="pickingExerciseSel" id="pickingExerciseField">Exercise<select id="pickingExerciseSel"></select></label>
-              <label for="pickingPulseSel">Rhythm<select id="pickingPulseSel"></select></label>
+              <label for="pickingPulseSel" class="hidden">Rhythm<select id="pickingPulseSel"></select></label>
             </div>
             <div id="pickingComp" class="picking-workbench hidden" aria-label="Rhythm comp">
               <div class="workbench-grid">
@@ -178,13 +179,14 @@
                 <label for="wbPosition">Neck position<select id="wbPosition"></select></label>
               </div>
             </div>
-            <div id="pickingMasterySpine" class="picking-mastery-spine" aria-label="Practice categories in order"></div>
+            <div id="pickingMasterySpine" class="picking-mastery-spine hidden" aria-label="Practice categories in order"></div>
           </section>
         </section>
 
         <!-- ================= Instrument stage ================= -->
         <section id="stage" class="stage">
           <div id="stageLayers" class="stage-layers" aria-label="Fretboard layers"></div>
+          <div id="pickingStatus" class="picking-status hidden" aria-live="polite"></div>
           <div class="fretboard-wrap">
             <svg id="fretboard" role="img" aria-label="instrument fretboard"></svg>
           </div>
@@ -507,9 +509,7 @@
               <section class="picking-pass-block" aria-label="Pass loop">
                 <div id="pickingPasses" class="picking-passes" aria-live="polite"></div>
                 <div class="deck-progress">
-                  <button id="btnPickingClean" class="mini">Log clean pass</button>
                   <button id="btnPickingTempoUp" class="mini hidden">Ready · +4 BPM</button>
-                  <button id="btnPickingMiss" class="mini">Missed it · −4 BPM</button>
                 </div>
               </section>
             </div>
@@ -774,8 +774,18 @@
         <button id="btnPickingPlay" class="deck-start">▶ Start</button>
         <label class="picking-tempo" for="pickingBpm">Speed <span><input id="pickingBpm" type="range" min="30" max="220" step="1" /><input id="pickingBpmNum" type="number" min="30" max="220" step="1" inputmode="numeric" aria-label="Exact BPM" /><output id="pickingBpmVal" for="pickingBpm">BPM</output></span></label>
         <div class="transport-sub"><span class="panel-label">Notes per click</span><div class="seg" aria-label="Notes per beat"><button data-picking-subdivision="1">1 · quarters</button><button data-picking-subdivision="2">2 · 8ths</button><button data-picking-subdivision="3">3 · triplets</button><button data-picking-subdivision="4">4 · 16ths</button><button data-picking-subdivision="8" class="hidden">8 · 32nds</button></div></div>
-        <label class="transport-pick" for="pickingTonicSel">Key<select id="pickingTonicSel" aria-describedby="pickingKeyHelp"></select><small id="pickingKeyHelp" class="transport-help">The note that feels settled.</small></label>
-        <label class="transport-pick" for="pickingModeSel">Scale / dromos<select id="pickingModeSel"></select></label>
+        <div class="ap-ladder" title="Tempo ladder"><svg id="pickingLadder" viewBox="0 0 150 22" width="150" height="22" aria-hidden="true"></svg><small id="pickingLadderText"></small></div>
+        <div class="ap-group" role="group" aria-label="Autopilot">
+          <span class="panel-label">Autopilot</span>
+          <button type="button" class="ap-tog" id="apTempo" aria-pressed="true"><i></i>Ladder</button>
+          <button type="button" class="ap-tog" id="apFade" aria-pressed="true"><i></i>Fade map</button>
+          <button type="button" class="ap-tog" id="apMix" aria-pressed="false"><i></i>Mix keys</button>
+        </div>
+        <div class="ap-score">
+          <button id="btnPickingClean" class="ap-clean" type="button" title="The loop was clean (C)">Clean</button>
+          <button id="btnPickingMiss" class="ap-miss" type="button" title="Something slipped (X)">Missed</button>
+          <span id="pickingCleanDots" class="ap-dots" aria-label="Clean loops toward the next step"></span>
+        </div>
       </footer>
     </div>
   </div>
@@ -800,16 +810,18 @@
   <script src="js/practice.js?v=14"></script>
   <script src="js/bouzouki-knowledge.js?v=83"></script>
   <script src="js/picking-lab.js?v=83"></script>
-  <script src="js/picking-view.js?v=82"></script>
+  <script src="js/picking-view.js?v=86"></script>
   <script src="js/toolkit.js?v=27"></script>
   <script src="js/songs.js?v=60"></script>
   <script src="js/tactical-examples.js?v=27"></script>
   <script src="js/triads.js?v=17"></script>
+  <script src="js/neck-hdr.js?v=86"></script>
+  <script src="js/practice-engine.js?v=86"></script>
   <script src="js/fretboard.js?v=73"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=77"></script>
-  <script src="js/page-guides.js?v=79"></script>
-  <script src="js/app.js?v=84"></script>
+  <script src="js/page-guides.js?v=86"></script>
+  <script src="js/app.js?v=86"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

@@ -6,7 +6,7 @@
   const T = window.Theory, FB = window.Fretboard, AU = window.AudioEngine, M = window.Modes, S = window.StyleLibrary, A = window.AnalysisEngine,
     U = window.StudyLibrary, Q = window.MusicXmlImport, R = window.ResourceLibrary, V = window.VideoStudy, C = window.PracticeCoach, GV = window.GuitarVoicings, E = window.EarDrills,
     PP = window.PlayerProfiles, HJ = window.HarmonyJourney, SL = window.SongLibrary, CM = window.ChordMap, CP = window.ChordPath, MH = window.MelodyHarmony, PL = window.PitchLab, TK = window.SoloToolkit,
-    PG = window.PageGuides, TE = window.TacticalExamples, BK = window.BouzoukiKnowledge, PK = window.PickingLab, PV = window.PickingView;
+    PG = window.PageGuides, TE = window.TacticalExamples, BK = window.BouzoukiKnowledge, PK = window.PickingLab, PV = window.PickingView, PE = window.PracticeEngine;
 
   const cycle = T.buildCycle();
   const N = cycle.length;
@@ -64,7 +64,8 @@
     },
     // --- dedicated plectrum curriculum ---
     picking: {
-      exerciseId: "scale-roads", route: "tiered", lastPlanExerciseId: "scale-roads", userSubdivision: 2, seam: null, markedIndex: null, travel: true,
+      exerciseId: "scale-roads", route: "tiered", lastPlanExerciseId: "scale-roads", userSubdivision: 2, seam: null, markedIndex: null, travel: true, fadePasses: 0, reveal: false, ladder: null, skipCountIn: false,
+      autopilot: loadAutopilot(),
       variant: "alternate",
       subdivision: 2, firstStroke: "down", pathIndex: null, cleanPasses: 0, rungHistory: [], ceilingBpm: null, playing: false,
       runMode: "loop", repeats: 4, movement: "position", metronome: true, countIn: true,
@@ -4731,6 +4732,136 @@
     };
   }
 
+  // ---- Autopilot (FR-85): tempo ladder, fading map, mixed keys --------------
+  function loadAutopilot() {
+    try { return Object.assign({ tempo: true, fade: true, mix: false }, JSON.parse(localStorage.getItem("dromos-autopilot") || "{}")); }
+    catch (error) { return { tempo: true, fade: true, mix: false }; }
+  }
+  function saveAutopilot() {
+    try { localStorage.setItem("dromos-autopilot", JSON.stringify(state.picking.autopilot)); } catch (error) { /* storage unavailable */ }
+  }
+  function pickingMapLevel() {
+    if (state.picking.reveal || !state.picking.autopilot.fade) return "full";
+    return PE ? PE.fadeLevel(state.picking.fadePasses) : "full";
+  }
+  // The ladder starts where the drill starts and climbs toward the rhythm's
+  // band (or 24 BPM above the start when the rhythm has no printed band).
+  function pickingLadder() {
+    if (!state.picking.ladder) {
+      const band = S.byId(state.groove.styleId).tempoBand;
+      const start = state.bpm;
+      const goal = Math.min(220, Math.max(start + 24, band && band.high ? band.high : 0));
+      state.picking.ladder = { start, goal };
+    }
+    return state.picking.ladder;
+  }
+  const MIX_RING = ["D", "G", "A", "E", "C"];
+  function pickingMixRing() {
+    const ring = MIX_RING.filter((tonic) => tonic !== state.tonic);
+    return [state.tonic].concat(ring);
+  }
+
+  let toastTimer = 0;
+  function toast(message) {
+    const node = $("toast");
+    if (!node) return;
+    node.textContent = message;
+    node.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { node.hidden = true; }, 3200);
+  }
+
+  function renderPickingAutopilot() {
+    const ap = state.picking.autopilot;
+    [["apTempo", ap.tempo], ["apFade", ap.fade], ["apMix", ap.mix]].forEach(([id, on]) => {
+      $(id).setAttribute("aria-pressed", String(on));
+      $(id).classList.toggle("active", on);
+    });
+    const ladder = pickingLadder();
+    const steps = [];
+    for (let bpm = ladder.start; bpm <= ladder.goal; bpm += 4) steps.push(bpm);
+    const width = 150 / Math.max(1, steps.length);
+    $("pickingLadder").innerHTML = steps.map((bpm, index) => {
+      const here = bpm === state.bpm || (index === steps.length - 1 && state.bpm >= bpm);
+      const done = bpm < state.bpm;
+      return `<rect x="${(index * width + 1).toFixed(1)}" y="${here ? 2 : 8}" width="${Math.max(1, width - 2).toFixed(1)}" height="${here ? 18 : 12}" rx="2" class="${here ? "here" : done ? "done" : ""}"/>`;
+    }).join("");
+    $("pickingLadderText").textContent = ap.tempo ? `${ladder.start} to ${ladder.goal} · +4 after 3 clean` : "Ladder off";
+    $("pickingCleanDots").innerHTML = [0, 1, 2].map((index) => `<i class="${index < state.picking.cleanPasses ? "ok" : ""}"></i>`).join("");
+    const level = pickingMapLevel();
+    const segment = state.picking.activeSegment;
+    const nowTonic = segment && segment.tonic ? segment.tonic : state.tonic;
+    const ring = pickingMixRing();
+    const next = ring[(Math.max(0, ring.indexOf(nowTonic)) + 1) % ring.length];
+    const modeName = (M.MODES[state.modeId] || M.MODES.major).name.toLowerCase();
+    const pills = [
+      `<span class="ps-pill strong">${level === "full" ? "Map: full" : level === "hints" ? "Map: next note only" : "Map: hidden · from memory"}${level === "memory" ? ` <button type="button" id="btnPickingReveal">Show</button>` : ""}</span>`,
+      `<span class="ps-pill">Clean ${state.picking.cleanPasses} of 3 at ${state.bpm}</span>`
+    ];
+    if (ap.mix) pills.push(`<span class="ps-pill">${state.picking.playing ? `Now in ${nowTonic} · next ${next}` : `Mixes ${ring.join(" ")}`} ${escapeHtml(modeName)}</span>`);
+    $("pickingStatus").innerHTML = pills.join("");
+    const reveal = $("btnPickingReveal");
+    if (reveal) reveal.onclick = () => {
+      state.picking.reveal = true; renderPickingLab();
+      setTimeout(() => { state.picking.reveal = false; if (state.view === "picking") renderPickingLab(); }, 2500);
+    };
+  }
+
+  // One scoring tap. Records the card for spaced review, climbs or drops the
+  // ladder, fades or restores the map, and says what changed.
+  function scorePickingLoop(clean) {
+    const ap = state.picking.autopilot;
+    const segment = state.picking.activeSegment;
+    const tonic = segment && segment.tonic ? segment.tonic : state.tonic;
+    const modeId = segment && segment.modeId ? segment.modeId : state.modeId;
+    let note = "";
+    if (PE) {
+      const store = PE.load();
+      const result = PE.record(store, { drill: state.picking.exerciseId, tonic, mode: modeId, clean, tempo: state.bpm });
+      PE.save(store);
+      if (result.advanced) note = ` Set banked at ${state.bpm}: back for review in ${PE.INTERVALS[result.card.step]} day${PE.INTERVALS[result.card.step] === 1 ? "" : "s"}.`;
+      if (result.lapsed) note = " This one comes back tomorrow.";
+    }
+    const before = state.bpm;
+    if (clean) state.picking.fadePasses += 1; else state.picking.fadePasses = 0;
+    let message;
+    if (ap.tempo && PE) {
+      const ladder = pickingLadder();
+      const step = PE.ladderStep({ tempo: state.bpm, cleans: state.picking.cleanPasses, need: 3, step: 4, start: ladder.start, goal: ladder.goal }, clean);
+      state.picking.cleanPasses = step.ladder.cleans;
+      state.bpm = step.ladder.tempo;
+      if (step.raised) { state.picking.fadePasses = 0; message = `Three clean loops · tempo up to ${state.bpm}. The map comes back for the new speed.`; }
+      else if (step.reachedGoal) message = `Goal ${ladder.goal} held clean.`;
+      else if (step.dropped) message = `Missed · back to ${state.bpm} with the full map.`;
+      else message = clean ? (ap.fade ? (state.picking.fadePasses === 1 ? "Clean · next loop shows only the next note." : "Clean · next loop is from memory.") : "Clean.") : "Missed · the full map is back.";
+      if (state.bpm !== before) recordRung(state.bpm);
+    } else {
+      if (clean) state.picking.cleanPasses = Math.min(3, state.picking.cleanPasses + 1);
+      else { state.picking.cleanPasses = 0; state.bpm = Math.max(30, state.bpm - 4); recordRung(state.bpm); }
+      message = clean ? "Clean." : `Missed · ${state.bpm} BPM.`;
+    }
+    toast(message + note);
+    if (state.bpm !== before) {
+      AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls();
+      // A new tempo restarts the loop at the new speed, without a count-in.
+      if (state.picking.playing) { state.picking.skipCountIn = true; playPickingExercise(); return; }
+    }
+    renderPickingLab();
+  }
+
+  // Practice minutes for Today and the streak: any playback counts.
+  let playingSince = 0;
+  function bankPracticeTime(playing) {
+    if (playing) { if (!playingSince) playingSince = Date.now(); return; }
+    if (!playingSince || !PE) { playingSince = 0; return; }
+    const minutes = Math.min(30, (Date.now() - playingSince) / 60000);
+    playingSince = 0;
+    if (minutes < 0.05) return;
+    const store = PE.load();
+    PE.addMinutes(store, PE.dayStamp(), minutes);
+    PE.save(store);
+  }
+
   function pickingPracticalPositions(tonic) {
     const exercise = pickingExercise();
     const compareLayout = state.picking.route === "tiered" ? "2nps" : "horizontal";
@@ -4749,6 +4880,10 @@
   }
 
   function pickingRunPlan() {
+    if (state.picking.runMode === "loop" && state.picking.autopilot.mix) {
+      // Mixed keys: the same drill, one pass per key, round and round.
+      return pickingMixRing().map((tonic) => ({ tonic, position: state.lab.position, label: tonic, mix: true }));
+    }
     if (state.picking.runMode === "loop") {
       // Infinite loop: one stage; the audio engine repeats it seamlessly.
       return [{ tonic: state.tonic, position: state.lab.position, label: "loop" }];
@@ -4790,6 +4925,8 @@
     }
     state.picking.pathIndex = null;
     state.picking.cleanPasses = 0;
+    state.picking.fadePasses = 0;
+    state.picking.ladder = null;
     // Ceilings belong to one drill: clear the last drill's, then restore this
     // drill's if it was banked today.
     state.picking.rungHistory = [];
@@ -4929,7 +5066,7 @@
       };
     });
     $("pickingExerciseField").classList.toggle("hidden", labMode !== "plan");
-    $("pickingMasterySpine").classList.toggle("hidden", labMode !== "plan");
+    $("pickingMasterySpine").classList.add("hidden");
     $("pickingWorkbench").classList.toggle("hidden", !workbenchMode);
     $("pickingComp").classList.toggle("hidden", !compMode);
     if (compMode) renderCompControls();
@@ -4940,15 +5077,6 @@
     // lives in the workbench row, not in More options.
     if ($("pickingPositionSel")) $("pickingPositionSel").closest("label").classList.toggle("hidden", workbenchMode);
     if (workbenchMode) renderWorkbenchControls();
-    $("pickingTonicSel").innerHTML = M.TONICS.map((name) => `<option value="${name}"${name === state.tonic ? " selected" : ""}>${name}</option>`).join("");
-    $("pickingTonicSel").onchange = (event) => {
-      stopPlay(); state.tonic = event.target.value; state.progStep = 0; state.picking.cleanPasses = 0;
-      persistPreferences(); renderPickingLab(); renderPageGuide();
-    };
-    const pickingModes = ["major", "minor", "harmonicMinor", "ousak", "hijaz"];
-    $("pickingModeSel").innerHTML = pickingModes.map((id) =>
-      `<option value="${id}"${id === state.modeId ? " selected" : ""}>${escapeHtml(M.MODES[id].name)}</option>`).join("");
-    $("pickingModeSel").onchange = (event) => selectPickingMode(event.target.value);
     $("pickingPulseSel").innerHTML = S.STYLES.map((style) => `<option value="${style.id}"${style.id === state.groove.styleId ? " selected" : ""}>${escapeHtml(style.title)} · ${escapeHtml(style.meter)} · ${escapeHtml(style.pulse)}</option>`).join("");
     $("pickingPulseSel").onchange = (event) => { selectGrooveStyle(event.target.value); renderPickingLab(); renderPageGuide(); };
     // Nine number-dots: the category labels live in the exercise select's
@@ -5033,7 +5161,7 @@
   function pickingScoreView(session) {
     const names = window.Tuning.names();
     // The scale's own colours, the same on every page: lower half blue,
-    // upper half purple, tonic gold, a ring on the notes that identify the
+    // upper half green, tonic pearl, a ring on the notes that identify the
     // dromos (its flavour notes, such as the major third).
     const roadMap = M.tetrachordsOf(session.context.tonic, pickingModeId(session.context));
     const lowerPcs = new Set(roadMap.lower.map((note) => note.pc));
@@ -5046,6 +5174,7 @@
     };
     return {
       colour,
+      mapLevel: pickingMapLevel(),
       roadIndex: null,
       nodes: session.nodes,
       fingers: PK.assignFingers(PK.markShapes(session.nodes)),
@@ -5095,6 +5224,18 @@
   function pickingSetReadout(view, index) {
     const host = document.querySelector("#pickingScore .pnow");
     if (!host || !view.nodes.length) return;
+    if (view.mapLevel === "memory" && index != null) {
+      const node = view.nodes[index] || {};
+      const meta = pickingTechniqueMeta(node.technique);
+      const nowCell = host.querySelector(".pnow-cell.now"), nextCell = host.querySelector(".pnow-cell.next");
+      nowCell.querySelector("span").textContent = `Now · note ${index + 1} of ${view.nodes.length} · from memory`;
+      nowCell.querySelector("b").textContent = `${meta.glyph} ${meta.label}`;
+      nowCell.querySelector("em").textContent = "The map is hidden this loop. Keep the box's pulse; the notes come back if you tap Missed.";
+      nextCell.querySelector("span").textContent = "Next";
+      nextCell.querySelector("b").textContent = "From memory";
+      nextCell.querySelector("em").textContent = "Show peeks for two seconds.";
+      return;
+    }
     const count = view.nodes.length;
     const nowIndex = index == null ? 0 : index;
     const now = pickingReadoutParts(view, nowIndex);
@@ -5133,7 +5274,7 @@
         <button id="btnPickingMotionStart" class="deck-start picking-motion-start" type="button">${escapeHtml(startLabel)}</button>
       </div>${roadStrip}${travel}
       <div class="ptab-host"></div>
-      <p class="pscore-key">${comp ? "The neck shows this bar's chord shape and the next one." : "<b>Neck:</b> the number in each dot is the finger (0 = open). The shaded box is where the hand sits; a dashed box is where it moves next. <i class=\"key-lower\">Blue</i> = lower half of the scale, <i class=\"key-upper\">purple</i> = upper half, <i class=\"key-tonic\">gold</i> = tonic, <i class=\"key-flavour\">ring</i> = a note that identifies this dromos."} <b>Strip:</b> pick stroke, fret on its ${pickingCourseWord()}, finger, note, count. <b>⇢7</b> = move the hand so finger 1 sits at fret 7. Tap any note to hear it.</p>${seam}`;
+      <p class="pscore-key">${comp ? "The neck shows this bar's chord shape and the next one." : "<b>Neck:</b> the number in each dot is the finger (0 = open). The shaded box is where the hand sits; a dashed box is where it moves next. <i class=\"key-lower\">Blue</i> = lower half of the scale, <i class=\"key-upper\">green</i> = upper half, <i class=\"key-tonic\">pearl</i> = tonic, <i class=\"key-flavour\">ring</i> = a note that identifies this dromos."} <b>Strip:</b> pick stroke, fret on its ${pickingCourseWord()}, finger, note, count. <b>⇢7</b> = move the hand so finger 1 sits at fret 7. Tap any note to hear it.</p>${seam}`;
     PV.updateTab(host.querySelector(".ptab-host"), view, currentIndex);
     pickingSetReadout(view, currentIndex);
     pickingSetRoad(session, currentIndex);
@@ -5268,7 +5409,8 @@
     $("btnPickingPlay").textContent = state.picking.playing
       ? (state.picking.runMode === "loop" ? `■ Stop · loop ${state.picking.loopCount || 1}` : `■ Stop · stage ${state.picking.runIndex + 1}/${state.picking.runLength || state.picking.repeats}`)
       : "▶ Start";
-    $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3);
+    $("btnPickingTempoUp").classList.toggle("hidden", state.picking.cleanPasses < 3 || state.picking.autopilot.tempo);
+    renderPickingAutopilot();
     const band = S.byId(state.groove.styleId).tempoBand;
     const bandHtml = band
       ? band.low
@@ -5323,6 +5465,7 @@
 
   function playPickingStage(plan, stageIndex, token, startAt) {
     if (token !== pickingRunToken) return;
+    if (stageIndex >= plan.length && plan.length && plan[0].mix) stageIndex = 0;
     if (stageIndex >= plan.length) { finishPickingRun(token, plan); return; }
     const stage = plan[stageIndex];
     state.picking.runIndex = stageIndex;
@@ -5335,7 +5478,7 @@
     const noteSpacing = beatSpacing / state.picking.subdivision;
     // Loop mode is an INFINITE, seamless loop: one session, scheduled
     // bar-aligned on the audio clock, until the player presses Stop.
-    const looping = state.picking.runMode === "loop";
+    const looping = state.picking.runMode === "loop" && !stage.mix;
     // Gap-click levels: the click thins to group starts, then to bar one.
     const gapLevel = pickingExercise().id === "gap-click-pulse" ? state.picking.variant : null;
     const clickFilter = gapLevel === "groups" ? (beat, pulseBeat) => !!pulseBeat.first
@@ -5354,7 +5497,7 @@
       startAt,
       onDoneLead: 0.35,
       pulse: session.pulse,
-      countInBeats: stageIndex === 0 && state.picking.countIn ? session.pulse.length : 0,
+      countInBeats: stageIndex === 0 && state.picking.countIn && !state.picking.skipCountIn ? session.pulse.length : 0,
       onStep: (index) => {
         if (token === pickingRunToken && state.view === "picking") {
           state.picking.pathIndex = index;
@@ -5392,6 +5535,7 @@
     state.picking.runHome = { tonic: state.tonic, position: state.lab.position };
     setPlayingUI(true, "■ Stop picking");
     playPickingStage(plan, 0, token);
+    state.picking.skipCountIn = false;
   }
 
   function stepPickingExercise(delta) {
@@ -5399,11 +5543,7 @@
     selectPickingExercise(PK.EXERCISES[(index + delta + PK.EXERCISES.length) % PK.EXERCISES.length].id);
   }
 
-  function logPickingPass() {
-    if (state.picking.playing) return;
-    state.picking.cleanPasses = Math.min(3, state.picking.cleanPasses + 1);
-    renderPickingLab();
-  }
+  function logPickingPass() { scorePickingLoop(true); }
 
   // The documented ladder protocol (Rawlinson practice-prescription pattern,
   // shown in-app as "documented teaching practice", never "optimal"): climb
@@ -5441,13 +5581,7 @@
     AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab(); renderPageGuide();
   }
 
-  function missPickingPass() {
-    if (state.picking.playing) return;
-    state.picking.cleanPasses = 0;
-    state.bpm = Math.max(30, state.bpm - 4);
-    recordRung(state.bpm);
-    AU.setBpm(state.bpm); persistPreferences(); syncPersistentControls(); renderPickingLab();
-  }
+  function missPickingPass() { scorePickingLoop(false); }
 
   // ============================= TRIADS ==================================
   const TR = window.Triads;
@@ -7036,6 +7170,7 @@
     AU.stopAll(); setPlayingUI(false);
   }
   function setPlayingUI(p, label) {
+    bankPracticeTime(p);
     const text = label || (p ? "⏸ Pause" : "▶ Play");
     const b = $("btnPlay");
     b.textContent = text;
@@ -7171,6 +7306,7 @@
     $("cycleRoadmap").classList.toggle("hidden", v !== "cycle");
     $("pickingSetup").classList.toggle("hidden", v !== "picking");
     $("pickingScore").classList.toggle("hidden", v !== "picking");
+    $("pickingStatus").classList.toggle("hidden", v !== "picking");
     if (v === "cycle") { $("panelCycle").classList.remove("hidden"); renderCycle(); }
     else if (v === "prog") { $("panelProg").classList.remove("hidden"); syncProgControls(); renderProg(); }
     else if (v === "chordmap") { $("panelChordMap").classList.remove("hidden"); renderChordMap(); }
@@ -7651,6 +7787,9 @@
       playPickingExercise();
     };
     $("btnPickingClean").onclick = logPickingPass;
+    $("apTempo").onclick = () => { state.picking.autopilot.tempo = !state.picking.autopilot.tempo; state.picking.ladder = null; saveAutopilot(); renderPickingLab(); };
+    $("apFade").onclick = () => { state.picking.autopilot.fade = !state.picking.autopilot.fade; state.picking.fadePasses = 0; saveAutopilot(); renderPickingLab(); };
+    $("apMix").onclick = () => { stopPlay(); state.picking.autopilot.mix = !state.picking.autopilot.mix; saveAutopilot(); renderPickingLab(); };
     $("btnPickingTempoUp").onclick = raisePickingTempo;
     $("btnPickingMiss").onclick = missPickingPass;
 
@@ -7753,6 +7892,8 @@
       else if (e.key === "0") setView("progress");
       else if (e.key.toLowerCase() === "r" && state.view === "solo" && state.solo.section === "cell") $("btnReveal").click();
       else if (e.key.toLowerCase() === "f" && !e.metaKey && !e.ctrlKey) setFocusMode(!document.body.classList.contains("focus-mode"));
+      else if (state.view === "picking" && e.key.toLowerCase() === "c" && !e.metaKey && !e.ctrlKey) logPickingPass();
+      else if (state.view === "picking" && e.key.toLowerCase() === "x" && !e.metaKey && !e.ctrlKey) missPickingPass();
       else if (e.key === "?") setCoachDrawer($("coachDrawer").hidden);
     });
   }
