@@ -149,7 +149,7 @@
   function messageHtml(message, index) {
     const action = normaliseAction(message.action);
     const body = escapeHtml(message.content).replace(/\n/g, "<br>");
-    return `<article class="coach-message ${message.role}"><span>${message.role === "user" ? "You" : "Dromos Coach"}</span><p>${body}</p>${action ? `<button class="coach-action" data-coach-action="${index}">${escapeHtml(message.actionLabel || defaultActionLabel(action))}</button>` : ""}</article>`;
+    return `<article class="coach-message ${message.role}">${message.role === "user" ? "<span>You</span>" : ""}<p>${body}</p>${action ? `<button class="coach-action" data-coach-action="${index}">${escapeHtml(message.actionLabel || defaultActionLabel(action))}</button>` : ""}</article>`;
   }
 
   function render() {

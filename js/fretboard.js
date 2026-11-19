@@ -179,6 +179,8 @@
   }
 
   function render(svg, opts) {
+    // Necks read at music-stand distance: every board takes the large layout.
+    if (opts && opts.largeNeck == null) opts = Object.assign({}, opts, { largeNeck: true });
     const OPEN = open();
     const OPEN_NAMES = openNames();
     const NSTR = OPEN.length;    // MI-12: string count is dynamic
@@ -223,7 +225,6 @@
 
     // The ink neck (FR-88): flat vector in the page's own material. Necks
     // read at music-stand distance, so every board takes the large layout.
-    if (opts.largeNeck == null) opts = Object.assign({}, opts, { largeNeck: true });
     const HDR = true;
     const grainURL = "";
     svg.classList.add("fb-lit");

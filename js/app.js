@@ -1730,7 +1730,7 @@
         `<button class="style-choice${item.id === style.id ? " active" : ""}" data-style-id="${item.id}"><b>${item.title}</b><span>${item.greek} · ${item.meter}</span></button>`
       ).join("")}</div>
       <article class="style-detail">
-        <div class="style-detail-head"><div><span class="style-meter">${style.meter}</span><h3>${style.title} <i>${style.greek}</i></h3></div><strong>${style.pulse}</strong></div>
+        <div class="style-detail-head"><div><h3>${style.title} <i>${style.greek}</i> <span class="style-meter">${style.meter}</span></h3></div><strong>${style.pulse}</strong></div>
         <div class="pulse-strip" aria-label="${style.title} pulse: ${style.pulse}">${beats.map((beat) =>
           `<span class="pulse-beat${beat.first ? " group-start" : ""}" data-group="${beat.group}"><b>${beat.beat}</b>${beat.first ? `<i>${beat.size}</i>` : ""}</span>`
         ).join("")}</div>
@@ -2898,7 +2898,7 @@
         note.isFlavour ? "flavour" : ""
       ].filter(Boolean).join(" ");
       return `<button data-melody-degree="${index}" class="${classes}"${!m.prompt || m.revealed ? " disabled" : ""}>
-      <i>${index < 4 ? "lower tetrachord" : "upper tetrachord"}</i><b>${escapeHtml(note.degree)}</b><em>${m.revealed ? escapeHtml(note.name) : "?"}</em></button>`;
+      ${index === 0 ? "<i>lower tetrachord</i>" : index === 4 ? "<i>upper tetrachord</i>" : "<i aria-hidden=\"true\"></i>"}<b>${escapeHtml(note.degree)}</b><em>${m.revealed ? escapeHtml(note.name) : "?"}</em></button>`;
     }).join("");
     $("melodyChoices").querySelectorAll("[data-melody-degree]").forEach((button) => {
       button.onclick = () => { if (!m.revealed) { m.guess = +button.getAttribute("data-melody-degree"); renderMelodyLab(); } };
@@ -7377,7 +7377,7 @@
         <button data-solo-isolate="scales" class="layer-chip${isoState.scales ? " on" : ""}" aria-pressed="${isoState.scales}">${isoLabels.scales}</button>
         <button data-solo-isolate="triads" class="layer-chip${isoState.triads ? " on" : ""}" aria-pressed="${isoState.triads}">${isoLabels.triads}</button>
         <button data-solo-isolate="all" class="layer-chip${isoState.all ? " on" : ""}" aria-pressed="${isoState.all}">${isoLabels.all}</button>
-        <span class="layer-note"><b class="sig-now">green circle</b> = land now · <b class="sig-next">amber diamond</b> = aim next · solid shape = ${escapeHtml(cur.symbol)} sounding · dashed = ${escapeHtml(next.symbol)} coming · ring = ${escapeHtml(landingLensName(state.solo.focus))}</span>
+        <span class="layer-note"><b class="sig-now">red ring</b> = land now · <b class="sig-next">dashed diamond</b> = aim next · solid shape = ${escapeHtml(cur.symbol)} sounding · dashed = ${escapeHtml(next.symbol)} coming · ring = ${escapeHtml(landingLensName(state.solo.focus))}</span>
       </div>`;
     root.querySelectorAll("[data-solo-step]").forEach((button) => {
       button.onclick = () => {
@@ -8866,6 +8866,9 @@
       if ($("ctxPop") && !$("ctxPop").hidden) $("ctxPop").hidden = true;
       else if ($("coachDrawer") && !$("coachDrawer").hidden) setCoachDrawer(false);
     });
+    // Changes Gym: its practise-mode row reads before the neck (FR-88).
+    const cycleFocus = document.querySelector(".cycle-workbench > .seg");
+    if (cycleFocus && $("changeGuide")) { cycleFocus.classList.add("cycle-focus-row"); $("changeGuide").after(cycleFocus); }
     // Phone: the rail becomes a bottom bar of job groups; a group opens as a
     // sheet of its tools. Desktop shows every group open, labels as headings.
     const compactNav = window.matchMedia("(max-width: 900px)");

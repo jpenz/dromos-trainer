@@ -3095,3 +3095,84 @@ body[data-view="solo"] #stage .solo-layer-row { order: 0; margin: 0 0 10px; }
   .nav-group.has-active .nav-group-label, .nav-list .nav-today.active { color: var(--text); font-weight: 700; }
   .nav-group.open .nav-group-items button.active { background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line-strong); }
 }
+
+/* ---- Fix round 2 (FR-88): parchment chrome, pigments only on the neck ---- */
+:root {
+  /* The two tetrachords of the dromos keep their pigments on the neck and
+     the tab only (James's requirement for seeing the dromos's halves). */
+  --tetra-lower: #7b9fc9; --tetra-upper: #8fb07a;
+  /* Chrome: next is a dashed ink outline, never a second hue. */
+  --turquoise: #b9ad97; --turquoise-soft: rgba(239, 230, 210, 0.06);
+  --aegean: #b9ad97; --aegean-bright: #d6ccb6; --aegean-soft: rgba(239, 230, 210, 0.05);
+  --laurel: #b9ad97; --ok: var(--text); --violet: #8c8070; --amber: var(--muted);
+  --signal-now: var(--terracotta-bright); --signal-now-soft: rgba(214, 69, 43, 0.14);
+  --signal-next: #d6ccb6; --signal-next-soft: rgba(239, 230, 210, 0.08);
+  --c-third: var(--tetra-lower); --c-fifth: var(--tetra-upper); --c-seventh: #c79a5a;
+}
+.pv-dot.half-lower .pv-body { fill: var(--tetra-lower); }
+.pv-dot.half-upper .pv-body { fill: var(--tetra-upper); }
+.ptab-ev > .pt-str b.half-lower, .pscore-key .key-lower, .key-lower { background-color: var(--tetra-lower); }
+.ptab-ev > .pt-str b.half-upper, .pscore-key .key-upper, .key-upper { background-color: var(--tetra-upper); }
+.pscore-key .key-lower, .pscore-key .key-upper { background: none; }
+.pscore-key .key-lower { color: var(--tetra-lower); }
+.pscore-key .key-upper { color: var(--tetra-upper); }
+/* next: dashed ink outline */
+.pnow-cell.next, .proads li.next, .solo-roadmap-card.next, .roadmap-chord.next, .change-card.next { border: 1px dashed var(--line-strong) !important; background: transparent !important; }
+.pnow-cell.next > span, .proads li.next em, .solo-roadmap-card.next > span, .roadmap-chord.next > span, .roadmap-chord.next > strong { color: var(--muted) !important; }
+/* cinnabar is reserved: heads and rows go parchment and ink */
+.today-plan small, .change-card > span, .solo-roadmap-card > span, .cycle-roadmap > header span { font-family: var(--font-text); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: none; color: var(--muted); }
+.change-card.now > span, .solo-roadmap-card.now > span, .roadmap-chord.now > span { color: var(--terracotta-bright); }
+.today-plan li.up-next { border-color: var(--line-strong); box-shadow: none; }
+.today-plan li.up-next > i { border-color: var(--text); color: var(--text); }
+.song-section h3, .song-section-head, .songs-section-head, .song-part-name { color: var(--text) !important; font-family: var(--font-text) !important; font-weight: 700; }
+/* the last of the stray accents */
+.transport-sub .panel-label, .picking-transport .panel-label { color: var(--faint); }
+.ap-clean { color: var(--text); border-color: var(--line-strong) !important; }
+.ap-tog.active i, .ap-tog i { background: currentColor; }
+.ap-dots i.ok { background: var(--text); border-color: var(--text); }
+.coach-head { background: var(--panel) !important; border-color: var(--line) !important; }
+.coach-free-tier { text-transform: none !important; letter-spacing: 0 !important; font-weight: 500 !important; }
+/* Didot is for titles and the witness sign; controls speak Commissioner. */
+.deck-start, .melody-start, button, .tbtn { font-family: var(--font-text); }
+.tbtn.primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.tbtn.primary .ico { margin: 0; }
+/* Melody: the step number lives in the heading; the tetrachord label once per half. */
+.melody-step-head { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 22px; }
+.melody-step-meta { margin: 2px 0 0; color: var(--muted); font-size: var(--fs-sec); }
+.style-detail-head .style-meter { font-family: var(--font-text); font-size: var(--fs-sec); color: var(--muted); margin-left: 8px; }
+/* Solo neck: parchment discs, red ring now, dashed diamond next, no ghost pigments */
+.fb-dot.ghost .dot-bg, .fb-dot.scale .dot-bg, .fb-dot.road .dot-bg { fill: rgba(239, 230, 210, 0.14) !important; stroke: none; }
+.fb-dot .dot-target-ring { stroke: rgba(239, 230, 210, 0.35); stroke-dasharray: none; stroke-width: 1; }
+.path-link, .fb-link { stroke: rgba(239, 230, 210, 0.3); }
+/* Changes Gym: the practise-mode row above the neck */
+.cycle-focus-row { margin: 0 0 12px; }
+body:not([data-view="cycle"]) .cycle-focus-row { display: none; }
+/* Phone dock: two rows, the option rows scroll inside their own boxes with a fade */
+@media (max-width: 900px) {
+  .picking-transport { row-gap: 8px; }
+  .picking-transport #btnPickingPlay { order: 1; }
+  .picking-transport .picking-tempo { order: 2; flex: 1 1 0; min-width: 0; }
+  .picking-transport .ap-score { order: 3; flex: 0 0 auto; margin: 0; }
+  .picking-transport .transport-sub { order: 4; flex: 1 1 45%; min-width: 0; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .picking-transport .transport-sub .seg { width: max-content; }
+  .picking-transport .ap-group { order: 5; flex: 1 1 45%; min-width: 0; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .picking-transport .ap-score button { min-height: 40px; padding: 0 10px; }
+  .chip small { display: none; }
+  .ctx-chips .chip { padding-inline: 10px; }
+  .top-instrument select { field-sizing: content; max-width: none; }
+  body[data-view="picking"] .fretboard-wrap #fretboard { min-width: 0; }
+  .nav-group.open .nav-group-items button { display: flex; align-items: center; }
+}
+/* One tempo readout: the number field, no duplicate output. */
+#pickingBpmVal { display: none; }
+.song-section > header b { color: var(--text); font-family: var(--font-text); font-weight: 700; }
+.roadmap-keys b, .roadmap-keys span { color: var(--muted); }
+.style-detail-head strong { background: transparent !important; color: var(--text) !important; border: 1px solid var(--line-strong); }
+@media (max-width: 520px) {
+  .picking-transport .picking-tempo { flex: 0 0 auto; font-size: 0; gap: 0; }
+  .picking-transport .picking-tempo #pickingBpm { display: none; }
+  .picking-transport .picking-tempo #pickingBpmNum { width: 64px; font-size: 16px; }
+  .picking-transport .ap-score { margin-left: auto; }
+}
+body[data-view="picking"] #fretboard { overflow: visible; }
+@media (max-width: 700px) { body[data-view="picking"] .fretboard-wrap { padding-right: 18px; } }

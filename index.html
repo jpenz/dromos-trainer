@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=95" />
-  <link rel="stylesheet" href="css/styles.css?v=95" />
+  <link rel="stylesheet" href="css/styles.css?v=96" />
 </head>
 <body>
   <div class="app">
@@ -549,7 +549,7 @@
             <!-- Melody to harmony -->
             <div id="panelMelody" class="panel melody-lab hidden">
               <section class="melody-question" aria-labelledby="melodyQuestionTitle">
-                <div class="melody-question-head"><div><span>1 · Hear + identify</span><h3 id="melodyQuestionTitle">Start a note, then name its degree</h3></div><div id="melodyScore" class="melody-score">0 / 0</div></div>
+                <div class="melody-question-head"><div><h3 class="melody-step-head">1. Hear and identify</h3><p id="melodyQuestionTitle" class="melody-step-meta">Start a note, then name its degree</p></div><div id="melodyScore" class="melody-score">0 / 0</div></div>
                 <div class="melody-actions">
                   <button id="btnMelodyNew" class="melody-start">▶ Start next note</button>
                   <button id="btnMelodyReplay" class="mini">↻ Replay</button>
@@ -592,16 +592,16 @@
               <section id="melodyReveal" class="melody-reveal hidden" aria-live="polite">
                 <div id="melodyIdentity" class="melody-identity"></div>
                 <section class="melody-anticipate" aria-labelledby="melodyNextTitle">
-                  <div class="melody-section-head"><span>2 · Anticipate</span><h3 id="melodyNextTitle">What can follow?</h3></div>
+                  <div class="melody-section-head"><h3 class="melody-step-head">2. Anticipate</h3><p id="melodyNextTitle" class="melody-step-meta">What can follow?</p></div>
                   <div id="melodyNext" class="melody-next"></div>
                 </section>
                 <details id="melodyMore" class="melody-more deck-advanced">
                   <summary>More · chord colours, counter-melody, sing it back</summary>
                   <div class="melody-more-body">
-                  <section aria-labelledby="melodyCandidatesTitle"><div class="melody-section-head"><span>3 · Put harmony under it</span><h3 id="melodyCandidatesTitle">Chord colours</h3></div><div id="melodyCandidates" class="melody-candidates"></div></section>
-                  <section class="melody-enhance" aria-labelledby="melodyMovesTitle"><div class="melody-section-head"><span>4 · Make an answer line</span><h3 id="melodyMovesTitle">Counter-melody and top-voice moves</h3></div><div id="melodyMoves" class="melody-moves"></div></section>
+                  <section aria-labelledby="melodyCandidatesTitle"><div class="melody-section-head"><h3 class="melody-step-head">3. Put harmony under it</h3><p id="melodyCandidatesTitle" class="melody-step-meta">Chord colours</p></div><div id="melodyCandidates" class="melody-candidates"></div></section>
+                  <section class="melody-enhance" aria-labelledby="melodyMovesTitle"><div class="melody-section-head"><h3 class="melody-step-head">4. Make an answer line</h3><p id="melodyMovesTitle" class="melody-step-meta">Counter-melody and top-voice moves</p></div><div id="melodyMoves" class="melody-moves"></div></section>
                   <section id="melodySing" class="melody-sing" aria-labelledby="melodySingTitle">
-                    <div class="melody-section-head"><span>5 · Sing it back</span><h3 id="melodySingTitle">Make the degree audible without the instrument</h3></div>
+                    <div class="melody-section-head"><h3 class="melody-step-head">5. Sing it back</h3><p id="melodySingTitle" class="melody-step-meta">Make the degree audible without the instrument</p></div>
                     <div class="sing-grid">
                       <div class="sing-target-card">
                         <span>Target · any octave</span><strong id="singTargetName">–</strong><b id="singTargetRole">Check the note first</b>
@@ -839,7 +839,7 @@
   <script src="js/musicxml.js?v=14"></script>
   <script src="js/resources.js?v=95"></script>
   <script src="js/video.js?v=95"></script>
-  <script src="js/coach.js?v=95"></script>
+  <script src="js/coach.js?v=96"></script>
   <script src="js/practice.js?v=95"></script>
   <script src="js/bouzouki-knowledge.js?v=95"></script>
   <script src="js/picking-lab.js?v=95"></script>
@@ -851,11 +851,11 @@
   <script src="js/neck-hdr.js?v=86"></script>
   <script src="js/practice-engine.js?v=88"></script>
   <script src="js/onset-listener.js?v=91"></script>
-  <script src="js/fretboard.js?v=95"></script>
+  <script src="js/fretboard.js?v=96"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=95"></script>
   <script src="js/page-guides.js?v=95"></script>
-  <script src="js/app.js?v=95"></script>
+  <script src="js/app.js?v=96"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
