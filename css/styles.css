@@ -3176,3 +3176,37 @@ body:not([data-view="cycle"]) .cycle-focus-row { display: none; }
 }
 body[data-view="picking"] #fretboard { overflow: visible; }
 @media (max-width: 700px) { body[data-view="picking"] .fretboard-wrap { padding-right: 18px; } }
+
+/* ---- Fix round 3 (FR-88) ---- */
+.pulse-beat.group-start { background: var(--panel2); color: var(--text); border: 1px solid var(--line-strong); }
+.pulse-beat i { color: var(--muted); }
+.progress-card.active { border-color: var(--line-strong); }
+.song-tabs button.active { border-color: var(--text); background: var(--text); color: var(--bg); }
+.song-meta .song-fit-chip { border-color: var(--line-strong); background: transparent; }
+.guess-btn { font-family: var(--font-text); }
+/* Solo: one red ring, on the compact shape's landing; every other target an ink ring. */
+.fb-dot.target-now .dot-now-ring { stroke: rgba(239, 230, 210, 0.55); stroke-width: 1.4; }
+.fb-dot.target-now.now-primary .dot-now-ring, .fb-dot.path.target-now.current .dot-now-ring { stroke: var(--terracotta-bright); stroke-width: 2; }
+.solo-more { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.solo-more > summary { cursor: pointer; list-style: none; min-height: 32px; display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--muted); font-size: var(--fs-label); }
+.solo-more > summary::-webkit-details-marker { display: none; }
+.solo-more[open] > summary { color: var(--text); border-color: var(--line-strong); }
+/* Melody tiles: the tetrachord label sits above the row, so every numeral shares one baseline. */
+[data-melody-degree] > i { display: block; min-height: 2.6em; }
+/* Phone: the neck draws whole, the tab strip comes right under it, the chip row fades at its edge. */
+@media (max-width: 700px) {
+  #pickingScore { display: flex; flex-direction: column; }
+  #pickingScore .ptab-host { order: -1; margin-bottom: 10px; }
+  .ctx-chips { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+}
+/* Tablet (iPad on a stand): the tempo control keeps its width. */
+@media (min-width: 521px) and (max-width: 900px) {
+  .picking-transport .picking-tempo { flex: 1 1 220px; min-width: 200px; }
+  .picking-transport .picking-tempo #pickingBpm { display: block; }
+}
+svg.fb-lit .fb-dot.target-now:not(.now-primary):not(.current) .dot-halo { stroke: rgba(239, 230, 210, 0.45); }
+/* The martyria stays put while a phone neck scrolls under it. */
+.fretboard-wrap > #martyria { position: sticky; left: 0; z-index: 2; background: var(--panel); }
+.pv-course-bg { fill: transparent; }
+.pv-courses.pinned .pv-course-bg { fill: var(--panel); opacity: 0.92; }
+.pv-courses.pinned .pv-course { fill: var(--text); }

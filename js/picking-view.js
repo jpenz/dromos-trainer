@@ -28,6 +28,22 @@
 
   // The neck shows the frets the whole line uses (at least eight), so the
   // picture never jumps while the hand travels inside it.
+  function pinCourses(svg, courses, W, lefty) {
+    const holder = svg.parentElement;
+    if (!holder) return;
+    const update = () => {
+      const spare = holder.scrollWidth - holder.clientWidth;
+      const scale = W / (svg.getBoundingClientRect().width || W);
+      const shift = spare > 4 ? (lefty ? holder.scrollLeft - spare : holder.scrollLeft) * scale : 0;
+      courses.setAttribute("transform", shift ? `translate(${shift},0)` : "");
+      courses.classList.toggle("pinned", !!shift);
+    };
+    if (holder.__pvCourses) holder.removeEventListener("scroll", holder.__pvCourses);
+    holder.__pvCourses = update;
+    holder.addEventListener("scroll", update, { passive: true });
+    requestAnimationFrame(update);
+  }
+
   function fretRange(nodes, maxFret) {
     let lo = Infinity, hi = -Infinity;
     nodes.forEach((node) => tonesOf(node).forEach((tone) => {
@@ -83,12 +99,16 @@
     }
     let hasOpen = false;
     const seen = new Set();
+    // Course names sit in their own layer that follows a sideways scroll, so a
+    // phone neck always says which course is which.
+    const courses = el("g", { class: "pv-courses" });
+    courses.appendChild(el("rect", { x: flip(36) - (view.lefty ? 0 : 36), y: top - 16, width: 36, height: (N - 1) * gap + 32, class: "pv-course-bg" }));
     names.forEach((name, stringIndex) => {
       // Strings as parchment hairlines, heavier toward the bass.
       const thick = 1 + (N - 1 - stringIndex) * 0.3;
       const x0 = Math.min(flip(padL - 44), flip(W - padR)), x1 = Math.max(flip(padL - 44), flip(W - padR));
       g.appendChild(el("rect", { x: x0, y: sy(stringIndex) - thick / 2, width: x1 - x0, height: thick, class: "fb-string pv-string" }));
-      g.appendChild(el("text", { x: flip(18), y: sy(stringIndex) + 5, "text-anchor": "middle", class: "pv-course" }, name));
+      courses.appendChild(el("text", { x: flip(18), y: sy(stringIndex) + 5, "text-anchor": "middle", class: "pv-course" }, name));
     });
     // The ghost map: every note of the line, or of the current road only.
     // It fades with the map: from the second clean loop on, the hand works
@@ -110,7 +130,9 @@
     if (hasOpen) g.appendChild(el("text", { x: fx(0), y: H - 12, "text-anchor": "middle", class: "pv-fretnum" }, "open"));
     const live = el("g", { class: "pv-live" });
     g.appendChild(live);
+    g.appendChild(courses);
     svg.appendChild(g);
+    pinCourses(svg, courses, W, view.lefty);
     svg.__pv = { view, live, edge, fx, sy, first, last, top, bottom, gap, colW, N };
     setNeckIndex(svg, view.index == null ? null : view.index);
   }
@@ -217,7 +239,7 @@
     if (holder && holder.scrollWidth > holder.clientWidth + 4) {
       const point = centre(index == null ? ahead[0] != null ? ahead[0] : 0 : anchor);
       const target = point.x / 1000 * holder.scrollWidth - holder.clientWidth / 2;
-      if (Math.abs(holder.scrollLeft - target) > holder.clientWidth * 0.3) holder.scrollLeft = Math.max(0, target);
+      if (Math.abs(holder.scrollLeft - target) > holder.clientWidth * 0.15) holder.scrollLeft = Math.max(0, target);
     }
   }
 

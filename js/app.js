@@ -7367,7 +7367,7 @@
         ${chip("shapes", layers.shapes, "lc-now", "Current + coming shape")}
         ${chip("next", layers.next, "lc-next", "Coming triad")}
         ${chip("triads", layers.triads, "lc-triad", "Other current positions")}
-        <span class="solo-layer-divider" aria-hidden="true"></span>
+        <details class="solo-more"><summary>Neck and isolate</summary>
         <span class="solo-layer-label">Neck</span>
         ${["auto", "full", "split"].map((m) => `<button data-solo-neck="${m}" class="layer-chip${state.solo.neckMode === m ? " on" : ""}" aria-pressed="${state.solo.neckMode === m}">${m === "auto" ? "Auto" : m === "full" ? "Full 24" : "Split 12+12"}</button>`).join("")}
         <button data-solo-neck-zone="${zoneNext}" class="layer-chip${zone !== "both" ? " on" : ""}" aria-pressed="${zone !== "both"}" title="Cycle the zone filter: whole neck → zone 1 → zone 2">${zoneLabel}</button>
@@ -7377,7 +7377,8 @@
         <button data-solo-isolate="scales" class="layer-chip${isoState.scales ? " on" : ""}" aria-pressed="${isoState.scales}">${isoLabels.scales}</button>
         <button data-solo-isolate="triads" class="layer-chip${isoState.triads ? " on" : ""}" aria-pressed="${isoState.triads}">${isoLabels.triads}</button>
         <button data-solo-isolate="all" class="layer-chip${isoState.all ? " on" : ""}" aria-pressed="${isoState.all}">${isoLabels.all}</button>
-        <span class="layer-note"><b class="sig-now">red ring</b> = land now · <b class="sig-next">dashed diamond</b> = aim next · solid shape = ${escapeHtml(cur.symbol)} sounding · dashed = ${escapeHtml(next.symbol)} coming · ring = ${escapeHtml(landingLensName(state.solo.focus))}</span>
+        </details>
+        <span class="layer-note"><b class="sig-now">heavy red ring</b> = land now · <b class="sig-next">dashed diamond</b> = aim next · solid shape = ${escapeHtml(cur.symbol)} sounding · dashed = ${escapeHtml(next.symbol)} coming · thin red ring = flavour note · pale ring = ${escapeHtml(landingLensName(state.solo.focus))}</span>
       </div>`;
     root.querySelectorAll("[data-solo-step]").forEach((button) => {
       button.onclick = () => {
@@ -7561,6 +7562,8 @@
       lefty: state.lefty
     });
     svg().setAttribute("aria-label", `${window.Tuning.current().name} soloing map: ${state.tonic} ${M.MODES[state.modeId].name} background; play ${cur.degreeLabel} ${cur.symbol} triad ${triadSpelling(cur)}, targeting ${soloTargetLabel(curTargets)}; prepare ${next.degreeLabel} ${next.symbol} triad ${triadSpelling(next)}, targeting ${soloTargetLabel(nextTargets)}`);
+    // One red ring: the landing the tracer starts from. Other "now" targets stay ink.
+    if (currentLanding) svg().querySelectorAll(`.fb-dot.target-now[data-string="${currentLanding.stringIndex}"][data-fret="${currentLanding.fret}"]`).forEach((node) => node.classList.add("now-primary"));
     applyMapChoreo();
     applySoloNeckFocus();
     renderSoloLayerChips(cur, next, curTargets, nextTargets, thread);
