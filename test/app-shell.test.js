@@ -469,8 +469,8 @@ test("the shell has one purpose system, honest chrome, and working escape hatche
   assert.match(app, /\["position", "key", "band", "both"\]/,
     "the movement whitelist must include band");
   // Compact nav: 6 primary destinations + a More sheet.
-  assert.match(html, /id="navMore"[\s\S]{0,600}id="navSecondary"/,
-    "the reference group folds behind More on compact screens");
+  assert.match(html, /class="nav-group-label" data-nav-group="practise"[\s\S]{0,700}data-nav="picking"/,
+    "the rail groups tools by job; on a phone each group opens as a sheet");
   // Motion + layout tokens exist and reduced motion zeroes them.
   assert.match(css, /--h-primary: 48px; --h-control: 40px; --h-chip: 32px;/,
     "control-height tokens are the sizing law");

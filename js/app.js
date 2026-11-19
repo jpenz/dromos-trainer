@@ -353,8 +353,29 @@
   const CTX_KEY_VIEWS = new Set(["cycle", "prog", "triads", "chordmap", "solo", "picking", "melody"]);
   const CTX_RHYTHM_VIEWS = new Set(["cycle", "prog", "triads", "picking"]);
 
+  // The martyria (FR-88): as a chant book states the echos in red before a
+  // line, every neck is headed by the dromos and its tonic, in Greek first.
+  const DROMOS_GREEK = { major: "Ματζόρε", minor: "Μινόρε", harmonicMinor: "Αρμονικό μινόρε", ousak: "Ουσάκ", hijaz: "Χιτζάζ" };
+  const NOTE_GREEK = { C: "Ντο", D: "Ρε", E: "Μι", F: "Φα", G: "Σολ", A: "Λα", B: "Σι" };
+  const greekNote = (name) => (NOTE_GREEK[String(name).charAt(0)] || name) + String(name).slice(1);
+  function renderMartyria() {
+    const sign = $("martyria");
+    if (!sign) return;
+    const mode = M.MODES[state.modeId] || M.MODES.major;
+    const greek = DROMOS_GREEK[state.modeId] || mode.name;
+    const signature = `${state.modeId}|${state.tonic}`;
+    sign.querySelector(".m-name").textContent = greek;
+    sign.querySelector(".m-tonic").textContent = `${greekNote(state.tonic)} · ${mode.name} on ${state.tonic}`;
+    sign.setAttribute("aria-label", `Dromos: ${mode.name} on ${state.tonic}`);
+    if (sign.dataset.signature && sign.dataset.signature !== signature && motionOK()) {
+      sign.classList.remove("ink-settle"); void sign.offsetWidth; sign.classList.add("ink-settle");
+    }
+    sign.dataset.signature = signature;
+  }
+
   function renderContextBar() {
     if (!$("ctxPage")) return;
+    renderMartyria();
     const view = state.view || "today";
     const keyed = CTX_KEY_VIEWS.has(view);
     const mode = M.MODES[state.modeId] || M.MODES.major;
@@ -5841,6 +5862,7 @@
       }).join("")}</optgroup>`
     ).join("");
     $("pickingExerciseSel").onchange = (event) => selectPickingExercise(event.target.value);
+    if ($("pickingSourceLine")) $("pickingSourceLine").textContent = pickingExercise().sourceLabel || "";
     // Two ways in: follow the guided plan, or build any phrase in the workbench.
     const workbenchMode = exercise.id === "phrase-workbench";
     const compMode = exercise.id === "rhythm-comp";
@@ -7736,7 +7758,7 @@
     const trending = Object.keys(counts).sort((left, right) => counts[right] - counts[left]).slice(0, 4);
     root.innerHTML = `
       <div class="today-hero">
-        <div><span>Today's session · ${escapeHtml(window.Tuning.current().name)}</span>
+        <div>
           <h2>Καλή πρόβα, ${escapeHtml(name)}.</h2>
           <p>Twenty minutes in five parts: warm up, review what is due, one new drill, one from memory, then play it in a song. Clean or Missed after each loop moves everything along.</p></div>
         <div class="today-meters">
@@ -8223,6 +8245,14 @@
     document.body.setAttribute("data-nav", nav);
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.classList.toggle("active", b.getAttribute("data-nav") === nav));
+    // The rail lists sub-views by name, so a group's default item is only
+    // active on its own view, never alongside the sub-view's item.
+    const railViews = new Set(Array.from(document.querySelectorAll(".nav-group-items [data-view]")).map((b) => b.getAttribute("data-view")));
+    document.querySelectorAll(".app-nav [data-nav]").forEach((b) => {
+      const navId = b.getAttribute("data-nav");
+      b.classList.toggle("active", navId === nav && !(railViews.has(v) && NAV_DEFAULT_VIEW[navId] !== v));
+    });
+    document.querySelectorAll(".nav-group").forEach((group) => group.classList.toggle("has-active", !!group.querySelector(".active")));
     if ($("harmonyTabs")) $("harmonyTabs").classList.toggle("hidden", nav !== "harmony");
     if ($("repertoireTabs")) $("repertoireTabs").classList.toggle("hidden", nav !== "repertoire");
     if ($("learnTabs")) $("learnTabs").classList.toggle("hidden", nav !== "learn");
@@ -8777,28 +8807,33 @@
     document.addEventListener("click", (event) => {
       const pop = $("ctxPop");
       if (pop && !pop.hidden && !pop.contains(event.target)) pop.hidden = true;
-      const nav = document.querySelector(".app-nav");
-      if (nav && nav.classList.contains("nav-open") && !nav.contains(event.target)) {
-        nav.classList.remove("nav-open");
-        $("navMore").setAttribute("aria-expanded", "false");
-      }
     });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
       if ($("ctxPop") && !$("ctxPop").hidden) $("ctxPop").hidden = true;
       else if ($("coachDrawer") && !$("coachDrawer").hidden) setCoachDrawer(false);
     });
-    if ($("navMore")) {
-      $("navMore").onclick = () => {
-        const open = document.querySelector(".app-nav").classList.toggle("nav-open");
-        $("navMore").setAttribute("aria-expanded", String(open));
+    // Phone: the rail becomes a bottom bar of job groups; a group opens as a
+    // sheet of its tools. Desktop shows every group open, labels as headings.
+    const compactNav = window.matchMedia("(max-width: 900px)");
+    const closeGroups = () => document.querySelectorAll(".nav-group.open").forEach((group) => {
+      group.classList.remove("open"); group.querySelector(".nav-group-label").setAttribute("aria-expanded", "false");
+    });
+    document.querySelectorAll("[data-nav-group]").forEach((label) => {
+      label.onclick = () => {
+        if (!compactNav.matches) return;
+        const group = label.closest(".nav-group");
+        const open = !group.classList.contains("open");
+        closeGroups();
+        group.classList.toggle("open", open);
+        label.setAttribute("aria-expanded", String(open));
       };
-      document.querySelectorAll("#navSecondary [data-nav]").forEach((button) =>
-        button.addEventListener("click", () => {
-          document.querySelector(".app-nav").classList.remove("nav-open");
-          $("navMore").setAttribute("aria-expanded", "false");
-        }));
-    }
+    });
+    document.querySelectorAll(".nav-group-items button").forEach((button) => button.addEventListener("click", closeGroups));
+    const syncNavMode = () => document.querySelectorAll(".nav-group-label").forEach((label) => label.tabIndex = compactNav.matches ? 0 : -1);
+    syncNavMode();
+    if (compactNav.addEventListener) compactNav.addEventListener("change", () => { closeGroups(); syncNavMode(); });
+    document.addEventListener("click", (event) => { if (!event.target.closest(".nav-group")) closeGroups(); });
     document.addEventListener("keydown", async (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
       // A page that declares no transport must not swallow the keys either:

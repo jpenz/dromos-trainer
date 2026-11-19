@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#14110F" />
+  <meta name="theme-color" content="#16110d" />
   <meta name="description" content="A serious ear-training and fretboard curriculum for Greek modal harmony on guitar, bouzouki, and laouto." />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=84" />
-  <link rel="stylesheet" href="css/styles.css?v=92" />
+  <link rel="stylesheet" href="css/styles.css?v=94" />
 </head>
 <body>
   <div class="app">
@@ -20,21 +20,49 @@
     <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
     <!-- ================= Primary navigation ================= -->
     <aside class="app-nav" aria-label="Primary navigation">
-      <div class="nav-brand" aria-hidden="true"><span class="nav-mark">Δ</span><span class="nav-wordmark">Dromos</span></div>
+      <div class="nav-brand" aria-hidden="true"><span class="nav-mark">Δρόμος</span><span class="nav-wordmark">Dromos</span></div>
       <nav class="nav-list" aria-label="Practice areas">
-        <button data-nav="today"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg><span>Today</span></button>
-        <button data-nav="hear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 18c0 2 3 3 4 1 1-2 5-4 5-9a5 5 0 0 0-10 0"/><path d="M10 10a2 2 0 1 1 4 0c0 2-2 2-2 4"/></svg><span>Ear</span></button>
-        <button data-nav="melody"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span>Melody</span></button>
-        <button data-nav="harmony"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="4" height="14" rx="1"/><rect x="10" y="9" width="4" height="10" rx="1"/><rect x="16" y="3" width="4" height="16" rx="1"/></svg><span>Harmony</span></button>
-        <button data-nav="solo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"/></svg><span>Solo</span></button>
-        <button data-nav="picking"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 0 7 2 7 5 0 4-4 10-7 13-3-3-7-9-7-13 0-3 3-5 7-5z"/></svg><span>Picking</span></button>
-        <button id="navMore" class="nav-more" type="button" aria-expanded="false" aria-controls="navSecondary"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>More</span></button>
-        <div id="navSecondary" class="nav-secondary">
-          <button data-nav="matrix"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg><span>Matrix</span></button>
-          <button data-nav="repertoire"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h7M9 14h7M9 18h4"/></svg><span>Repertoire</span></button>
-          <button data-nav="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a3 3 0 0 0-3 3"/><path d="M20 5v13h-7"/></svg><span>Learn</span></button>
-          <button data-nav="coach"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H9l-4 4z"/></svg><span>Coach</span></button>
-          <button data-nav="progress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg><span>Progress</span></button>
+        <button data-nav="today" class="nav-today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2"/></svg><span>Today</span></button>
+        <div class="nav-group" data-group="neck">
+          <button type="button" class="nav-group-label" data-nav-group="neck" aria-expanded="false" aria-controls="navGroup-neck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h18M3 12h18M3 16h18M8 5v14M14 5v14"/></svg><span class="ng-full">Learn the neck</span><span class="ng-short">Neck</span></button>
+          <div class="nav-group-items" id="navGroup-neck">
+            <button data-nav="matrix">Harmony matrix</button>
+            <button data-nav="melody">Melody to harmony</button>
+            <button data-view="concepts">Concepts</button>
+          </div>
+        </div>
+        <div class="nav-group" data-group="practise">
+          <button type="button" class="nav-group-label" data-nav-group="practise" aria-expanded="false" aria-controls="navGroup-practise"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 0 7 2 7 5 0 4-4 10-7 13-3-3-7-9-7-13 0-3 3-5 7-5z"/></svg><span class="ng-full">Practise</span><span class="ng-short">Practise</span></button>
+          <div class="nav-group-items" id="navGroup-practise">
+            <button data-nav="picking">Picking</button>
+            <button data-nav="solo">Solo</button>
+            <button data-nav="harmony">Changes gym</button>
+            <button data-view="triads">Comp</button>
+          </div>
+        </div>
+        <div class="nav-group" data-group="play">
+          <button type="button" class="nav-group-label" data-nav-group="play" aria-expanded="false" aria-controls="navGroup-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="ng-full">Play and write</span><span class="ng-short">Play</span></button>
+          <div class="nav-group-items" id="navGroup-play">
+            <button data-nav="repertoire">Songs</button>
+            <button data-view="prog">Song map</button>
+            <button data-view="analyze">Analyze</button>
+          </div>
+        </div>
+        <div class="nav-group" data-group="ears">
+          <button type="button" class="nav-group-label" data-nav-group="ears" aria-expanded="false" aria-controls="navGroup-ears"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 18c0 2 3 3 4 1 1-2 5-4 5-9a5 5 0 0 0-10 0"/><path d="M10 10a2 2 0 1 1 4 0c0 2-2 2-2 4"/></svg><span class="ng-full">Ears and rhythm</span><span class="ng-short">Ears</span></button>
+          <div class="nav-group-items" id="navGroup-ears">
+            <button data-nav="hear">Ear</button>
+            <button data-nav="learn">Greek pulse</button>
+            <button data-view="video">Video study</button>
+            <button data-view="examples">Tactical examples</button>
+          </div>
+        </div>
+        <div class="nav-group" data-group="more">
+          <button type="button" class="nav-group-label" data-nav-group="more" aria-expanded="false" aria-controls="navGroup-more"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span class="ng-full">You</span><span class="ng-short">You</span></button>
+          <div class="nav-group-items" id="navGroup-more">
+            <button data-nav="coach">Coach</button>
+            <button data-nav="progress">Progress</button>
+          </div>
         </div>
       </nav>
       <div class="nav-foot">
@@ -148,7 +176,8 @@
               <button type="button" data-lab-mode="comp" aria-pressed="false">Rhythm comp</button>
             </div>
             <div class="picking-context music-context">
-              <label for="pickingExerciseSel" id="pickingExerciseField">Exercise<select id="pickingExerciseSel"></select></label>
+              <label for="pickingExerciseSel" id="pickingExerciseField"><span class="visually-hidden">Exercise</span><select id="pickingExerciseSel"></select></label>
+              <p id="pickingSourceLine" class="tool-source"></p>
               <label for="pickingPulseSel" class="hidden">Rhythm<select id="pickingPulseSel"></select></label>
             </div>
             <div id="pickingComp" class="picking-workbench hidden" aria-label="Rhythm comp">
@@ -188,6 +217,7 @@
           <div id="stageLayers" class="stage-layers" aria-label="Fretboard layers"></div>
           <div id="pickingStatus" class="picking-status hidden" aria-live="polite"></div>
           <div class="fretboard-wrap">
+            <div id="martyria" class="martyria" role="note" aria-live="polite"><span class="m-echos">Ήχος</span><b class="m-name"></b><span class="m-tonic"></span></div>
             <svg id="fretboard" role="img" aria-label="instrument fretboard"></svg>
           </div>
           <section id="pickingScore" class="picking-score hidden" aria-label="What to play now and next"></section>
@@ -223,7 +253,7 @@
                   <button data-cycle-focus="chords">Greek progression workout</button>
                 </div>
                 <details class="cycle-setup deck-advanced" id="gymSettings">
-                  <summary>Setup — keys, skeleton, strings, neck area</summary>
+                  <summary>Setup: keys, skeleton, strings, neck area</summary>
                   <div class="gym-row">
                     <span class="panel-label">Keys</span>
                     <div class="seg" id="gymKeysSeg" aria-label="How many keys the gym chains">
@@ -332,7 +362,7 @@
                 </div>
               </div>
               <details id="triadSetup" class="comp-setup deck-advanced">
-                <summary>Setup — strings, neck area, shapes</summary>
+                <summary>Setup: strings, neck area, shapes</summary>
                 <div class="row tonic-row">
                   <label for="setSel">Strings</label>
                   <select id="setSel"></select>
@@ -363,7 +393,7 @@
               </div>
               <div id="soloRoad" class="sub hidden"></div>
               <div id="soloTargets" class="sub">
-                <label class="solo-lens-control" for="soloLensSel">Landing lens — the note the rings aim at
+                <label class="solo-lens-control" for="soloLensSel">Landing lens: the note the rings aim at
                   <select id="soloLensSel">
                     <optgroup label="Aim at the chord">
                       <option value="third" data-solo-focus="third" selected>3rds · start here</option>
@@ -382,7 +412,7 @@
                   </select>
                 </label>
                 <details class="deck-advanced solo-fold" id="soloToolkitFold">
-                  <summary>Soloist toolkit — pick a tool and it drives the lens</summary>
+                  <summary>Soloist toolkit: pick a tool and it drives the lens</summary>
                   <div id="soloToolkit" class="solo-toolkit" aria-label="Soloist toolkit"></div>
                 </details>
                 <div id="soloShapeCards" class="solo-shape-cards"></div>
@@ -393,7 +423,7 @@
             <!-- Scale lab -->
             <div id="panelLab" class="panel hidden">
               <div id="labPath" class="sub">
-                <span class="panel-label">Layout — changes where the strings break</span>
+                <span class="panel-label">Layout: changes where the strings break</span>
                 <div class="seg seg-4">
                   <button data-layout="3nps" class="active">3/str</button>
                   <button data-layout="2nps">2/str</button>
@@ -410,16 +440,16 @@
                   <label class="inline-tgl"><input type="checkbox" id="tglUpDown" checked /> up &amp; down</label>
                 </div>
                 <div class="target-route-block">
-                  <span class="panel-label">Landing lens — rings mark the notes to aim for</span>
+                  <span class="panel-label">Landing lens: rings mark the notes to aim for</span>
                   <div id="pathTargetFocus" class="path-target-focus"></div>
-                  <span class="panel-label">Melodic route — choose the job before speed</span>
+                  <span class="panel-label">Melodic route: choose the job before speed</span>
                   <div id="targetRouteGrid" class="target-route-grid"></div>
                   <div id="targetRouteHint" class="target-route-hint"></div>
                 </div>
               </div>
 
               <div id="labPhrase" class="sub hidden">
-                <span class="panel-label">Number path — say it, sing it, then place it</span>
+                <span class="panel-label">Number path: say it, sing it, then place it</span>
                 <p class="ear-hint">These are neutral contours, not copied licks. Keep one rhythm, leave space, and make the chord change audible with the last note.</p>
                 <div id="phrasePatternGrid" class="phrase-pattern-grid"></div>
                 <div id="phrasePlan" class="phrase-plan"></div>
@@ -427,7 +457,7 @@
 
               <div id="labCell" class="sub hidden">
                 <div id="taximiArc" class="taximi-arc">
-                  <div class="taximi-head"><span class="panel-label">Taximi arc</span><span>the intro that sets the dromos of the song — unmetered, over a drone</span></div>
+                  <div class="taximi-head"><span class="panel-label">Taximi arc</span><span>the intro that sets the dromos of the song, unmetered, over a drone</span></div>
                   <div class="taximi-stages" aria-label="Taximi arc stages">
                     <button data-taximi-stage="low" class="active"><b>1 · Low</b><span>short phrases in the lower tetrachord, rest on the tonic</span></button>
                     <button data-taximi-stage="high"><b>2 · High</b><span>expand into the upper tetrachord, touch the octave</span></button>
@@ -496,7 +526,7 @@
                   </div>
                 </div>
                 <details class="deck-advanced">
-                  <summary>Setup — evolve through keys &amp; positions, practice sound</summary>
+                  <summary>Setup: evolve through keys &amp; positions, practice sound</summary>
                   <div class="picking-runner-grid">
                     <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop forever</button><button data-picking-run="evolve">Evolve</button></div></div>
                     <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
@@ -574,17 +604,17 @@
                     <div class="melody-section-head"><span>5 · Sing it back</span><h3 id="melodySingTitle">Make the degree audible without the instrument</h3></div>
                     <div class="sing-grid">
                       <div class="sing-target-card">
-                        <span>Target · any octave</span><strong id="singTargetName">—</strong><b id="singTargetRole">Check the note first</b>
+                        <span>Target · any octave</span><strong id="singTargetName">–</strong><b id="singTargetRole">Check the note first</b>
                         <p>Hear it once, stop the reference, then hold the pitch. The microphone never plays through the speakers.</p>
                         <div class="sing-actions"><button id="btnSingTarget" class="mini">♪ Hear target</button><button id="btnSingStart" class="mini primary-mini">● Enable mic + sing</button><button id="btnSingStop" class="mini" disabled>■ Stop mic</button></div>
                         <label class="sing-input-label" for="singInputSel">Input device<select id="singInputSel" disabled><option value="">Default system input</option></select></label>
                       </div>
                       <div class="sing-feedback-card">
-                        <div class="sing-live"><span>Detected</span><strong id="singDetectedNote">—</strong><b id="singDetectedHz">Waiting for a clear pitch</b></div>
+                        <div class="sing-live"><span>Detected</span><strong id="singDetectedNote">–</strong><b id="singDetectedHz">Waiting for a clear pitch</b></div>
                         <div id="singGauge" class="pitch-gauge" role="meter" aria-label="Pitch distance from target" aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0">
                           <span class="gauge-flat">flat</span><span class="gauge-center">target</span><span class="gauge-sharp">sharp</span><i id="singNeedle"></i>
                         </div>
-                        <div class="sing-readouts"><span><b id="singCents">—</b>accuracy</span><span><b id="singStabilityText">—</b>stability</span><span><b id="singHold">0.0 s</b>in tune</span></div>
+                        <div class="sing-readouts"><span><b id="singCents">–</b>accuracy</span><span><b id="singStabilityText">–</b>stability</span><span><b id="singHold">0.0 s</b>in tune</span></div>
                         <div class="sing-stability" aria-hidden="true"><i id="singStabilityFill"></i></div>
                         <p id="singInstruction">Start the mic, sing on “ah,” and keep the needle near the center for one second.</p>
                       </div>
@@ -619,7 +649,7 @@
                   <button id="btnEarHint" class="mini grow">Give one hint</button>
                   <button id="btnEarCheck" class="mini primary-mini grow">Check + reveal</button>
                 </div>
-                <div id="earFeedback" class="ear-feedback">Press <b>▶ Start question</b>: one cadence plays twice on the sampled studio piano. Major, Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers — name the chord qualities and their pull toward home.</div>
+                <div id="earFeedback" class="ear-feedback">Press <b>▶ Start question</b>: one cadence plays twice on the sampled studio piano. Major, Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers: name the chord qualities and their pull toward home.</div>
                 <div id="earReveal" class="ear-reveal hidden" aria-live="polite"></div>
               </section>
               <section id="earMap" class="sub hidden">
@@ -639,7 +669,7 @@
                 <div id="earMapReveal" class="ear-reveal hidden" aria-live="polite"></div>
               </section>
               <details class="ear-setup" id="earSetup">
-                <summary>Setup — training home</summary>
+                <summary>Setup: training home</summary>
                 <div class="row tonic-row ear-home music-context">
                   <label for="earHomeSel">Training home</label>
                   <select id="earHomeSel"></select>
@@ -700,7 +730,7 @@
               <div id="analysisInstrument" class="analysis-instrument" aria-live="polite"></div>
               <div id="analysisDetail" class="analysis-detail"></div>
               <details id="analysisSetup" class="analysis-setup deck-advanced">
-                <summary>Setup — key, dromos, line fragment</summary>
+                <summary>Setup: key, dromos, line fragment</summary>
                 <div class="row tonic-row">
                   <label for="analysisTonic">Key</label>
                   <select id="analysisTonic"></select>
@@ -826,7 +856,7 @@
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=91"></script>
   <script src="js/page-guides.js?v=86"></script>
-  <script src="js/app.js?v=93"></script>
+  <script src="js/app.js?v=94"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
