@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
   <link rel="stylesheet" href="css/fonts.css?v=95" />
-  <link rel="stylesheet" href="css/styles.css?v=97" />
+  <link rel="stylesheet" href="css/styles.css?v=98" />
 </head>
 <body>
   <div class="app">
@@ -528,7 +528,7 @@
                 <details class="deck-advanced">
                   <summary>Setup: evolve through keys &amp; positions, practice sound</summary>
                   <div class="picking-runner-grid">
-                    <div><span class="panel-label">Run</span><div class="seg"><button data-picking-run="loop">Loop forever</button><button data-picking-run="evolve">Evolve</button></div></div>
+                    <div><span>Run</span><div class="seg"><button data-picking-run="loop">Loop forever</button><button data-picking-run="evolve">Evolve</button></div></div>
                     <label for="pickingRepeatsSel">Stages<select id="pickingRepeatsSel"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></label>
                     <label for="pickingMoveSel">Evolve through<select id="pickingMoveSel"><option value="position">Practical positions</option><option value="key">Keys · circle of 4ths</option><option value="band">Band keys · G D Dm Am E Em</option><option value="both">Keys + positions</option></select></label>
                     <label for="pickingPositionSel">Neck position<select id="pickingPositionSel"></select></label>
@@ -786,7 +786,7 @@
             <label for="bpm">Tempo <b id="bpmVal">84</b> BPM</label>
             <input id="bpm" type="range" min="40" max="200" value="84" />
           </div>
-          <label class="voice-pick" for="voiceSel">Practice sound
+          <label class="voice-pick" for="voiceSel"><span class="visually-hidden">Practice sound</span>
             <select id="voiceSel" aria-label="Chord sound">
               <option value="studio" selected>Studio piano · sampled</option>
               <option value="piano">Warm keys · offline fallback</option>
@@ -803,11 +803,11 @@
       </footer>
       <footer class="transport-bar picking-transport" aria-label="Picking playback transport">
         <button id="btnPickingPlay" class="deck-start">▶ Start</button>
-        <label class="picking-tempo" for="pickingBpm">Speed <span><input id="pickingBpm" type="range" min="30" max="220" step="1" /><input id="pickingBpmNum" type="number" min="30" max="220" step="1" inputmode="numeric" aria-label="Exact BPM" /><output id="pickingBpmVal" for="pickingBpm">BPM</output></span></label>
-        <div class="transport-sub"><span class="panel-label">Notes per click</span><div class="seg" aria-label="Notes per beat"><button data-picking-subdivision="1">1 · quarters</button><button data-picking-subdivision="2">2 · 8ths</button><button data-picking-subdivision="3">3 · triplets</button><button data-picking-subdivision="4">4 · 16ths</button><button data-picking-subdivision="8" class="hidden">8 · 32nds</button></div></div>
+        <label class="picking-tempo" for="pickingBpm"><span class="visually-hidden">Speed</span><span><input id="pickingBpm" type="range" min="30" max="220" step="1" /><input id="pickingBpmNum" type="number" min="30" max="220" step="1" inputmode="numeric" aria-label="Exact BPM" /><output id="pickingBpmVal" for="pickingBpm">BPM</output></span></label>
+        <div class="transport-sub"><span class="visually-hidden">Notes per click</span><div class="seg" role="group" aria-label="Notes per beat"><button data-picking-subdivision="1">1 · quarters</button><button data-picking-subdivision="2">2 · 8ths</button><button data-picking-subdivision="3">3 · triplets</button><button data-picking-subdivision="4">4 · 16ths</button><button data-picking-subdivision="8" class="hidden">8 · 32nds</button></div></div>
         <div class="ap-ladder" title="Tempo ladder"><svg id="pickingLadder" viewBox="0 0 150 22" width="150" height="22" aria-hidden="true"></svg><small id="pickingLadderText"></small></div>
         <div class="ap-group" role="group" aria-label="Autopilot">
-          <span class="panel-label">Autopilot</span>
+          <span class="ap-label" aria-hidden="true">Autopilot</span>
           <button type="button" class="ap-tog" id="apTempo" aria-pressed="true"><i></i>Ladder</button>
           <button type="button" class="ap-tog" id="apTwo" aria-pressed="false" title="Near full tempo, and a free pass with no click after a miss"><i></i>2 tempos</button>
           <button type="button" class="ap-tog" id="apFade" aria-pressed="true"><i></i>Fade map</button>
@@ -855,7 +855,7 @@
   <script src="js/guitar-voicings.js?v=14"></script>
   <script src="js/audio.js?v=95"></script>
   <script src="js/page-guides.js?v=95"></script>
-  <script src="js/app.js?v=97"></script>
+  <script src="js/app.js?v=98"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");
