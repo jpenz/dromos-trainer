@@ -458,6 +458,13 @@
       boundary: "Linked interview only: Dromos does not download, transcribe, restream or imply endorsement; the drills are built from the dromos, and the notes Billy plays in the video are not in them."
     },
     {
+      id: "brom-escanaba", rank: 2, authority: "YouTube lesson · cover transcription (B-RoM, not Billy's own tab)",
+      name: "B-RoM · How to play Escanaba (Billy Strings), lesson with tab",
+      href: "https://www.youtube.com/watch?v=gRTh_N8jG40",
+      supports: ["the Escanaba riff is a two-octave minor-ninth arpeggio in sixteenth notes", "transcribed with strict alternate picking, down on the beat", "the arpeggio moves to the next chord's ninth shape at each change"],
+      boundary: "Linked lesson only: Dromos does not reproduce the tab; the drill generates the shape from your dromos."
+    },
+    {
       id: "playback-two-tempos", rank: 2, authority: "YouTube interview · professional (Robb Cappelletto on teaching Billy Strings)",
       name: "Playback · The 8% Rule Billy Strings Uses To Practice",
       href: "https://www.youtube.com/watch?v=yOItYtQRqhE",

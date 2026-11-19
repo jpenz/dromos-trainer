@@ -4885,18 +4885,24 @@
   // Ninth arpeggios with directional picking (the exercise behind Escanaba,
   // as Billy describes it): 1-3-5-7-9 up and 7-5-3 down on every degree of
   // the dromos, the hand moving up the neck degree by degree.
+  // Variant "escanaba": the two-octave shape from B-RoM's tab of Billy's
+  // Instagram take (bar 5: 1-3-5-7-9 then 3-5-7-9-3, turning on 9 and 7),
+  // sixteenths, strict alternate picking from the low string.
   function pickingNinthArpNodes(context) {
     const scale = M.scaleOf(context.tonic, pickingModeId(context));
     const open = window.Tuning.open();
-    const rootString = open.length >= 6 ? 1 : 0;
+    const twoOctaves = state.picking.variant === "escanaba";
+    const rootString = twoOctaves ? 0 : open.length >= 6 ? 1 : 0;
     let fret = ((scale[0].pc - open[rootString]) % 12 + 12) % 12;
     while (fret < context.position - 2 && fret + 12 <= 9) fret += 12;
     const tonicMidi = open[rootString] + fret;
     const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "I"];
-    const ROLES = ["1", "3", "5", "7", "9", "7", "5", "3"];
+    const ROLES = twoOctaves ? ["1", "3", "5", "7", "9", "3", "5", "7", "9", "3", "9", "7"] : ["1", "3", "5", "7", "9", "7", "5", "3"];
+    const UP = twoOctaves ? [2, 4, 6, 8, 9, 11, 13, 15, 16] : [2, 4, 6, 8];
+    const OFFSETS = twoOctaves ? [0, 2, 4, 6, 8, 9, 11, 13, 15, 16, 15, 13] : [0, 2, 4, 6, 8, 6, 4, 2];
     const nodes = [];
     for (let degree = 0; degree <= 7; degree++) {
-      const steps = [0, 2, 4, 6, 8, 6, 4, 2].map((step) => degree + step);
+      const steps = OFFSETS.map((step) => degree + step);
       const rootMidi = pickingDegreeMidi(scale, tonicMidi, degree);
       const rootFret = rootMidi - open[rootString];
       if (rootFret > 15) break;
@@ -4905,33 +4911,41 @@
       // below the root to four above); a hammer only when it does not.
       // Down: the same places in reverse.
       const up = [{ stringIndex: rootString, fret: rootFret }];
-      [2, 4, 6, 8].forEach((step) => {
+      UP.forEach((step) => {
         const midi = pickingDegreeMidi(scale, tonicMidi, degree + step);
         const previous = up[up.length - 1];
         const candidates = [];
         open.forEach((openMidi, stringIndex) => {
           const value = midi - openMidi;
           if (value < 0 || value > 17 || stringIndex < previous.stringIndex) return;
-          const inHand = value === 0 || (value >= rootFret - 1 && value <= rootFret + 4);
+          const inHand = value === 0 || (value >= rootFret - (twoOctaves ? 2 : 1) && value <= rootFret + (twoOctaves ? 5 : 4));
           candidates.push({ stringIndex, fret: value, score: (inHand ? 0 : 6 + Math.abs(value - rootFret)) + (stringIndex === previous.stringIndex ? 1.5 : 0) + Math.max(0, stringIndex - previous.stringIndex - 1) * 4 });
         });
         candidates.sort((left, right) => left.score - right.score);
+        // Two octaves only while the hand holds them (guitar); a four- or
+        // three-course neck turns where the hand runs out.
+        if (twoOctaves && (up.stopped || (up.length >= 5 && candidates[0] && candidates[0].score >= 6))) { up.stopped = true; return; }
         up.push(candidates[0] || previous);
       });
-      const places = up.concat([up[3], up[2], up[1]]);
-      steps.forEach((step, at) => {
+      const climbed = [0].concat(UP.slice(0, up.length - 1));
+      const cellSteps = twoOctaves ? climbed.concat([climbed[climbed.length - 2], climbed[climbed.length - 3]]) : OFFSETS;
+      const places = twoOctaves ? up.concat([up[up.length - 2], up[up.length - 3]]) : up.concat([up[3], up[2], up[1]]);
+      const roleOf = (offset) => ({ 0: "1", 1: "9", 2: "3", 4: "5", 6: "7" })[offset % 7] || "·";
+      cellSteps.map((offset) => degree + offset).forEach((step, at) => {
         const midi = pickingDegreeMidi(scale, tonicMidi, step);
         const placement = places[at];
+        const role = twoOctaves ? roleOf(cellSteps[at]) : ROLES[at];
         const pc = ((midi % 12) + 12) % 12;
         const scaleNote = scale.find((note) => note.pc === pc) || {};
-        nodes.push(Object.assign(pickingNode(placement, { pc, degree: ROLES[at], name: scaleNote.name || spellPc(pc), roleLabel: ROLES[at], colorGroup: at === 0 ? "root" : ROLES[at] === "3" ? "third" : ROLES[at] === "9" ? "target" : "scaledeg" }), {
-          roadIndex: degree, roadShort: NUMERALS[degree], roadLabel: `${NUMERALS[degree]} ${triad.symbol} · 1-3-5-7-9`, roadStart: at === 0, chordStart: at === 0, chordSymbol: triad.symbol,
-          cue: at === 0 ? `${NUMERALS[degree]} ${triad.symbol}: up 1-3-5-7-9, back 7-5-3. Down going up, up coming down.` : at === 4 ? "the 9: turn here, the pick is already on its way back" : null,
-          cueShort: at === 4 ? "turn" : null,
-          phrase: `${NUMERALS[degree]} · ${ROLES[at]}`
+        nodes.push(Object.assign(pickingNode(placement, { pc, degree: role, name: scaleNote.name || spellPc(pc), roleLabel: role, colorGroup: at === 0 ? "root" : role === "3" ? "third" : role === "9" ? "target" : "scaledeg" }), {
+          roadIndex: degree, roadShort: NUMERALS[degree], roadLabel: `${NUMERALS[degree]} ${triad.symbol} · ${twoOctaves ? "two octaves" : "1-3-5-7-9"}`, roadStart: at === 0, chordStart: at === 0, chordSymbol: triad.symbol,
+          cue: at === 0 ? (twoOctaves ? `${NUMERALS[degree]} ${triad.symbol}: two octaves up, turn on the 9. Strict down, up.` : `${NUMERALS[degree]} ${triad.symbol}: up 1-3-5-7-9, back 7-5-3. Down going up, up coming down.`) : at === (twoOctaves ? cellSteps.length - 3 : 4) ? "the turn: the pick is already on its way back" : null,
+          cueShort: at === (twoOctaves ? cellSteps.length - 3 : 4) ? "turn" : null,
+          phrase: `${NUMERALS[degree]} · ${role}`
         }));
       });
     }
+    if (twoOctaves) { nodes.forEach((node, index) => { node.presetTechnique = index % 2 === 0 ? "D" : "U"; }); return nodes; }
     return pickingDirectional(nodes);
   }
 
