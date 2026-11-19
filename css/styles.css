@@ -312,14 +312,14 @@ body.focus-mode .app-nav, body.focus-mode .ctx-chips, body.focus-mode .lesson-he
 .drawer-group { display: grid; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .drawer-group h3 { margin: 0; color: var(--aegean); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .drawer-group > label { display: flex; align-items: center; gap: 9px; min-height: 32px; color: var(--muted); font-size: 12.5px; cursor: pointer; }
-.drawer-group input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--terracotta); }
+.drawer-group input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--text); }
 .drawer-note { margin: 0; color: var(--faint); font-size: var(--fs-micro); line-height: 1.4; }
 .drawer-note b { color: var(--muted); }
 .session-groove { display: grid; gap: 5px; color: var(--muted); font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
 .session-groove select { min-height: 40px; padding: 8px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-size: var(--fs-label); font-weight: 600; letter-spacing: 0; text-transform: none; }
 .groove-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .groove-toggles label { display: flex; align-items: center; gap: 7px; min-height: 40px; padding: 6px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--muted); font-size: 12px; cursor: pointer; }
-.groove-toggles input { accent-color: var(--terracotta); }
+.groove-toggles input { accent-color: var(--text); }
 
 /* ========================= Main column ========================= */
 main {
@@ -809,7 +809,7 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .primary-mini { background: var(--terracotta); color: var(--on-accent); border-color: transparent; font-weight: 600; }
 .primary-mini:hover { background: var(--terracotta-hover); color: var(--on-accent); }
 .inline-tgl { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); cursor: pointer; white-space: nowrap; min-height: 32px; }
-.inline-tgl input { accent-color: var(--terracotta); }
+.inline-tgl input { accent-color: var(--text); }
 
 
 /* cycle workbench */
@@ -1472,7 +1472,7 @@ details.analysis-setup > summary { font-size: var(--fs-micro); }
 .coach-form button:disabled { cursor: not-allowed; opacity: 0.55; }
 .coach-privacy { margin: -3px 2px 0; color: var(--faint); font-size: var(--fs-micro); line-height: 1.4; }
 .coach-free-tier { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: var(--fs-label); line-height: 1.4; margin: 10px 0; }
-.coach-free-tier input { accent-color: var(--terracotta); margin-top: 2px; }
+.coach-free-tier input { accent-color: var(--text); margin-top: 2px; }
 
 /* video study — library first (the answer object), then the player cluster */
 .video-study { display: grid; gap: var(--sp-3); max-width: 900px; margin: 0 auto; }
@@ -1488,7 +1488,7 @@ details.analysis-setup > summary { font-size: var(--fs-micro); }
 .ab-display b { font-family: var(--font-mono); font-size: var(--fs-label); }
 .ab-ranges { display: grid; gap: var(--sp-2); }
 .ab-ranges label { display: grid; grid-template-columns: 16px 1fr; align-items: center; gap: var(--sp-2); color: var(--muted); font-size: var(--fs-micro); font-weight: 600; }
-.ab-ranges input { width: 100%; accent-color: var(--terracotta); }
+.ab-ranges input { width: 100%; accent-color: var(--text); }
 .ab-ranges input:disabled { opacity: 0.45; }
 .video-controls .tbtn.primary { min-height: var(--h-primary); }
 .video-speed { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); color: var(--muted); font-size: var(--fs-micro); font-weight: 600; }
@@ -1559,7 +1559,7 @@ details.analysis-setup > summary { font-size: var(--fs-micro); }
 .tempo { display: grid; gap: 2px; min-width: 190px; }
 .tempo label { font-size: 12px; color: var(--muted); }
 .tempo b { color: var(--text); font-family: var(--font-mono); }
-.tempo input[type="range"] { width: 100%; accent-color: var(--terracotta); }
+.tempo input[type="range"] { width: 100%; accent-color: var(--text); }
 .voice-pick { display: grid; gap: 3px; color: var(--muted); font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
 .voice-pick select { min-height: 40px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-size: var(--fs-label); font-weight: 600; letter-spacing: 0; text-transform: none; }
 .audition { display: flex; gap: 8px; }
@@ -2134,10 +2134,10 @@ body[data-view="examples"] main { max-width: 980px; }
 .picking-runner-grid > div, .picking-runner-grid > label:not(.check) { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 .picking-runner-grid select { width: 100%; min-height: 38px; }
 .picking-tempo > span { display: grid; grid-template-columns: minmax(90px, 1fr) auto; align-items: center; gap: 7px; min-height: 38px; }
-.picking-tempo input { width: 100%; accent-color: var(--terracotta); }
+.picking-tempo input { width: 100%; accent-color: var(--text); }
 .picking-tempo output { color: var(--text); font-family: var(--font-mono); font-size: var(--fs-micro); letter-spacing: 0; white-space: nowrap; }
 .picking-runner-grid .check { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); font-size: var(--fs-micro); white-space: nowrap; }
-.picking-runner-grid .check input { accent-color: var(--turquoise); }
+.picking-runner-grid .check input { accent-color: var(--text); }
 .picking-run-map { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
 .picking-run-map:empty { display: none; }
 .picking-run-stage { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 6px; min-height: 48px; padding: 6px 7px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); }
@@ -2336,7 +2336,7 @@ body[data-view="solo"][data-solo-section="targets"] .guide-workflow > summary { 
 .deck-hint { margin: 0; max-width: 420px; color: var(--muted); font-size: var(--fs-micro); line-height: 1.45; }
 .deck-primary { display: grid; grid-template-columns: minmax(200px, 1fr) auto auto auto; align-items: end; gap: 10px; }
 .deck-primary .check { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); font-size: var(--fs-micro); white-space: nowrap; }
-.deck-primary .check input { accent-color: var(--turquoise); }
+.deck-primary .check input { accent-color: var(--text); }
 .deck-setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); align-items: end; gap: 10px; }
 .deck-setup > div { display: grid; gap: 5px; }
 .deck-progress { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -2855,7 +2855,7 @@ body[data-view="solo"] #stage .solo-progression-roadmap, body[data-view="solo"] 
   --fs-micro: 12px;
   --nav-w: 200px;
   color-scheme: dark;
-  accent-color: var(--terracotta);
+  accent-color: var(--text);
   caret-color: var(--terracotta-bright);
 }
 @media (dynamic-range: high) { :root { --glow: 0.5; } }
@@ -3210,3 +3210,18 @@ svg.fb-lit .fb-dot.target-now:not(.now-primary):not(.current) .dot-halo { stroke
 .pv-course-bg { fill: transparent; }
 .pv-courses.pinned .pv-course-bg { fill: var(--panel); opacity: 0.92; }
 .pv-courses.pinned .pv-course { fill: var(--text); }
+
+/* ---- Contract drift from the documenter pass (FR-88) ---- */
+/* The main neck uses the same pigments as the picking neck: lapis lower, verdigris upper, gold tonic. */
+.fb-dot[data-group="lower-tetra"] .dot-bg { fill: var(--tetra-lower); }
+.fb-dot[data-group="upper-tetra"] .dot-bg { fill: var(--tetra-upper); }
+.fb-dot[data-group="tonic"] .dot-bg { fill: var(--pearl); }
+.road-dot.lower { background: var(--tetra-lower); }
+.road-dot.upper { background: var(--tetra-upper); }
+.tetra-card.lower { border-top-color: var(--tetra-lower); }
+.tetra-card.upper { border-top-color: var(--tetra-upper); }
+.matrix-note.lower { border-bottom-color: var(--tetra-lower); }
+.matrix-note.upper { border-bottom-color: var(--tetra-upper); }
+/* Native controls and the avatar are chrome: parchment, not cinnabar. */
+:root, input[type="range"], input[type="checkbox"], input[type="radio"] { accent-color: var(--text); }
+.player-avatar { background: var(--panel2); color: var(--text); border: 1px solid var(--line-strong); }
