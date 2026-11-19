@@ -68,7 +68,7 @@
       id: "touch",
       title: "4. Touch and instrument role",
       question: "How should this phrase be articulated without obscuring the music?",
-      why: "Slides, ornaments, vibrato, tremolo, pick direction, and comp density are expression and function—not decoration piled on top.",
+      why: "Slides, ornaments, vibrato, tremolo, pick direction, and comp density are expression and function–not decoration piled on top.",
       drill: "Play the same four-note answer plain, then with one idiomatic ornament; keep the pulse and target unchanged."
     }
   ];

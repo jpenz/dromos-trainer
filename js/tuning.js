@@ -22,7 +22,7 @@
     {
       id: "bouzouki4",
       name: "Bouzouki (tetrachordo)",
-      sub: "C F A D — the 4-course Greek tuning",
+      sub: "C F A D: the 4-course Greek tuning",
       // C3 F3 A3 D4 — the guitar's top four strings, each down a whole step
       open: [48, 53, 57, 62],
       names: ["C", "F", "A", "D"],
@@ -31,7 +31,7 @@
     {
       id: "laouto4",
       name: "Laouto (mainland)",
-      sub: "A D G C — the 4-course mainland laouto tuning",
+      sub: "A D G C: the 4-course mainland laouto tuning",
       // low -> high: A2 D3 G3 C4
       open: [45, 50, 55, 60],
       names: ["A", "D", "G", "C"],
@@ -40,7 +40,7 @@
     {
       id: "bouzouki3",
       name: "Bouzouki (trichordo)",
-      sub: "D A D — the older 3-course tuning",
+      sub: "D A D: the older 3-course tuning",
       open: [50, 57, 62],
       names: ["D", "A", "D"],
       frets: 24

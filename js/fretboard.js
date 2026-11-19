@@ -179,6 +179,8 @@
   }
 
   function render(svg, opts) {
+    // Necks read at music-stand distance: every board takes the large layout.
+    if (opts && opts.largeNeck == null) opts = Object.assign({}, opts, { largeNeck: true });
     const OPEN = open();
     const OPEN_NAMES = openNames();
     const NSTR = OPEN.length;    // MI-12: string count is dynamic
@@ -221,11 +223,11 @@
     svg.setAttribute("data-neck-layout", fold ? "folded" : "continuous");
     svg.setAttribute("data-neck-emphasis", opts.largeNeck ? "large" : "standard");
 
-    // The lit neck (FR-85): shared gradients and filters, once per board.
-    const HDR = typeof window !== "undefined" && window.NeckHDR;
-    if (HDR) svg.insertAdjacentHTML("afterbegin", HDR.defs("fb"));
-    const grainURL = HDR ? HDR.grain() : "";
-    svg.classList.toggle("fb-lit", !!HDR);
+    // The ink neck (FR-88): flat vector in the page's own material. Necks
+    // read at music-stand distance, so every board takes the large layout.
+    const HDR = true;
+    const grainURL = "";
+    svg.classList.add("fb-lit");
 
     const g = el("g", {});
     if (opts.lefty) g.setAttribute("transform", `translate(${width},0) scale(-1,1)`);
@@ -237,7 +239,6 @@
       const count = last - first + 1;
       const top = rowTop(row);
       const faceAttrs = { x: GEO.padL + GEO.nutW, y: top + PAD_T - 7, width: count * GEO.fretW, height: LAST * STRING_GAP + 14 };
-      if (HDR) g.appendChild(el("rect", Object.assign({}, faceAttrs, { y: faceAttrs.y + 5, rx: 6, class: "fb-board-shadow", filter: "url(#fbShadow)" })));
       g.appendChild(el("rect", Object.assign({}, faceAttrs, { rx: 4, class: "fb-face" })));
       if (grainURL) {
         const grain = el("image", Object.assign({}, faceAttrs, { preserveAspectRatio: "none", class: "fb-grain" }));
@@ -260,7 +261,7 @@
       for (let f = first; f <= last; f++) {
         // Frets and strings are thin rects, not lines: a gradient on a
         // zero-width line box does not paint.
-        if (HDR) g.appendChild(el("rect", { x: xForLine(f) - 1.6, y: top + PAD_T - 7, width: 3.2, height: LAST * STRING_GAP + 14, class: "fb-fret" }));
+        if (HDR) g.appendChild(el("rect", { x: xForLine(f) - 0.6, y: top + PAD_T - 7, width: 1.2, height: LAST * STRING_GAP + 14, class: "fb-fret" }));
         else g.appendChild(el("line", { x1: xForLine(f), y1: top + PAD_T - 7, x2: xForLine(f), y2: top + PAD_T + LAST * STRING_GAP + 7, class: "fb-fret" }));
       }
       for (let i = 0; i < NSTR; i++) {
@@ -268,8 +269,7 @@
         const x1 = GEO.padL, x2 = GEO.padL + GEO.nutW + count * GEO.fretW, y = yForString(i, first);
         const thick = 1 + (LAST - sIdx) * 0.25;
         if (HDR) {
-          const gauge = 1.2 + (LAST - sIdx) * 0.42;
-          g.appendChild(el("rect", { x: x1, y: y + 1.6, width: x2 - x1, height: gauge, class: "fb-string-shadow" }));
+          const gauge = 1 + (LAST - sIdx) * 0.3;
           g.appendChild(el("rect", { x: x1, y: y - gauge / 2, width: x2 - x1, height: gauge, class: "fb-string" }));
         } else {
           g.appendChild(el("line", { x1, y1: y, x2, y2: y, class: "fb-string", "stroke-width": thick }));

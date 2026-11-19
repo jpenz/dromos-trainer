@@ -89,7 +89,7 @@
       scale: [0, 2, 4, 5, 7, 9, 11],
       flavour: [2, 4],
       signature: "2 + 3",
-      blurb: "Ionian. The ii–V–I engine — everything else is a variation."
+      blurb: "Ionian. The ii–V–I engine: everything else is a variation."
     },
     minor: {
       id: "minor", name: "Natural minor", greek: "Φυσικό μινόρε",
@@ -201,7 +201,7 @@
         why: "Major tonic pulling against a minor subdominant." },
       { id: "I-iv-bVII-I", label: "I – iv – ♭VII – I", tag: "core", tier: "Equal-tempered Hijaz practice", group: "Long routes", earSafe: true,
         chords: [[0, "maj"], [5, "min"], [10, "min"], [0, "maj"]],
-        why: "The 1–4–7–1. Note the ♭VII is MINOR — that is Hijaz, not minor." },
+        why: "The 1–4–7–1. Note the ♭VII is MINOR, that is Hijaz, not minor." },
       { id: "bII-I", label: "♭II – I", tag: "cadence", tier: "Equal-tempered Hijaz practice", group: "Cadences", earSafe: true,
         chords: [[1, "maj"], [0, "maj"]],
         why: "The cadence on its own. Drill it until it is reflex." }

@@ -26,7 +26,7 @@
     { id: "rialas-agalma", teacher: "RIALAS", title: "Lesson 001 · Agalma", videoId: "r6nxiFZUESA", focus: "Repertoire study: isolate a compact phrase, then map its targets before you copy the motion." },
     { id: "tomer-agonia", teacher: "Tomer Avizov", title: "Bouzouki learning · Agonia", videoId: "PvSNEFrvMFA", focus: "Observe pick direction and phrase endings. Use the road map to name the degrees you see." },
     { id: "thanos-episode-1", teacher: "Thanos Corner / Play Bouzouki", title: "Lesson episode 1", videoId: "VJXnvELMZtA", focus: "Slow the hand motion first; only then add the notes back into a short, singable loop." },
-    { id: "savvas-lessons", teacher: "Savvas Chrysanthou", title: "Bouzouki lessons", videoId: "Xx1tlYhJEXY", focus: "Watch one technique detail at a time—right hand, left hand, then the phrase’s destination." },
+    { id: "savvas-lessons", teacher: "Savvas Chrysanthou", title: "Bouzouki lessons", videoId: "Xx1tlYhJEXY", focus: "Watch one technique detail at a time–right hand, left hand, then the phrase’s destination." },
     { id: "ramazouki-afti", teacher: "Ramazouki", title: "Lesson 001 · Afti i nyhta menei", videoId: "rpzyApXslns", focus: "Turn a learned fragment into your own exercise: identify the home, chord boxes, and final arrival note." }
   ];
 

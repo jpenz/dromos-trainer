@@ -58,7 +58,7 @@
     earColour: {
       purpose: "Recognize the sound of a scale family",
       answer: "Keep the home known, then identify whether the cadence sounds Major, minor, Harmonic minor, Ousak, or Hijaz.",
-      result: "This trains relative hearing—the color and pull around a known home—not perfect pitch.",
+      result: "This trains relative hearing–the color and pull around a known home–not perfect pitch.",
       steps: ["Press ▶ Start question and listen to the cadence twice.", "Choose one color family; the choice stays editable, and one hint is available.", "Press Check + reveal; read the exact chords and replay the answer before starting another."],
       done: "You can explain which color note or chord quality separated your answer from the nearest alternative.",
       why: "Knowing the home removes a guessing variable. You can concentrate on the 2nd, 3rd, leading tone, and the way the cadence resolves.",
@@ -89,7 +89,7 @@
     triads: {
       purpose: "Accompany the song in time",
       answer: "Make the Greek pulse clear first, then place the closest triad on the chord beats.",
-      result: "This teaches comping as rhythm plus voice leading—not as a list of disconnected chord diagrams.",
+      result: "This teaches comping as rhythm plus voice leading–not as a list of disconnected chord diagrams.",
       steps: ["Clap or mute the Level 1 accents until the grouped pulse is easy to feel.", "Add only roots on bass slots and the highlighted triad on chord slots.", "Use Previous / next chord and keep the smallest movement that preserves the rhythm."],
       done: "A listener can identify the pulse and the chord changes even when you remove every fill.",
       why: "The dance feel carries the accompaniment. Extra chord tones and ornaments help only after the time and harmonic direction are stable.",
@@ -142,7 +142,7 @@
       result: "The three-stage arc gives a free introduction direction without turning it into a fixed copied solo.",
       steps: ["Press ▶ Drone on the tonic and listen until the home feels stable.", "Choose 1 Low, make one short phrase, and leave silence before choosing 2 High.", "Choose 3 Home, sing the hidden target, then press Reveal target to check it."],
       done: "Your final phrase makes the tonic feel settled and the rests sound intentional.",
-      why: "A taximi establishes modal character through register, characteristic notes, tension, silence, and return—not through constant speed.",
+      why: "A taximi establishes modal character through register, characteristic notes, tension, silence, and return–not through constant speed.",
       terms: [["Taximi", "An unmetered modal improvisation that can introduce the dromos and emotional space."], ["Drone", "A sustained home note used as a hearing reference."], ["Register", "The low, middle, or high area of the instrument's range."]],
       targetId: "btnTaximiDrone"
     },
@@ -151,7 +151,7 @@
       answer: "Loop one exact movement until it is easy; then evolve only the position, key, or both while the attack and pulse stay unchanged.",
       result: "Two ways in: a guided plan of right-hand and neck drills in ten categories, from stroke and pulse through scales, triads and four-note arpeggios to speed and phrasing, or the Phrase workbench, which builds any cell in any direction anywhere on the neck and drives it with the picking pattern and rhythm you choose. Every loop fills whole bars with no dead air.",
       steps: ["Set Key, Dromos, and Rhythm in the chips at the top; then match every ↓ downstroke and ↑ upstroke at a tempo where the hand stays loose.", "Follow the guided plan in order, or tap Phrase workbench and build a phrase - cell, direction, where on the neck, picking pattern - then change one setting at a time.", "Tap Clean or Missed after each loop (C / X). Autopilot raises 4 BPM after three clean loops, fades the map as you learn it, and brings it back when you miss."],
-      done: "The pulse and note destination remain clear through a course change, accent, tremolo burst, or ornament—and you can stop without tightening.",
+      done: "The pulse and note destination remain clear through a course change, accent, tremolo burst, or ornament–and you can stop without tightening.",
       why: "Speed is useful only when attack, time, timbre, and harmonic destination survive. Small measurable drills reveal which part fails before it reaches a song.",
       terms: [["↓ / D", "Downstroke: the pick moves toward the floor."], ["↑ / U", "Upstroke: the pick returns toward you."], ["Glide", "One directed pick gesture continues through an adjacent course."], ["Clean pass", "One complete repetition with even time, relaxed motion, and the exercise's listening goal intact."]],
       targetId: "btnPickingClean"
@@ -190,7 +190,7 @@
       purpose: "Turn a named idea into something playable",
       answer: "Choose a source-backed concept, then practise the exact notes, timing, listening goal, and pass test shown for your current key and dromos.",
       result: "Every entry separates what the research actually supports from the new Dromos exercise built from it.",
-      steps: ["Pick an example from the list below it; Setup holds the key and dromos.", "Play the numbered steps on your instrument—Hear the note path previews the pitches only.", "Meet the Pass when test, then open the example in Solo or Picking Path; the source and its evidence boundary are one fold away."],
+      steps: ["Pick an example from the list below it; Setup holds the key and dromos.", "Play the numbered steps on your instrument–Hear the note path previews the pitches only.", "Meet the Pass when test, then open the example in Solo or Picking Path; the source and its evidence boundary are one fold away."],
       done: "You can demonstrate the idea on your instrument and explain both its musical purpose and its evidence boundary.",
       why: "A famous name is not an instruction. Concrete notes, timing, listening criteria, and honest attribution turn inspiration into repeatable practice without inventing a player's lick.",
       terms: [["Tactical example", "A playable sequence of actions with specific notes or functions and a success test."], ["Source-bounded", "The app states exactly what the source supports and labels the generated drill as an adaptation, not a transcription."], ["Note path", "A pitch-only preview; articulation and groove still come from your hands and the selected exercise."]],
@@ -218,7 +218,7 @@
     },
     concepts: {
       purpose: "Diagnose the real musical problem",
-      answer: "Decide whether the weak layer is time, harmony, fretboard route, hearing, or touch—then practise only that layer.",
+      answer: "Decide whether the weak layer is time, harmony, fretboard route, hearing, or touch–then practise only that layer.",
       result: "The concept pyramid prevents every problem from becoming another scale exercise.",
       steps: ["Read the top answer of each concept card before opening its detail.", "Choose the one layer that most clearly breaks in your playing.", "Do its smallest drill, then return to the original phrase and listen for one improvement."],
       done: "You can name the cause of the problem and test it with a smaller exercise.",
@@ -229,7 +229,7 @@
     coach: {
       purpose: "Get one precise next exercise",
       answer: "Ask the coach one concrete question about the music you selected, then open only the recommended drill that matches your ear.",
-      result: "The coach can use your current map and practice history, but it is advice—not the source of truth for a score or recording.",
+      result: "The coach can use your current map and practice history, but it is advice–not the source of truth for a score or recording.",
       steps: ["Choose a suggested question or type one problem in the Ask the coach box.", "Read the privacy choice, then press Ask coach.", "Read the answer first; open its exercise only if the explanation matches what you hear."],
       done: "You leave with one exercise, one reason for it, and one condition for stopping.",
       why: "Specific questions produce useful coaching. Your ear, the written score, and documented musical evidence remain the final check.",
