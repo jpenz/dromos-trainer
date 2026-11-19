@@ -7,8 +7,8 @@
   <meta name="description" content="A serious ear-training and fretboard curriculum for Greek modal harmony on guitar, bouzouki, and laouto." />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>Dromos Trainer · Hear changes. Map the neck. Play the song.</title>
-  <link rel="stylesheet" href="css/fonts.css?v=84" />
-  <link rel="stylesheet" href="css/styles.css?v=94" />
+  <link rel="stylesheet" href="css/fonts.css?v=95" />
+  <link rel="stylesheet" href="css/styles.css?v=95" />
 </head>
 <body>
   <div class="app">
@@ -176,7 +176,7 @@
               <button type="button" data-lab-mode="comp" aria-pressed="false">Rhythm comp</button>
             </div>
             <div class="picking-context music-context">
-              <label for="pickingExerciseSel" id="pickingExerciseField"><span class="visually-hidden">Exercise</span><select id="pickingExerciseSel"></select></label>
+              <label for="pickingExerciseSel" id="pickingExerciseField"><span class="visually-hidden">Exercise</span><span id="pickingTitleText" class="tool-title" aria-hidden="true"></span><select id="pickingExerciseSel"></select></label>
               <p id="pickingSourceLine" class="tool-source"></p>
               <label for="pickingPulseSel" class="hidden">Rhythm<select id="pickingPulseSel"></select></label>
             </div>
@@ -247,7 +247,7 @@
             <!-- Cycle / Harmony -->
             <div id="panelCycle" class="panel">
               <div class="cycle-workbench">
-                <span class="panel-label">What do you want to practise?</span>
+                <span class="panel-label visually-hidden">What do you want to practise?</span>
                 <div class="seg">
                   <button data-cycle-focus="hear" class="active">Voice-led triad route</button>
                   <button data-cycle-focus="chords">Greek progression workout</button>
@@ -649,7 +649,7 @@
                   <button id="btnEarHint" class="mini grow">Give one hint</button>
                   <button id="btnEarCheck" class="mini primary-mini grow">Check + reveal</button>
                 </div>
-                <div id="earFeedback" class="ear-feedback">Press <b>▶ Start question</b>: one cadence plays twice on the sampled studio piano. Major, Natural minor, Harmonic minor, Ousak, and Hijaz are separate answers: name the chord qualities and their pull toward home.</div>
+                <div id="earFeedback" class="ear-feedback">Start a question, then name the dromos you hear.</div>
                 <div id="earReveal" class="ear-reveal hidden" aria-live="polite"></div>
               </section>
               <section id="earMap" class="sub hidden">
@@ -691,7 +691,6 @@
 
             <!-- Greek pulse maps and the foundation skills -->
             <div id="panelStyles" class="panel hidden">
-              <span class="panel-label">Greek pulse and foundation</span>
               <!-- The destination is called "Greek Pulse"; it opens on the Greek
                    pulse maps. Foundation stays one tap away. -->
               <div class="seg" aria-label="Style curriculum area">
@@ -824,39 +823,39 @@
     </div>
   </div>
 
-  <script src="js/tuning.js?v=14"></script>
+  <script src="js/tuning.js?v=95"></script>
   <script src="js/profiles.js?v=72"></script>
-  <script src="js/theory.js?v=14"></script>
+  <script src="js/theory.js?v=95"></script>
   <script src="js/harmony-journey.js?v=15"></script>
-  <script src="js/modes.js?v=92"></script>
+  <script src="js/modes.js?v=95"></script>
   <script src="js/chord-map.js?v=17"></script>
   <script src="js/chord-path.js?v=25"></script>
   <script src="js/melody-harmony.js?v=27"></script>
   <script src="js/pitch-lab.js?v=23"></script>
   <script src="js/ear-drills.js?v=53"></script>
-  <script src="js/styles.js?v=64"></script>
-  <script src="js/analysis.js?v=59"></script>
+  <script src="js/styles.js?v=95"></script>
+  <script src="js/analysis.js?v=95"></script>
   <script src="js/studies.js?v=14"></script>
   <script src="js/musicxml.js?v=14"></script>
-  <script src="js/resources.js?v=32"></script>
-  <script src="js/video.js?v=62"></script>
-  <script src="js/coach.js?v=14"></script>
-  <script src="js/practice.js?v=14"></script>
-  <script src="js/bouzouki-knowledge.js?v=93"></script>
-  <script src="js/picking-lab.js?v=93"></script>
-  <script src="js/picking-view.js?v=86"></script>
-  <script src="js/toolkit.js?v=27"></script>
-  <script src="js/songs.js?v=60"></script>
-  <script src="js/tactical-examples.js?v=27"></script>
+  <script src="js/resources.js?v=95"></script>
+  <script src="js/video.js?v=95"></script>
+  <script src="js/coach.js?v=95"></script>
+  <script src="js/practice.js?v=95"></script>
+  <script src="js/bouzouki-knowledge.js?v=95"></script>
+  <script src="js/picking-lab.js?v=95"></script>
+  <script src="js/picking-view.js?v=95"></script>
+  <script src="js/toolkit.js?v=95"></script>
+  <script src="js/songs.js?v=95"></script>
+  <script src="js/tactical-examples.js?v=95"></script>
   <script src="js/triads.js?v=17"></script>
   <script src="js/neck-hdr.js?v=86"></script>
   <script src="js/practice-engine.js?v=88"></script>
   <script src="js/onset-listener.js?v=91"></script>
-  <script src="js/fretboard.js?v=89"></script>
+  <script src="js/fretboard.js?v=95"></script>
   <script src="js/guitar-voicings.js?v=14"></script>
-  <script src="js/audio.js?v=91"></script>
-  <script src="js/page-guides.js?v=86"></script>
-  <script src="js/app.js?v=94"></script>
+  <script src="js/audio.js?v=95"></script>
+  <script src="js/page-guides.js?v=95"></script>
+  <script src="js/app.js?v=95"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js");

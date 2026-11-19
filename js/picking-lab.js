@@ -158,7 +158,7 @@
       sourceLabel: "Pennanen, The Poetics of the Little Finger", sourceHref: PENNANEN,
       steps: ["Choose Horizontal and play the one-course line while listening to its consistent timbre.", "Choose Tiered and play the same dromos degrees with fewer hand shifts.", "Use Horizontal for a sung continuous color; use Tiered when the phrase needs compact speed and the course timbres support it."],
       listen: "Hear both the physical difference and the tonal change. The easiest fingering is not automatically the best-sounding phrase.",
-      pass: "You can play both routes and state one musical reason—not only speed—for choosing either one.",
+      pass: "You can play both routes and state one musical reason–not only speed–for choosing either one.",
       boundary: "Pennanen documents the two tactile organizations and their timbral tradeoff. The displayed A/B route is generated for the selected instrument and is not a recorded-player transcription."
     },
     {
@@ -2221,8 +2221,8 @@
       const marked = 4;
       return alternate(nodes, (index) => index === 0 || index === marked + 1, firstStroke).map((node, index) =>
         Object.assign(node, index === marked
-          ? { technique: "TR", stroke: null, gesture: "free-tremolo", durMult: 4, phrase: "free tremolo — uncounted" }
-          : { phrase: index < marked ? "picked entry" : "picked exit — land with the click" }));
+          ? { technique: "TR", stroke: null, gesture: "free-tremolo", durMult: 4, phrase: "free tremolo: uncounted" }
+          : { phrase: index < marked ? "picked entry" : "picked exit: land with the click" }));
     }
     if (exercise.sequence === "trebleCell") {
       // Anchor + D-U-D treble, twice. An Irish plectrum import wearing its
@@ -2275,7 +2275,7 @@
       nodes = baseNodes.map((node) => cloneNode(node));
       return alternate(nodes, (index) => !!baseNodes[index].pivot || !!baseNodes[index].launch, firstStroke).map((node, index) =>
         Object.assign(node, baseNodes[index].pivot
-          ? { durMult: 2, phrase: "pivot — this note IS the new tonic" }
+          ? { durMult: 2, phrase: "pivot: this note IS the new tonic" }
           : { phrase: baseNodes[index].launch ? "new key, lower chunk" : "home key" }));
     }
     if (exercise.sequence === "arpCircuit") {
@@ -2449,7 +2449,7 @@
       nodes = baseNodes.map((node) => cloneNode(node));
       return alternate(nodes, (index) => !!baseNodes[index].cue || !!baseNodes[index].phraseStart, firstStroke).map((node, index) =>
         Object.assign(node, baseNodes[index].cue
-          ? { technique: "CHORD", stroke: null, gesture: "cue", durMult: 2, phrase: "cue chord — go" }
+          ? { technique: "CHORD", stroke: null, gesture: "cue", durMult: 2, phrase: "cue chord: go" }
           : { phrase: baseNodes[index].keyLabel || "phrase" }));
     }
     // The whole path, never a count-truncated slice: truncation cut the

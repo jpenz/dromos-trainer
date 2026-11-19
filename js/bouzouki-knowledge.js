@@ -676,7 +676,7 @@
     { id: "right-hand", label: "Right-hand engine", sourceIds: ["trigas-method", "pafranidis-sample", "avlonitis-101"], decision: "Articulated ta–ka lines are the default foundation; tremolo, glide, and ornament are explicitly selected branches." },
     { id: "coordination", label: "Whole-hand coordination", sourceIds: ["trigas-method", "avlonitis-101", "pennanen"], decision: "Grade difficulty through one changing variable: attack, course crossing, scale window, route, then key/position." },
     { id: "map", label: "Dromos and harmony map", sourceIds: ["trigas-method", "pagiatis-dromoi", "karantinis-lessons"], decision: "A fingering becomes music only when the player can name its degree, chord role, dromos color, and destination." },
-    { id: "phrase", label: "Phrase language", sourceIds: ["karantinis-lessons", "pennanen", "filippatos-bouzoukiland"], decision: "Teach short contour, breath, target, touch, and response—not a scale run presented as Greek phraseology." },
+    { id: "phrase", label: "Phrase language", sourceIds: ["karantinis-lessons", "pennanen", "filippatos-bouzoukiland"], decision: "Teach short contour, breath, target, touch, and response–not a scale run presented as Greek phraseology." },
     { id: "learner-ux", label: "Learner questions", sourceIds: ["reddit-bouzouki", "filippatos-bouzoukiland"], decision: "Use community evidence to clarify labels, onboarding, and common failure choices; never to define the music model." }
   ];
 

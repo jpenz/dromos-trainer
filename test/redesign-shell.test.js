@@ -283,12 +283,15 @@ test("the video lab leads with the library and survives a player that never load
     "the Video view needs its own keyboard hint instead of the false Space/arrows line");
 });
 
-test("the lit neck reaches every fretboard and the harmony roadmap keeps its styles", () => {
+test("every neck is the flat ink neck and the harmony roadmap keeps its styles", () => {
   const fb = readFileSync(path.join(root, "js/fretboard.js"), "utf8");
+  const pv = readFileSync(path.join(root, "js/picking-view.js"), "utf8");
   const css = readFileSync(path.join(root, "css/styles.css"), "utf8");
-  assert.match(fb, /HDR\.defs\("fb"\)/, "fretboard.js paints the shared NeckHDR gradients");
-  assert.match(css, /svg\.fb-lit \.fb-fret \{ fill: url\(#fbFret\)/, "frets use the nickel gradient");
+  assert.doesNotMatch(pv, /HDR\.grain\(\)|pvGlow|pvDotShadow/, "the Picking neck carries no grain, glow or gloss");
+  assert.match(fb, /width: 1\.2, height: LAST \* STRING_GAP \+ 14, class: "fb-fret"/, "frets are hairlines");
+  assert.match(css, /svg\.fb-lit \.fb-face, \.pv \.fb-face \{ fill: var\(--panel2\)/, "the board is an ink panel");
   assert.match(css, /\n\.roadmap-chord \{ display: grid;/, "the roadmap chips have a base style (lost once in PR 3)");
+  assert.doesNotMatch(css, /JetBrains Mono/, "one UI face: no monospace costume");
 });
 
 test("stage first: Harmony's look-ahead and Solo's toolbar sit under the neck", () => {

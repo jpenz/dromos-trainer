@@ -58,20 +58,12 @@
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     svg.setAttribute("data-neck-layout", "focus");
     svg.setAttribute("data-neck-emphasis", "large");
-    const HDR = window.NeckHDR;
-    if (HDR) svg.insertAdjacentHTML("beforeend", HDR.defs("pv"));
     const g = el("g", { class: "pv" });
-    // The lit board: a soft shadow under it, ebony grain, pearl inlays,
-    // nickel-silver frets with a highlight, and a bone nut.
+    // The ink neck (FR-88): one ink panel, hairline frets, parchment
+    // strings, flat discs. Colour carries only what a note is.
     const boardX = Math.min(edge(first), edge(last + 1)), boardW = (last - first + 1) * colW;
     const boardY = top - 15, boardH = (N - 1) * gap + 30;
-    g.appendChild(el("rect", { x: boardX, y: boardY + 6, width: boardW, height: boardH, rx: 6, class: "pv-board-shadow", filter: "url(#pvShadow)" }));
-    const clip = el("clipPath", { id: "pvBoardClip" });
-    clip.appendChild(el("rect", { x: boardX, y: boardY, width: boardW, height: boardH, rx: 6 }));
-    g.appendChild(clip);
-    g.appendChild(el("rect", { x: boardX, y: boardY, width: boardW, height: boardH, rx: 6, class: "fb-face" }));
-    const grainURL = HDR ? HDR.grain() : "";
-    if (grainURL) g.appendChild(el("image", { href: grainURL, x: boardX, y: boardY, width: boardW, height: boardH, preserveAspectRatio: "none", "clip-path": "url(#pvBoardClip)" }));
+    g.appendChild(el("rect", { x: boardX, y: boardY, width: boardW, height: boardH, rx: 3, class: "fb-face" }));
     MARKERS.filter((fret) => fret >= first && fret <= last).forEach((fret) =>
       g.appendChild(el("circle", { cx: fx(fret), cy: (top + bottom) / 2, r: 6.5, class: "fb-inlay pv-inlay" })));
     DOUBLE_MARKERS.filter((fret) => fret >= first && fret <= last).forEach((fret) => {
@@ -81,7 +73,7 @@
     for (let fret = first; fret <= last + 1; fret++) {
       const nut = fret === 1 && first === 1;
       g.appendChild(el("rect", {
-        x: edge(fret) - (nut ? 5 : 2.5), y: boardY, width: nut ? 10 : 5, height: boardH, rx: 2,
+        x: edge(fret) - (nut ? 2 : 0.6), y: boardY, width: nut ? 4 : 1.2, height: boardH,
         class: nut ? "fb-fret pv-nut" : "fb-fret pv-fret"
       }));
     }
@@ -92,10 +84,9 @@
     let hasOpen = false;
     const seen = new Set();
     names.forEach((name, stringIndex) => {
-      // Wound strings: a metal highlight and a shadow cast on the wood.
-      const thick = 1.3 + (N - 1 - stringIndex) * 0.55;
+      // Strings as parchment hairlines, heavier toward the bass.
+      const thick = 1 + (N - 1 - stringIndex) * 0.3;
       const x0 = Math.min(flip(padL - 44), flip(W - padR)), x1 = Math.max(flip(padL - 44), flip(W - padR));
-      g.appendChild(el("rect", { x: x0, y: sy(stringIndex) + 2.5, width: x1 - x0, height: thick, class: "pv-string-shadow", filter: "url(#pvShadow)" }));
       g.appendChild(el("rect", { x: x0, y: sy(stringIndex) - thick / 2, width: x1 - x0, height: thick, class: "fb-string pv-string" }));
       g.appendChild(el("text", { x: flip(18), y: sy(stringIndex) + 5, "text-anchor": "middle", class: "pv-course" }, name));
     });
@@ -200,9 +191,9 @@
         const tint = view.colour && !blank ? view.colour(tone) : "";
         const group = el("g", { class: "pv-dot " + cls + (node.silent ? " silent" : "") + (tint ? " " + tint : "") + (blank ? " blank" : "") });
         const cx = pv.fx(tone.fret), cy = pv.sy(tone.stringIndex);
-        if (/\bnow\b/.test(cls)) group.appendChild(el("circle", { cx, cy, r: radius + 9, class: "pv-halo", filter: "url(#pvGlow)" }));
+        if (/\bnow\b/.test(cls)) group.appendChild(el("circle", { cx, cy, r: radius + 6, class: "pv-halo" }));
         if (/flavour/.test(tint)) group.appendChild(el("circle", { cx, cy, r: radius + 6, class: "pv-flavour-ring" }));
-        group.appendChild(el("circle", { cx, cy, r: radius, class: "pv-body", filter: blank ? "" : "url(#pvDotShadow)" }));
+        group.appendChild(el("circle", { cx, cy, r: radius, class: "pv-body" }));
         if (!blank) group.appendChild(el("text", { x: cx, y: cy + radius * 0.36, "text-anchor": "middle" }, dotLabel(view, i, toneIndex)));
         live.appendChild(group);
       });

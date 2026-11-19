@@ -46,7 +46,7 @@
     { id: "form", name: "Dromos & form", question: "How does the whole statement unfold?" }
   ];
 
-  const BOUNDARY = "Original Dromos Trainer drill based on the documented idea—not a transcription, quotation, or claim that the named musician played these generated notes.";
+  const BOUNDARY = "Original Dromos Trainer drill based on the documented idea–not a transcription, quotation, or claim that the named musician played these generated notes.";
   const mod = (value, by) => ((value % by) + by) % by;
 
   function audible(note, midi) {
@@ -242,7 +242,7 @@
     },
     {
       id: "karantinis-anasa", toolId: "anasa-gate", category: "time", title: "Place the breath before the important note", figure: "Manolis Karantinis", source: SOURCES.chiotis,
-      evidence: "Papasolomontos cites Karantinis teaching that taximi phrases need anasa—breath—to separate ideas and place expressive emphasis; Tsertos is cited for pauses as a structural taksim feature.",
+      evidence: "Papasolomontos cites Karantinis teaching that taximi phrases need anasa–breath–to separate ideas and place expressive emphasis; Tsertos is cited for pauses as a structural taksim feature.",
       build(ctx) {
         const target = ctx.third(ctx.progression.chords[0]);
         const phrase = ctx.line([0, 1, 2]);

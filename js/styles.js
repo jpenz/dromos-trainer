@@ -55,7 +55,7 @@
       character: "Weighted and spacious. Give the dancer and vocal line room; make arrivals feel inevitable rather than busy.",
       comp: "First hold the pulse with sparse bass/triad answers. Then practise both monó (old) and dipló (new) feels as separate right-hand studies.",
       phrase: "Place a short answer across one group, then let the final three-beat group carry the resolution.",
-      route: "Choose the dromos from the song map—Zeibekiko can carry Minor, Hijaz, Ussak, and other colours."
+      route: "Choose the dromos from the song map–Zeibekiko can carry Minor, Hijaz, Ussak, and other colours."
     },
     {
       id: "kalamatianos",
@@ -92,7 +92,7 @@
     {
       id: "hasapiko",
       tempoBand: { low: null, high: null, strength: "qualitative",
-        note: "Only qualitative descriptions located (slow varys 4/4 versus fast 2/4). No number ships — set tempo from a reference recording you trust.",
+        note: "Only qualitative descriptions located (slow varys 4/4 versus fast 2/4). No number ships, set tempo from a reference recording you trust.",
         sourceUrl: "https://www.hellenicaworld.com/Greece/Dance/en/Hasapiko.html" },
       title: "Hasapiko",
       greek: "Χασάπικο",

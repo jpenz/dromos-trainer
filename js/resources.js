@@ -9,7 +9,7 @@
     {
       title: "Method for three-string bouzouki · five-book course",
       focus: "Progressive 3-course technique, notation, scales, rhythm, ornaments, chord analysis, dromoi and taxim. The verified course is three core volumes plus two song companions.",
-      use: "Use as the trichordo technical spine: clean pick/fingering first, then ornament, accompaniment and improvisation—not isolated licks.",
+      use: "Use as the trichordo technical spine: clean pick/fingering first, then ornament, accompaniment and improvisation–not isolated licks.",
       href: "https://www.trigas.gr/en/book_categories/novel-teaching-methods-for-the-three-string-bouzouki/"
     },
     {

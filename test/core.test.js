@@ -860,7 +860,7 @@ test("audio mix reduces polyphonic gain before the master limiter", () => {
 test("mainland laouto supports grips, triads, and scale paths", () => {
   const { Tuning, Modes, Fretboard, Practice, Triads } = loadCore();
   Tuning.set("laouto4");
-  assert.equal(Tuning.current().sub, "A D G C — the 4-course mainland laouto tuning");
+  assert.equal(Tuning.current().sub, "A D G C: the 4-course mainland laouto tuning");
 
   const { chords } = Modes.buildProgression("D", "hijaz", "I-iv-bVII-I");
   chords.forEach((chord) => assert.ok(Fretboard.findGrip(chord.notes), chord.symbol + " needs a playable grip"));

@@ -353,6 +353,60 @@
   const CTX_KEY_VIEWS = new Set(["cycle", "prog", "triads", "chordmap", "solo", "picking", "melody"]);
   const CTX_RHYTHM_VIEWS = new Set(["cycle", "prog", "triads", "picking"]);
 
+  // Drawn icons (FR-88): a leading or trailing glyph in a control's label
+  // (play, stop, back, forward, replay, sound, check, cross) becomes an SVG
+  // from the same stroke set as the bottom bar. The pick-stroke arrows stay:
+  // they are notation, not icons.
+  const ICON_PATHS = {
+    "▶": ['<path d="M8 5.5v13l10.5-6.5z"/>', true], "■": ['<rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/>', true],
+    "◀": ['<path d="M15 5l-7 7 7 7"/>', false], "↻": ['<path d="M19 12a7 7 0 1 1-2.05-4.95"/><path d="M19 4.5V8h-3.5"/>', false],
+    "♪": ['<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>', false],
+    "✓": ['<path d="M5 12.5l4.5 4.5L19 7"/>', false], "✗": ['<path d="M6 6l12 12M18 6L6 18"/>', false]
+  };
+  const ICON_RE = /^([▶■◀↻♪✓✗])\s?/;
+  const TRAIL_RE = /\s([▶◀])$/;
+  const iconSvg = (glyph, after) => {
+    const [path, fill] = ICON_PATHS[glyph];
+    const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svgEl.setAttribute("viewBox", "0 0 24 24"); svgEl.setAttribute("aria-hidden", "true");
+    svgEl.setAttribute("class", "ico" + (fill ? " ico-fill" : "") + (after ? " ico-after" : ""));
+    svgEl.innerHTML = glyph === "▶" && after ? '<path d="M9 5l7 7-7 7"/>' : path;
+    if (glyph === "▶" && after) svgEl.setAttribute("class", "ico ico-after");
+    return svgEl;
+  };
+  function iconize(root) {
+    const walker = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT);
+    const hits = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.data;
+      if (!text || !/[▶■◀↻♪✓✗]/.test(text)) continue;
+      const parent = node.parentElement;
+      if (!parent || parent.closest("svg, script, style, textarea, option, .pt-stroke")) continue;
+      if (ICON_RE.test(text.trimStart()) || TRAIL_RE.test(text.trimEnd())) hits.push(node);
+    }
+    hits.forEach((node) => {
+      const lead = node.data.trimStart().match(ICON_RE);
+      if (lead) {
+        node.data = node.data.trimStart().replace(ICON_RE, "");
+        node.parentNode.insertBefore(iconSvg(lead[1], false), node);
+        return;
+      }
+      const trail = node.data.trimEnd().match(TRAIL_RE);
+      if (trail) {
+        node.data = node.data.trimEnd().replace(TRAIL_RE, "");
+        node.parentNode.insertBefore(iconSvg(trail[1], true), node.nextSibling);
+      }
+    });
+  }
+  let iconQueued = false;
+  if (typeof MutationObserver !== "undefined" && typeof document !== "undefined") {
+    new MutationObserver(() => {
+      if (iconQueued) return;
+      iconQueued = true;
+      queueMicrotask(() => { iconQueued = false; iconize(document.body); });
+    }).observe(document.documentElement, { subtree: true, childList: true, characterData: true });
+  }
+
   // The martyria (FR-88): as a chant book states the echos in red before a
   // line, every neck is headed by the dromos and its tonic, in Greek first.
   const DROMOS_GREEK = { major: "Ματζόρε", minor: "Μινόρε", harmonicMinor: "Αρμονικό μινόρε", ousak: "Ουσάκ", hijaz: "Χιτζάζ" };
@@ -841,9 +895,9 @@
       <span class="ro-key">play ${cur.triadName} triad · ${cur.inversionName}</span>
     </div>
     <div class="tri-tags"><span class="tri-set">${cur.setLabel} strings</span><span class="tri-fret">frets ${cur.lowFret}–${Math.max(...cur.placements.map((placement) => placement.fret))}</span></div>
-    <div class="tri-move"><b>${move ? move.voices.filter((distance) => distance > 0).length : 0}</b> voices move · <b>${move ? move.total : 0}</b> semitones total from ${previous.chord.symbol}</div>
+    <div class="tri-move">${(() => { const moved = move ? move.voices.filter((distance) => distance > 0).length : 0; const total = move ? move.total : 0; return `<b>${moved}</b> voice${moved === 1 ? "" : "s"} move${moved === 1 ? "s" : ""} · <b>${total}</b> semitone${total === 1 ? "" : "s"} in all from ${previous.chord.symbol}`; })()}</div>
     <div class="ro-notes">${notes}</div>
-    <div class="ro-foot"><b>Think ${cur.chord.symbol}, play its triad skeleton</b> — keep the top line singable.</div>`;
+    <div class="ro-foot"><b>Think ${cur.chord.symbol}, play its triad skeleton</b>: keep the top line singable.</div>`;
 
     renderChangeGuide(journey, cur, nextShape);
     renderCycleRoadmap(journey);
@@ -1681,7 +1735,7 @@
           `<span class="pulse-beat${beat.first ? " group-start" : ""}" data-group="${beat.group}"><b>${beat.beat}</b>${beat.first ? `<i>${beat.size}</i>` : ""}</span>`
         ).join("")}</div>
         <div class="style-actions">
-          <button id="btnOpenSongMap" class="mini primary-mini">Open Song Map — choose the dromos</button>
+          <button id="btnOpenSongMap" class="mini primary-mini">Open Song Map: choose the dromos</button>
           <button id="btnUseStyleGroove" class="mini">${state.groove.styleId === style.id ? "✓ Selected in Practice Ensemble" : "Use this pulse in Practice Ensemble"}</button>
         </div>
         <p>${style.character}</p>
@@ -2030,8 +2084,8 @@
     $("conceptPyramid").innerHTML = `
       <section class="concept-apex"><span>Pyramid answer</span><h2>Make a phrase that reveals the song, sits in the pulse, and sounds like you.</h2><p>Work top-down: first the musical conclusion, then four non-overlapping causes. Do not solve a rhythm problem with a new scale, or a target-note problem with more speed.</p></section>
       <div class="concept-layers">${A.PYRAMID.map((item) => `
-        <article class="concept-layer concept-${item.id}"><div><span>${escapeHtml(item.title)}</span><h3>${escapeHtml(item.question)}</h3></div><p>${escapeHtml(item.why)}</p><p class="concept-greek"><b>Greek/Balkan lens:</b> ${item.id === "time" ? "Feel the additive group first—9/4, 7/8, 5/8, or the song’s actual dance pulse—not a generic click." : item.id === "map" ? "Treat dromos as directional melodic behaviour plus harmony; a scale name by itself is not the whole map." : item.id === "line" ? "Use local triads and tetrachord/seira ideas to connect arrivals, rather than importing unrelated licks." : "Let bouzouki, guitar, or laouto articulation serve the vocal line and accompaniment role; ornament follows function."}</p><p class="concept-drill"><b>One drill:</b> ${escapeHtml(item.drill)}</p></article>`).join("")}</div>
-      <section class="reference-shelf"><div><span>Research shelf</span><h2>Bouzouki methods inform the curriculum—without reproducing them.</h2><p>Use a source you own alongside the app: analyse its form, identify the map, choose targets, then test the answer in the correct pulse.</p></div><h3>Vangelis Trigas · verified course and material families</h3><div class="reference-list">${R ? shelf(R.TRIGAS) : ""}</div><h3>Other strong Greek bouzouki references</h3><div class="reference-list">${R ? shelf(R.OTHER) : ""}</div><h3>Community learning index · verify rights at the original source</h3><div class="reference-list">${R ? shelf(R.COMMUNITY) : ""}</div></section>`;
+        <article class="concept-layer concept-${item.id}"><div><span>${escapeHtml(item.title)}</span><h3>${escapeHtml(item.question)}</h3></div><p>${escapeHtml(item.why)}</p><p class="concept-greek"><b>Greek/Balkan lens:</b> ${item.id === "time" ? "Feel the additive group first–9/4, 7/8, 5/8, or the song’s actual dance pulse–not a generic click." : item.id === "map" ? "Treat dromos as directional melodic behaviour plus harmony; a scale name by itself is not the whole map." : item.id === "line" ? "Use local triads and tetrachord/seira ideas to connect arrivals, rather than importing unrelated licks." : "Let bouzouki, guitar, or laouto articulation serve the vocal line and accompaniment role; ornament follows function."}</p><p class="concept-drill"><b>One drill:</b> ${escapeHtml(item.drill)}</p></article>`).join("")}</div>
+      <section class="reference-shelf"><div><span>Research shelf</span><h2>Bouzouki methods inform the curriculum–without reproducing them.</h2><p>Use a source you own alongside the app: analyse its form, identify the map, choose targets, then test the answer in the correct pulse.</p></div><h3>Vangelis Trigas · verified course and material families</h3><div class="reference-list">${R ? shelf(R.TRIGAS) : ""}</div><h3>Other strong Greek bouzouki references</h3><div class="reference-list">${R ? shelf(R.OTHER) : ""}</div><h3>Community learning index · verify rights at the original source</h3><div class="reference-list">${R ? shelf(R.COMMUNITY) : ""}</div></section>`;
   }
 
   // =========================== PRACTICE COACH ===========================
@@ -2114,8 +2168,8 @@
     const isMap = state.ear.drill === "map";
     const value = earHomeValue();
     const blind = isMap && value === "random";
-    select.innerHTML = (isMap ? `<option value="random">Blind — the app hides the home</option>` : "")
-      + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}${isMap ? " — known home" : ""}</option>`).join("");
+    select.innerHTML = (isMap ? `<option value="random">Blind: the app hides the home</option>` : "")
+      + M.TONICS.map((tonic) => `<option value="${tonic}">${tonic}${isMap ? ": known home" : ""}</option>`).join("");
     select.value = value;
     $("btnEarHome").disabled = blind;
     $("btnEarHome").textContent = blind ? "Home hidden · training blind"
@@ -2228,7 +2282,7 @@
     const built = M.buildProgression(answer.tonic, answer.modeId, answer.progressionId);
     const fb = $("earFeedback");
     fb.className = "ear-feedback " + (correct ? "ok" : "no");
-    fb.innerHTML = (correct ? "✓ Correct — " : "✗ It was ") +
+    fb.innerHTML = (correct ? "✓ Correct: " : "✗ It was ") +
       `<b>${detail.label}</b> (${detail.category || "map"}). Signature: <b>${detail.signature}</b>. Scale: <b>${detail.scale}</b>.`;
     renderEarReveal("earReveal", answer, built, {
       summary: `You chose ${M.MODES[state.ear.guess].name}; the played answer was ${detail.label}.`,
@@ -2487,7 +2541,7 @@
     const settings = options || {};
     const sing = state.melody.sing;
     const prompt = state.melody.prompt;
-    if ($("singTargetName")) $("singTargetName").textContent = prompt ? prompt.note.name : "—";
+    if ($("singTargetName")) $("singTargetName").textContent = prompt ? prompt.note.name : "–";
     if ($("singTargetRole")) $("singTargetRole").textContent = prompt
       ? `degree ${prompt.note.degree} · ${prompt.hearing.short}` : "Check the note first";
     if ($("btnSingTarget")) $("btnSingTarget").disabled = !prompt || !state.melody.revealed || sing.listening || sing.requesting;
@@ -2499,10 +2553,10 @@
     renderSingInputs();
     if (!settings.preserveFeedback && $("melodySing")) {
       $("melodySing").setAttribute("data-pitch", "idle");
-      $("singDetectedNote").textContent = "—";
+      $("singDetectedNote").textContent = "–";
       $("singDetectedHz").textContent = "Waiting for a clear pitch";
-      $("singCents").textContent = "—";
-      $("singStabilityText").textContent = "—";
+      $("singCents").textContent = "–";
+      $("singStabilityText").textContent = "–";
       $("singHold").textContent = "0.0 s";
       $("singNeedle").style.left = "50%";
       $("singGauge").setAttribute("aria-valuenow", "0");
@@ -2526,7 +2580,7 @@
     if (!section) return;
     if (!reading || raw.clarity < 0.72) {
       section.setAttribute("data-pitch", "idle");
-      $("singDetectedNote").textContent = "—";
+      $("singDetectedNote").textContent = "–";
       $("singDetectedHz").textContent = raw.reason === "quiet" ? "Sing a little more clearly" : "Finding one steady note…";
       $("singInstruction").textContent = "Hold one comfortable ‘ah.’ Reduce room noise and keep the mic away from the speakers.";
       $("singHold").textContent = "0.0 s";
@@ -2773,7 +2827,7 @@
     root.classList.remove("hidden");
     $("melodyIdentity").innerHTML = `<div><span>Heard note</span><strong>${escapeHtml(prompt.note.name)}</strong><b>degree ${escapeHtml(prompt.note.degree)} · ${prompt.note.off} semitone${prompt.note.off === 1 ? "" : "s"} above ${escapeHtml(prompt.tonic)}</b></div>
       <div><span>Hear its job</span><strong>${escapeHtml(prompt.hearing.short)}</strong><p>${escapeHtml(prompt.hearing.hear)}</p></div>
-      <div><span>Road location</span><strong>${escapeHtml(prompt.hearing.zone)}</strong><p>${prompt.hearing.flavour ? "Identity tone in this trainer — compare it directly with the tonic." : "Supporting scale tone — let the chord tell you whether it rests or travels."}</p></div>`;
+      <div><span>Road location</span><strong>${escapeHtml(prompt.hearing.zone)}</strong><p>${prompt.hearing.flavour ? "Identity tone in this trainer: compare it directly with the tonic." : "Supporting scale tone: let the chord tell you whether it rests or travels."}</p></div>`;
 
     const selected = selectedMelodyCandidate();
     $("melodyCandidates").innerHTML = prompt.candidates.map((candidate) => `<button data-melody-candidate="${candidate.chord.degreeIndex}" class="melody-candidate${selected && candidate.chord.degreeIndex === selected.chord.degreeIndex ? " selected" : ""}" data-evidence="${candidate.evidenceKind}">
@@ -2894,7 +2948,7 @@
     if (correct) m.score++;
     m.selectedDegree = m.prompt.candidates[0].chord.degreeIndex;
     m.selectedSuccessor = 0;
-    m.message = `${correct ? "✓" : "Not yet:"} the note was ${m.prompt.note.name}, degree ${m.prompt.note.degree} — ${m.prompt.hearing.short}. Now compare what changes when the chord beneath it changes.`;
+    m.message = `${correct ? "✓" : "Not yet:"} the note was ${m.prompt.note.name}, degree ${m.prompt.note.degree}, ${m.prompt.hearing.short}. Now compare what changes when the chord beneath it changes.`;
     renderMelodyLab();
   }
 
@@ -2925,8 +2979,8 @@
     return `<p class="role-advice${suits ? " suits" : ""}">
       <span>${escapeHtml(chord.phraseRole)}</span>
       ${suits
-        ? `Your target fits this bar — ${escapeHtml(advice.why)}.`
-        : `On this bar, try the <b>${escapeHtml(landingLensName(advice.lens))}</b> lens — ${escapeHtml(advice.why)}.`}
+        ? `Your target fits this bar: ${escapeHtml(advice.why)}.`
+        : `On this bar, try the <b>${escapeHtml(landingLensName(advice.lens))}</b> lens: ${escapeHtml(advice.why)}.`}
     </p>`;
   }
 
@@ -3080,7 +3134,7 @@
     const L = state.lab;
     const path = P.buildPath(state.tonic, state.modeId, labPathOpts());
     if (!path) {
-      $("readout").innerHTML = `<div class="ro-foot">No playable path here — try another position or layout.</div>`;
+      $("readout").innerHTML = `<div class="ro-foot">No playable path here: try another position or layout.</div>`;
       return;
     }
     const { chords } = currentProgression();
@@ -3104,7 +3158,7 @@
     const layoutCue = {
       "3nps": "Three notes per string creates a repeatable alternate-picking cycle. Notice where inside and outside crossings alternate; do not speed up until both feel equally relaxed.",
       "2nps": "Two notes per string puts the string change in one consistent place. Keep the crossing that feels awkward visible and practise it as a two-string loop before playing the whole road.",
-      box: "A box keeps the hand local. Use it to connect a target with a short, singable answer—not to prove that every note in the box must be played.",
+      box: "A box keeps the hand local. Use it to connect a target with a short, singable answer–not to prove that every note in the box must be played.",
       horizontal: "The horizontal road makes one string carry the line. Hear the destination first, then shift only after the phrase has a reason to change register."
     }[m.layout] || "Keep the target in your ear before you move the pick.";
     $("readout").innerHTML = `
@@ -3123,7 +3177,7 @@
         <b>Technique:</b> ${layoutCue}<br /><br />
         Strict alternate picking starts with a <b>${m.firstStroke}</b>stroke.
         <b class="x-out">Outside</b> crossings sweep around the pair;
-        <b class="x-in">inside</b> ones trap the pick between the strings — those are
+        <b class="x-in">inside</b> ones trap the pick between the strings, those are
         the ones that break down first. Loose wrist, pick barely clearing the string,
         and drop the tempo until every crossing is clean. The rings are the ${landingLensName(state.solo.focus)} for this and the next chord: practise the road, then stop on one ring and hear why it belongs.
       </div>`;
@@ -3165,9 +3219,9 @@
       </div>
       <div class="cell-target">
         ${hidden
-          ? `Target is the <b>last</b> note. Hear it before you play it — the app leaves a
+          ? `Target is the <b>last</b> note. Hear it before you play it: the app leaves a
              silent beat where it belongs. <b>Sing it internally</b>, then reveal.`
-          : `Target: <b>${cell.target.name}</b> — degree <b>${cell.target.degree}</b>${
+          : `Target: <b>${cell.target.name}</b>: degree <b>${cell.target.degree}</b>${
              cell.isOctave ? " (the octave)" : ""}.`}
       </div>`;
     $("btnReveal").textContent = hidden ? "Reveal target" : "Hide target";
@@ -5863,6 +5917,10 @@
     ).join("");
     $("pickingExerciseSel").onchange = (event) => selectPickingExercise(event.target.value);
     if ($("pickingSourceLine")) $("pickingSourceLine").textContent = pickingExercise().sourceLabel || "";
+    if ($("pickingTitleText")) {
+      const chosen = $("pickingExerciseSel").selectedOptions[0];
+      $("pickingTitleText").textContent = chosen ? chosen.textContent : pickingExercise().title;
+    }
     // Two ways in: follow the guided plan, or build any phrase in the workbench.
     const workbenchMode = exercise.id === "phrase-workbench";
     const compMode = exercise.id === "rhythm-comp";
@@ -6232,7 +6290,7 @@
         : `<p class="picking-band"><b class="band-${band.strength}">${band.strength}</b> ${escapeHtml(band.note)}</p>`
       : "";
     const ceiling = state.picking.ceilingBpm
-      ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b> — banked (your own logged judgement); retest tomorrow before pushing higher (motor-consolidation research).</p>`
+      ? `<p class="picking-ceiling">Ceiling found today: <b>${state.picking.ceilingBpm} BPM</b>: banked (your own logged judgement); retest tomorrow before pushing higher (motor-consolidation research).</p>`
       : "";
     const tempoFamily = pickingTempoFamily(exercise);
     const levels = PICKING_TEMPO_LEVELS[tempoFamily];
@@ -6531,7 +6589,7 @@
             <span class="chip-tag">fret ${p.fret}</span>
           </div>`).join("")}
       </div>
-      <div class="ro-foot"><b>This is a route, not a chord dictionary.</b> ${others.length} inversions fit the selected string set and neck area; the highlighted one keeps the complete progression compact. Sevenths are colour on top of the triad — over <b>${cur.chord.symbol}</b> these three notes are the skeleton.</div>`;
+      <div class="ro-foot"><b>This is a route, not a chord dictionary.</b> ${others.length} inversions fit the selected string set and neck area; the highlighted one keeps the complete progression compact. Sevenths are colour on top of the triad, over <b>${cur.chord.symbol}</b> these three notes are the skeleton.</div>`;
 
     $("triadStrip").innerHTML = path.map((p, i) => p ? `
       <button class="pchip${i === t.step ? " active" : ""}" data-tstep="${i}">
@@ -6588,7 +6646,7 @@
     root.innerHTML = `
       <div class="solo-map-head music-context"><div><b>${mode.name} on ${state.tonic}</b><span>Key ${state.tonic} · ${mode.greek} · ${window.Tuning.current().name}${progression ? ` · ${progression.label}` : ""}</span></div></div>
       <details class="deck-advanced solo-fold solo-setup" id="soloSetup"${soloSetupOpen ? " open" : ""}>
-        <summary>Setup — home · dromos · progression</summary>
+        <summary>Setup: home · dromos · progression</summary>
         <label class="solo-setup-home">Home <select id="soloTonic">${M.TONICS.map((tonic) =>
           `<option value="${tonic}"${tonic === state.tonic ? " selected" : ""}>${tonic}</option>`).join("")}</select></label>
         <div class="solo-mode-grid">${M.MODE_ORDER.map((modeId) => {
@@ -6681,7 +6739,7 @@
       <span class="ro-symbol" style="font-size:22px">${current.symbol}</span><span class="ro-key">current box · ${M.MODES[state.modeId].name} on ${state.tonic}</span></div>
       <div class="road-readout"><span class="road-dot lower"></span><b>First part</b> ${lower.map((note) => note.name).join(" · ")}<br />
       <span class="road-dot upper"></span><b>Second part</b> ${upper.map((note) => note.name).join(" · ")}</div>
-      <div class="ro-foot">Start with the road in one position. Only then connect it across the neck, so your eye sees intervals and destinations—not unrelated dots.</div>`;
+      <div class="ro-foot">Start with the road in one position. Only then connect it across the neck, so your eye sees intervals and destinations–not unrelated dots.</div>`;
   }
 
   function chordTone(chord, role) {
@@ -6894,7 +6952,7 @@
       });
     }
     const now = $("soloMatrixNow");
-    if (now) now.innerHTML = `<b>${step.label}</b> · ${step.note.name} (${step.note.roleLabel || step.note.degree || "frame"}) — ${step.why}`;
+    if (now) now.innerHTML = `<b>${step.label}</b> · ${step.note.name} (${step.note.roleLabel || step.note.degree || "frame"}): ${step.why}`;
     svg().querySelectorAll(".fb-dot.journey-active").forEach((dot) => dot.classList.remove("journey-active"));
     svg().querySelectorAll(`.fb-dot[data-pc="${step.note.pc}"]`).forEach((dot) => dot.classList.add("journey-active"));
     // Choreograph the change: on the lean/approach pulse the NEXT chord's
@@ -6939,7 +6997,7 @@
           <i>${step.beat.beat}</i><span>${step.label}</span><b>${step.note.name}</b><em>${step.note.roleLabel || step.note.degree || "frame"}</em></button>`
       ).join("")}</div>
       <p id="soloMatrixNow" class="solo-matrix-now"></p>
-      <p class="solo-matrix-note">The cursor follows the selected pulse while transport plays. This is a route map—not a mandatory lick: keep the rhythmic group, change the connector notes, and make the arrival clear.</p>`;
+      <p class="solo-matrix-note">The cursor follows the selected pulse while transport plays. This is a route map–not a mandatory lick: keep the rhythmic group, change the connector notes, and make the arrival clear.</p>`;
     const htp = $("soloMatrixHtp");
     if (htp) htp.ontoggle = () => { soloHtpOpen = htp.open; };
     root.querySelectorAll("[data-matrix-beat]").forEach((button) => {
@@ -7017,7 +7075,7 @@
     });
     return `<div class="tool-rail"><span>Whole steps you may fill · weak beats only</span>
       ${gaps.length ? gaps.map((g) => `<b>${escapeHtml(g.from.name)} → ${escapeHtml(g.to.name)}<i>via ${escapeHtml(g.mid)}</i></b>`).join("")
-        : "<b>—<i>no whole steps to fill</i></b>"}
+        : "<b>–<i>no whole steps to fill</i></b>"}
       <em>The inserted tone must never land on a strong beat.</em></div>`;
   }
 
@@ -7045,7 +7103,7 @@
     const active = state.solo.toolkit.arrival || "penia";
     return `<div class="tool-rail"><span>Arrival due this pass</span>
       ${ARRIVALS.map((a) => `<b><button data-tk-arrival="${a.id}" class="tk-arrival${a.id === active ? " active" : ""}">${escapeHtml(a.name)}</button><i>${escapeHtml(a.hint)}</i></b>`).join("")}
-      <em>Same line four times, one arrival per pass. The target note does not change — only how you reach it.</em></div>`;
+      <em>Same line four times, one arrival per pass. The target note does not change, only how you reach it.</em></div>`;
   }
 
   // The Greek pulse's group onsets are the landing doorways. Rather than
@@ -7065,7 +7123,7 @@
   function breathRailHtml() {
     return `<div class="tool-rail"><span>Breath pacing · six seconds</span>
       <div class="breath-bar" aria-hidden="true"><i></i></div>
-      <em>Aim the first note after each breath at a landing tone. This is a visual metronome for phrasing — nothing is being listened to.</em></div>`;
+      <em>Aim the first note after each breath at a landing tone. This is a visual metronome for phrasing, nothing is being listened to.</em></div>`;
   }
 
   function toolRailHtml(tool) {
@@ -7141,7 +7199,7 @@
           `<button data-tk-phase="${i}" class="${i === tk.phase ? "active" : ""}"><i>${i + 1}</i>${escapeHtml(label)}</button>`).join("")}</div>` : ""}
         ${toolRailHtml(tool)}
         <footer class="tk-origin"><span>${escapeHtml(tool.origin)}</span><button class="mini" data-open-tactical-example="${escapeHtml(tool.exampleId)}">See exact tactical example →</button></footer>
-      </article>` : `<p id="soloToolkitPanel" class="tk-none" role="tabpanel" aria-labelledby="tk-pillar-${tk.pillar}">No tool selected — the landing lens is set by hand. Pick a tool above and it takes over the lens.</p>`}`;
+      </article>` : `<p id="soloToolkitPanel" class="tk-none" role="tabpanel" aria-labelledby="tk-pillar-${tk.pillar}">No tool selected: the landing lens is set by hand. Pick a tool above and it takes over the lens.</p>`}`;
     root.querySelectorAll("[data-tk-pillar]").forEach((b) => b.onclick = () => {
       const id = b.getAttribute("data-tk-pillar");
       toolkitFocusRequest = { attribute: "data-tk-pillar", value: id };
@@ -7368,7 +7426,7 @@
     const outside = curTargets.filter((note) => !cur.notes.some((tone) => tone.pc === note.pc));
     return `<div class="triad-seat"><span>Triad of ${escapeHtml(cur.symbol)}</span>
       ${seats.map((note) => `<b class="${targetPcSet.has(note.pc) ? "seat-target" : ""}">${escapeHtml(note.roleLabel)}<i>${escapeHtml(note.name)}</i></b>`).join("")}
-      ${outside.length ? `<em>${outside.map((note) => escapeHtml(note.name)).join(" · ")} sits outside the triad — it leans in and resolves</em>` : `<em>every target sits inside the shape under your hand</em>`}</div>`;
+      ${outside.length ? `<em>${outside.map((note) => escapeHtml(note.name)).join(" · ")} sits outside the triad: it leans in and resolves</em>` : `<em>every target sits inside the shape under your hand</em>`}</div>`;
   }
 
   // ---- Shape cards: the progression as small, readable triad patterns ----
@@ -7534,7 +7592,7 @@
       const role = pedalRole(pedalInfo.pc, chordItem);
       const last = chordIndex === chords.length - 1;
       const meaning = last
-        ? "resolution — the one note finally sounds at home"
+        ? "resolution: the one note finally sounds at home"
         : role.score >= 3 ? "chord tone: fully inside"
           : role.score >= 2 ? "colour tone: it re-flavours the chord"
             : "tension: hold it with intent, do not apologise for it";
@@ -7548,7 +7606,7 @@
         <button class="solo-open-route" data-open-solo-path>Practise this route in Shape →</button>
       </div>
       <details class="deck-advanced solo-fold" id="soloEvidence"${soloEvidenceOpen ? " open" : ""}>
-        <summary>Why these notes — frame, triad, thread</summary>
+        <summary>Why these notes: frame, triad, thread</summary>
         <div class="solo-frame"><b>${frame.name}</b><span>${pentatonic.map((note) => note.name).join(" · ")}</span></div>
         ${triadSeatHtml(cur, curTargets)}
         ${roleAdviceHtml(cur)}
@@ -7561,9 +7619,9 @@
           : focus === "triad"
             ? "Treat the triad as the map of meaning: root feels settled, 3rd names the colour, and 5th keeps the line open. Connect only as much scale material as you need to reach the next triad."
             : focus === "sweet"
-              ? "Sing the 2nd over the chord, then resolve it into the 3rd on the change. In Ousak and Hijaz the ♭2 leans even harder — one lean per phrase, placed exactly on the arrival, is the whole trick."
+              ? "Sing the 2nd over the chord, then resolve it into the 3rd on the change. In Ousak and Hijaz the ♭2 leans even harder, one lean per phrase, placed exactly on the arrival, is the whole trick."
               : focus === "pedal"
-                ? `One note over everything: hold ${pedalInfo ? pedalInfo.name : "the common tone"} through the full progression. Each chord re-names it (see the table), and the final chord resolves it — that is how a single note explains a whole song.`
+                ? `One note over everything: hold ${pedalInfo ? pedalInfo.name : "the common tone"} through the full progression. Each chord re-names it (see the table), and the final chord resolves it, that is how a single note explains a whole song.`
                 : guideInstruction}</p>
         <p>${focusSentence}</p>
       </details>
@@ -7619,7 +7677,7 @@
     $("readout").innerHTML = `<div class="ro-head"><span class="fn-badge fn-deg">phrase</span>
       <span class="ro-symbol" style="font-size:22px">${pattern.label}</span></div>
       <div class="lab-stats"><span>frets <b>${phrase.meta.lowFret}–${phrase.meta.highFret}</b></span><span>position <b>${L.position}</b></span></div>
-      <div class="ro-foot">Carry ONE cell through every chord of the loop — say the numbers, then let the loop transpose them. 1–2–3–5 is the universal starter; the final note is the landing point for the chord you hear.</div>`;
+      <div class="ro-foot">Carry ONE cell through every chord of the loop, say the numbers, then let the loop transpose them. 1–2–3–5 is the universal starter; the final note is the landing point for the chord you hear.</div>`;
     $("posLabel").textContent = "Pos " + L.position;
   }
 
@@ -7760,20 +7818,15 @@
       <div class="today-hero">
         <div>
           <h2>Καλή πρόβα, ${escapeHtml(name)}.</h2>
-          <p>Twenty minutes in five parts: warm up, review what is due, one new drill, one from memory, then play it in a song. Clean or Missed after each loop moves everything along.</p></div>
-        <div class="today-meters">
-          <span><b>${streakDays}</b>day streak</span>
-          <span><b>${minutesToday}</b>min today</span>
-          <span><b>${week}</b>min this week</span>
-        </div>
+          <p class="today-meta">${plan.length} parts, ${Math.round(plan.reduce((sum, step) => sum + step.minutes, 0))} minutes · ${streakDays} day${streakDays === 1 ? "" : "s"} in a row · ${minutesToday} min today · ${week} min this week</p></div>
         <button type="button" class="deck-start" id="btnTodayStart">${nextIndex < 0 ? "Done for today · go again" : nextIndex === 0 ? "▶ Start today's 20 minutes" : `▶ Continue · step ${nextIndex + 1} of ${plan.length}`}</button>
       </div>
       <ol class="today-plan">${plan.map((step, index) => `
         <li class="${doneFlags[index] ? "done" : ""}${index === nextIndex ? " up-next" : ""}">
           <i>${doneFlags[index] ? "✓" : index + 1}</i>
-          <div><small>${TODAY_KIND[step.kind] || step.kind} · ${Math.round(step.minutes)} min</small>
+          <div>
             <b>${step.kind === "play" ? "A song in this dromos" : escapeHtml(title(step.drill))}</b>
-            <span>${escapeHtml(step.tonic)} ${escapeHtml(modeName(step.mode))}${step.tempo ? ` · ${step.tempo} BPM` : ""}${step.fade === "memory" ? " · map hidden" : ""} · ${escapeHtml(step.why)}</span></div>
+            <span>${TODAY_KIND[step.kind] || step.kind} · ${Math.round(step.minutes)} min · ${escapeHtml(step.tonic)} ${escapeHtml(modeName(step.mode))}${step.tempo ? ` · ${step.tempo} BPM` : ""}${step.fade === "memory" ? " · map hidden" : ""} · ${escapeHtml(step.why)}</span></div>
           <button type="button" class="mini" data-today-step="${index}">${doneFlags[index] ? "Again" : "Go"}</button>
         </li>`).join("")}</ol>
       <div class="today-boards">
@@ -7835,13 +7888,13 @@
     const active = PP.active();
     root.innerHTML = `
       <div class="progress-head"><h2>Profiles on this device</h2>
-        <p>Separate instrument settings, ear scores, and coach history per player. Stored only in this browser — these are local profiles, not cloud accounts.</p></div>
+        <p>Separate instrument settings, ear scores, and coach history per player. Stored only in this browser, these are local profiles, not cloud accounts.</p></div>
       <div class="progress-list">${PP.list().map((profile) => {
         const colour = profile.progress.earColour, map = profile.progress.earMap, sing = profile.progress.singPitch;
         return `<div class="progress-card${profile.id === active.id ? " active" : ""}">
           <span class="player-avatar">${escapeHtml(profile.displayName.slice(0, 1).toUpperCase())}</span>
           <b>${escapeHtml(profile.displayName)}${profile.id === active.id ? " · active" : ""}</b>
-          <small>${escapeHtml(instrumentShortName(profile.preferences.tuningId))} · last practice ${profile.progress.lastPracticedAt ? escapeHtml(String(profile.progress.lastPracticedAt).slice(0, 10)) : "—"}</small>
+          <small>${escapeHtml(instrumentShortName(profile.preferences.tuningId))} · last practice ${profile.progress.lastPracticedAt ? escapeHtml(String(profile.progress.lastPracticedAt).slice(0, 10)) : "–"}</small>
           <span class="progress-scores"><span><b>${colour.correct}/${colour.attempts}</b>colour</span><span><b>${map.correct}/${map.attempts}</b>map</span><span><b>${sing.correct}/${sing.attempts}</b>sing-back</span><span><b>${Math.max(colour.best, map.best, sing.best)}</b>best streak</span></span>
         </div>`;
       }).join("")}</div>`;
@@ -7934,7 +7987,7 @@
     const button = $("btnTaximiBridge");
     if (button) button.textContent = "Resume the band ▶";
     const banner = $("pivotBanner");
-    banner.innerHTML = `Taximi bridge: drone on <b>${escapeHtml(newIi.key)}</b>. Set the new dromos with a free phrase — no meter, no count — then bring the band back in.`;
+    banner.innerHTML = `Taximi bridge: drone on <b>${escapeHtml(newIi.key)}</b>. Set the new dromos with a free phrase, no meter, no count, then bring the band back in.`;
     banner.classList.add("show");
   }
 
@@ -7944,8 +7997,8 @@
     if ($("tglGymSkeleton")) $("tglGymSkeleton").checked = state.gym.skeleton;
     const progressionWorkout = state.cycleComping.focus === "chords";
     if ($("gymNote")) $("gymNote").textContent = progressionWorkout
-      ? "Roman numerals stay fixed while the key moves by fourths — a practice route from the selected bank, not a claim that performances modulate this way."
-      : "Each key drops a whole step (old I becomes the next ii) — a voice-leading gym, not folklore; Greek bands usually re-center with a taximi or a relative move.";
+      ? "Roman numerals stay fixed while the key moves by fourths, a practice route from the selected bank, not a claim that performances modulate this way."
+      : "Each key drops a whole step (old I becomes the next ii), a voice-leading gym, not folklore; Greek bands usually re-center with a taximi or a relative move.";
     if ($("btnTaximiBridge")) $("btnTaximiBridge").classList.toggle("hidden", progressionWorkout);
   }
 
@@ -8545,7 +8598,7 @@
         $("analysisLine").value = imported.lineText;
         state.analysis.studyId = null;
         state.analysis.selected = 0;
-        setScoreImportStatus((imported.title ? imported.title + " — " : "") + imported.message + (imported.lineText ? " Note groups were attached to their written chord symbols." : " No notes could be attached to a harmony symbol."), "ok");
+        setScoreImportStatus((imported.title ? imported.title + ": " : "") + imported.message + (imported.lineText ? " Note groups were attached to their written chord symbols." : " No notes could be attached to a harmony symbol."), "ok");
         renderAnalyzer();
       } catch (error) {
         setScoreImportStatus("Could not read that file as uncompressed MusicXML. Export it again from your notation app and include chord symbols.", "error");
