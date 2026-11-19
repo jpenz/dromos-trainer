@@ -219,7 +219,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 .ap-ladder rect.here { fill: var(--terracotta); }
 .ap-ladder small { color: var(--faint); font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
 .ap-group { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg); flex-wrap: wrap; }
-.ap-group .panel-label { padding: 0 4px 0 6px; font-size: 10px; }
+.ap-label { padding: 0 4px 0 6px; color: var(--muted); font-family: var(--font-text); font-size: var(--fs-label); font-weight: 600; }
 .ap-ladder svg { width: 120px; }
 .ap-tog { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 9px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--faint); font-size: var(--fs-label); font-weight: 600; }
 .ap-tog i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
@@ -459,7 +459,7 @@ main {
   margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--line);
   color: var(--muted); font-family: var(--font-display); font-style: italic; font-size: 13.5px; line-height: 1.45;
 }
-.change-ear-cue span { color: var(--terracotta); font-family: var(--font-text); font-style: normal; font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.change-ear-cue span { color: var(--text); font-family: var(--font-text); font-style: normal; font-size: var(--fs-label); font-weight: 600; }
 .change-pickup { grid-column: 1 / -1; margin: 2px 0 0; color: var(--amber); font-size: 12px; }
 .change-pickup b { font-family: var(--font-mono); }
 
@@ -552,7 +552,7 @@ main {
 .solo-roadmap-card.next { border-color: var(--turquoise); border-style: dashed; background: var(--turquoise-soft); }
 .solo-roadmap-card.next span { color: var(--turquoise); }
 .solo-strip-motion { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; padding-top: var(--sp-1); border-top: 1px dashed var(--line); }
-.solo-strip-motion span { color: var(--faint); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.solo-strip-motion span { color: var(--muted); font-family: var(--font-text); font-size: var(--fs-label); font-weight: 600; }
 .solo-strip-motion b { color: var(--text); font-family: var(--font-mono); font-size: var(--fs-sec); }
 .solo-strip-motion small { color: var(--faint); font-size: var(--fs-micro); }
 .solo-layer-row { flex: 1 0 100%; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -1357,9 +1357,8 @@ svg.arrive-phase .fb-dot.next-shape .dot-bg { fill: rgba(82, 168, 157, 0.16); st
 .style-actions .mini { flex: 1 1 220px; min-height: var(--h-control); font-size: var(--fs-sec); }
 .style-actions .primary-mini { min-height: var(--h-primary); }
 .style-jobs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); margin: var(--sp-4) 0 0; }
-.style-jobs > div { padding: var(--sp-3); border-radius: var(--r-md); background: var(--panel2); }
-.style-jobs span { color: var(--aegean); font-size: var(--fs-label); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.style-jobs p { margin: var(--sp-1) 0 0; max-width: 65ch; color: var(--muted); font-size: var(--fs-sec); line-height: 1.45; }
+.style-jobs > p { margin: 0; padding: var(--sp-3); max-width: 65ch; border-radius: var(--r-md); background: var(--panel2); color: var(--muted); font-size: var(--fs-sec); line-height: 1.45; }
+.style-jobs span { color: var(--text); font-family: var(--font-text); font-weight: 600; }
 @media (pointer: coarse) { .style-actions .mini, .style-choice, #panelStyles .seg button { min-height: 44px; } }
 
 /* analyzer + concepts */
@@ -1560,7 +1559,7 @@ details.analysis-setup > summary { font-size: var(--fs-micro); }
 .tempo label { font-size: 12px; color: var(--muted); }
 .tempo b { color: var(--text); font-family: var(--font-mono); }
 .tempo input[type="range"] { width: 100%; accent-color: var(--text); }
-.voice-pick { display: grid; gap: 3px; color: var(--muted); font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
+.voice-pick { display: grid; gap: 3px; color: var(--muted); font-size: var(--fs-label); font-weight: 600; }
 .voice-pick select { min-height: 40px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); font-size: var(--fs-label); font-weight: 600; letter-spacing: 0; text-transform: none; }
 .audition { display: flex; gap: 8px; }
 .audition .mini { flex: 0 0 auto; }
@@ -2131,7 +2130,7 @@ body[data-view="examples"] main { max-width: 980px; }
 .picking-evidence small { grid-column: 1 / -1; padding-top: 5px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-micro); line-height: 1.4; }
 .picking-evidence small b { color: var(--text); }
 .picking-runner-grid { display: grid; grid-template-columns: minmax(180px, 0.75fr) minmax(180px, 0.7fr) minmax(80px, 0.3fr) minmax(180px, 0.72fr) auto auto; align-items: end; gap: 8px; }
-.picking-runner-grid > div, .picking-runner-grid > label:not(.check) { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.picking-runner-grid > div, .picking-runner-grid > label:not(.check) { display: grid; gap: 4px; color: var(--muted); font-family: var(--font-text); font-size: var(--fs-label); font-weight: 600; }
 .picking-runner-grid select { width: 100%; min-height: 38px; }
 .picking-tempo > span { display: grid; grid-template-columns: minmax(90px, 1fr) auto; align-items: center; gap: 7px; min-height: 38px; }
 .picking-tempo input { width: 100%; accent-color: var(--text); }
@@ -2366,7 +2365,7 @@ body[data-view="picking"] .fretboard-wrap #fretboard[data-neck-layout="focus"] {
 .picking-transport { display: none; }
 body[data-view="picking"] .picking-transport { display: flex; align-items: end; justify-content: center; gap: 18px; }
 .picking-transport .deck-start { min-height: 46px; min-width: 132px; padding: 0 20px; font-size: 15px; }
-.picking-transport .picking-tempo { display: grid; gap: 4px; min-width: 210px; max-width: 300px; flex: 1; color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.picking-transport .picking-tempo { display: grid; gap: 4px; min-width: 210px; max-width: 300px; flex: 1; color: var(--muted); font-family: var(--font-text); font-size: var(--fs-label); font-weight: 600; }
 .picking-transport .transport-sub { display: grid; gap: 4px; }
 .picking-transport .transport-sub .seg button { min-height: 40px; }
 .picking-transport .transport-pick { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -2381,7 +2380,6 @@ body[data-view="picking"] #panelPicking { padding-bottom: 12px; }
   .picking-transport .picking-tempo > span { display: flex; flex: 1; align-items: center; gap: 7px; }
   .picking-transport .picking-tempo input { flex: 1; min-width: 0; }
   .picking-transport .transport-sub { flex: 1 1 100%; }
-  .picking-transport .transport-sub .panel-label { display: none; }
   .picking-transport .transport-sub .seg { display: flex; }
   .picking-transport .transport-sub .seg button { flex: 1; min-height: 40px; }
   .picking-transport .transport-pick { flex: 1 1 40%; }
@@ -2722,7 +2720,7 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
 @media (max-width: 900px) {
   /* Phones and narrow panes: Autopilot shrinks to one row of toggles beside
      Clean / Missed; the ladder picture is dropped (the status pill says it). */
-  .picking-transport .ap-ladder, .picking-transport .ap-dots, .ap-group .panel-label { display: none; }
+  .picking-transport .ap-ladder, .picking-transport .ap-dots, .ap-group .ap-label { display: none; }
   .picking-transport .ap-group { flex: 1 1 auto; padding: 2px; flex-wrap: nowrap; }
   .picking-transport .ap-tog { min-height: 38px; padding: 0 8px; }
   .picking-transport .ap-score { margin-left: 0; }

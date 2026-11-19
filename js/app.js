@@ -1740,8 +1740,8 @@
         </div>
         <p>${style.character}</p>
         <div class="style-jobs">
-          <div><span>Comp first</span><p>${style.comp}</p></div>
-          <div><span>Phrase job</span><p>${style.phrase}</p></div>
+          <p><span>Comp first:</span> ${style.comp}</p>
+          <p><span>Phrase job:</span> ${style.phrase}</p>
         </div>
       </article>`;
     $("styleExplorer").querySelectorAll("[data-style-id]").forEach((button) => {
@@ -7356,7 +7356,7 @@
       <section class="solo-progression-roadmap" aria-label="Complete Solo progression with now and next landing" aria-live="polite">
         <header><div><span>${escapeHtml(progression.prog.label)} · ${progression.chords[0].phraseBars}-bar resolved phrase</span><b>${escapeHtml(state.tonic)} ${escapeHtml(mode.name)} · ${escapeHtml(landingLensName(state.solo.focus))}</b></div></header>
         <div class="solo-roadmap-grid">${roadmap}</div>
-        <div class="solo-strip-motion"><span>smallest useful move</span><b>${escapeHtml(motion)}</b>${wrapsToTop ? "<small>the loop wraps: the next chord is the top of the progression again</small>" : ""}</div>
+        <div class="solo-strip-motion"><span>Smallest useful move</span><b>${escapeHtml(motion)}</b>${wrapsToTop ? "<small>the loop wraps: the next chord is the top of the progression again</small>" : ""}</div>
       </section>
       <div class="solo-layer-row">
         <span class="solo-layer-label">Scales</span>
